@@ -1,2 +1,3 @@
 COLLECTION_IMPORTS = "imports"
 COLLECTION_SAMPLES = "samples"
+DIR_DOWNLOADED_DATA = "data/"

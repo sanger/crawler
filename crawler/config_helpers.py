@@ -8,11 +8,24 @@ logger = logging.getLogger(__name__)
 
 
 def get_config(test_db_config: Dict) -> Dict:
-    configs = ("MONGO_HOST", "MONGO_PORT", "MONGO_DB", "CENTRE_DETAILS_FILE_PATH")
+    configs = (
+        "MONGO_HOST",
+        "MONGO_PORT",
+        "MONGO_DB",
+        "CENTRE_DETAILS_FILE_PATH",
+        "SFTP_HOST",
+        "SFTP_PASSWORD",
+        "SFTP_PORT",
+        "SFTP_USER",
+    )
 
     try:
         # get config from environmental variables
         config = {conf: getenv(conf) for conf in configs}
+
+        for conf in config:
+            if conf is None:
+                raise Exception
     except Exception as e:
         logger.exception(e)
         raise Exception(f"The required configs are: {configs}")

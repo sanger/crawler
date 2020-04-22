@@ -5,14 +5,10 @@ from typing import Dict
 from crawler.config.logging import LOGGING_CONF  # type: ignore
 from crawler.config_helpers import get_centre_details, get_config
 from crawler.constants import COLLECTION_IMPORTS, COLLECTION_SAMPLES
-from crawler.db import (
-    copy_collection,
-    create_import_record,
-    create_mongo_client,
-    get_mongo_collection,
-    get_mongo_db,
-)
-from crawler.helpers import parse_csv
+from crawler.db import (copy_collection, create_import_record,
+                        create_mongo_client, get_mongo_collection,
+                        get_mongo_db)
+from crawler.helpers import download_csv, parse_csv
 
 logging.config.dictConfig(LOGGING_CONF)
 logger = logging.getLogger(__name__)
@@ -21,6 +17,7 @@ logger = logging.getLogger(__name__)
 def run(test_db_config: Dict = None) -> None:
     if test_db_config is None:
         test_db_config = {}
+
     try:
         config = get_config(test_db_config)
         centres = get_centre_details(config)
@@ -42,6 +39,7 @@ def run(test_db_config: Dict = None) -> None:
                 logger.debug(f"Processing {centre['name']}")
 
                 try:
+                    download_csv(config, centre)
                     errors, docs_to_insert = parse_csv(centre)
 
                     logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
@@ -58,5 +56,7 @@ def run(test_db_config: Dict = None) -> None:
                     logger.exception(e)
                     logger.info("Continuing...")
                     continue
+
+        logger.info("Import complete")
     except Exception as e:
         logger.exception(e)

@@ -18,6 +18,8 @@ black = "*"
 [packages]
 pymongo = "*"
 colorlog = "*"
+schedule = "*"
+pysftp = "*"
 
 [requires]
 python_version = "3.8"

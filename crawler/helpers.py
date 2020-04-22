@@ -4,6 +4,10 @@ import re
 from csv import DictReader
 from typing import Dict, List, Tuple
 
+import pysftp  # type: ignore
+
+from crawler.constants import DIR_DOWNLOADED_DATA
+
 logger = logging.getLogger(__name__)
 
 
@@ -62,11 +66,32 @@ def check_for_required_fields(csvreader: DictReader, centre: Dict) -> List:
     return []
 
 
+def download_csv(config: Dict, centre: Dict) -> None:
+    logger.debug("Download CSV file from SFTP")
+
+    # disable host key checking https://bitbucket.org/dundeemt/pysftp/src/master/docs/cookbook.rst#rst-header-id5
+    cnopts = pysftp.CnOpts()
+    cnopts.hostkeys = None
+
+    with pysftp.Connection(
+        host=config["SFTP_HOST"],
+        port=int(config["SFTP_PORT"]),
+        username=config["SFTP_USER"],
+        password=config["SFTP_PASSWORD"],
+        cnopts=cnopts,
+    ) as sftp:
+        logger.debug("Connected to SFTP")
+        logger.debug(f"ls: {sftp.listdir()}")
+
+        # save CSV file(s) to "data" dir
+        sftp.get_d(centre["sftp_root"], DIR_DOWNLOADED_DATA)
+
+
 def parse_csv(centre: Dict) -> Tuple[List, List]:
     root = pathlib.Path(__file__).parent.parent
-    csvfile_path = root.joinpath(f"{centre['sftp_root']}{centre['sftp_file_name']}")
+    csvfile_path = root.joinpath(f"{DIR_DOWNLOADED_DATA}{centre['sftp_file_name']}")
 
-    logger.debug(f"Attempting to parse CSV file: {csvfile_path}")
+    logger.info(f"Attempting to parse CSV file: {csvfile_path}")
 
     with open(csvfile_path, newline="") as csvfile:
         csvreader = DictReader(csvfile)
