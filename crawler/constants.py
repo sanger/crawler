@@ -1,0 +1,2 @@
+COLLECTION_IMPORTS = "imports"
+COLLECTION_SAMPLES = "samples"
