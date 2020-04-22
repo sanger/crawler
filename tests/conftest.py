@@ -8,8 +8,10 @@ from crawler.config_helpers import get_centre_details, get_config
 from crawler.db import create_mongo_client, get_mongo_db
 
 TEST_CONFIG = {
-    "MONGO_DB": "crawlerTestDB",
     "CENTRE_DETAILS_FILE_PATH": "tests/config/centre_details.json",
+    "MONGO_DB": "crawlerTestDB",
+    "MONGO_HOST": "127.0.0.1",
+    "MONGO_PORT": "27017",
 }
 
 logging.config.dictConfig(LOGGING_CONF)
