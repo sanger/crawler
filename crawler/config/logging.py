@@ -4,7 +4,7 @@ LOGGING_CONF = {
     "formatters": {
         "colored": {
             "()": "colorlog.ColoredFormatter",
-            "format": "%(asctime)-15s %(name)s:%(lineno)s %(log_color)s%(levelname)s:%(message)s",
+            "format": "%(asctime)-15s %(name)-16s:%(lineno)s %(log_color)s%(levelname)-5s %(message)s",
         }
     },
     "handlers": {
