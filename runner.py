@@ -8,14 +8,26 @@ from crawler import main
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Store external samples in mongo.")
 
-    # TODO: add option to skip sftp
-    parser.add_argument("--run-once", dest="once", action="store_true")
-    parser.set_defaults(once=False)
+    parser.add_argument(
+        "--scheduled",
+        dest="once",
+        action="store_false",
+        help="start scheduled execution, defaults to running once",
+    )
+    parser.add_argument(
+        "--sftp",
+        dest="sftp",
+        action="store_true",
+        help="use SFTP to download CSV files, defaults to using local files",
+    )
+
+    parser.set_defaults(once=True)
+    parser.set_defaults(sftp=False)
 
     args = parser.parse_args()
 
     if args.once:
-        main.run()
+        main.run(args.sftp)
     else:
         schedule.every().day.at("01:00").do(main.run)
 
