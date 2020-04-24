@@ -2,7 +2,7 @@ import json
 import logging
 import pathlib
 from os import getenv
-from typing import Dict
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ def get_config(test_db_config: Dict) -> Dict:
     return config
 
 
-def get_centre_details(config: Dict) -> Dict:
+def get_centre_details(config: Dict) -> List[Dict[str, str]]:
     root = pathlib.Path(__file__).parent.parent
     centre_details_path = root.joinpath(f"{config['CENTRE_DETAILS_FILE_PATH']}")
 

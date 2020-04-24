@@ -1,10 +1,11 @@
 import logging
 from datetime import datetime
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
+from pymongo.errors import DuplicateKeyError
 from pymongo.results import InsertOneResult
 
 logger = logging.getLogger(__name__)
@@ -59,3 +60,19 @@ def create_import_record(
     }
 
     return status_collection.insert_one(status_doc)
+
+
+def populate_collection(
+    collection: Collection, documents: List[Dict[str, Any]], filter: str
+) -> None:
+    logger.debug(f"Populating/updating {collection.full_name} using '{filter}' as the filter")
+    for document in documents:
+        try:
+            temp_doc = dict(document)  # insert_one() adds an _id field
+            _ = collection.insert_one(document)
+        except DuplicateKeyError:
+            try:
+                _ = collection.find_one_and_replace({filter: document[filter]}, temp_doc)
+            except KeyError:
+                logger.exception(f"Cannot update {collection.full_name}")
+            continue

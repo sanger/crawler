@@ -6,7 +6,7 @@ from typing import Dict, List, Tuple
 
 import pysftp  # type: ignore
 
-from crawler.constants import DIR_DOWNLOADED_DATA
+from crawler.constants import DIR_DOWNLOADED_DATA, FIELD_NAME_BARCODE
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +36,11 @@ def add_extra_fields(csvreader: DictReader, centre: Dict, errors: List) -> Tuple
 
         try:
             if barcode_regex:
-                row["plate_barcode"] = extract_plate_barcode(row, barcode_field, barcode_regex)
+                row[FIELD_NAME_BARCODE] = extract_plate_barcode(row, barcode_field, barcode_regex)
             else:
-                row["plate_barcode"] = row[barcode_field]
+                row[FIELD_NAME_BARCODE] = row[barcode_field]
 
-            if row["plate_barcode"] == "":
+            if row[FIELD_NAME_BARCODE] == "":
                 barcode_mismatch += 1
         except KeyError:
             pass
