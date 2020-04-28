@@ -4,10 +4,23 @@ import pathlib
 from os import getenv
 from typing import Dict, List
 
+from crawler.exceptions import RequiredConfigError
+
 logger = logging.getLogger(__name__)
 
 
-def get_config(test_db_config: Dict) -> Dict:
+def get_config(test_config: Dict[str, str] = None) -> Dict[str, str]:
+    """Gets the config for the current application.
+
+    Arguments:
+        test_config {Dict[str, str]} -- config used while testing, overwrites default config
+
+    Raises:
+        RequiredConfigError: raised when required config is missing
+
+    Returns:
+        Dict[str, str] -- config to be used in app
+    """
     configs = (
         "MONGO_HOST",
         "MONGO_PORT",
@@ -17,31 +30,41 @@ def get_config(test_db_config: Dict) -> Dict:
         "SFTP_PASSWORD",
         "SFTP_PORT",
         "SFTP_USER",
+        "SLACK_API_TOKEN",
+        "SLACK_CHANNEL_ID",
     )
 
-    try:
-        # get config from environmental variables
-        config = {conf: getenv(conf) for conf in configs}
-
-        for conf in config:
-            if conf is None:
-                raise Exception
-    except Exception as e:
-        logger.exception(e)
-        raise Exception(f"The required configs are: {configs}")
-
-    # overwrite config when testing
-    if test_db_config:
+    config = {}
+    # if test config is None, get the config from the environmental variables
+    if test_config is None:
         for conf in configs:
-            if conf in test_db_config.keys():
-                config[conf] = test_db_config[conf]
+            if (the_conf := getenv(conf)) is not None:
+                config[conf] = the_conf
+            else:
+                raise RequiredConfigError(conf)
+
+    # when testing, get the config from what is passed in
+    if test_config:
+        for conf in configs:
+            if conf in test_config.keys():
+                config[conf] = test_config[conf]
+            else:
+                raise RequiredConfigError(conf)
 
     logger.debug(f"Current config: {config}")
 
     return config
 
 
-def get_centre_details(config: Dict) -> List[Dict[str, str]]:
+def get_centre_details(config: Dict[str, str]) -> List[Dict[str, str]]:
+    """Get the cetre details from the JSON file.
+
+    Arguments:
+        config {Dict[str, str]} -- application config which specifies the centre details file path
+
+    Returns:
+        List[Dict[str, str]] -- the centre details
+    """
     root = pathlib.Path(__file__).parent.parent
     centre_details_path = root.joinpath(f"{config['CENTRE_DETAILS_FILE_PATH']}")
 

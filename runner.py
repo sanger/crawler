@@ -1,7 +1,7 @@
 import argparse
 import time
 
-import schedule
+import schedule  # type: ignore
 
 from crawler import main
 

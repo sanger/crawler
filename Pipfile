@@ -19,6 +19,7 @@ pymongo = "*"
 colorlog = "*"
 schedule = "*"
 pysftp = "*"
+slackclient = "*"
 
 [requires]
 python_version = "3.8"

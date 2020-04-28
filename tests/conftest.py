@@ -12,6 +12,13 @@ TEST_CONFIG = {
     "MONGO_DB": "crawlerTestDB",
     "MONGO_HOST": "127.0.0.1",
     "MONGO_PORT": "27017",
+    "MONGO_HOST": "127.0.0.1",
+    "SFTP_HOST": "127.0.0.1",
+    "SFTP_PASSWORD": "pass",
+    "SFTP_PORT": "22",
+    "SFTP_USER": "foo",
+    "SLACK_API_TOKEN": "xoxb",
+    "SLACK_CHANNEL_ID": "C",
 }
 
 logging.config.dictConfig(LOGGING_CONF)

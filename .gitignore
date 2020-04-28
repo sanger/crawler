@@ -131,5 +131,5 @@ dmypy.json
 # IDE
 .vscode
 
-# CSV files from SFTP
-data/*.csv
+# Any files from SFTP
+data/*

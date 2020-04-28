@@ -1,22 +1,34 @@
 from csv import DictReader
 from io import StringIO
 
-from crawler.helpers import add_extra_fields, extract_plate_barcode
+from crawler.helpers import add_extra_fields, extract_fields
 
 
-def test_extract_plate_barcode():
+def test_extract_fields():
     barcode_field = "RNA ID"
-    barcode_regex = r"^(.*)_[A-Z]\d\d$"
-    assert extract_plate_barcode({"RNA ID": "ABC123_H01"}, barcode_field, barcode_regex) == "ABC123"
-    assert extract_plate_barcode({"RNA ID": "ABC123_A00"}, barcode_field, barcode_regex) == "ABC123"
-    assert extract_plate_barcode({"RNA ID": "ABC123_H0"}, barcode_field, barcode_regex) == ""
-    assert extract_plate_barcode({"RNA ID": "ABC123H0"}, barcode_field, barcode_regex) == ""
-    assert extract_plate_barcode({"RNA ID": "AB23_H01"}, barcode_field, barcode_regex) == "AB23"
+    barcode_regex = r"^(.*)_([A-Z]\d\d)$"
+    assert extract_fields({"RNA ID": "ABC123_H01"}, barcode_field, barcode_regex) == (
+        "ABC123",
+        "H01",
+    )
+    assert extract_fields({"RNA ID": "ABC123_A00"}, barcode_field, barcode_regex) == (
+        "ABC123",
+        "A00",
+    )
+    assert extract_fields({"RNA ID": "ABC123_H0"}, barcode_field, barcode_regex) == ("", "")
+    assert extract_fields({"RNA ID": "ABC123H0"}, barcode_field, barcode_regex) == ("", "")
+    assert extract_fields({"RNA ID": "AB23_H01"}, barcode_field, barcode_regex) == ("AB23", "H01")
 
 
 def test_add_extra_fields(centre_details):
     extra_fields_added = [
-        {"id": "1", "RNA ID": "RNA_0043_H09", "plate_barcode": "RNA_0043", "source": "Alderley"}
+        {
+            "id": "1",
+            "RNA ID": "RNA_0043_H09",
+            "plate_barcode": "RNA_0043",
+            "source": "Alderley",
+            "coordinate": "H09",
+        }
     ]
 
     with StringIO() as fake_csv:
@@ -30,7 +42,15 @@ def test_add_extra_fields(centre_details):
         assert augmented_data == extra_fields_added
         assert len(errors) == 0
 
-    wrong_barcode = [{"id": "1", "RNA ID": "RNA_0043_", "plate_barcode": "", "source": "Alderley"}]
+    wrong_barcode = [
+        {
+            "id": "1",
+            "RNA ID": "RNA_0043_",
+            "plate_barcode": "",
+            "source": "Alderley",
+            "coordinate": "",
+        }
+    ]
 
     with StringIO() as fake_csv:
         fake_csv.write("id,RNA ID\n")

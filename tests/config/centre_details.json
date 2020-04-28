@@ -3,7 +3,7 @@
     "sftp_root": "tests/files/",
     "sftp_file_name": "blah.csv",
     "barcode_field": "RNA ID",
-    "barcode_regex": "^(.*)_[A-Z]\\d\\d$"
+    "barcode_regex": "^(.*)_([A-Z]\\d\\d)$"
   },
   {
     "name": "UK Biocentre",

@@ -32,7 +32,7 @@ def test_get_mongo_collection(mongo_database):
 def test_copy_collection(mongo_database):
     collection_name = "test_collection"
     collection = get_mongo_collection(mongo_database, collection_name)
-    collection.insert_one({"x": 1})
+    _ = collection.insert_one({"x": 1})
 
     copy_collection(mongo_database, collection)
 
@@ -49,11 +49,11 @@ def test_create_import_record(freezer, centre_details, mongo_database):
 
     for centre in centre_details:
         now = datetime.now().isoformat(timespec="seconds")
-        result = create_import_record(import_collection, centre, len(docs), errors)
+        result = create_import_record(import_collection, centre, len(docs), "test", errors)
         import_doc = import_collection.find_one({"_id": result.inserted_id})
 
         assert import_doc["date"] == now
         assert import_doc["centre_name"] == centre["name"]
-        assert import_doc["csv_file_used"] == centre["sftp_file_name"]
+        assert import_doc["csv_file_used"] == "test"
         assert import_doc["number_of_records"] == len(docs)
         assert import_doc["errors"] == errors
