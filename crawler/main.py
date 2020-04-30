@@ -26,9 +26,6 @@ logger = logging.getLogger(__name__)
 
 
 def run(sftp: bool, test_config: Dict[str, str] = None) -> None:
-    if test_config is None:
-        test_config = {}
-
     try:
         config = get_config(test_config)
         centres = get_centre_details(config)

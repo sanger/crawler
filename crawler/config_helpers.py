@@ -21,6 +21,8 @@ def get_config(test_config: Dict[str, str] = None) -> Dict[str, str]:
     Returns:
         Dict[str, str] -- config to be used in app
     """
+    logger.debug("Populating config dict")
+
     configs = (
         "MONGO_HOST",
         "MONGO_PORT",
@@ -50,8 +52,6 @@ def get_config(test_config: Dict[str, str] = None) -> Dict[str, str]:
                 config[conf] = test_config[conf]
             else:
                 raise RequiredConfigError(conf)
-
-    logger.debug(f"Current config: {config}")
 
     return config
 
