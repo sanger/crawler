@@ -29,7 +29,9 @@ if __name__ == "__main__":
     if args.once:
         main.run(args.sftp)
     else:
-        schedule.every().day.at("01:00").do(main.run)
+        time_to_run = "01:00"
+        print(f"Scheduled to run at {time_to_run}")
+        schedule.every().day.at(time_to_run).do(main.run)
 
         while True:
             schedule.run_pending()
