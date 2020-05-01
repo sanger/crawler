@@ -21,11 +21,20 @@ def create_mongo_client(config: Dict[str, str]) -> MongoClient:
         MongoClient -- a client used to interact with the database server
     """
     mongo_host = config["MONGO_HOST"]
-    mongo_port = config["MONGO_PORT"]
+    mongo_password = config["MONGO_PASSWORD"]
+    mongo_port = int(config["MONGO_PORT"])
+    mongo_user = config["MONGO_USER"]
+    mongo_db = config["MONGO_DB"]
 
     logger.info(f"Connecting to {mongo_host} on port {mongo_port}")
 
-    return MongoClient(config["MONGO_HOST"], int(config["MONGO_PORT"]))
+    return MongoClient(
+        host=mongo_host,
+        port=mongo_port,
+        username=mongo_user,
+        password=mongo_password,
+        authSource=mongo_db,
+    )
 
 
 def get_mongo_db(config: Dict[str, str], client: MongoClient) -> Database:

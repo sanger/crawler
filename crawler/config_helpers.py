@@ -2,7 +2,7 @@ import json
 import logging
 import pathlib
 from os import getenv
-from typing import Dict, List
+from typing import Any, Dict, List, Tuple
 
 from crawler.exceptions import RequiredConfigError
 
@@ -23,11 +23,13 @@ def get_config(test_config: Dict[str, str] = None) -> Dict[str, str]:
     """
     logger.debug("Populating config dict")
 
-    configs = (
-        "MONGO_HOST",
-        "MONGO_PORT",
-        "MONGO_DB",
+    configs: Tuple[str, ...] = (
         "CENTRE_DETAILS_FILE_PATH",
+        "MONGO_DB",
+        "MONGO_HOST",
+        "MONGO_PASSWORD",
+        "MONGO_PORT",
+        "MONGO_USER",
         "SFTP_HOST",
         "SFTP_PASSWORD",
         "SFTP_PORT",
@@ -36,7 +38,7 @@ def get_config(test_config: Dict[str, str] = None) -> Dict[str, str]:
         "SLACK_CHANNEL_ID",
     )
 
-    config = {}
+    config: Dict[str, Any] = {}
     # if test config is None, get the config from the environmental variables
     if test_config is None:
         for conf in configs:
@@ -45,7 +47,8 @@ def get_config(test_config: Dict[str, str] = None) -> Dict[str, str]:
             else:
                 raise RequiredConfigError(conf)
 
-    # when testing, get the config from what is passed in
+    # when testing, get the config from what is passed in and allow username and password to be
+    #   blank
     if test_config:
         for conf in configs:
             if conf in test_config.keys():
