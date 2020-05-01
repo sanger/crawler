@@ -10,9 +10,11 @@ from crawler.db import create_mongo_client, get_mongo_db
 TEST_CONFIG = {
     "CENTRE_DETAILS_FILE_PATH": "tests/config/centre_details.json",
     "MONGO_DB": "crawlerTestDB",
+    "MONGO_HOST": "127.0.0.1",
     "MONGO_PASSWORD": "",
     "MONGO_PORT": "27017",
     "MONGO_USER": "",
+    "SFTP_HOST": "127.0.0.1",
     "SFTP_PASSWORD": "pass",
     "SFTP_PORT": "22",
     "SFTP_USER": "foo",
