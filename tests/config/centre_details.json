@@ -1,0 +1,15 @@
+[{
+    "name": "Alderley",
+    "sftp_root": "tests/files/",
+    "sftp_file_name": "blah.csv",
+    "barcode_field": "RNA ID",
+    "barcode_regex": "^(.*)_([A-Z]\\d\\d)$"
+  },
+  {
+    "name": "UK Biocentre",
+    "sftp_root": "tests/files/",
+    "sftp_file_name": "boo.csv",
+    "barcode_field": "RNA PLATE ID",
+    "barcode_regex": ""
+  }
+]

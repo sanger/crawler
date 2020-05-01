@@ -1,0 +1,7 @@
+COLLECTION_IMPORTS = "imports"
+COLLECTION_SAMPLES = "samples"
+COLLECTION_CENTRES = "centres"
+DIR_DOWNLOADED_DATA = "data/"
+FIELD_NAME_BARCODE = "plate_barcode"
+FIELD_NAME_COORDINATE = "coordinate"
+FIELD_NAME_CENTRE_NAME = "name"

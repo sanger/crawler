@@ -1,0 +1,28 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+flake8 = "*"
+mypy = "*"
+flake8-bugbear = "*"
+rope = "*"
+coverage = {extras = ["toml"],version = "*"}
+pytest = "*"
+pytest-cov = "*"
+pytest-freezegun = "*"
+black = "*"
+
+[packages]
+pymongo = "*"
+colorlog = "*"
+schedule = "*"
+pysftp = "*"
+slackclient = "*"
+
+[requires]
+python_version = "3.8"
+
+[pipenv]
+allow_prereleases = true

@@ -1,0 +1,35 @@
+name: Docker CI
+
+on: push
+
+env:
+  IMAGE_NAME: ${{ github.repository }}/${{ github.event.repository.name }}
+
+jobs:
+  build_and_test_job:
+    runs-on: ubuntu-18.04
+    services:
+      mongodb:
+        image: mongo:4.2.5
+        ports:
+          - 27017:27017
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
+      - name: Run mypy against the image
+        run: docker run --network host docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/} python -m mypy .
+      - name: Run tests against the image
+        run: docker run --network host docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/} python -m pytest -vsx
+      - name: Login to regitry
+        run: docker login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} docker.pkg.github.com
+        if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master' || contains(github.ref, 'release')
+      - name: Publish image with image tag being "develop" or git tag name (when not "master")
+        run: docker push docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
+        if: github.ref == 'refs/heads/develop' || contains(github.ref, 'release')
+      - name: Tag the Docker image with "latest" if it's the "master" branch
+        run: docker tag docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/} docker.pkg.github.com/${IMAGE_NAME}:latest
+        if: github.ref == 'refs/heads/master'
+      - name: Publish image (if "master" branch)
+        run: docker push docker.pkg.github.com/${IMAGE_NAME}:latest
+        if: github.ref == 'refs/heads/master'
