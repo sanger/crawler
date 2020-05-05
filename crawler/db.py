@@ -21,8 +21,6 @@ def create_mongo_client(config: Dict[str, str]) -> MongoClient:
         MongoClient -- a client used to interact with the database server
     """
 
-    logger.info(f"Connecting to {mongo_host} on port {mongo_port}")
-
     if "MONGO_URI" in config:
         mongo_uri = config["MONGO_URI"]
         logger.info(f"Connecting to {mongo_uri}")
