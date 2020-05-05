@@ -23,6 +23,7 @@ def create_mongo_client(config: Dict[str, str]) -> MongoClient:
 
     if "MONGO_URI" in config:
         mongo_uri = config["MONGO_URI"]
+        logger.info(f"Connecting to mongo")
 
         return MongoClient(config["MONGO_URI"])
     else:
