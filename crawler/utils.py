@@ -16,16 +16,7 @@ class SlackHandler(Handler):
         try:
             client.chat_postMessage(
                 channel=os.getenv("SLACK_CHANNEL_ID", ""),
-                blocks=[
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "Danny Torrence left the following review for your property:",
-                        },
-                    },
-                    {"type": "section", "text": {"type": "mrkdwn", "text": sent_str}},
-                ],
+                blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": sent_str}}],
             )
         except SlackApiError as e:
             # You will get a SlackApiError if "ok" is False

@@ -2,9 +2,11 @@ import logging
 import os
 import pathlib
 import re
-from csv import DictReader
+from csv import DictReader, DictWriter
 from datetime import datetime
-from typing import Any, Dict, List, Tuple
+from importlib import import_module
+from types import ModuleType
+from typing import Any, Dict, List, Optional, Tuple
 
 import pysftp  # type: ignore
 
@@ -12,6 +14,8 @@ from crawler.constants import DIR_DOWNLOADED_DATA, FIELD_NAME_BARCODE, FIELD_NAM
 from crawler.exceptions import CentreFileError
 
 logger = logging.getLogger(__name__)
+
+PROJECT_ROOT = pathlib.Path(__file__).parent.parent
 
 
 def extract_fields(row: Dict[str, str], barcode_field: str, regex: str) -> Tuple[str, str]:
@@ -107,31 +111,35 @@ def check_for_required_fields(csvreader: DictReader, centre: Dict[str, str]) -> 
     return []
 
 
-def download_csv(config: Dict[str, str], centre: Dict[str, str]) -> None:
+def download_csv_files(config, centre: Dict[str, str]) -> None:
     """Downloads the centre's file from the SFTP server
 
     Arguments:
-        config {Dict[str, str]} -- config which has the SFTP details
+        config {ModuleType} -- config which has the SFTP details
         centre {Dict[str, str]} -- centre details
     """
-    logger.debug("Download CSV file from SFTP")
+    logger.debug("Download CSV file(s) from SFTP")
 
     # disable host key checking https://bitbucket.org/dundeemt/pysftp/src/master/docs/cookbook.rst#rst-header-id5
     cnopts = pysftp.CnOpts()
     cnopts.hostkeys = None
 
     with pysftp.Connection(
-        host=config["SFTP_HOST"],
-        port=int(config["SFTP_PORT"]),
-        username=config["SFTP_USER"],
-        password=config["SFTP_PASSWORD"],
+        host=config.SFTP_HOST,  # type: ignore
+        port=config.SFTP_PORT,
+        username=config.SFTP_READ_USER,
+        password=config.SFTP_READ_PASSWORD,
         cnopts=cnopts,
     ) as sftp:
-        logger.debug("Connected to SFTP")
-        logger.debug(f"ls: {sftp.listdir(centre['sftp_root'])}")
+        logger.info("Connected to SFTP")
+        logger.debug("Listing centre's root directory")
+        logger.debug(f"ls: {sftp.listdir(centre['sftp_root_read'])}")
 
         # downloads all files
-        sftp.get_d(centre["sftp_root"], DIR_DOWNLOADED_DATA)
+        logger.info("Downloading CSV files...")
+        sftp.get_d(centre["sftp_root_read"], get_download_dir(centre))
+
+    return None
 
 
 def parse_csv(centre: Dict[str, str]) -> Tuple[str, List[str], List[Dict[str, str]]]:
@@ -144,10 +152,14 @@ def parse_csv(centre: Dict[str, str]) -> Tuple[str, List[str], List[Dict[str, st
         Tuple[str, List[str], List[str, str]] -- name of the file which was parsed for this centre,
         list of errors and the augmented data
     """
-    latest_file_name = get_latest_csv(centre)
+    if "merge_required" in centre.keys() and centre["merge_required"]:
+        file_regex = "sftp_master_file_regex"
+    else:
+        file_regex = "sftp_file_regex"
 
-    root = pathlib.Path(__file__).parent.parent
-    csvfile_path = root.joinpath(f"{DIR_DOWNLOADED_DATA}{latest_file_name}")
+    latest_file_name = get_latest_csv(centre, file_regex)
+
+    csvfile_path = PROJECT_ROOT.joinpath(f"{get_download_dir(centre)}{latest_file_name}")
 
     logger.info(f"Attempting to parse CSV file: {csvfile_path}")
 
@@ -161,35 +173,122 @@ def parse_csv(centre: Dict[str, str]) -> Tuple[str, List[str], List[Dict[str, st
     return latest_file_name, errors, documents
 
 
-def get_latest_csv(centre_details: Dict[str, str]) -> str:
-    """Get the latest CSV file for the centre which matches the regex described in the centre
+def get_download_dir(centre: Dict[str, str]) -> str:
+    download_dir = f"{DIR_DOWNLOADED_DATA}{centre['prefix']}/"
+
+    return download_dir
+
+
+def get_files_in_download_dir(centre: Dict[str, str], regex_field: str) -> List[str]:
+    # get a list of files in the download directory
+    # https://stackoverflow.com/a/3207973
+    (_, _, files) = next(os.walk(PROJECT_ROOT.joinpath(get_download_dir(centre))))
+
+    pattern = re.compile(centre[regex_field])
+
+    # filter the list of files to only those which match the pattern
+    centre_files = list(filter(pattern.match, files))
+
+    return centre_files
+
+
+def get_latest_csv(centre: Dict[str, str], regex_field: str) -> str:
+    """Get the latest CSV file name for the centre which matches the regex described in the centre
     details file.
 
     Arguments:
-        centre_details {Dict[str, str]} -- details of the centres
+        centre {Dict[str, str]} -- details of the centres
 
     Returns:
         str -- file name of the CSV file to parse
     """
     logger.debug(
-        f"Getting latest CSV file for {centre_details['name']} using "
-        f"pattern {centre_details['sftp_file_regex']}"
+        f"Getting latest CSV file for {centre['name']} using " f"pattern {centre[regex_field]}"
     )
-    root = pathlib.Path(__file__).parent.parent
 
-    # https://stackoverflow.com/a/3207973
-    (_, _, files) = next(os.walk(root.joinpath(DIR_DOWNLOADED_DATA)))
-
-    pattern = re.compile(centre_details["sftp_file_regex"])
-    centre_files = filter(pattern.match, files)
+    centre_files = get_files_in_download_dir(centre, regex_field)
 
     files_with_time = {}
     for filename in centre_files:
-        if match := pattern.match(filename):
+        if match := re.compile(centre[regex_field]).match(filename):
             files_with_time[datetime.strptime(match.group(1), "%y%m%d_%H%M")] = filename
-        else:
-            raise CentreFileError(
-                f"'{filename}' does not match regex {centre_details['sftp_file_regex']}"
-            )
 
-    return files_with_time[sorted(files_with_time, reverse=True)[0]]
+    # return the latest one
+    latest_file_name = files_with_time[sorted(files_with_time, reverse=True)[0]]
+    logger.info(f"Latest file: {latest_file_name}")
+    return latest_file_name
+
+
+def merge_daily_files(centre: Dict[str, str]) -> str:
+    logger.info(f"Merging daily files of {centre['name']}")
+
+    # get list of files
+    centre_files = get_files_in_download_dir(centre, "sftp_file_regex")
+    logger.debug(f"{len(centre_files)} to merge into master file")
+
+    # get the latest file name to use for the master name
+    latest_file_name = get_latest_csv(centre, "sftp_file_regex")
+
+    master_file_name = f"{latest_file_name[:-4]}_master.csv"
+    with open(f"{get_download_dir(centre)}{master_file_name}", "w") as master_csv:
+        field_names_written = False
+        for filename in centre_files:
+            logger.debug(f"Merging {filename} into {master_file_name}")
+            with open(f"{get_download_dir(centre)}{filename}", "r", newline="") as daily_file:
+                csvreader = DictReader(daily_file)
+
+                if csvreader.fieldnames is None:
+                    raise Exception("Field names required in CSV file")
+
+                #  write header
+                if not field_names_written:
+                    writer = DictWriter(master_csv, fieldnames=csvreader.fieldnames)
+                    writer.writeheader()
+                    field_names_written = True
+
+                # copy data
+                for row in csvreader:
+                    writer.writerow(row)
+
+    logger.info(f"{master_file_name} created")
+
+    return master_file_name
+
+
+def upload_file_to_sftp(config: ModuleType, centre: Dict[str, str], filename: str) -> None:
+    logger.info(f"Uploading {filename} to {centre['sftp_root_write']}")
+
+    # disable host key checking https://bitbucket.org/dundeemt/pysftp/src/master/docs/cookbook.rst#rst-header-id5
+    cnopts = pysftp.CnOpts()
+    cnopts.hostkeys = None
+
+    sftp_host = config.SFTP_HOST  # type: ignore
+    sftp_port = config.SFTP_PORT  # type: ignore
+    sftp_user = config.SFTP_WRITE_USER  # type: ignore
+    sftp_password = config.SFTP_WRITE_PASSWORD  # type: ignore
+
+    with pysftp.Connection(
+        host=sftp_host, port=sftp_port, username=sftp_user, password=sftp_password, cnopts=cnopts,
+    ) as sftp:
+        logger.info("Connected to SFTP")
+        with sftp.cd(centre["sftp_root_write"]):
+            # upload master file
+            sftp.put(f"{get_download_dir(centre)}{filename}", confirm=True)
+
+
+def clean_up(centre: Dict[str, str]) -> None:
+    # remove up after running the jobs
+    pass
+
+
+def get_config(test_config: Dict[str, str] = None) -> Optional[ModuleType]:
+    try:
+        settings_module = os.environ["SETTINGS_MODULE"]
+
+        logger.info(f"Using settings from {settings_module}")
+
+        return import_module(settings_module)  # type: ignore
+    except KeyError as e:
+        logger.error(f"{e} required in environmental variables for config")
+
+        return None
