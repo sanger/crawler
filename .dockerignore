@@ -5,8 +5,3 @@
 Dockerfile
 LICENSE
 README.md
-data
-pyproject.toml
-runner.py
-setup.cfg
-tests
