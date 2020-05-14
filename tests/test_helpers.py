@@ -1,7 +1,22 @@
 from csv import DictReader
 from io import StringIO
 
-from crawler.helpers import add_extra_fields, extract_fields
+import pytest
+
+from crawler.constants import DIR_DOWNLOADED_DATA
+from crawler.exceptions import CentreFileError
+from crawler.helpers import (
+    add_extra_fields,
+    check_for_required_fields,
+    extract_fields,
+    get_config,
+    get_download_dir,
+)
+
+
+def test_get_config():
+    with pytest.raises(ModuleNotFoundError):
+        get_config("x.y.z")
 
 
 def test_extract_fields():
@@ -20,7 +35,7 @@ def test_extract_fields():
     assert extract_fields({"RNA ID": "AB23_H01"}, barcode_field, barcode_regex) == ("AB23", "H01")
 
 
-def test_add_extra_fields(centre_details):
+def test_add_extra_fields(config):
     extra_fields_added = [
         {
             "id": "1",
@@ -38,7 +53,7 @@ def test_add_extra_fields(centre_details):
 
         csv_to_test_reader = DictReader(fake_csv)
 
-        errors, augmented_data = add_extra_fields(csv_to_test_reader, centre_details[0], [])
+        errors, augmented_data = add_extra_fields(csv_to_test_reader, config.CENTRES[0], [])
         assert augmented_data == extra_fields_added
         assert len(errors) == 0
 
@@ -59,6 +74,23 @@ def test_add_extra_fields(centre_details):
 
         csv_to_test_reader = DictReader(fake_csv)
 
-        errors, augmented_data = add_extra_fields(csv_to_test_reader, centre_details[0], [])
+        errors, augmented_data = add_extra_fields(csv_to_test_reader, config.CENTRES[0], [])
         assert augmented_data == wrong_barcode
         assert len(errors) == 1
+
+
+def test_get_download_dir(config):
+    for centre in config.CENTRES:
+        assert get_download_dir(centre) == f"{DIR_DOWNLOADED_DATA}{centre['prefix']}/"
+
+
+def test_check_for_required_fields(config):
+    with pytest.raises(CentreFileError, match=r".* missing in CSV file"):
+        with StringIO() as fake_csv:
+            fake_csv.write("id,RNA ID\n")
+            fake_csv.write("1,RNA_0043_\n")
+            fake_csv.seek(0)
+
+            csv_to_test_reader = DictReader(fake_csv)
+
+            assert check_for_required_fields(csv_to_test_reader, {"barcode_field": "RNA ID"}) == []

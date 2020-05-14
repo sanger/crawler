@@ -2,6 +2,7 @@ import logging
 import os
 import pathlib
 import re
+import shutil
 from csv import DictReader, DictWriter
 from datetime import datetime
 from importlib import import_module
@@ -10,7 +11,16 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pysftp  # type: ignore
 
-from crawler.constants import DIR_DOWNLOADED_DATA, FIELD_NAME_BARCODE, FIELD_NAME_COORDINATE
+from crawler.constants import (
+    DIR_DOWNLOADED_DATA,
+    FIELD_COORDINATE,
+    FIELD_DATE_TESTED,
+    FIELD_LAB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_ROOT_SAMPLE_ID,
+)
 from crawler.exceptions import CentreFileError
 
 logger = logging.getLogger(__name__)
@@ -40,7 +50,7 @@ def extract_fields(row: Dict[str, str], barcode_field: str, regex: str) -> Tuple
 
 
 def add_extra_fields(
-    csvreader: DictReader, centre: Dict[str, str], errors: List[str]
+    csvreader: DictReader, centre: Dict[str, str], errors: List[str] = []
 ) -> Tuple[List[str], List[Dict[str, str]]]:
     """Adds extra fields to the imported data which is required for querying.
 
@@ -55,8 +65,6 @@ def add_extra_fields(
     logger.debug("Adding extra fields")
 
     augmented_data = []
-    errors = []
-
     barcode_mismatch = 0
 
     barcode_regex = centre["barcode_regex"]
@@ -67,13 +75,13 @@ def add_extra_fields(
 
         try:
             if row[barcode_field] and barcode_regex:
-                row[FIELD_NAME_BARCODE], row[FIELD_NAME_COORDINATE] = extract_fields(
+                row[FIELD_PLATE_BARCODE], row[FIELD_COORDINATE] = extract_fields(
                     row, barcode_field, barcode_regex
                 )
             else:
-                row[FIELD_NAME_BARCODE] = row[barcode_field]
+                row[FIELD_PLATE_BARCODE] = row[barcode_field]
 
-            if not row[FIELD_NAME_BARCODE]:
+            if not row[FIELD_PLATE_BARCODE]:
                 barcode_mismatch += 1
         except KeyError:
             pass
@@ -91,8 +99,8 @@ def add_extra_fields(
     return errors, augmented_data
 
 
-def check_for_required_fields(csvreader: DictReader, centre: Dict[str, str]) -> List[str]:
-    """Checks the data for any required fields and populates a list of errors if any are found.
+def check_for_required_fields(csvreader: DictReader, centre: Dict[str, str]) -> None:
+    """Checks that the CSV file has the required headers.
 
     Arguments:
         csvreader {DictReader} -- CSV file reader to iterate over
@@ -101,14 +109,27 @@ def check_for_required_fields(csvreader: DictReader, centre: Dict[str, str]) -> 
     Returns:
         List[str] -- list of errors experienced
     """
-    logger.debug("Checking data for required fields")
+    """Checks that the CSV file has the required headers.
 
-    if csvreader.fieldnames and centre["barcode_field"] not in csvreader.fieldnames:
-        error = "Barcode field not in CSV file"
-        logger.error(error)
-        return [error]
-
-    return []
+    Raises:
+        CentreFileError: Raised when the required fields are not found in the file
+    """
+    logger.debug("Checking CSV for required headers")
+    required_fields = {
+        FIELD_ROOT_SAMPLE_ID,
+        FIELD_RNA_ID,
+        FIELD_RESULT,
+        FIELD_DATE_TESTED,
+        FIELD_LAB_ID,
+    }
+    if csvreader.fieldnames:
+        fieldnames = set(csvreader.fieldnames)
+        if not required_fields < fieldnames:
+            raise CentreFileError(
+                f"{', '.join(list(required_fields - fieldnames))} missing in CSV file"
+            )
+    else:
+        raise CentreFileError("Cannot read CSV fieldnames")
 
 
 def download_csv_files(config, centre: Dict[str, str]) -> None:
@@ -120,7 +141,14 @@ def download_csv_files(config, centre: Dict[str, str]) -> None:
     """
     logger.debug("Download CSV file(s) from SFTP")
 
-    # disable host key checking https://bitbucket.org/dundeemt/pysftp/src/master/docs/cookbook.rst#rst-header-id5
+    logger.debug("Create download directory for centre")
+    try:
+        os.mkdir(get_download_dir(centre))
+    except FileExistsError:
+        pass
+
+    # disable host key checking:
+    #   https://bitbucket.org/dundeemt/pysftp/src/master/docs/cookbook.rst#rst-header-id5
     cnopts = pysftp.CnOpts()
     cnopts.hostkeys = None
 
@@ -166,20 +194,37 @@ def parse_csv(centre: Dict[str, str]) -> Tuple[str, List[str], List[Dict[str, st
     with open(csvfile_path, newline="") as csvfile:
         csvreader = DictReader(csvfile)
 
-        errors = check_for_required_fields(csvreader, centre)
-
-        errors, documents = add_extra_fields(csvreader, centre, errors)
+        check_for_required_fields(csvreader, centre)
+        errors, documents = add_extra_fields(csvreader, centre)
 
     return latest_file_name, errors, documents
 
 
 def get_download_dir(centre: Dict[str, str]) -> str:
+    """Get the download directory where the files from the SFTP are stored.
+
+    Arguments:
+        centre {Dict[str, str]} -- the centre in question
+
+    Returns:
+        str -- the download directory
+    """
     download_dir = f"{DIR_DOWNLOADED_DATA}{centre['prefix']}/"
 
     return download_dir
 
 
 def get_files_in_download_dir(centre: Dict[str, str], regex_field: str) -> List[str]:
+    """Get all the files in the download directory for this centre and filter the file names using
+    the regex described in the centre's 'regex_field'.
+
+    Arguments:
+        centre {Dict[str, str]} -- the centre in question
+        regex_field {str} -- the field name where the regex is found to filter the files by
+
+    Returns:
+        List[str] -- all the file names in the download directory after filtering
+    """
     # get a list of files in the download directory
     # https://stackoverflow.com/a/3207973
     (_, _, files) = next(os.walk(PROJECT_ROOT.joinpath(get_download_dir(centre))))
@@ -193,11 +238,11 @@ def get_files_in_download_dir(centre: Dict[str, str], regex_field: str) -> List[
 
 
 def get_latest_csv(centre: Dict[str, str], regex_field: str) -> str:
-    """Get the latest CSV file name for the centre which matches the regex described in the centre
-    details file.
+    """Get the latest CSV file name for the centre which matches the regex described by the
+    'regex_field' for the centre.
 
     Arguments:
-        centre {Dict[str, str]} -- details of the centres
+        centre {Dict[str, str]} -- the centre in question
 
     Returns:
         str -- file name of the CSV file to parse
@@ -216,10 +261,23 @@ def get_latest_csv(centre: Dict[str, str], regex_field: str) -> str:
     # return the latest one
     latest_file_name = files_with_time[sorted(files_with_time, reverse=True)[0]]
     logger.info(f"Latest file: {latest_file_name}")
+
     return latest_file_name
 
 
 def merge_daily_files(centre: Dict[str, str]) -> str:
+    """Merge all the daily incremental files of the centre into one 'master' file. The master
+    file's name is created by appending '_master' to the latest CSV file name.
+
+    Arguments:
+        centre {Dict[str, str]} -- the centre in question
+
+    Raises:
+        CentreFileError: raised when no field names are found in the CSV file
+
+    Returns:
+        str -- the name of the master file created
+    """
     logger.info(f"Merging daily files of {centre['name']}")
 
     # get list of files
@@ -238,7 +296,7 @@ def merge_daily_files(centre: Dict[str, str]) -> str:
                 csvreader = DictReader(daily_file)
 
                 if csvreader.fieldnames is None:
-                    raise Exception("Field names required in CSV file")
+                    raise CentreFileError("Field names required in CSV file")
 
                 #  write header
                 if not field_names_written:
@@ -256,9 +314,17 @@ def merge_daily_files(centre: Dict[str, str]) -> str:
 
 
 def upload_file_to_sftp(config: ModuleType, centre: Dict[str, str], filename: str) -> None:
+    """Uploads the given file to the centre's SFTP write folder.
+
+    Arguments:
+        config {ModuleType} -- app config
+        centre {Dict[str, str]} -- the centre in question
+        filename {str} -- filename of file to be uploaded
+    """
     logger.info(f"Uploading {filename} to {centre['sftp_root_write']}")
 
-    # disable host key checking https://bitbucket.org/dundeemt/pysftp/src/master/docs/cookbook.rst#rst-header-id5
+    # disable host key checking:
+    #   https://bitbucket.org/dundeemt/pysftp/src/master/docs/cookbook.rst#rst-header-id5
     cnopts = pysftp.CnOpts()
     cnopts.hostkeys = None
 
@@ -277,13 +343,31 @@ def upload_file_to_sftp(config: ModuleType, centre: Dict[str, str], filename: st
 
 
 def clean_up(centre: Dict[str, str]) -> None:
-    # remove up after running the jobs
-    pass
+    """Remove the files downloaded from the SFTP for the given centre.
 
-
-def get_config(test_config: Dict[str, str] = None) -> Optional[ModuleType]:
+    Arguments:
+        centre {Dict[str, str]} -- the centre in question
+    """
+    logger.info("Remove files")
     try:
-        settings_module = os.environ["SETTINGS_MODULE"]
+        shutil.rmtree(get_download_dir(centre))
+    except Exception as e:
+        logger.exception("Failed clean up")
+
+
+def get_config(settings_module: str) -> Optional[ModuleType]:
+    """Get the config for the app by importing a module named by an environmental variable. This
+    allows easy switching between environments and inheriting default config values.
+
+    Arguments:
+        settings_module {str} -- the settings module to load
+
+    Returns:
+        Optional[ModuleType] -- the config module loaded and available to use via `config.<param>`
+    """
+    try:
+        if not settings_module:
+            settings_module = os.environ["SETTINGS_MODULE"]
 
         logger.info(f"Using settings from {settings_module}")
 

@@ -1,8 +1,7 @@
 import logging
 import logging.config
 import sys
-from types import ModuleType
-from typing import Dict, List
+from typing import List
 
 import pymongo
 from pymongo.errors import BulkWriteError
@@ -12,12 +11,12 @@ from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
-    FIELD_NAME_BARCODE,
-    FIELD_NAME_CENTRE_NAME,
-    FIELD_NAME_LAB_ID,
-    FIELD_NAME_RESULT,
-    FIELD_NAME_RNA_ID,
-    FIELD_NAME_SAMPLE,
+    FIELD_CENTRE_NAME,
+    FIELD_LAB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_ROOT_SAMPLE_ID,
 )
 from crawler.db import (
     copy_collection,
@@ -28,6 +27,7 @@ from crawler.db import (
     populate_collection,
 )
 from crawler.helpers import (
+    clean_up,
     download_csv_files,
     get_config,
     merge_daily_files,
@@ -39,9 +39,9 @@ logging.config.dictConfig(LOGGING_CONF)
 logger = logging.getLogger(__name__)
 
 
-def run(sftp: bool, test_config: Dict[str, str] = None) -> None:
+def run(sftp: bool, settings_module: str = "") -> None:
     try:
-        config = get_config(test_config)
+        config = get_config(settings_module)
         centres = config.CENTRES  # type: ignore
 
         if config is None:
@@ -53,10 +53,10 @@ def run(sftp: bool, test_config: Dict[str, str] = None) -> None:
             centres_collection = get_mongo_collection(db, COLLECTION_CENTRES)
 
             logger.debug(
-                f"Creating index '{FIELD_NAME_CENTRE_NAME}' on '{centres_collection.full_name}'"
+                f"Creating index '{FIELD_CENTRE_NAME}' on '{centres_collection.full_name}'"
             )
-            centres_collection.create_index(FIELD_NAME_CENTRE_NAME, unique=True)
-            populate_collection(centres_collection, centres, FIELD_NAME_CENTRE_NAME)
+            centres_collection.create_index(FIELD_CENTRE_NAME, unique=True)
+            populate_collection(centres_collection, centres, FIELD_CENTRE_NAME)
 
             imports_collection = get_mongo_collection(db, COLLECTION_IMPORTS)
             samples_collection = get_mongo_collection(db, COLLECTION_SAMPLES)
@@ -73,20 +73,20 @@ def run(sftp: bool, test_config: Dict[str, str] = None) -> None:
             # create indices
             samples_collection.drop_indexes()
             logger.debug(
-                f"Creating index '{FIELD_NAME_BARCODE}' on '{samples_collection.full_name}'"
+                f"Creating index '{FIELD_PLATE_BARCODE}' on '{samples_collection.full_name}'"
             )
-            samples_collection.create_index(FIELD_NAME_BARCODE)
+            samples_collection.create_index(FIELD_PLATE_BARCODE)
             logger.debug(f"Creating compund index on '{samples_collection.full_name}'")
             # create compound index on 'Root Sample ID', 'RNA ID', 'Result', 'Lab ID' - some data
             #   had the same plate tested at another time so ignore the data if it is exactly the
             #   same
             samples_collection.create_index(
                 [
-                    (FIELD_NAME_SAMPLE, pymongo.ASCENDING),
-                    (FIELD_NAME_RNA_ID, pymongo.ASCENDING),
-                    (FIELD_NAME_RESULT, pymongo.ASCENDING),
-                    (FIELD_NAME_RNA_ID, pymongo.ASCENDING),
-                    (FIELD_NAME_LAB_ID, pymongo.ASCENDING),
+                    (FIELD_ROOT_SAMPLE_ID, pymongo.ASCENDING),
+                    (FIELD_RNA_ID, pymongo.ASCENDING),
+                    (FIELD_RESULT, pymongo.ASCENDING),
+                    (FIELD_RNA_ID, pymongo.ASCENDING),
+                    (FIELD_LAB_ID, pymongo.ASCENDING),
                 ],
                 unique=True,
             )
@@ -125,6 +125,8 @@ def run(sftp: bool, test_config: Dict[str, str] = None) -> None:
                 except Exception as e:
                     logger.exception(e)
                 finally:
+                    clean_up(centre)
+
                     logger.info(f"{docs_inserted} documents inserted")
                     # write status record
                     _ = create_import_record(

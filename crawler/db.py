@@ -27,7 +27,7 @@ def create_mongo_client(config: ModuleType) -> MongoClient:
         return MongoClient(mongo_uri)
     except AttributeError as e:
         #  there is no MONGO_URI so try each config separately
-        logger.warn(e)
+        logger.warning(e)
 
         mongo_host = config.MONGO_HOST  # type: ignore
         mongo_port = config.MONGO_PORT  # type: ignore
