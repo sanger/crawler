@@ -31,6 +31,7 @@ MONGO_PORT = 27017
 MONGO_USER = ""
 
 # SFTP details
+SFTP_UPLOAD = False  # upload files to SFTP server
 SFTP_HOST = "localhost"
 SFTP_PORT = 22
 SFTP_READ_PASSWORD = "pass"

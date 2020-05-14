@@ -103,7 +103,11 @@ def run(sftp: bool, settings_module: str = "") -> None:
 
                     if "merge_required" in centre.keys() and centre["merge_required"]:
                         master_file_name = merge_daily_files(centre)
-                        upload_file_to_sftp(config, centre, master_file_name)
+
+                        # only upload to SFTP if config explicitly says so - this is to prevent
+                        #   accidental uploads from non-production envs
+                        if config.SFTP_UPLOAD:
+                            upload_file_to_sftp(config, centre, master_file_name)
 
                     latest_file_name, errors, docs_to_insert = parse_csv(centre)
 

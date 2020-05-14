@@ -23,6 +23,7 @@ CENTRES = [
 ]
 
 # SFTP details
+SFTP_UPLOAD = True
 SFTP_HOST = "127.0.0.1"
 SFTP_PASSWORD = "pass"
 SFTP_PORT = "22"
