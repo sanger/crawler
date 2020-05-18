@@ -31,7 +31,7 @@ def create_mongo_client(config: ModuleType) -> MongoClient:
 
         mongo_host = config.MONGO_HOST  # type: ignore
         mongo_port = config.MONGO_PORT  # type: ignore
-        mongo_username = config.MONGO_USER  # type: ignore
+        mongo_username = config.MONGO_USERNAME  # type: ignore
         mongo_password = config.MONGO_PASSWORD  # type: ignore
         mongo_db = config.MONGO_DB  # type: ignore
 

@@ -1,14 +1,17 @@
 from crawler.constants import FIELD_RNA_ID
 
+# general details
+DIR_DOWNLOADED_DATA = "data/"
+
 # centre details
 CENTRES = [
     {
-        "name": "Alderley",
-        "sftp_root_read": "project-heron_alderly-park",
-        "sftp_file_regex": r"^AP_sanger_report_(\d{6}_\d{4})\.csv$",
         "barcode_field": FIELD_RNA_ID,
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
+        "name": "Alderley",
         "prefix": "ALDP",
+        "sftp_file_regex": r"^AP_sanger_report_(\d{6}_\d{4})\.csv$",
+        "sftp_root_read": "project-heron_alderly-park",
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -28,16 +31,16 @@ MONGO_DB = "crawlerDevelopmentDB"
 MONGO_HOST = "127.0.0.1"
 MONGO_PASSWORD = ""
 MONGO_PORT = 27017
-MONGO_USER = ""
+MONGO_USERNAME = ""
 
 # SFTP details
 SFTP_UPLOAD = False  # upload files to SFTP server
 SFTP_HOST = "localhost"
 SFTP_PORT = 22
 SFTP_READ_PASSWORD = "pass"
-SFTP_READ_USER = "foo"
+SFTP_READ_USERNAME = "foo"
 SFTP_WRITE_PASSWORD = "pass"
-SFTP_WRITE_USER = "foo"
+SFTP_WRITE_USERNAME = "foo"
 
 # slack details
 SLACK_API_TOKEN = ""

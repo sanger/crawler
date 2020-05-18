@@ -1,24 +1,33 @@
+from crawler.constants import FIELD_RNA_ID
+
 from .defaults import *  # noqa: F403,F401
 
 # settings here overwrite those in defaults.py
 
+# general details
+DIR_DOWNLOADED_DATA = "tests/files/"
+
 # centre details
 CENTRES = [
     {
-        "name": "Alderley",
-        "sftp_root_read": "tests/files/",
-        "sftp_file_name": "blah.csv",
-        "barcode_field": "RNA ID",
+        "barcode_field": FIELD_RNA_ID,
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
+        "name": "Alderley",
         "prefix": "ALDP",
+        "sftp_file_name": "blah.csv",
+        "sftp_file_regex": r"^AP_sanger_report_(\d{6}_\d{4})\.csv$",
+        "sftp_root_read": "tests/files/read",
     },
     {
+        "barcode_field": FIELD_RNA_ID,
+        "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
+        "merge_required": True,
         "name": "UK Biocentre",
-        "sftp_root_read": "tests/files/",
-        "sftp_file_name": "boo.csv",
-        "barcode_field": "RNA PLATE ID",
-        "barcode_regex": r"",
         "prefix": "MILK",
+        "sftp_file_regex": r"^MK_sanger_report_(\d{6}_\d{4})\.csv$",
+        "sftp_master_file_regex": r"^MK_sanger_report_(\d{6}_\d{4})_master\.csv$",
+        "sftp_root_read": "tests/files/read",
+        "sftp_root_write": "tests/files/write",
     },
 ]
 

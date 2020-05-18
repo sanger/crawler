@@ -102,7 +102,7 @@ def run(sftp: bool, settings_module: str = "") -> None:
                         download_csv_files(config, centre)
 
                     if "merge_required" in centre.keys() and centre["merge_required"]:
-                        master_file_name = merge_daily_files(centre)
+                        master_file_name = merge_daily_files(config, centre)
 
                         # only upload to SFTP if config explicitly says so - this is to prevent
                         #   accidental uploads from non-production envs
@@ -110,7 +110,7 @@ def run(sftp: bool, settings_module: str = "") -> None:
                         if upload:
                             upload_file_to_sftp(config, centre, master_file_name)
 
-                    latest_file_name, errors, docs_to_insert = parse_csv(centre)
+                    latest_file_name, errors, docs_to_insert = parse_csv(config, centre)
 
                     logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
                     result = samples_collection.insert_many(docs_to_insert, ordered=False)
@@ -130,7 +130,7 @@ def run(sftp: bool, settings_module: str = "") -> None:
                 except Exception as e:
                     logger.exception(e)
                 finally:
-                    clean_up(centre)
+                    clean_up(config, centre)
 
                     logger.info(f"{docs_inserted} documents inserted")
                     # write status record

@@ -1,7 +1,9 @@
+# mongo collections
 COLLECTION_CENTRES = "centres"
 COLLECTION_IMPORTS = "imports"
 COLLECTION_SAMPLES = "samples"
-DIR_DOWNLOADED_DATA = "data/"
+
+# field names
 FIELD_PLATE_BARCODE = "plate_barcode"
 FIELD_CENTRE_NAME = "name"
 FIELD_COORDINATE = "coordinate"

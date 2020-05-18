@@ -3,15 +3,10 @@ from io import StringIO
 
 import pytest
 
-from crawler.constants import DIR_DOWNLOADED_DATA
 from crawler.exceptions import CentreFileError
-from crawler.helpers import (
-    add_extra_fields,
-    check_for_required_fields,
-    extract_fields,
-    get_config,
-    get_download_dir,
-)
+from crawler.helpers import (add_extra_fields, check_for_required_fields,
+                             extract_fields, get_config, get_download_dir,
+                             merge_daily_files)
 
 
 def test_get_config():
@@ -81,7 +76,9 @@ def test_add_extra_fields(config):
 
 def test_get_download_dir(config):
     for centre in config.CENTRES:
-        assert get_download_dir(centre) == f"{DIR_DOWNLOADED_DATA}{centre['prefix']}/"
+        assert (
+            get_download_dir(config, centre) == f"{config.DIR_DOWNLOADED_DATA}{centre['prefix']}/"
+        )
 
 
 def test_check_for_required_fields(config):
@@ -94,3 +91,16 @@ def test_check_for_required_fields(config):
             csv_to_test_reader = DictReader(fake_csv)
 
             assert check_for_required_fields(csv_to_test_reader, {"barcode_field": "RNA ID"}) == []
+
+
+def test_merge_daily_files(config):
+    # run this first to create the file to test
+    master_file_name = "MK_sanger_report_200518_2206_master.csv"
+    assert merge_daily_files(config, config.CENTRES[1]) == master_file_name
+
+    master_file = f"{get_download_dir(config, config.CENTRES[1])}{master_file_name}"
+    test_file = f"{get_download_dir(config, config.CENTRES[1])}test_merge_daily_files.csv"
+
+    with open(master_file, 'r') as mf:
+        with open(test_file, 'r') as tf:
+            assert mf.read() == tf.read()

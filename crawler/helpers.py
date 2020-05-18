@@ -12,7 +12,6 @@ from typing import Any, Dict, List, Optional, Tuple
 import pysftp  # type: ignore
 
 from crawler.constants import (
-    DIR_DOWNLOADED_DATA,
     FIELD_COORDINATE,
     FIELD_DATE_TESTED,
     FIELD_LAB_ID,
@@ -102,15 +101,6 @@ def add_extra_fields(
 def check_for_required_fields(csvreader: DictReader, centre: Dict[str, str]) -> None:
     """Checks that the CSV file has the required headers.
 
-    Arguments:
-        csvreader {DictReader} -- CSV file reader to iterate over
-        centre {Dict[str, str]} -- centre details
-
-    Returns:
-        List[str] -- list of errors experienced
-    """
-    """Checks that the CSV file has the required headers.
-
     Raises:
         CentreFileError: Raised when the required fields are not found in the file
     """
@@ -143,34 +133,25 @@ def download_csv_files(config, centre: Dict[str, str]) -> None:
 
     logger.debug("Create download directory for centre")
     try:
-        os.mkdir(get_download_dir(centre))
+        os.mkdir(get_download_dir(config, centre))
     except FileExistsError:
         pass
 
-    # disable host key checking:
-    #   https://bitbucket.org/dundeemt/pysftp/src/master/docs/cookbook.rst#rst-header-id5
-    cnopts = pysftp.CnOpts()
-    cnopts.hostkeys = None
-
-    with pysftp.Connection(
-        host=config.SFTP_HOST,  # type: ignore
-        port=config.SFTP_PORT,
-        username=config.SFTP_READ_USER,
-        password=config.SFTP_READ_PASSWORD,
-        cnopts=cnopts,
-    ) as sftp:
+    with get_sftp_connection(config) as sftp:
         logger.info("Connected to SFTP")
         logger.debug("Listing centre's root directory")
         logger.debug(f"ls: {sftp.listdir(centre['sftp_root_read'])}")
 
         # downloads all files
         logger.info("Downloading CSV files...")
-        sftp.get_d(centre["sftp_root_read"], get_download_dir(centre))
+        sftp.get_d(centre["sftp_root_read"], get_download_dir(config, centre))
 
     return None
 
 
-def parse_csv(centre: Dict[str, str]) -> Tuple[str, List[str], List[Dict[str, str]]]:
+def parse_csv(
+    config: ModuleType, centre: Dict[str, str]
+) -> Tuple[str, List[str], List[Dict[str, str]]]:
     """Parses the CSV file of the centre.
 
     Arguments:
@@ -185,9 +166,9 @@ def parse_csv(centre: Dict[str, str]) -> Tuple[str, List[str], List[Dict[str, st
     else:
         file_regex = "sftp_file_regex"
 
-    latest_file_name = get_latest_csv(centre, file_regex)
+    latest_file_name = get_latest_csv(config, centre, file_regex)
 
-    csvfile_path = PROJECT_ROOT.joinpath(f"{get_download_dir(centre)}{latest_file_name}")
+    csvfile_path = PROJECT_ROOT.joinpath(f"{get_download_dir(config, centre)}{latest_file_name}")
 
     logger.info(f"Attempting to parse CSV file: {csvfile_path}")
 
@@ -200,7 +181,7 @@ def parse_csv(centre: Dict[str, str]) -> Tuple[str, List[str], List[Dict[str, st
     return latest_file_name, errors, documents
 
 
-def get_download_dir(centre: Dict[str, str]) -> str:
+def get_download_dir(config: ModuleType, centre: Dict[str, str]) -> str:
     """Get the download directory where the files from the SFTP are stored.
 
     Arguments:
@@ -209,12 +190,15 @@ def get_download_dir(centre: Dict[str, str]) -> str:
     Returns:
         str -- the download directory
     """
-    download_dir = f"{DIR_DOWNLOADED_DATA}{centre['prefix']}/"
+    dir_downloaded_data = config.DIR_DOWNLOADED_DATA  # type: ignore
+    download_dir = f"{dir_downloaded_data}{centre['prefix']}/"
 
     return download_dir
 
 
-def get_files_in_download_dir(centre: Dict[str, str], regex_field: str) -> List[str]:
+def get_files_in_download_dir(
+    config: ModuleType, centre: Dict[str, str], regex_field: str
+) -> List[str]:
     """Get all the files in the download directory for this centre and filter the file names using
     the regex described in the centre's 'regex_field'.
 
@@ -227,7 +211,9 @@ def get_files_in_download_dir(centre: Dict[str, str], regex_field: str) -> List[
     """
     # get a list of files in the download directory
     # https://stackoverflow.com/a/3207973
-    (_, _, files) = next(os.walk(PROJECT_ROOT.joinpath(get_download_dir(centre))))
+    path_to_walk = PROJECT_ROOT.joinpath(get_download_dir(config, centre))
+    logger.debug(f"Attempting to walk {path_to_walk}")
+    (_, _, files) = next(os.walk(path_to_walk))
 
     pattern = re.compile(centre[regex_field])
 
@@ -237,7 +223,7 @@ def get_files_in_download_dir(centre: Dict[str, str], regex_field: str) -> List[
     return centre_files
 
 
-def get_latest_csv(centre: Dict[str, str], regex_field: str) -> str:
+def get_latest_csv(config: ModuleType, centre: Dict[str, str], regex_field: str) -> str:
     """Get the latest CSV file name for the centre which matches the regex described by the
     'regex_field' for the centre.
 
@@ -251,7 +237,7 @@ def get_latest_csv(centre: Dict[str, str], regex_field: str) -> str:
         f"Getting latest CSV file for {centre['name']} using " f"pattern {centre[regex_field]}"
     )
 
-    centre_files = get_files_in_download_dir(centre, regex_field)
+    centre_files = get_files_in_download_dir(config, centre, regex_field)
 
     files_with_time = {}
     for filename in centre_files:
@@ -265,7 +251,7 @@ def get_latest_csv(centre: Dict[str, str], regex_field: str) -> str:
     return latest_file_name
 
 
-def merge_daily_files(centre: Dict[str, str]) -> str:
+def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
     """Merge all the daily incremental files of the centre into one 'master' file. The master
     file's name is created by appending '_master' to the latest CSV file name.
 
@@ -281,18 +267,20 @@ def merge_daily_files(centre: Dict[str, str]) -> str:
     logger.info(f"Merging daily files of {centre['name']}")
 
     # get list of files
-    centre_files = get_files_in_download_dir(centre, "sftp_file_regex")
+    centre_files = get_files_in_download_dir(config, centre, "sftp_file_regex")
     logger.debug(f"{len(centre_files)} to merge into master file")
 
     # get the latest file name to use for the master name
-    latest_file_name = get_latest_csv(centre, "sftp_file_regex")
+    latest_file_name = get_latest_csv(config, centre, "sftp_file_regex")
 
     master_file_name = f"{latest_file_name[:-4]}_master.csv"
-    with open(f"{get_download_dir(centre)}{master_file_name}", "w") as master_csv:
+    with open(f"{get_download_dir(config, centre)}{master_file_name}", "w") as master_csv:
         field_names_written = False
         for filename in centre_files:
             logger.debug(f"Merging {filename} into {master_file_name}")
-            with open(f"{get_download_dir(centre)}{filename}", "r", newline="") as daily_file:
+            with open(
+                f"{get_download_dir(config, centre)}{filename}", "r", newline=""
+            ) as daily_file:
                 csvreader = DictReader(daily_file)
 
                 if csvreader.fieldnames is None:
@@ -321,8 +309,33 @@ def upload_file_to_sftp(config: ModuleType, centre: Dict[str, str], filename: st
         centre {Dict[str, str]} -- the centre in question
         filename {str} -- filename of file to be uploaded
     """
-    logger.info(f"Uploading {filename} to {centre['sftp_root_write']}")
+    logger.debug(f"Attempting upload of {filename} to {centre['sftp_root_write']}")
 
+    sftp_write_username = config.SFTP_WRITE_USERNAME  # type: ignore
+    sftp_write_password = config.SFTP_WRITE_PASSWORD  # type: ignore
+    with get_sftp_connection(config, sftp_write_username, sftp_write_password) as sftp:
+        logger.info("Connected to SFTP")
+        with sftp.cd(centre["sftp_root_write"]):
+            logger.info(f"Uploading {filename} to {centre['sftp_root_write']}")
+            sftp.put(f"{get_download_dir(config, centre)}{filename}", confirm=True)
+
+
+def get_sftp_connection(
+    config: ModuleType, username: str = None, password: str = None
+) -> pysftp.Connection:
+    """Get a connection to the SFTP server as a context manager. The READ credentials are used by
+    default but a username and password provided will override these.
+
+    Arguments:
+        config {ModuleType} -- application config
+
+    Keyword Arguments:
+        username {str} -- username to use instead of the READ username (default: {None})
+        password {str} -- password for the provided username (default: {None})
+
+    Returns:
+        pysftp.Connection -- a connection to the SFTP server as a context manager
+    """
     # disable host key checking:
     #   https://bitbucket.org/dundeemt/pysftp/src/master/docs/cookbook.rst#rst-header-id5
     cnopts = pysftp.CnOpts()
@@ -330,19 +343,19 @@ def upload_file_to_sftp(config: ModuleType, centre: Dict[str, str], filename: st
 
     sftp_host = config.SFTP_HOST  # type: ignore
     sftp_port = config.SFTP_PORT  # type: ignore
-    sftp_user = config.SFTP_WRITE_USER  # type: ignore
-    sftp_password = config.SFTP_WRITE_PASSWORD  # type: ignore
+    sftp_username = config.SFTP_READ_USERNAME if username is None else username  # type: ignore
+    sftp_password = config.SFTP_READ_PASSWORD if username is None else password  # type: ignore
 
-    with pysftp.Connection(
-        host=sftp_host, port=sftp_port, username=sftp_user, password=sftp_password, cnopts=cnopts,
-    ) as sftp:
-        logger.info("Connected to SFTP")
-        with sftp.cd(centre["sftp_root_write"]):
-            # upload master file
-            sftp.put(f"{get_download_dir(centre)}{filename}", confirm=True)
+    return pysftp.Connection(
+        host=sftp_host,
+        port=sftp_port,
+        username=sftp_username,
+        password=sftp_password,
+        cnopts=cnopts,
+    )
 
 
-def clean_up(centre: Dict[str, str]) -> None:
+def clean_up(config, centre: Dict[str, str]) -> None:
     """Remove the files downloaded from the SFTP for the given centre.
 
     Arguments:
@@ -350,7 +363,7 @@ def clean_up(centre: Dict[str, str]) -> None:
     """
     logger.info("Remove files")
     try:
-        shutil.rmtree(get_download_dir(centre))
+        shutil.rmtree(get_download_dir(config, centre))
     except Exception as e:
         logger.exception("Failed clean up")
 
