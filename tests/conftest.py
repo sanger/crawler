@@ -3,17 +3,17 @@ import logging.config
 
 import pytest
 
-from crawler.config.logging import LOGGING_CONF
 from crawler.db import create_mongo_client, get_mongo_db
 from crawler.helpers import get_config
 
-logging.config.dictConfig(LOGGING_CONF)
 logger = logging.getLogger(__name__)
+CONFIG, _ = get_config("crawler.config.test")
+logging.config.dictConfig(CONFIG.LOGGING)  # type: ignore
 
 
 @pytest.fixture
 def config():
-    return get_config("crawler.config.test")
+    return CONFIG
 
 
 @pytest.fixture
