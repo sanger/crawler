@@ -1,12 +1,12 @@
 import logging
 import logging.config
 import sys
+import time
 from typing import List
 
 import pymongo
 from pymongo.errors import BulkWriteError
 
-from crawler.config.logging import LOGGING_CONF  # type: ignore
 from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_IMPORTS,
@@ -35,17 +35,21 @@ from crawler.helpers import (
     upload_file_to_sftp,
 )
 
-logging.config.dictConfig(LOGGING_CONF)
 logger = logging.getLogger(__name__)
 
 
 def run(sftp: bool, settings_module: str = "") -> None:
     try:
-        config = get_config(settings_module)
-        centres = config.CENTRES  # type: ignore
+        start = time.time()
+        config, settings_module = get_config(settings_module)
 
-        if config is None:
-            sys.exit("Config not found")
+        logging.config.dictConfig(config.LOGGING)  # type: ignore
+
+        logger.info("-" * 80)
+        logger.info("START")
+        logger.info(f"Using settings from {settings_module}")
+
+        centres = config.CENTRES  # type: ignore
 
         with create_mongo_client(config) as client:
             db = get_mongo_db(config, client)
@@ -66,7 +70,7 @@ def run(sftp: bool, settings_module: str = "") -> None:
                 logger.info(f"'{COLLECTION_SAMPLES}' collection is not empty so creating a copy")
                 copy_collection(db, samples_collection)
 
-                logger.info(f"Removing all documents from '{COLLECTION_SAMPLES}'")
+                logger.debug(f"Removing all documents from '{COLLECTION_SAMPLES}'")
                 result = samples_collection.delete_many({})
                 logger.debug(f"{result.deleted_count} records deleted")
 
@@ -92,7 +96,8 @@ def run(sftp: bool, settings_module: str = "") -> None:
             )
 
             for centre in centres:
-                logger.debug(f"Processing {centre['name']}")
+                logger.info("*" * 80)
+                logger.info(f"Processing {centre['name']}")
 
                 docs_inserted: int = 0
                 latest_file_name: str = ""
@@ -106,8 +111,7 @@ def run(sftp: bool, settings_module: str = "") -> None:
 
                         # only upload to SFTP if config explicitly says so - this is to prevent
                         #   accidental uploads from non-production envs
-                        upload = config.SFTP_UPLOAD  # type: ignore
-                        if upload:
+                        if config.SFTP_UPLOAD:  # type: ignore
                             upload_file_to_sftp(config, centre, master_file_name)
 
                     latest_file_name, errors, docs_to_insert = parse_csv(config, centre)
@@ -119,7 +123,9 @@ def run(sftp: bool, settings_module: str = "") -> None:
                 except BulkWriteError as e:
                     # This is happening when there are duplicates in the data and the index prevents
                     #   the records from being written
-                    logger.warning(e)
+                    logger.warning(
+                        f"{e} - usually happens when duplicates are trying to be inserted"
+                    )
                     docs_inserted = e.details["nInserted"]
                     write_errors = {write_error["code"] for write_error in e.details["writeErrors"]}
                     for error in write_errors:
@@ -138,6 +144,7 @@ def run(sftp: bool, settings_module: str = "") -> None:
                         imports_collection, centre, docs_inserted, latest_file_name, errors,
                     )
 
-        logger.info("Import complete")
+        logger.info(f"Import complete in {round(time.time() - start, 2)}s")
+        logger.info("=" * 80)
     except Exception as e:
         logger.exception(e)

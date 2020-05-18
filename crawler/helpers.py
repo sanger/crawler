@@ -3,6 +3,7 @@ import os
 import pathlib
 import re
 import shutil
+import sys
 from csv import DictReader, DictWriter
 from datetime import datetime
 from importlib import import_module
@@ -138,7 +139,7 @@ def download_csv_files(config, centre: Dict[str, str]) -> None:
         pass
 
     with get_sftp_connection(config) as sftp:
-        logger.info("Connected to SFTP")
+        logger.debug("Connected to SFTP")
         logger.debug("Listing centre's root directory")
         logger.debug(f"ls: {sftp.listdir(centre['sftp_root_read'])}")
 
@@ -190,10 +191,7 @@ def get_download_dir(config: ModuleType, centre: Dict[str, str]) -> str:
     Returns:
         str -- the download directory
     """
-    dir_downloaded_data = config.DIR_DOWNLOADED_DATA  # type: ignore
-    download_dir = f"{dir_downloaded_data}{centre['prefix']}/"
-
-    return download_dir
+    return f"{config.DIR_DOWNLOADED_DATA}{centre['prefix']}/"  # type: ignore
 
 
 def get_files_in_download_dir(
@@ -246,7 +244,7 @@ def get_latest_csv(config: ModuleType, centre: Dict[str, str], regex_field: str)
 
     # return the latest one
     latest_file_name = files_with_time[sorted(files_with_time, reverse=True)[0]]
-    logger.info(f"Latest file: {latest_file_name}")
+    logger.debug(f"Latest file: {latest_file_name}")
 
     return latest_file_name
 
@@ -268,7 +266,7 @@ def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
 
     # get list of files
     centre_files = get_files_in_download_dir(config, centre, "sftp_file_regex")
-    logger.debug(f"{len(centre_files)} to merge into master file")
+    logger.info(f"{len(centre_files)} files to merge into master file")
 
     # get the latest file name to use for the master name
     latest_file_name = get_latest_csv(config, centre, "sftp_file_regex")
@@ -361,14 +359,14 @@ def clean_up(config, centre: Dict[str, str]) -> None:
     Arguments:
         centre {Dict[str, str]} -- the centre in question
     """
-    logger.info("Remove files")
+    logger.debug("Remove files")
     try:
         shutil.rmtree(get_download_dir(config, centre))
     except Exception as e:
         logger.exception("Failed clean up")
 
 
-def get_config(settings_module: str) -> Optional[ModuleType]:
+def get_config(settings_module: str) -> Tuple[ModuleType, str]:
     """Get the config for the app by importing a module named by an environmental variable. This
     allows easy switching between environments and inheriting default config values.
 
@@ -382,10 +380,6 @@ def get_config(settings_module: str) -> Optional[ModuleType]:
         if not settings_module:
             settings_module = os.environ["SETTINGS_MODULE"]
 
-        logger.info(f"Using settings from {settings_module}")
-
-        return import_module(settings_module)  # type: ignore
+        return import_module(settings_module), settings_module  # type: ignore
     except KeyError as e:
-        logger.error(f"{e} required in environmental variables for config")
-
-        return None
+        sys.exit(f"{e} required in environmental variables for config")
