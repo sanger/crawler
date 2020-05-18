@@ -114,7 +114,7 @@ def check_for_required_fields(csvreader: DictReader, centre: Dict[str, str]) -> 
     }
     if csvreader.fieldnames:
         fieldnames = set(csvreader.fieldnames)
-        if not required_fields < fieldnames:
+        if not required_fields <= fieldnames:
             raise CentreFileError(
                 f"{', '.join(list(required_fields - fieldnames))} missing in CSV file"
             )
