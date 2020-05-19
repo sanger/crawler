@@ -27,7 +27,7 @@ CENTRES = [
     {
         "barcode_field": FIELD_RNA_ID,
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
-        "name": "Queen Elizabeth University Hospital",
+        "name": "UK Biocentre - Glasgow",
         "prefix": "QEUH",
         "sftp_file_regex": r"^QH_sanger_report_(\d{6}_\d{4})\.csv$",
         "sftp_root_read": "project-heron_glasgow",
