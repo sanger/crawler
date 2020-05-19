@@ -19,7 +19,7 @@ def config():
 @pytest.fixture
 def mongo_client(config):
     with create_mongo_client(config) as client:
-        return config, client
+        yield config, client
 
 
 @pytest.fixture
