@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
-from typing import Any, Dict, List
+from types import ModuleType
+from typing import Dict, List
 
 from pymongo import MongoClient
 from pymongo.collection import Collection
@@ -11,55 +12,56 @@ from pymongo.results import InsertOneResult
 logger = logging.getLogger(__name__)
 
 
-def create_mongo_client(config: Dict[str, str]) -> MongoClient:
+def create_mongo_client(config: ModuleType) -> MongoClient:
     """Create a MongoClient with the given config parameters.
 
     Arguments:
-        config {Dict[str, str]} -- application config specifying host and port
+        config {ModuleType} -- application config specifying host and port
 
     Returns:
         MongoClient -- a client used to interact with the database server
     """
-
-    if "MONGO_URI" in config:
-        mongo_uri = config["MONGO_URI"]
+    try:
         logger.info(f"Connecting to mongo")
+        mongo_uri = config.MONGO_URI  # type: ignore
+        return MongoClient(mongo_uri)
+    except AttributeError as e:
+        #  there is no MONGO_URI so try each config separately
+        logger.warning(e)
 
-        return MongoClient(config["MONGO_URI"])
-    else:
-        mongo_host = config["MONGO_HOST"]
-        mongo_password = config["MONGO_PASSWORD"]
-        mongo_port = int(config["MONGO_PORT"])
-        mongo_user = config["MONGO_USER"]
-        mongo_db = config["MONGO_DB"]
+        mongo_host = config.MONGO_HOST  # type: ignore
+        mongo_port = config.MONGO_PORT  # type: ignore
+        mongo_username = config.MONGO_USERNAME  # type: ignore
+        mongo_password = config.MONGO_PASSWORD  # type: ignore
+        mongo_db = config.MONGO_DB  # type: ignore
 
         logger.info(f"Connecting to {mongo_host} on port {mongo_port}")
 
         return MongoClient(
             host=mongo_host,
             port=mongo_port,
-            username=mongo_user,
+            username=mongo_username,
             password=mongo_password,
             authSource=mongo_db,
         )
 
 
-def get_mongo_db(config: Dict[str, str], client: MongoClient) -> Database:
+def get_mongo_db(config: ModuleType, client: MongoClient) -> Database:
     """Get a handle on a mongodb database - remember that it is lazy and is only created when
     documents are added to a collection.
 
     Arguments:
-        config {Dict[str, str]} -- application config specifying the database
+        config {ModuleType} -- application config specifying the database
         client {MongoClient} -- the client to use for the connection
 
     Returns:
         Database -- a reference to the database in mongo
     """
-    db = config["MONGO_DB"]
+    db = config.MONGO_DB  # type: ignore
 
     logger.debug(f"Get database '{db}'")
 
-    return client[config["MONGO_DB"]]
+    return client[db]
 
 
 def get_mongo_collection(database: Database, collection_name: str) -> Collection:
@@ -85,15 +87,18 @@ def copy_collection(database: Database, collection: Collection) -> None:
         database {Database} -- the database of the collection to copy
         collection {Collection} -- the collection to copy
     """
-    cloned_collection = f"{collection.name}_{datetime.now().strftime('%d%m%Y_%H%M')}"
+    cloned_collection = f"{collection.name}_{datetime.now().strftime('%y%m%d_%H%M')}"
 
     logger.debug(f"Copying '{collection.name}' to '{cloned_collection}'")
 
+    # get a list of all docs
     current_docs = list(collection.find())
 
     result = database[cloned_collection].insert_many(current_docs)
 
     logger.debug(f"{len(result.inserted_ids)} documents copied to '{cloned_collection}'")
+
+    return None
 
 
 def create_import_record(
@@ -129,17 +134,19 @@ def create_import_record(
 
 
 def populate_collection(
-    collection: Collection, documents: List[Dict[str, Any]], filter: str
+    collection: Collection, documents: List[Dict[str, str]], filter_field: str
 ) -> None:
-    """Populates a collection using the given documents. It uses the filter to replace any documents
-    that match the filter and adds any new documents.
+    """Populates a collection using the given documents. It uses the filter_field to replace any
+    documents that match the filter and adds any new documents.
 
     Arguments:
         collection {Collection} -- collection to populate
-        documents {List[Dict[str, Any]]} -- documents to populate the collection with
-        filter {str} -- filter to search for matching documents
+        documents {List[Dict[str, str]]} -- documents to populate the collection with
+        filter_field {str} -- filter to search for matching documents
     """
-    logger.debug(f"Populating/updating '{collection.full_name}' using '{filter}' as the filter")
+    logger.debug(
+        f"Populating/updating '{collection.full_name}' using '{filter_field}' as the filter"
+    )
 
     for document in documents:
         try:
@@ -147,7 +154,9 @@ def populate_collection(
             _ = collection.insert_one(document)
         except DuplicateKeyError:
             try:
-                _ = collection.find_one_and_replace({filter: document[filter]}, temp_doc)
+                _ = collection.find_one_and_replace(
+                    {filter_field: document[filter_field]}, temp_doc
+                )
             except KeyError:
-                logger.exception(f"Cannot update {collection.full_name}")
+                logger.exception(f"Cannot update '{collection.full_name}'")
             continue

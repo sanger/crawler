@@ -23,6 +23,7 @@ def test_get_mongo_db(mongo_client):
 
 
 def test_get_mongo_collection(mongo_database):
+    _, mongo_database = mongo_database
     collection_name = "test_collection"
     test_collection = get_mongo_collection(mongo_database, collection_name)
     assert type(test_collection) == Collection
@@ -30,24 +31,26 @@ def test_get_mongo_collection(mongo_database):
 
 
 def test_copy_collection(mongo_database):
+    _, mongo_database = mongo_database
     collection_name = "test_collection"
     collection = get_mongo_collection(mongo_database, collection_name)
     _ = collection.insert_one({"x": 1})
 
     copy_collection(mongo_database, collection)
 
-    assert f"{collection_name}_{datetime.now().strftime('%d%m%Y_%H%M')}" in [
+    assert f"{collection_name}_{datetime.now().strftime('%y%m%d_%H%M')}" in [
         collection["name"] for collection in mongo_database.list_collections()
     ]
 
 
-def test_create_import_record(freezer, centre_details, mongo_database):
+def test_create_import_record(freezer, mongo_database):
+    config, mongo_database = mongo_database
     import_collection = mongo_database["imports"]
 
     docs = [{"x": 1}, {"y": 2}, {"z": 3}]
     errors = ["error1", "error2"]
 
-    for centre in centre_details:
+    for centre in config.CENTRES:
         now = datetime.now().isoformat(timespec="seconds")
         result = create_import_record(import_collection, centre, len(docs), "test", errors)
         import_doc = import_collection.find_one({"_id": result.inserted_id})

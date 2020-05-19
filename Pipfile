@@ -15,11 +15,11 @@ pytest-freezegun = "*"
 black = "*"
 
 [packages]
-pymongo = "*"
-colorlog = "*"
-schedule = "*"
-pysftp = "*"
-slackclient = "*"
+pymongo = "~=3.10"
+colorlog = "~=4.1"
+schedule = "~=0.6"
+pysftp = "~=0.2"
+slackclient = "~=2.5"
 
 [requires]
 python_version = "3.8"
