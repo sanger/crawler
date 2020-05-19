@@ -13,8 +13,7 @@ logging.config.dictConfig(CONFIG.LOGGING)  # type: ignore
 
 @pytest.fixture
 def config():
-    config, _ = get_config("crawler.config.test")
-    return config
+    return CONFIG
 
 
 @pytest.fixture

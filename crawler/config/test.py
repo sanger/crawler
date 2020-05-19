@@ -39,7 +39,7 @@ SFTP_PORT = "22"
 SFTP_USER = "foo"
 
 # MongoDB details
-MONGO_HOST = "172.27.85.88"
+MONGO_HOST = "127.0.0.1"
 MONGO_DB = "crawlerTestDB"
 
 # logging config
