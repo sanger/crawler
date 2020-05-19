@@ -14,9 +14,8 @@ CENTRES = [
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
         "name": "Alderley",
         "prefix": "ALDP",
-        "sftp_file_name": "blah.csv",
         "sftp_file_regex": r"^AP_sanger_report_(\d{6}_\d{4})\.csv$",
-        "sftp_root_read": "tests/files/read",
+        "sftp_root_read": "tests/files",
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -26,7 +25,7 @@ CENTRES = [
         "prefix": "MILK",
         "sftp_file_regex": r"^MK_sanger_report_(\d{6}_\d{4})\.csv$",
         "sftp_master_file_regex": r"^MK_sanger_report_(\d{6}_\d{4})_master\.csv$",
-        "sftp_root_read": "tests/files/read",
+        "sftp_root_read": "tests/files",
         "sftp_root_write": "tests/files/write",
     },
 ]

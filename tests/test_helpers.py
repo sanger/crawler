@@ -1,3 +1,4 @@
+import os
 from csv import DictReader
 from io import StringIO
 
@@ -137,3 +138,5 @@ def test_merge_daily_files(config):
     with open(master_file, "r") as mf:
         with open(test_file, "r") as tf:
             assert mf.read() == tf.read()
+
+    os.remove(master_file)
