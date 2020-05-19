@@ -94,13 +94,16 @@ def run(sftp: bool, settings_module: str = "") -> None:
                 unique=True,
             )
 
+            errors: List[str] = []
+            docs_inserted: int = 0
+            latest_file_name: str = ""
             for centre in centres:
                 logger.info("*" * 80)
                 logger.info(f"Processing {centre['name']}")
 
-                docs_inserted: int = 0
-                latest_file_name: str = ""
-                errors: List[str] = []
+                errors.clear()
+                docs_inserted = 0
+                latest_file_name = ""
                 try:
                     if sftp:
                         download_csv_files(config, centre)
