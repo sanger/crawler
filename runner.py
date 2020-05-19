@@ -31,7 +31,7 @@ if __name__ == "__main__":
     else:
         time_to_run = "01:00"
         print(f"Scheduled to run at {time_to_run}")
-        schedule.every().day.at(time_to_run).do(main.run)
+        schedule.every().day.at(time_to_run).do(main.run, sftp=args.sftp)
 
         while True:
             schedule.run_pending()

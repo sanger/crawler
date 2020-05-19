@@ -1,3 +1,9 @@
+# IDE
+.vscode
+
+# Any files from SFTP
+data/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -127,9 +133,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
-# IDE
-.vscode
-
-# Any files from SFTP
-data/*
