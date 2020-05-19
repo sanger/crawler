@@ -237,9 +237,10 @@ def get_latest_csv(config: ModuleType, centre: Dict[str, str], regex_field: str)
 
     centre_files = get_files_in_download_dir(config, centre, regex_field)
 
+    pattern = re.compile(centre[regex_field])
     files_with_time = {}
     for filename in centre_files:
-        if match := re.compile(centre[regex_field]).match(filename):
+        if match := pattern.match(filename):
             files_with_time[datetime.strptime(match.group(1), "%y%m%d_%H%M")] = filename
 
     # return the latest one
