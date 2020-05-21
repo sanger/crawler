@@ -253,6 +253,8 @@ def get_latest_csv(config: ModuleType, centre: Dict[str, str], regex_field: str)
 def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
     """Merge all the daily incremental files of the centre into one 'master' file. The master
     file's name is created by appending '_master' to the latest CSV file name.
+    Any files pre-dating the merge_start_date option in the centre configuration
+    will be excluded from the merge.
 
     Arguments:
         centre {Dict[str, str]} -- the centre in question
