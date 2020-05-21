@@ -271,11 +271,21 @@ def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
 
     # get the latest file name to use for the master name
     latest_file_name = get_latest_csv(config, centre, "sftp_file_regex")
+    pattern = re.compile(centre["sftp_file_regex"])
 
     master_file_name = f"{latest_file_name[:-4]}_master.csv"
     with open(f"{get_download_dir(config, centre)}{master_file_name}", "w") as master_csv:
         field_names_written = False
         for filename in centre_files:
+
+            # Ignore files which predate the merge_start_date if specified
+            if (match := pattern.match(filename)) and "merge_start_date" in centre.keys():
+                file_date = datetime.strptime(match.group(1), "%y%m%d_%H%M")
+                start_date = datetime.strptime(centre["merge_start_date"], "%y%m%d")
+                if file_date < start_date:
+                    logger.debug(f"Skipping {filename} as predates start_date")
+                    continue
+
             logger.debug(f"Merging {filename} into {master_file_name}")
             with open(
                 f"{get_download_dir(config, centre)}{filename}", "r", newline=""
