@@ -11,6 +11,7 @@ CENTRES = [
         "merge_required": True,
         "name": "Alderley",
         "prefix": "ALDP",
+        "merge_start_date": "200511",
         "sftp_file_regex": r"^AP_sanger_report_(\d{6}_\d{4})\.csv$",
         "sftp_master_file_regex": r"^AP_sanger_report_(\d{6}_\d{4})_master\.csv$",
         "sftp_root_read": "project-heron_alderly-park",
