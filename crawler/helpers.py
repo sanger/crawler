@@ -278,6 +278,12 @@ def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
     master_file_name = f"{latest_file_name[:-4]}_master.csv"
     with open(f"{get_download_dir(config, centre)}{master_file_name}", "w") as master_csv:
         field_names_written = False
+
+        # There is slight overlap in data on the transition from complete dumps
+        # to incremental updates. We use a set to keep track of rows we've seen
+        # so that we may filter them
+        seen_rows = set()
+
         for filename in centre_files:
 
             # Ignore files which predate the merge_start_date if specified
@@ -305,6 +311,13 @@ def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
 
                 # copy data
                 for row in csvreader:
+                    # Convert the row into a tuple so that we may store it in a
+                    # set. Rows will only be ignored if completely identical.
+                    row_signature = tuple(row.items())
+                    if row_signature in seen_rows:
+                        logger.debug(f"Skipping {row_signature}: duplicate")
+                        continue
+                    seen_rows.add(row_signature)
                     writer.writerow(row)
 
     logger.info(f"{master_file_name} created")
