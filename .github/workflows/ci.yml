@@ -1,6 +1,7 @@
 name: Docker CI
 
-on: push
+# Trigger the workflow on push or pull request
+on: [push, pull_request]
 
 env:
   IMAGE_NAME: ${{ github.repository }}/${{ github.event.repository.name }}

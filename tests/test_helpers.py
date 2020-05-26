@@ -135,8 +135,25 @@ def test_merge_daily_files(config):
     master_file = f"{get_download_dir(config, config.CENTRES[1])}{master_file_name}"
     test_file = f"{get_download_dir(config, config.CENTRES[1])}test_merge_daily_files.csv"
 
-    with open(master_file, "r") as mf:
-        with open(test_file, "r") as tf:
-            assert mf.read() == tf.read()
+    try:
+        with open(master_file, "r") as mf:
+            with open(test_file, "r") as tf:
+                assert mf.read() == tf.read()
+    finally:
+        os.remove(master_file)
 
-    os.remove(master_file)
+
+def test_merge_daily_files_with_start(config):
+    # run this first to create the file to test
+    master_file_name = "AP_sanger_report_200518_2132_master.csv"
+    assert merge_daily_files(config, config.CENTRES[0]) == master_file_name
+
+    master_file = f"{get_download_dir(config, config.CENTRES[0])}{master_file_name}"
+    test_file = f"{get_download_dir(config, config.CENTRES[0])}test_merge_daily_files.csv"
+
+    try:
+        with open(master_file, "r") as mf:
+            with open(test_file, "r") as tf:
+                assert mf.read() == tf.read()
+    finally:
+        os.remove(master_file)
