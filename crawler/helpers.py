@@ -284,7 +284,7 @@ def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
         # so that we may filter them
         seen_rows = set()
 
-        for filename in centre_files:
+        for filename in sorted(centre_files):
 
             # Ignore files which predate the merge_start_date if specified
             if (match := pattern.match(filename)) and "merge_start_date" in centre.keys():
