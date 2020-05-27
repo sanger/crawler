@@ -253,6 +253,8 @@ def get_latest_csv(config: ModuleType, centre: Dict[str, str], regex_field: str)
 def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
     """Merge all the daily incremental files of the centre into one 'master' file. The master
     file's name is created by appending '_master' to the latest CSV file name.
+    Any files pre-dating the merge_start_date option in the centre configuration
+    will be excluded from the merge.
 
     Arguments:
         centre {Dict[str, str]} -- the centre in question
@@ -271,11 +273,27 @@ def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
 
     # get the latest file name to use for the master name
     latest_file_name = get_latest_csv(config, centre, "sftp_file_regex")
+    pattern = re.compile(centre["sftp_file_regex"])
 
     master_file_name = f"{latest_file_name[:-4]}_master.csv"
     with open(f"{get_download_dir(config, centre)}{master_file_name}", "w") as master_csv:
         field_names_written = False
-        for filename in centre_files:
+
+        # There is slight overlap in data on the transition from complete dumps
+        # to incremental updates. We use a set to keep track of rows we've seen
+        # so that we may filter them
+        seen_rows = set()
+
+        for filename in sorted(centre_files):
+
+            # Ignore files which predate the merge_start_date if specified
+            if (match := pattern.match(filename)) and "merge_start_date" in centre.keys():
+                file_date = datetime.strptime(match.group(1), "%y%m%d_%H%M")
+                start_date = datetime.strptime(centre["merge_start_date"], "%y%m%d")
+                if file_date < start_date:
+                    logger.debug(f"Skipping {filename} as predates start_date")
+                    continue
+
             logger.debug(f"Merging {filename} into {master_file_name}")
             with open(
                 f"{get_download_dir(config, centre)}{filename}", "r", newline=""
@@ -293,6 +311,13 @@ def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
 
                 # copy data
                 for row in csvreader:
+                    # Convert the row into a tuple so that we may store it in a
+                    # set. Rows will only be ignored if completely identical.
+                    row_signature = tuple(row.items())
+                    if row_signature in seen_rows:
+                        logger.debug(f"Skipping {row_signature}: duplicate")
+                        continue
+                    seen_rows.add(row_signature)
                     writer.writerow(row)
 
     logger.info(f"{master_file_name} created")
