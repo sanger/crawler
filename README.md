@@ -132,6 +132,7 @@ file:
 
 1. Add a filter to the entire dataset in *samples.csv* and filter the `location_barcode` column to
 exclude those not having a match in *location_barcodes.csv*
+1. Save *samples.csv* as *yyymmdd_hhmm_LH_onsite.xls*
 
 ## Miscellaneous
 
