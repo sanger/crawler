@@ -128,13 +128,13 @@ the labwhere database using the following query:
     ```
 
 1. Open the CSV file created above (*location_barcodes.csv*) in Excel and create a filter on the
-two columns and sort the `labwares.barcode` column in ascending order.
+two columns and sort the `labwares.barcode` column in ascending order - save the file as `.xlsx`.
 1. Open the *samples.csv* file created earlier and add a `VLOOKUP` formula to the first empty column
 (name the column `location_barcode`) and drag down to copy the location barcode (`labwares.barcode`)
 from the *location_barcodes.csv*
 file:
 
-        =VLOOKUP(B2,location_barcodes.csv!$A:$B,2,FALSE)
+        =VLOOKUP(B2,location_barcodes.xlsx!$A:$B,2,FALSE)
 
 1. Add a filter to the entire dataset in *samples.csv* and filter the `location_barcode` column to
 exclude those not having a match in *location_barcodes.csv*
