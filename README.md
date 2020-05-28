@@ -6,14 +6,26 @@
 This micro service saves sample information from external LIMS into a mongodb instance for easy
 querying.
 
+<!-- toc -->
+
+- [Requirements](#requirements)
+- [Running](#running)
+- [Testing](#testing)
+- [Mypy](#mypy)
+- [Reporting](#reporting)
+- [Miscellaneous](#miscellaneous)
+  - [Naming conventions](#naming-conventions)
+
+<!-- tocstop -->
+
 ## Requirements
 
-* python - install the required version specified in `Pipfile`:
+- python - install the required version specified in `Pipfile`:
 
         [requires]
         python_version = "<version>"
 
-* install the required packages using [pipenv](https://github.com/pypa/pipenv):
+- install the required packages using [pipenv](https://github.com/pypa/pipenv):
 
         brew install pipenv
         pipenv install --dev
@@ -50,6 +62,83 @@ To run the tests, execute:
 Mypy is used as a type checker, to execute:
 
     python -m mypy crawler
+
+## Reporting
+
+To get a list of the positive samples which are on site:
+
+1. Install `mongoexport` from the `mongodb-database-tools` bundle:
+
+        brew install mongodb/brew/mongodb-database-tools
+
+1. Enter the mongo shell from a terminal, substituting `<uri>` with a mongo uri that looks something
+like `"mongodb://<user>:<password>@<host_address>/<database>"`:
+
+        mongo "<uri>"
+
+1. Verify that "Positive" is the only keyword that defines positive samples by executing the
+following from a mongo shell:
+
+        db.samples.distinct("Result")
+
+1. Create a view (if it does not already exist) of the distinct plate barcodes which allows you to export the data to a CSV file:
+
+        db.createView("ditinctPlateBarcode", "samples", [{ $match : { Result : "Positive" } } , { $group : { _id : "$plate_barcode" } }])
+
+1. Export positive samples to a CSV file and select the fields required in the CSV:
+
+        mongoexport --uri="<uri>" \
+        --collection=samples \
+        --out=samples.csv \
+        --type=csv \
+        --fields "source,plate_barcode,Root Sample ID,Result,Date Tested" \
+        --query '{"Result":{ "$regularExpression": { "pattern": "^positive", "options": "i" }}}'
+
+1. Export the plate barcodes to a CSV file:
+
+        mongoexport --uri="<uri>" \
+        --collection=ditinctPlateBarcode \
+        --out=plate_barcodes.csv \
+        --type=csv \
+        --fields "_id"
+
+1. Format the *plate_barcodes.csv* file by removing the first line (contains `_id`) and surrounding
+each barcode with double quotation marks (`"`) and adding a comma (`,`) to the end of each line -
+except the last:
+
+        "<barcode 1>",
+        "<barcode 2>",
+        "<barcode 3>",
+        ...
+        "<barcode last>"
+
+1. Export a list (to CSV called *location_barcodes.csv*) of plate barcode to location barcode from
+the labwhere database using the following query:
+
+    ```sql
+    SELECT
+        labwares.barcode AS 'labwares.barcode',
+        locations.barcode AS 'locations.barcode'
+    FROM
+        labwhere_production.labwares
+            LEFT JOIN
+        locations ON locations.id = labwares.location_id
+    WHERE
+        labwares.barcode IN (<plate barcode list from previous step>);
+    ```
+
+1. Open the CSV file created above (*location_barcodes.csv*) in Excel and create a filter on the
+two columns and sort the `labwares.barcode` column in ascending order - save the file as `.xlsx`.
+1. Open the *samples.csv* file created earlier and add a `VLOOKUP` formula to the first empty column
+(name the column `location_barcode`) and drag down to copy the location barcode (`labwares.barcode`)
+from the *location_barcodes.csv*
+file:
+
+        =VLOOKUP(B2,location_barcodes.xlsx!$A:$B,2,FALSE)
+
+1. Add a filter to the entire dataset in *samples.csv* and filter the `location_barcode` column to
+exclude those not having a match in *location_barcodes.csv*
+1. Save *samples.csv* as *yyymmdd_hhmm_LH_onsite.xls*
 
 ## Miscellaneous
 
