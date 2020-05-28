@@ -71,10 +71,19 @@ To get a list of the positive samples which are on site:
 
         brew install mongodb/brew/mongodb-database-tools
 
+1. Enter the mongo shell from a terminal, substituting `<uri>` with a mongo uri that looks something
+like `"mongodb://<user>:<password>@<host_address>/<database>"`:
+
+        mongo "<uri>"
+
 1. Verify that "Positive" is the only keyword that defines positive samples by executing the
 following from a mongo shell:
 
         db.samples.distinct("Result")
+
+1. Create a view (if it does not already exist) of the distinct plate barcodes which allows you to export the data to a CSV file:
+
+        db.createView("ditinctPlateBarcode", "samples", [{ $match : { Result : "Positive" } } , { $group : { _id : "$plate_barcode" } }])
 
 1. Export positive samples to a CSV file and select the fields required in the CSV:
 
@@ -85,10 +94,6 @@ following from a mongo shell:
         --fields "source,plate_barcode,Root Sample ID,Result,Date Tested" \
         --query '{"Result":{ "$regularExpression": { "pattern": "^positive", "options": "i" }}}'
 
-1. Create a view (if it does not already exist) of the distinct plate barcodes which allows you to export the data to a CSV file:
-
-        db.createView("ditinctPlateBarcode", "samples", [{ $match : { Result : "Positive" } } , { $group : { _id : "$plate_barcode" } }])
-
 1. Export the plate barcodes to a CSV file:
 
         mongoexport --uri="<uri>" \
@@ -97,8 +102,9 @@ following from a mongo shell:
         --type=csv \
         --fields "_id"
 
-1. Format the *plate_barcodes.csv* file by surrounding each barcode with double quotation marks
-(`"`) and adding a comma (`,`) to the end of each line - except the last:
+1. Format the *plate_barcodes.csv* file by removing the first line (contains `_id`) and surrounding
+each barcode with double quotation marks (`"`) and adding a comma (`,`) to the end of each line -
+except the last:
 
         "<barcode 1>",
         "<barcode 2>",
