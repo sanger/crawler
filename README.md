@@ -112,6 +112,10 @@ except the last:
         ...
         "<barcode last>"
 
+    This can be done using the following command (the first line still needs to be removed):
+
+        cat plate_barcodes.csv | sed -e 's/\(.*\)/\"\1\"/g' | sed -e '$ ! s/$/,/g' > plates_barcodes_quoted.txt
+
 1. Export a list (to CSV called *location_barcodes.csv*) of plate barcode to location barcode from
 the labwhere database using the following query:
 

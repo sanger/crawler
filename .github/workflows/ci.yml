@@ -1,7 +1,19 @@
 name: Docker CI
 
 # Trigger the workflow on push or pull request
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - develop
+      - master
+    paths-ignore:
+      - "README.md"
+  pull_request:
+    branches:
+      - develop
+      - master
+    paths-ignore:
+      - "README.md"
 
 env:
   IMAGE_NAME: ${{ github.repository }}/${{ github.event.repository.name }}
