@@ -149,14 +149,7 @@ def populate_collection(
     )
 
     for document in documents:
-        try:
-            temp_doc = dict(document)  # insert_one() adds an _id field
-            _ = collection.insert_one(document)
-        except DuplicateKeyError:
-            try:
-                _ = collection.find_one_and_replace(
-                    {filter_field: document[filter_field]}, temp_doc
-                )
-            except KeyError:
-                logger.exception(f"Cannot update '{collection.full_name}'")
-            continue
+        #  upsert inserts a document if it does not find one with the filter
+        _ = collection.find_one_and_replace(
+            {filter_field: document[filter_field]}, document, upsert=True
+        )
