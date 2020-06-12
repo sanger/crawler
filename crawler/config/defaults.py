@@ -28,7 +28,7 @@ CENTRES = [
         "sftp_master_file_regex": r"^MK_sanger_report_(\d{6}_\d{4})_master\.csv$",
         "sftp_root_read": "project-heron/UK-Biocenter/Sanger Reports",
         "sftp_root_write": "/project-heron/psd-lims",
-        "file_names_to_ignore": []
+        "file_names_to_ignore": ["MK_sanger_report_200610_0001.csv"]
     },
     {
         "barcode_field": FIELD_RNA_ID,
