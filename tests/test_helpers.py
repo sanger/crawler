@@ -9,7 +9,7 @@ from crawler.constants import (
     FIELD_LAB_ID,
     FIELD_RESULT,
     FIELD_RNA_ID,
-    FIELD_ROOT_SAMPLE_ID,
+    FIELD_ROOT_SAMPLE_ID
 )
 from crawler.exceptions import CentreFileError
 from crawler.helpers import (
@@ -150,6 +150,21 @@ def test_merge_daily_files_with_start(config):
 
     master_file = f"{get_download_dir(config, config.CENTRES[0])}{master_file_name}"
     test_file = f"{get_download_dir(config, config.CENTRES[0])}test_merge_daily_files.csv"
+
+    try:
+        with open(master_file, "r") as mf:
+            with open(test_file, "r") as tf:
+                assert mf.read() == tf.read()
+    finally:
+        os.remove(master_file)
+
+def test_merge_daily_files_with_ignore_file(config):
+    # run this first to create the file to test
+    master_file_name = "TEST_sanger_report_200518_2206_master.csv"
+    assert merge_daily_files(config, config.CENTRES[2]) == master_file_name
+
+    master_file = f"{get_download_dir(config, config.CENTRES[2])}{master_file_name}"
+    test_file = f"{get_download_dir(config, config.CENTRES[2])}test_merge_daily_files.csv"
 
     try:
         with open(master_file, "r") as mf:

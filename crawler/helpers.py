@@ -19,7 +19,7 @@ from crawler.constants import (
     FIELD_PLATE_BARCODE,
     FIELD_RESULT,
     FIELD_RNA_ID,
-    FIELD_ROOT_SAMPLE_ID,
+    FIELD_ROOT_SAMPLE_ID
 )
 from crawler.exceptions import CentreFileError
 
@@ -285,6 +285,8 @@ def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
         seen_rows = set()
 
         for filename in sorted(centre_files):
+            if filename in centre["file_names_to_ignore"]:
+                continue
 
             # Ignore files which predate the merge_start_date if specified
             if (match := pattern.match(filename)) and "merge_start_date" in centre.keys():
