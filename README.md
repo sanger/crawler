@@ -32,6 +32,12 @@ querying.
 
 Optionally, to test SFTP, [this](https://hub.docker.com/r/atmoz/sftp/) Docker image is helpful.
 
+- mongodb
+
+        brew tap mongodb/brew
+        brew install mongodb-community@4.2
+        brew services start mongodb-community@4.2
+
 ## Running
 
 Once all the required packages are installed, enter the virtual environment with:
@@ -40,7 +46,7 @@ Once all the required packages are installed, enter the virtual environment with
 
 The following runtime flags are available:
 
-    $ python runner.py --help
+    $ SETTINGS_MODULE=crawler.config.development python runner.py --help
 
     usage: runner.py [-h] [--sftp] [--scheduled]
 
