@@ -3,6 +3,9 @@ from crawler.constants import FIELD_RNA_ID
 # general details
 DIR_DOWNLOADED_DATA = "data/"
 
+# add names of problematic files to this list of strings, take them off when they are fixed
+FILE_NAMES_TO_IGNORE = []
+
 # centre details
 CENTRES = [
     {

@@ -19,7 +19,7 @@ from crawler.constants import (
     FIELD_PLATE_BARCODE,
     FIELD_RESULT,
     FIELD_RNA_ID,
-    FIELD_ROOT_SAMPLE_ID,
+    FIELD_ROOT_SAMPLE_ID
 )
 from crawler.exceptions import CentreFileError
 
@@ -285,6 +285,8 @@ def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
         seen_rows = set()
 
         for filename in sorted(centre_files):
+            if filename in file_names_to_ignore(config):
+                continue
 
             # Ignore files which predate the merge_start_date if specified
             if (match := pattern.match(filename)) and "merge_start_date" in centre.keys():
@@ -409,3 +411,18 @@ def get_config(settings_module: str) -> Tuple[ModuleType, str]:
         return import_module(settings_module), settings_module  # type: ignore
     except KeyError as e:
         sys.exit(f"{e} required in environmental variables for config")
+
+def file_names_to_ignore(config) -> List[str]:
+    """Returns a list of file names (strings) to ignore when merging files.
+    Any problematic files can be added to this list until they are fixed.
+
+    Arguments:
+        config {ModuleType} -- config which has the blacklist of file names
+
+    Returns:
+        List[str] -- the list of file names
+    """
+    if config.FILE_NAMES_TO_IGNORE:
+        return config.FILE_NAMES_TO_IGNORE
+    else:
+        return []
