@@ -10,6 +10,8 @@ from crawler.db import (
     create_mongo_client,
     get_mongo_collection,
     get_mongo_db,
+    rename_collection,
+    rename_collection_to_timestamp
 )
 
 
@@ -42,6 +44,39 @@ def test_copy_collection(mongo_database):
         collection["name"] for collection in mongo_database.list_collections()
     ]
 
+def test_rename_collection_to_timestamp(mongo_database):
+    _, mongo_database = mongo_database
+    collection_name = "test_collection"
+    collection = get_mongo_collection(mongo_database, collection_name)
+    _ = collection.insert_one({"x": 1})
+
+    rename_collection_to_timestamp(mongo_database, collection)
+
+    assert f"{collection_name}_{datetime.now().strftime('%y%m%d_%H%M')}" in [
+        collection["name"] for collection in mongo_database.list_collections()
+    ]
+
+    assert not collection_name in [
+        collection["name"] for collection in mongo_database.list_collections()
+    ]
+
+
+def test_rename_collection(mongo_database):
+    _, mongo_database = mongo_database
+    collection_name = "test_collection"
+    new_name = "new_test_collection"
+    collection = get_mongo_collection(mongo_database, collection_name)
+    _ = collection.insert_one({"x": 1})
+
+    rename_collection(mongo_database, collection, new_name)
+
+    assert new_name in [
+        collection["name"] for collection in mongo_database.list_collections()
+    ]
+
+    assert not collection_name in [
+        collection["name"] for collection in mongo_database.list_collections()
+    ]
 
 def test_create_import_record(freezer, mongo_database):
     config, mongo_database = mongo_database

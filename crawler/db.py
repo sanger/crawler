@@ -101,6 +101,38 @@ def copy_collection(database: Database, collection: Collection) -> None:
     return None
 
 
+def rename_collection_to_timestamp(database: Database, collection: Collection) -> None:
+    """Renames a collection to a timestamped version of itself
+
+    Arguments:
+        database {Database} -- the database of the collection to rename
+        collection {Collection} -- the collection to rename
+    """
+    new_name = f"{collection.name}_{datetime.now().strftime('%y%m%d_%H%M')}"
+
+    rename_collection(database, collection, new_name)
+    return None
+
+
+
+def rename_collection(database: Database, collection: Collection, new_name: str) -> None:
+    """Renames a collection to the new name.
+
+    Arguments:
+        database {Database} -- the database of the collection to rename
+        collection {Collection} -- the collection to rename
+        new_name {str} -- the new name of the collection
+    """
+    logger.debug(f"Renaming '{collection.name}' to '{new_name}'")
+
+    # get a list of all docs
+    collection.rename(new_name)
+
+    logger.debug(f"Collection renamed to: '{collection.name}'")
+
+    return None
+
+
 def create_import_record(
     import_collection: Collection,
     centre: Dict[str, str],
