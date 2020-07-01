@@ -17,7 +17,7 @@ CENTRES = [
         "prefix": "ALDP",
         "merge_start_date": "200511",
         "sftp_file_regex": r"^AP_sanger_report_(\d{6}_\d{4})\.csv$",
-        "sftp_master_file_regex": r"^MK_sanger_report_(\d{6}_\d{4})_master\.csv$",
+        "sftp_master_file_regex": r"^AP_sanger_report_(\d{6}_\d{4})_master\.csv$",
         "sftp_root_read": "tests/files",
         "file_names_to_ignore": []
     },
@@ -48,7 +48,7 @@ CENTRES = [
 ]
 
 # SFTP details
-SFTP_UPLOAD = True
+SFTP_UPLOAD = False
 SFTP_HOST = "127.0.0.1"
 SFTP_PASSWORD = "pass"
 SFTP_PORT = "22"

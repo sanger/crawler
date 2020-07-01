@@ -27,6 +27,15 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = pathlib.Path(__file__).parent.parent
 
+def current_time():
+    """Generates a String containing a current timestamp in the format
+    yymmdd_hhmm
+    eg. 12:30 1st February 2019 becomes 190201_1230
+
+    Returns:
+        str -- A string with the current timestamp
+    """
+    return datetime.now().strftime('%y%m%d_%H%M')
 
 def extract_fields(row: Dict[str, str], barcode_field: str, regex: str) -> Tuple[str, str]:
     """Extracts fields from a row of data (from the CSV file). Currently extracting the barcode and
@@ -239,6 +248,7 @@ def get_latest_csv(config: ModuleType, centre: Dict[str, str], regex_field: str)
 
     pattern = re.compile(centre[regex_field])
     files_with_time = {}
+
     for filename in centre_files:
         if match := pattern.match(filename):
             files_with_time[datetime.strptime(match.group(1), "%y%m%d_%H%M")] = filename

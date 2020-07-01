@@ -11,7 +11,7 @@ from crawler.db import (
     get_mongo_collection,
     get_mongo_db,
     rename_collection,
-    rename_collection_to_timestamp
+    rename_collection_with_suffix
 )
 
 
@@ -37,20 +37,22 @@ def test_copy_collection(mongo_database):
     collection_name = "test_collection"
     collection = get_mongo_collection(mongo_database, collection_name)
     _ = collection.insert_one({"x": 1})
+    suffix = datetime.now().strftime('%y%m%d_%H%M')
 
-    copy_collection(mongo_database, collection)
+    copy_collection(mongo_database, collection, suffix)
 
-    assert f"{collection_name}_{datetime.now().strftime('%y%m%d_%H%M')}" in [
+    assert f"{collection_name}_{suffix}" in [
         collection["name"] for collection in mongo_database.list_collections()
     ]
 
-def test_rename_collection_to_timestamp(mongo_database):
+
+def test_rename_collection_rename_collection_with_suffix(mongo_database):
     _, mongo_database = mongo_database
     collection_name = "test_collection"
     collection = get_mongo_collection(mongo_database, collection_name)
     _ = collection.insert_one({"x": 1})
 
-    rename_collection_to_timestamp(mongo_database, collection)
+    rename_collection_with_suffix(mongo_database, collection)
 
     assert f"{collection_name}_{datetime.now().strftime('%y%m%d_%H%M')}" in [
         collection["name"] for collection in mongo_database.list_collections()

@@ -32,12 +32,13 @@ from crawler.helpers import (
     merge_daily_files,
     parse_csv,
     upload_file_to_sftp,
+    current_time
 )
 
 logger = logging.getLogger(__name__)
 
 
-def run(sftp: bool, settings_module: str = "") -> None:
+def run(sftp: bool, settings_module: str = "", timestamp: str = current_time) -> None:
     try:
         start = time.time()
         config, settings_module = get_config(settings_module)

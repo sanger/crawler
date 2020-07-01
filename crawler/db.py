@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from types import ModuleType
 from typing import Dict, List
+from crawler.helpers import ( current_time )
 
 from pymongo import MongoClient
 from pymongo.collection import Collection
@@ -10,7 +11,6 @@ from pymongo.errors import DuplicateKeyError
 from pymongo.results import InsertOneResult
 
 logger = logging.getLogger(__name__)
-
 
 def create_mongo_client(config: ModuleType) -> MongoClient:
     """Create a MongoClient with the given config parameters.
@@ -80,14 +80,14 @@ def get_mongo_collection(database: Database, collection_name: str) -> Collection
     return database[collection_name]
 
 
-def copy_collection(database: Database, collection: Collection) -> None:
+def copy_collection(database: Database, collection: Collection, suffix: str = current_time()) -> None:
     """Copy a collection to a timestamped version of itself.
 
     Arguments:
         database {Database} -- the database of the collection to copy
         collection {Collection} -- the collection to copy
     """
-    cloned_collection = f"{collection.name}_{datetime.now().strftime('%y%m%d_%H%M')}"
+    cloned_collection = f"{collection.name}_{suffix}"
 
     logger.debug(f"Copying '{collection.name}' to '{cloned_collection}'")
 
@@ -101,18 +101,17 @@ def copy_collection(database: Database, collection: Collection) -> None:
     return None
 
 
-def rename_collection_to_timestamp(database: Database, collection: Collection) -> None:
+def rename_collection_with_suffix(database: Database, collection: Collection, suffix: str = current_time()) -> None:
     """Renames a collection to a timestamped version of itself
 
     Arguments:
         database {Database} -- the database of the collection to rename
         collection {Collection} -- the collection to rename
     """
-    new_name = f"{collection.name}_{datetime.now().strftime('%y%m%d_%H%M')}"
+    new_name = f"{collection.name}_{suffix}"
 
     rename_collection(database, collection, new_name)
     return None
-
 
 
 def rename_collection(database: Database, collection: Collection, new_name: str) -> None:
