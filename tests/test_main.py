@@ -121,7 +121,7 @@ def test_error_run(mongo_database):
   # The samples count should be the same as before
   assert samples_collection.count_documents({}) == 12
 
-  # But we have the previous collection available at the point it errored
+  # But we have the new collection available, with all successfull centres
   assert temporary_samples_collection.count_documents({}) == 10
   # We get additional imports
   assert imports_collection.count_documents({}) == 8
