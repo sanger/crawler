@@ -7,16 +7,19 @@ from crawler.helpers import current_time
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
-from pymongo.errors import (DuplicateKeyError, OperationFailure)
+from pymongo.errors import DuplicateKeyError, OperationFailure
 from pymongo.results import InsertOneResult
 
 from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
 
+
 class CollectionError(Exception):
     """Raise to prevent safe_collection renaming the original collection"""
+
     pass
+
 
 def create_mongo_client(config: ModuleType) -> MongoClient:
     """Create a MongoClient with the given config parameters.
@@ -85,7 +88,10 @@ def get_mongo_collection(database: Database, collection_name: str) -> Collection
 
     return database[collection_name]
 
-def rename_collection_with_suffix(database: Database, collection: Collection, suffix: str = current_time()) -> None:
+
+def rename_collection_with_suffix(
+    database: Database, collection: Collection, suffix: str = current_time()
+) -> None:
     """Renames a collection to a timestamped version of itself
 
     Arguments:
@@ -115,8 +121,11 @@ def rename_collection(database: Database, collection: Collection, new_name: str)
 
     return None
 
+
 @contextmanager
-def safe_collection(database: Database, collection_name: str, timestamp: str) -> Iterator[Collection]:
+def safe_collection(
+    database: Database, collection_name: str, timestamp: str
+) -> Iterator[Collection]:
     """
     Creates a context which yields a new temporary collection.
     If the context runs successfully, renames collection_name to collection_name_timestamp
@@ -152,6 +161,7 @@ def safe_collection(database: Database, collection_name: str, timestamp: str) ->
 
     rename_collection(database, temporary_collection, collection_name)
     return None
+
 
 def create_import_record(
     import_collection: Collection,

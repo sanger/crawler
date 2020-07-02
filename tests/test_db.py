@@ -12,7 +12,7 @@ from crawler.db import (
     get_mongo_db,
     rename_collection,
     rename_collection_with_suffix,
-    safe_collection
+    safe_collection,
 )
 
 
@@ -59,13 +59,12 @@ def test_rename_collection(mongo_database):
 
     rename_collection(mongo_database, collection, new_name)
 
-    assert new_name in [
-        collection["name"] for collection in mongo_database.list_collections()
-    ]
+    assert new_name in [collection["name"] for collection in mongo_database.list_collections()]
 
     assert not collection_name in [
         collection["name"] for collection in mongo_database.list_collections()
     ]
+
 
 def test_safe_collection_success(mongo_database):
     _, mongo_database = mongo_database
@@ -119,6 +118,7 @@ def test_safe_collection_no_previous(mongo_database):
     after_safe_collection = get_mongo_collection(mongo_database, collection_name)
     assert after_safe_collection.count_documents({"y": 1}) == 1
     assert after_safe_collection.count_documents({"x": 1}) == 0
+
 
 def test_create_import_record(freezer, mongo_database):
     config, mongo_database = mongo_database

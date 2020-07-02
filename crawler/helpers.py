@@ -19,13 +19,14 @@ from crawler.constants import (
     FIELD_PLATE_BARCODE,
     FIELD_RESULT,
     FIELD_RNA_ID,
-    FIELD_ROOT_SAMPLE_ID
+    FIELD_ROOT_SAMPLE_ID,
 )
 from crawler.exceptions import CentreFileError
 
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = pathlib.Path(__file__).parent.parent
+
 
 def current_time() -> str:
     """Generates a String containing a current timestamp in the format
@@ -35,7 +36,8 @@ def current_time() -> str:
     Returns:
         str -- A string with the current timestamp
     """
-    return datetime.now().strftime('%y%m%d_%H%M')
+    return datetime.now().strftime("%y%m%d_%H%M")
+
 
 def extract_fields(row: Dict[str, str], barcode_field: str, regex: str) -> Tuple[str, str]:
     """Extracts fields from a row of data (from the CSV file). Currently extracting the barcode and

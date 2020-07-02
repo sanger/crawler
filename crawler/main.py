@@ -24,7 +24,7 @@ from crawler.db import (
     get_mongo_collection,
     get_mongo_db,
     populate_collection,
-    safe_collection
+    safe_collection,
 )
 from crawler.helpers import (
     clean_up,
@@ -33,7 +33,7 @@ from crawler.helpers import (
     merge_daily_files,
     parse_csv,
     upload_file_to_sftp,
-    current_time
+    current_time,
 )
 
 logger = logging.getLogger(__name__)
@@ -122,7 +122,9 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = current_time()) 
                             f"{e} - usually happens when duplicates are trying to be inserted"
                         )
                         docs_inserted = e.details["nInserted"]
-                        write_errors = {write_error["code"] for write_error in e.details["writeErrors"]}
+                        write_errors = {
+                            write_error["code"] for write_error in e.details["writeErrors"]
+                        }
                         for error in write_errors:
                             num_errors = len(
                                 list(filter(lambda x: x["code"] == error, e.details["writeErrors"]))
