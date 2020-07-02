@@ -39,7 +39,7 @@ from crawler.helpers import (
 logger = logging.getLogger(__name__)
 
 
-def run(sftp: bool, settings_module: str = "", timestamp: str = current_time) -> None:
+def run(sftp: bool, settings_module: str = "", timestamp: str = current_time()) -> None:
     try:
         start = time.time()
         config, settings_module = get_config(settings_module)
@@ -142,7 +142,8 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = current_time) ->
 
                 # All centres have processed, If we have any critical errors, raise a CollectionError exception
                 # to prevent the safe_collection from triggering the rename
-                if critical_errors > 0: raise CollectionError
+                if critical_errors > 0:
+                    raise CollectionError
 
         logger.info(f"Import complete in {round(time.time() - start, 2)}s")
         logger.info("=" * 80)

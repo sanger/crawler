@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = pathlib.Path(__file__).parent.parent
 
-def current_time():
+def current_time() -> str:
     """Generates a String containing a current timestamp in the format
     yymmdd_hhmm
     eg. 12:30 1st February 2019 becomes 190201_1230

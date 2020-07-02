@@ -1,8 +1,8 @@
 import logging
 from datetime import datetime
 from types import ModuleType
-from typing import Dict, List
-from crawler.helpers import ( current_time )
+from typing import Dict, List, Iterator
+from crawler.helpers import current_time
 
 from pymongo import MongoClient
 from pymongo.collection import Collection
@@ -116,7 +116,7 @@ def rename_collection(database: Database, collection: Collection, new_name: str)
     return None
 
 @contextmanager
-def safe_collection(database: Database, collection_name: str, timestamp: str) -> None:
+def safe_collection(database: Database, collection_name: str, timestamp: str) -> Iterator[Collection]:
     """
     Creates a context which yields a new temporary collection.
     If the context runs successfully, renames collection_name to collection_name_timestamp
