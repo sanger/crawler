@@ -5,13 +5,15 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 
 from crawler.db import (
+    CollectionError,
     copy_collection,
     create_import_record,
     create_mongo_client,
     get_mongo_collection,
     get_mongo_db,
     rename_collection,
-    rename_collection_with_suffix
+    rename_collection_with_suffix,
+    safe_collection
 )
 
 
@@ -79,6 +81,59 @@ def test_rename_collection(mongo_database):
     assert not collection_name in [
         collection["name"] for collection in mongo_database.list_collections()
     ]
+
+def test_safe_collection_success(mongo_database):
+    _, mongo_database = mongo_database
+    collection_name = "test_collection"
+    timestamp = "timestamp"
+    collection = get_mongo_collection(mongo_database, collection_name)
+    _ = collection.insert_one({"x": 1})
+    # When we process successfully
+    with safe_collection(mongo_database, collection_name, timestamp) as new_collection:
+        _ = new_collection.insert_one({"y": 1})
+
+    after_safe_collection = get_mongo_collection(mongo_database, collection_name)
+    assert after_safe_collection.count_documents({"y": 1}) == 1
+    assert after_safe_collection.count_documents({"x": 1}) == 0
+
+    backup_collection = get_mongo_collection(mongo_database, f"{collection_name}_{timestamp}")
+
+    assert backup_collection.count_documents({"y": 1}) == 0
+    assert backup_collection.count_documents({"x": 1}) == 1
+
+
+def test_safe_collection_failure(mongo_database):
+    _, mongo_database = mongo_database
+    collection_name = "test_collection"
+    timestamp = "backup"
+    collection = get_mongo_collection(mongo_database, collection_name)
+    _ = collection.insert_one({"x": 1})
+    # When we process successfully
+    with safe_collection(mongo_database, collection_name, timestamp) as new_collection:
+        _ = new_collection.insert_one({"y": 1})
+        raise CollectionError
+
+    after_safe_collection = get_mongo_collection(mongo_database, collection_name)
+    assert after_safe_collection.count_documents({"y": 1}) == 0
+    assert after_safe_collection.count_documents({"x": 1}) == 1
+
+    tmp_collection = get_mongo_collection(mongo_database, f"tmp_{collection_name}_{timestamp}")
+
+    assert tmp_collection.count_documents({"y": 1}) == 1
+    assert tmp_collection.count_documents({"x": 1}) == 0
+
+
+def test_safe_collection_no_previous(mongo_database):
+    _, mongo_database = mongo_database
+    collection_name = "test_collection"
+    timestamp = "timestamp"
+    # When we process successfully
+    with safe_collection(mongo_database, collection_name, timestamp) as new_collection:
+        _ = new_collection.insert_one({"y": 1})
+
+    after_safe_collection = get_mongo_collection(mongo_database, collection_name)
+    assert after_safe_collection.count_documents({"y": 1}) == 1
+    assert after_safe_collection.count_documents({"x": 1}) == 0
 
 def test_create_import_record(freezer, mongo_database):
     config, mongo_database = mongo_database
