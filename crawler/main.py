@@ -19,7 +19,6 @@ from crawler.constants import (
 )
 from crawler.db import (
     CollectionError,
-    copy_collection,
     create_import_record,
     create_mongo_client,
     get_mongo_collection,

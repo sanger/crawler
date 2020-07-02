@@ -6,7 +6,6 @@ from pymongo.database import Database
 
 from crawler.db import (
     CollectionError,
-    copy_collection,
     create_import_record,
     create_mongo_client,
     get_mongo_collection,
@@ -32,20 +31,6 @@ def test_get_mongo_collection(mongo_database):
     test_collection = get_mongo_collection(mongo_database, collection_name)
     assert type(test_collection) == Collection
     assert test_collection.name == collection_name
-
-
-def test_copy_collection(mongo_database):
-    _, mongo_database = mongo_database
-    collection_name = "test_collection"
-    collection = get_mongo_collection(mongo_database, collection_name)
-    _ = collection.insert_one({"x": 1})
-    suffix = datetime.now().strftime('%y%m%d_%H%M')
-
-    copy_collection(mongo_database, collection, suffix)
-
-    assert f"{collection_name}_{suffix}" in [
-        collection["name"] for collection in mongo_database.list_collections()
-    ]
 
 
 def test_rename_collection_rename_collection_with_suffix(mongo_database):

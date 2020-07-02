@@ -85,28 +85,6 @@ def get_mongo_collection(database: Database, collection_name: str) -> Collection
 
     return database[collection_name]
 
-
-def copy_collection(database: Database, collection: Collection, suffix: str = current_time()) -> None:
-    """Copy a collection to a timestamped version of itself.
-
-    Arguments:
-        database {Database} -- the database of the collection to copy
-        collection {Collection} -- the collection to copy
-    """
-    cloned_collection = f"{collection.name}_{suffix}"
-
-    logger.debug(f"Copying '{collection.name}' to '{cloned_collection}'")
-
-    # get a list of all docs
-    current_docs = list(collection.find())
-
-    result = database[cloned_collection].insert_many(current_docs)
-
-    logger.debug(f"{len(result.inserted_ids)} documents copied to '{cloned_collection}'")
-
-    return None
-
-
 def rename_collection_with_suffix(database: Database, collection: Collection, suffix: str = current_time()) -> None:
     """Renames a collection to a timestamped version of itself
 
