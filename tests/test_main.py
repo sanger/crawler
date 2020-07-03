@@ -14,6 +14,10 @@ from crawler.constants import (
     COLLECTION_SAMPLES,
 )
 
+NUMBER_CENTRES = 3 # Will be 4 post cam-az
+NUMBER_VALID_SAMPLES = 10  # Will be 12 post cam-az
+NUMBER_SAMPLES_ON_PARTIAL_IMPORT = 8  # Will be 10 post cam-az
+
 from crawler.db import get_mongo_collection
 
 # The run method encompasses the main actions of the crawler
@@ -40,16 +44,16 @@ def test_run(mongo_database):
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
 
     # We record our test centres
-    assert centres_collection.count_documents({}) == 4
+    assert centres_collection.count_documents({}) == NUMBER_CENTRES
     assert centres_collection.count_documents({"name": "Test Centre"}) == 1
 
     # We record *all* our samples
-    assert samples_collection.count_documents({}) == 12
+    assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
     assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
     assert samples_collection.count_documents({"RNA ID": "123_H09", "source": "UK Biocentre"}) == 1
 
     # We get one import per centre
-    assert imports_collection.count_documents({}) == 4
+    assert imports_collection.count_documents({}) == NUMBER_CENTRES
 
     # We clean up after ourselves
     (_, _, files) = next(os.walk("tmp/files"))
@@ -81,13 +85,13 @@ def test_repeat_run(mongo_database):
     )
 
     # We still have 4 test centers
-    assert centres_collection.count_documents({}) == 4
+    assert centres_collection.count_documents({}) == NUMBER_CENTRES
     # We don't get extra samples
-    assert samples_collection.count_documents({}) == 12
+    assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
     # But we have the previous collection available
-    assert previous_samples_collection.count_documents({}) == 12
+    assert previous_samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
     # We get additional imports
-    assert imports_collection.count_documents({}) == 8
+    assert imports_collection.count_documents({}) == NUMBER_CENTRES * 2
 
 
 # If we have multiple runs, the older runs are archived with a timestamps
@@ -119,11 +123,11 @@ def test_error_run(mongo_database):
     )
 
     # We still have 4 test centers
-    assert centres_collection.count_documents({}) == 4
+    assert centres_collection.count_documents({}) == NUMBER_CENTRES# Will be 4 post cam-az
     # The samples count should be the same as before
-    assert samples_collection.count_documents({}) == 12
+    assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES  # Will be 12 post cam-az
 
     # But we have the new collection available, with all successfull centres
-    assert temporary_samples_collection.count_documents({}) == 10
+    assert temporary_samples_collection.count_documents({}) == 8 # Will be 10 post cam-az
     # We get additional imports
-    assert imports_collection.count_documents({}) == 8
+    assert imports_collection.count_documents({}) == NUMBER_CENTRES * 2
