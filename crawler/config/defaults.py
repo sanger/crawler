@@ -4,6 +4,28 @@ from crawler.constants import FIELD_RNA_ID
 DIR_DOWNLOADED_DATA = "data/"
 
 # centre details
+# This information will also be persisted in the mongo database
+# Field information:
+# barcode_field: The header of the column containing barcode/well information
+# barcode_regex: Regular expression for extracting barcodes and well co-ordinates
+#                from barcode_field
+# merge_required: True for centres delivering incremental updates. Indicates that
+#                 the individual csv files need to be merged into a single master
+#                 file. False indicates that the latest CSV will contain a full
+#                 dump.
+# name: The name of the centre
+# prefix: The COG-UK prefix. Used for naming the download directory, but also
+#         stored in the database for later use by other processes.
+#        ie. lighthouse and barcoda
+# merge_start_date: Used for centres which switch from full dumps to incremental
+#                   updates. Files before this date will be ignored. Please ensure
+#                   that at least one complete dump is included in the timeframe.
+# sftp_file_regex: Regex to identify files to load from the sftp server
+# sftp_master_file_regex: Regexp to identify the master file for incremental updates
+# sftp_root_read: directory on sftp from which to load csv files.
+# sftp_root_write: directory on sftp in which to upload master files
+# file_names_to_ignore: array of files to exclude from processing, such as those
+#                       containing invalid headers
 CENTRES = [
     {
         "barcode_field": FIELD_RNA_ID,
