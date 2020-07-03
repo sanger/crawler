@@ -51,7 +51,7 @@ CENTRES = [
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
         "merge_required": True,
         "name": "Cambridge-az",
-        "prefix": "CB",
+        "prefix": "CBAZ",
         "sftp_file_regex": r"^CB_sanger_report_(\d{6}_\d{4})\.csv$",
         "sftp_master_file_regex": r"^CB_sanger_report_(\d{6}_\d{4})_master\.csv$",
         "sftp_root_read": "project-heron_cambridge-az",
