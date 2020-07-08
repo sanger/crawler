@@ -1,15 +1,24 @@
 import logging
 from datetime import datetime
 from types import ModuleType
-from typing import Dict, List
+from typing import Dict, List, Iterator
+from crawler.helpers import current_time
 
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
-from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError, OperationFailure
 from pymongo.results import InsertOneResult
 
+from contextlib import contextmanager
+
 logger = logging.getLogger(__name__)
+
+
+class CollectionError(Exception):
+    """Raise to prevent safe_collection renaming the original collection"""
+
+    pass
 
 
 def create_mongo_client(config: ModuleType) -> MongoClient:
@@ -80,24 +89,76 @@ def get_mongo_collection(database: Database, collection_name: str) -> Collection
     return database[collection_name]
 
 
-def copy_collection(database: Database, collection: Collection) -> None:
-    """Copy a collection to a timestamped version of itself.
+def rename_collection_with_suffix(
+    collection: Collection, suffix: str = current_time()
+) -> None:
+    """Renames a collection to a timestamped version of itself
 
     Arguments:
-        database {Database} -- the database of the collection to copy
-        collection {Collection} -- the collection to copy
+        collection {Collection} -- the collection to rename
+        suffix {str} -- The suffix to add to the collection name
     """
-    cloned_collection = f"{collection.name}_{datetime.now().strftime('%y%m%d_%H%M')}"
+    new_name = f"{collection.name}_{suffix}"
 
-    logger.debug(f"Copying '{collection.name}' to '{cloned_collection}'")
+    rename_collection(collection, new_name)
+    return None
+
+
+def rename_collection(collection: Collection, new_name: str) -> None:
+    """Renames a collection to the new name.
+
+    Arguments:
+        collection {Collection} -- the collection to rename
+        new_name {str} -- the new name of the collection
+    """
+    logger.debug(f"Renaming '{collection.name}' to '{new_name}'")
 
     # get a list of all docs
-    current_docs = list(collection.find())
+    collection.rename(new_name)
 
-    result = database[cloned_collection].insert_many(current_docs)
+    logger.debug(f"Collection renamed to: '{new_name}'")
 
-    logger.debug(f"{len(result.inserted_ids)} documents copied to '{cloned_collection}'")
+    return None
 
+
+@contextmanager
+def safe_collection(
+    database: Database, collection_name: str, timestamp: str
+) -> Iterator[Collection]:
+    """
+    Creates a context which yields a new temporary collection.
+    If the context runs successfully, renames collection_name to collection_name_timestamp
+    and renames the temporary collection to replace collection_name.
+    If the context fails, the original collection is left in place. The temporary collection is not
+    cleaned up to assist with debugging.
+
+    Arguments:
+        database {Database} -- the database of the collection to replace
+        collection {Collection} -- the collection to replace
+        timestamp {str} -- A timestamp to apply to the original and temporary collection names
+    """
+    temporary_collection_name = f"tmp_{collection_name}_{timestamp}"
+    logger.debug(f"Generating temporary collection: {temporary_collection_name}")
+    temporary_collection = get_mongo_collection(database, temporary_collection_name)
+
+    try:
+        yield temporary_collection
+    except CollectionError:
+        # We've seen a collection error. Log it and return to prevent the rename
+        logger.error("Collection error: original collection left in place")
+        return None
+    except Exception:
+        # We've seen a different exception. Log it (for reassurance) and re-raise
+        logger.error("Exception: original collection left in place")
+        raise
+
+    # Mongo provides no simple way of checking if a collection exists
+    if collection_name in database.list_collection_names():
+        logger.debug("Successful, renaming original collection")
+        original_collection = get_mongo_collection(database, collection_name)
+        rename_collection_with_suffix(original_collection, timestamp)
+
+    rename_collection(temporary_collection, collection_name)
     return None
 
 

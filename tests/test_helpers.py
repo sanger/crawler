@@ -9,7 +9,7 @@ from crawler.constants import (
     FIELD_LAB_ID,
     FIELD_RESULT,
     FIELD_RNA_ID,
-    FIELD_ROOT_SAMPLE_ID
+    FIELD_ROOT_SAMPLE_ID,
 )
 from crawler.exceptions import CentreFileError
 from crawler.helpers import (
@@ -157,6 +157,7 @@ def test_merge_daily_files_with_start(config):
                 assert mf.read() == tf.read()
     finally:
         os.remove(master_file)
+
 
 def test_merge_daily_files_with_ignore_file(config):
     # run this first to create the file to test
