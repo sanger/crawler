@@ -44,7 +44,19 @@ CENTRES = [
         "sftp_root_read": "tests/files",
         "sftp_root_write": "tests/files/write",
         "file_names_to_ignore": ["TEST_sanger_report_200518_2205.csv"]
-    }
+    },
+    {
+        "barcode_field": FIELD_RNA_ID,
+        "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
+        "merge_required": True,
+        "name": "Cambridge-az",
+        "prefix": "CBAZ",
+        "sftp_file_regex": r"^CB_sanger_report_(\d{6}_\d{4})\.csv$",
+        "sftp_master_file_regex": r"^CB_sanger_report_(\d{6}_\d{4})_master\.csv$",
+        "sftp_root_read": "project-heron_cambridge-az",
+        "sftp_root_write": "/project-heron_cambridge-az/psd-lims",
+        "file_names_to_ignore": [],
+    },
 ]
 
 # SFTP details
