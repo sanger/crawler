@@ -39,7 +39,7 @@ def test_rename_collection_rename_collection_with_suffix(mongo_database):
     collection = get_mongo_collection(mongo_database, collection_name)
     _ = collection.insert_one({"x": 1})
 
-    rename_collection_with_suffix(mongo_database, collection)
+    rename_collection_with_suffix(collection)
 
     assert f"{collection_name}_{datetime.now().strftime('%y%m%d_%H%M')}" in [
         collection["name"] for collection in mongo_database.list_collections()
@@ -57,7 +57,7 @@ def test_rename_collection(mongo_database):
     collection = get_mongo_collection(mongo_database, collection_name)
     _ = collection.insert_one({"x": 1})
 
-    rename_collection(mongo_database, collection, new_name)
+    rename_collection(collection, new_name)
 
     assert new_name in [collection["name"] for collection in mongo_database.list_collections()]
 

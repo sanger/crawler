@@ -90,25 +90,24 @@ def get_mongo_collection(database: Database, collection_name: str) -> Collection
 
 
 def rename_collection_with_suffix(
-    database: Database, collection: Collection, suffix: str = current_time()
+    collection: Collection, suffix: str = current_time()
 ) -> None:
     """Renames a collection to a timestamped version of itself
 
     Arguments:
-        database {Database} -- the database of the collection to rename
         collection {Collection} -- the collection to rename
+        suffix {str} -- The suffix to add to the collection name
     """
     new_name = f"{collection.name}_{suffix}"
 
-    rename_collection(database, collection, new_name)
+    rename_collection(collection, new_name)
     return None
 
 
-def rename_collection(database: Database, collection: Collection, new_name: str) -> None:
+def rename_collection(collection: Collection, new_name: str) -> None:
     """Renames a collection to the new name.
 
     Arguments:
-        database {Database} -- the database of the collection to rename
         collection {Collection} -- the collection to rename
         new_name {str} -- the new name of the collection
     """
@@ -157,9 +156,9 @@ def safe_collection(
     if collection_name in database.list_collection_names():
         logger.debug("Successful, renaming original collection")
         original_collection = get_mongo_collection(database, collection_name)
-        rename_collection_with_suffix(database, original_collection, timestamp)
+        rename_collection_with_suffix(original_collection, timestamp)
 
-    rename_collection(database, temporary_collection, collection_name)
+    rename_collection(temporary_collection, collection_name)
     return None
 
 

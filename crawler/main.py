@@ -79,7 +79,6 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = current_time()) 
                         (FIELD_ROOT_SAMPLE_ID, pymongo.ASCENDING),
                         (FIELD_RNA_ID, pymongo.ASCENDING),
                         (FIELD_RESULT, pymongo.ASCENDING),
-                        (FIELD_RNA_ID, pymongo.ASCENDING),
                         (FIELD_LAB_ID, pymongo.ASCENDING),
                     ],
                     unique=True,

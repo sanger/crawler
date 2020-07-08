@@ -59,7 +59,6 @@ def test_run(mongo_database):
     (_, _, files) = next(os.walk("tmp/files"))
     assert 0 == len(files)
 
-
 # If we have multiple runs, the older runs are archived with a timestamps
 def test_repeat_run(mongo_database):
     _, mongo_database = mongo_database
