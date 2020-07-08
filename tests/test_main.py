@@ -14,9 +14,9 @@ from crawler.constants import (
     COLLECTION_SAMPLES,
 )
 
-NUMBER_CENTRES = 3 # Will be 4 post cam-az
-NUMBER_VALID_SAMPLES = 10  # Will be 12 post cam-az
-NUMBER_SAMPLES_ON_PARTIAL_IMPORT = 8  # Will be 10 post cam-az
+NUMBER_CENTRES = 4
+NUMBER_VALID_SAMPLES = 12
+NUMBER_SAMPLES_ON_PARTIAL_IMPORT = 10
 
 from crawler.db import get_mongo_collection
 
@@ -123,11 +123,11 @@ def test_error_run(mongo_database):
     )
 
     # We still have 4 test centers
-    assert centres_collection.count_documents({}) == NUMBER_CENTRES# Will be 4 post cam-az
+    assert centres_collection.count_documents({}) == NUMBER_CENTRES
     # The samples count should be the same as before
-    assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES  # Will be 12 post cam-az
+    assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
 
     # But we have the new collection available, with all successfull centres
-    assert temporary_samples_collection.count_documents({}) == 8 # Will be 10 post cam-az
+    assert temporary_samples_collection.count_documents({}) == NUMBER_SAMPLES_ON_PARTIAL_IMPORT
     # We get additional imports
     assert imports_collection.count_documents({}) == NUMBER_CENTRES * 2
