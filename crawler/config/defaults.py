@@ -38,7 +38,9 @@ CENTRES = [
         "sftp_master_file_regex": r"^AP_sanger_report_(\d{6}_\d{4})_master\.csv$",
         "sftp_root_read": "project-heron_alderly-park",
         "sftp_root_write": "/project-heron_alderly-park/psd-lims",
-        "file_names_to_ignore": [],
+        "file_names_to_ignore": [
+            "AP_sanger_report_200723_0001.csv"
+        ],
     },
     {
         "barcode_field": FIELD_RNA_ID,
