@@ -39,8 +39,9 @@ from crawler.helpers import (
 logger = logging.getLogger(__name__)
 
 
-def run(sftp: bool, settings_module: str = "", timestamp: str = current_time()) -> None:
+def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
     try:
+        timestamp = timestamp or current_time()
         start = time.time()
         config, settings_module = get_config(settings_module)
 

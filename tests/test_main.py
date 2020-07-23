@@ -59,6 +59,7 @@ def test_run(mongo_database):
     (_, _, files) = next(os.walk("tmp/files"))
     assert 0 == len(files)
 
+
 # If we have multiple runs, the older runs are archived with a timestamps
 def test_repeat_run(mongo_database):
     _, mongo_database = mongo_database
@@ -93,7 +94,23 @@ def test_repeat_run(mongo_database):
     assert imports_collection.count_documents({}) == NUMBER_CENTRES * 2
 
 
-# If we have multiple runs, the older runs are archived with a timestamps
+# If we run it without timestamp, the process dont fail
+def test_job_run(mongo_database):
+    _, mongo_database = mongo_database
+    _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
+    run(False, "crawler.config.integration")
+    run(False, "crawler.config.integration")
+
+    centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+
+    # We still have 4 test centers
+    assert centres_collection.count_documents({}) == NUMBER_CENTRES
+    # We don't get extra samples
+    assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
+    # We get additional imports
+    assert imports_collection.count_documents({}) == NUMBER_CENTRES * 2
 
 
 def test_error_run(mongo_database):
