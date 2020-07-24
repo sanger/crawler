@@ -16,7 +16,7 @@ black = "*"
 
 [packages]
 pymongo = "~=3.10"
-colorlog = "~=4.1"
+colorlog = "~=4.2"
 schedule = "~=0.6"
 pysftp = "~=0.2"
 slackclient = "~=2.5"
