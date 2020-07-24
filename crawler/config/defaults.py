@@ -39,7 +39,8 @@ CENTRES = [
         "sftp_root_read": "project-heron_alderly-park",
         "sftp_root_write": "/project-heron_alderly-park/psd-lims",
         "file_names_to_ignore": [
-            "AP_sanger_report_200723_0001.csv"
+            "AP_sanger_report_200723_0001.csv",
+            "AP_sanger_report_200724_0001.csv"
         ],
     },
     {
