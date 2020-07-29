@@ -173,3 +173,20 @@ def test_merge_daily_files_with_ignore_file(config):
                 assert mf.read() == tf.read()
     finally:
         os.remove(master_file)
+
+
+@pytest.mark.xfail(reason="Fix in progress. Merge early. Merge")
+def test_merge_daily_files_with_extra_fields(config):
+    # run this first to create the file to test
+    master_file_name = "MALF_sanger_report_200518_2205_master.csv"
+    assert merge_daily_files(config, config.EXTRA_COLUMN_CENTRE) == master_file_name
+
+    master_file = f"{get_download_dir(config, config.EXTRA_COLUMN_CENTRE)}{master_file_name}"
+    test_file = f"{get_download_dir(config, config.EXTRA_COLUMN_CENTRE)}test_merge_daily_files.csv"
+
+    try:
+        with open(master_file, "r") as mf:
+            with open(test_file, "r") as tf:
+                assert mf.read() == tf.read()
+    finally:
+        os.remove(master_file)

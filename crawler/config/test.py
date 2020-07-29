@@ -59,6 +59,21 @@ CENTRES = [
     },
 ]
 
+# Keep separate from the main tests to avoid continual need
+# to update the numbers in 'test_main'.
+EXTRA_COLUMN_CENTRE = {
+    "barcode_field": FIELD_RNA_ID,
+    "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
+    "merge_required": True,
+    "name": "Test Centre",
+    "prefix": "MALF",
+    "sftp_file_regex": r"^MALF_sanger_report_(\d{6}_\d{4})\.csv$",
+    "sftp_master_file_regex": r"^MALF_sanger_report_(\d{6}_\d{4})_master\.csv$",
+    "sftp_root_read": "tests/extra_column_files",
+    "sftp_root_write": "tests/extra_column_files/write",
+    "file_names_to_ignore": [],
+}
+
 # SFTP details
 SFTP_UPLOAD = False
 SFTP_HOST = "127.0.0.1"
