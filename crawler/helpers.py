@@ -127,7 +127,6 @@ def check_for_required_fields(csvreader: DictReader, centre: Dict[str, str]) -> 
         FIELD_RNA_ID,
         FIELD_RESULT,
         FIELD_DATE_TESTED,
-        FIELD_LAB_ID,  # TODO remove as not required,
     }
     if csvreader.fieldnames:
         fieldnames = set(csvreader.fieldnames)
