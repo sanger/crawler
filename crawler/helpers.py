@@ -111,6 +111,7 @@ def add_extra_fields(
 
     return errors, augmented_data
 
+
 # TODO check why MK is passing given the below method
 # This is being called from parse_csv
 # TODO: Add validation for no unexpected headers (warning) - check with James
@@ -126,7 +127,7 @@ def check_for_required_fields(csvreader: DictReader, centre: Dict[str, str]) -> 
         FIELD_RNA_ID,
         FIELD_RESULT,
         FIELD_DATE_TESTED,
-        FIELD_LAB_ID, # TODO remove as not required,
+        FIELD_LAB_ID,  # TODO remove as not required,
     }
     if csvreader.fieldnames:
         fieldnames = set(csvreader.fieldnames)
@@ -325,7 +326,9 @@ def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
 
                 #  write header
                 if not field_names_written:
-                    writer = DictWriter(master_csv, fieldnames=csvreader.fieldnames)
+                    writer = DictWriter(
+                        master_csv, fieldnames=csvreader.fieldnames, extrasaction="ignore"
+                    )
                     writer.writeheader()
                     field_names_written = True
 

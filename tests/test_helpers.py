@@ -176,15 +176,16 @@ def test_merge_daily_files_with_ignore_file(config):
         os.remove(master_file)
 
 
-@pytest.mark.xfail(reason="Fix in progress. Merge early. Merge")
 def test_merge_daily_files_with_extra_fields(config, centre_with_added_columns):
     # We're using a different download directory here
-    with patch.object(config, 'DIR_DOWNLOADED_DATA', 'tests/extra_column_files/'):
+    with patch.object(config, "DIR_DOWNLOADED_DATA", "tests/extra_column_files/"):
         master_file_name = "MALF_sanger_report_200518_2205_master.csv"
         assert merge_daily_files(config, centre_with_added_columns) == master_file_name
 
         master_file = f"{get_download_dir(config, centre_with_added_columns)}{master_file_name}"
-        test_file = f"{get_download_dir(config, centre_with_added_columns)}test_merge_daily_files.csv"
+        test_file = (
+            f"{get_download_dir(config, centre_with_added_columns)}test_merge_daily_files.csv"
+        )
 
         try:
             with open(master_file, "r") as mf:

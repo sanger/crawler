@@ -16,9 +16,11 @@ logging.config.dictConfig(CONFIG.LOGGING)  # type: ignore
 def config():
     return CONFIG
 
+
 @pytest.fixture
 def centre_with_added_columns():
     return CONFIG.EXTRA_COLUMN_CENTRE
+
 
 @pytest.fixture
 def mongo_client(config):
