@@ -20,6 +20,7 @@ colorlog = "~=4.1"
 schedule = "~=0.6"
 pysftp = "~=0.2"
 slackclient = "~=2.5"
+pytest = "*"
 
 [requires]
 python_version = "3.8"
