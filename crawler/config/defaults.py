@@ -44,6 +44,7 @@ CENTRES = [
             "AP_sanger_report_200725_0001.csv",
             "AP_sanger_report_200726_0001.csv",
             "AP_sanger_report_200727_0001.csv",
+            "AP_sanger_report_200728_0001.csv",
         ],
     },
     {
