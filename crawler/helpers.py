@@ -106,10 +106,15 @@ def add_extra_fields(
         )
         errors.append(error)
         logger.warning(error)
+        # TODO: Update regex check to handle different format checks
+        #  https://ssg-confluence.internal.sanger.ac.uk/pages/viewpage.action?pageId=101358138#ReceiptfromLighthouselaboratories(Largediagnosticcentres)-4.2.1VariantsofRNAplatebarcode
 
     return errors, augmented_data
 
 
+# TODO check why MK is passing given the below method
+# This is being called from parse_csv
+# TODO: Add validation for no unexpected headers (warning) - check with James
 def check_for_required_fields(csvreader: DictReader, centre: Dict[str, str]) -> None:
     """Checks that the CSV file has the required headers.
 
@@ -122,7 +127,6 @@ def check_for_required_fields(csvreader: DictReader, centre: Dict[str, str]) -> 
         FIELD_RNA_ID,
         FIELD_RESULT,
         FIELD_DATE_TESTED,
-        FIELD_LAB_ID,
     }
     if csvreader.fieldnames:
         fieldnames = set(csvreader.fieldnames)
@@ -279,6 +283,8 @@ def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
     latest_file_name = get_latest_csv(config, centre, "sftp_file_regex")
     pattern = re.compile(centre["sftp_file_regex"])
 
+    # TODO: Add valdiation to check extension
+    # that latest_file_name.split('.')[1] == .csv
     master_file_name = f"{latest_file_name[:-4]}_master.csv"
     with open(f"{get_download_dir(config, centre)}{master_file_name}", "w") as master_csv:
         field_names_written = False
@@ -311,7 +317,9 @@ def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
 
                 #  write header
                 if not field_names_written:
-                    writer = DictWriter(master_csv, fieldnames=csvreader.fieldnames)
+                    writer = DictWriter(
+                        master_csv, fieldnames=csvreader.fieldnames, extrasaction="ignore"
+                    )
                     writer.writeheader()
                     field_names_written = True
 
