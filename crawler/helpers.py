@@ -160,27 +160,20 @@ def download_csv_files(config, centre: Dict[str, str]) -> None:
 
     return None
 
-
 def parse_csv(
-    config: ModuleType, centre: Dict[str, str]
-) -> Tuple[str, List[str], List[Dict[str, str]]]:
+    config: ModuleType, centre: Dict[str, str], file_name: str
+) -> Tuple[List[str], List[Dict[str, str]]]:
     """Parses the CSV file of the centre.
 
     Arguments:
+        config {ModuleType} -- app config
         centre {Dict[str, str]} -- centre details
+        file_name {str} -- file name to parse
 
     Returns:
-        Tuple[str, List[str], List[str, str]] -- name of the file which was parsed for this centre,
-        list of errors and the augmented data
+        Tuple[List[str], List[str, str]] -- list of errors and the augmented data
     """
-    if "merge_required" in centre.keys() and centre["merge_required"]:
-        file_regex = "sftp_master_file_regex"
-    else:
-        file_regex = "sftp_file_regex"
-
-    latest_file_name = get_latest_csv(config, centre, file_regex)
-
-    csvfile_path = PROJECT_ROOT.joinpath(f"{get_download_dir(config, centre)}{latest_file_name}")
+    csvfile_path = PROJECT_ROOT.joinpath(f"{get_download_dir(config, centre)}{file_name}")
 
     logger.info(f"Attempting to parse CSV file: {csvfile_path}")
 
@@ -190,8 +183,7 @@ def parse_csv(
         check_for_required_fields(csvreader, centre)
         errors, documents = add_extra_fields(csvreader, centre)
 
-    return latest_file_name, errors, documents
-
+    return errors, documents
 
 def get_download_dir(config: ModuleType, centre: Dict[str, str]) -> str:
     """Get the download directory where the files from the SFTP are stored.

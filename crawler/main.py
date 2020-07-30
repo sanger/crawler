@@ -4,7 +4,6 @@ import time
 from typing import List
 
 import pymongo
-from pymongo.errors import BulkWriteError
 
 from crawler.constants import (
     COLLECTION_CENTRES,
@@ -34,6 +33,9 @@ from crawler.helpers import (
     parse_csv,
     upload_file_to_sftp,
     current_time,
+)
+from crawler.file_processing import (
+    process_files
 )
 
 logger = logging.getLogger(__name__)
@@ -101,35 +103,8 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
                         if sftp:
                             download_csv_files(config, centre)
 
-                        if "merge_required" in centre.keys() and centre["merge_required"]:
-                            master_file_name = merge_daily_files(config, centre)
+                        _ = process_files(config, centre, logger, errors, critical_errors)
 
-                            # only upload to SFTP if config explicitly says so - this is to prevent
-                            #   accidental uploads from non-production envs
-                            if config.SFTP_UPLOAD:  # type: ignore
-                                upload_file_to_sftp(config, centre, master_file_name)
-
-                        latest_file_name, errors, docs_to_insert = parse_csv(config, centre)
-
-                        logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
-                        result = samples_collection.insert_many(docs_to_insert, ordered=False)
-
-                        docs_inserted = len(result.inserted_ids)
-                    except BulkWriteError as e:
-                        # This is happening when there are duplicates in the data and the index prevents
-                        #   the records from being written
-                        logger.warning(
-                            f"{e} - usually happens when duplicates are trying to be inserted"
-                        )
-                        docs_inserted = e.details["nInserted"]
-                        write_errors = {
-                            write_error["code"] for write_error in e.details["writeErrors"]
-                        }
-                        for error in write_errors:
-                            num_errors = len(
-                                list(filter(lambda x: x["code"] == error, e.details["writeErrors"]))
-                            )
-                            errors.append(f"{num_errors} records with error code {error}")
                     except Exception as e:
                         errors.append(f"Critical error: {e}")
                         critical_errors += 1

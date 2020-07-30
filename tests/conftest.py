@@ -1,6 +1,6 @@
 import logging
 import logging.config
-
+import shutil
 import pytest
 
 from crawler.db import create_mongo_client, get_mongo_db
@@ -34,3 +34,13 @@ def mongo_database(mongo_client):
     # sure what version of mongo is being used in production.
     finally:
         mongo_client.drop_database(db)
+
+@pytest.fixture
+def testing_files_for_process():
+    _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
+    try:
+        yield
+    finally:
+        # remove files https://docs.python.org/3/library/shutil.html#shutil.rmtree
+        shutil.rmtree("tmp/files")
+        #(_, _, files) = next(os.walk("tmp/files"))
