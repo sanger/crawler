@@ -112,7 +112,6 @@ def add_extra_fields(
     return errors, augmented_data
 
 
-# TODO check why MK is passing given the below method
 # This is being called from parse_csv
 # TODO: Add validation for no unexpected headers (warning) - check with James
 def check_for_required_fields(csvreader: DictReader, centre: Dict[str, str]) -> None:

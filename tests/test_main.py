@@ -143,7 +143,27 @@ def test_error_run(mongo_database):
     # The samples count should be the same as before
     assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
 
-    # But we have the new collection available, with all successfull centres
+    # But we have the new collection available, with all successful centres
     assert temporary_samples_collection.count_documents({}) == NUMBER_SAMPLES_ON_PARTIAL_IMPORT
     # We get additional imports
     assert imports_collection.count_documents({}) == NUMBER_CENTRES * 2
+
+def test_error_run_imports_message(mongo_database):
+    _, mongo_database = mongo_database
+    # Copy the test files to a new directory, as we expect run
+    # to perform a clean up, and we don't want it cleaning up our
+    # main copy of the data. We don't disable the clean up as:
+    # 1) It also clears up the master files, which we'd otherwise need to handle
+    # 2) It means we keep the tested process closer to the actual one
+
+    _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
+    _ = shutil.copytree("tests/files_with_duplicate_samples", "tmp/files", dirs_exist_ok=True)
+
+    run(False, "crawler.config.integration")
+
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    doc = imports_collection.find_one({'centre_name': 'Test Centre'})
+
+    assert imports_collection.count_documents({}) == NUMBER_CENTRES
+    assert len(doc['errors']) == 1
+    assert '1 records with error code 11000. Example message: E11000 duplicate key error' in doc['errors'][0]
