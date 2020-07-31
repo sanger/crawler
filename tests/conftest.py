@@ -3,9 +3,15 @@ import logging.config
 import shutil
 import pytest
 from unittest.mock import patch
+from typing import Dict, List, Any
+from crawler.constants import (
+    COLLECTION_SAMPLES,
+    COLLECTION_SAMPLES_HISTORY,
+)
 
 from crawler.db import create_mongo_client, get_mongo_db
 from crawler.helpers import get_config
+from crawler.db import get_mongo_collection
 
 logger = logging.getLogger(__name__)
 CONFIG, _ = get_config("crawler.config.test")
@@ -50,3 +56,48 @@ def testing_files_for_process():
         # remove files https://docs.python.org/3/library/shutil.html#shutil.rmtree
         shutil.rmtree("tmp/files")
         #(_, _, files) = next(os.walk("tmp/files"))
+
+
+TESTING_SAMPLES: List[Dict[str, str]] = [
+    {
+        "coordinate": "A01",
+        "source": "test1",
+        "Result": "Positive",
+        "plate_barcode": "123",
+        "released": True,
+        "Root Sample ID": "MCM001",
+    },
+    {
+        "coordinate": "B01",
+        "source": "test1",
+        "Result": "Negative",
+        "plate_barcode": "123",
+        "released": False,
+        "Root Sample ID": "MCM002",
+    },
+    {
+        "coordinate": "C01",
+        "source": "test1",
+        "Result": "Void",
+        "plate_barcode": "123",
+        "Root Sample ID": "MCM003",
+    },
+]
+
+@pytest.fixture
+def samples_collection_accessor(mongo_database):
+    return get_mongo_collection(mongo_database[1], COLLECTION_SAMPLES)
+
+@pytest.fixture
+def samples_history_collection_accessor(mongo_database):
+    return get_mongo_collection(mongo_database[1], COLLECTION_SAMPLES_HISTORY)
+
+@pytest.fixture
+def testing_samples(samples_collection_accessor):
+    result = samples_collection_accessor.insert_many(TESTING_SAMPLES)
+    samples = list(samples_collection_accessor.find({'_id': {"$in": result.inserted_ids}}))
+    try:
+        yield samples
+    finally:
+        samples_collection_accessor.delete_many({})
+

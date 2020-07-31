@@ -2,6 +2,7 @@
 COLLECTION_CENTRES = "centres"
 COLLECTION_IMPORTS = "imports"
 COLLECTION_SAMPLES = "samples"
+COLLECTION_SAMPLES_HISTORY = "samples_history"
 
 # field names
 FIELD_PLATE_BARCODE = "plate_barcode"

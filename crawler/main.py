@@ -26,20 +26,13 @@ from crawler.db import (
     safe_collection,
 )
 from crawler.helpers import (
-    clean_up,
-    download_csv_files,
     get_config,
-    merge_daily_files,
-    parse_csv,
     upload_file_to_sftp,
     current_time,
 )
-from crawler.file_processing import (
-    process_files
-)
+from crawler.file_processing import Centre
 
 logger = logging.getLogger(__name__)
-
 
 def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
     try:
@@ -87,35 +80,36 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
                     unique=True,
                 )
 
-                errors: List[str] = []
-                docs_inserted: int = 0
-                latest_file_name: str = ""
+                # errors: List[str] = []
+                #docs_inserted: int = 0
+                #latest_file_name: str = ""
                 critical_errors: int = 0
 
-                for centre in centres:
+                centres_instances = [Centre(config, centre_config) for centre_config in centres]
+                for centre_instance in centres_instances:
                     logger.info("*" * 80)
-                    logger.info(f"Processing {centre['name']}")
+                    logger.info(f"Processing {centre_config['name']}")
 
-                    errors.clear()
-                    docs_inserted = 0
-                    latest_file_name = ""
+                    # errors.clear()
+                    # docs_inserted = 0
+                    # latest_file_name = ""
                     try:
                         if sftp:
-                            download_csv_files(config, centre)
+                            centre_instance.download_csv_files() #(config, centre)
 
-                        _ = process_files(config, centre, logger, errors, critical_errors)
+                        centre_instance.process_files()
 
                     except Exception as e:
                         errors.append(f"Critical error: {e}")
                         critical_errors += 1
                         logger.exception(e)
                     finally:
-                        clean_up(config, centre)
-                        logger.info(f"{docs_inserted} documents inserted")
+                        centre_instance.clean_up()
+                        # logger.info(f"{docs_inserted} documents inserted")
                         # write status record
-                        _ = create_import_record(
-                            imports_collection, centre, docs_inserted, latest_file_name, errors,
-                        )
+                        # _ = create_import_record(
+                        #     imports_collection, centre_config, docs_inserted, latest_file_name, fp_centre.errors,
+                        # )
 
                 # All centres have processed, If we have any critical errors, raise a CollectionError exception
                 # to prevent the safe_collection from triggering the rename
