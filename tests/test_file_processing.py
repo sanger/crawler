@@ -75,6 +75,12 @@ def test_archive_old_samples_without_previous_samples(config, samples_history_co
     assert samples_history_collection_accessor.count() == 0
     assert samples_collection_accessor.count() == 0
 
+
+def test_backup_file(config, tmpdir):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile('AP_sanger_report_200503_2338.csv', centre)
+
+
 def test_get_download_dir(config):
     centre = Centre(config, config.CENTRES[0])
 

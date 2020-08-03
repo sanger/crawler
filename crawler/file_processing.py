@@ -157,6 +157,15 @@ class CentreFileState(Enum):
 """
 class CentreFile:
     def __init__(self, file_name, centre):
+        """Initialiser for the class representing the file
+
+            Arguments:
+                centre {Dict[str][str]} -- the lighthouse centre
+                file_name {str} - the file name of the file
+
+            Returns:
+                str -- the filepath for the file
+        """
         self.errors = []
         self.errors.clear()
 
@@ -166,11 +175,20 @@ class CentreFile:
         self.file_name = file_name
         self.file_state = CentreFileState.FILE_UNCHECKED
 
+    def filepath(self) -> str:
+        """Returns the filepath for the file
 
-    def filepath(self):
+            Returns:
+                str -- the filepath for the file
+        """
         return PROJECT_ROOT.joinpath(f"{self.centre.get_download_dir()}{self.file_name}")
 
-    def checksum():
+    def checksum() -> str:
+        """Returns the checksum for the file
+
+            Returns:
+                str -- the checksum for the file
+        """
         with open(self.filepath(), "rb") as f:
             file_hash = md5()
             while chunk := f.read(8192):
@@ -184,14 +202,31 @@ class CentreFile:
 #       /centre2/errors
 #               /successes
 
-    def get_filename_with_checksum(self):
+    def get_filename_with_checksum(self) -> str:
+        """Returns a filename including the checksum for the file
+
+            Returns:
+                str -- the filename including the checksum for the file
+        """
         return f"{self.file_name}_{checksum(self.file_name)}"
 
-    def checksum_match(self, dir_path):
+    def checksum_match(self, dir_path) -> str:
+        """Checks a directory for a file matching the checksum of this file
+
+            Arguments:
+                dir_path {str} -> the directory path to be checked
+
+            Returns:
+                boolean -- whether the file matches or not
+        """
+        # TODO
         return False
 
-    def set_state_for_file(self) -> None:
+    def set_state_for_file(self) -> CentreFileState:
         """Determines what state the file is in and whether it needs to be processed.
+
+              Returns:
+                  CentreFileState - enum representation of file state
         """
         # check whether file is on the blacklist and should be ignored
         if self.file_name in self.centre_config["file_names_to_ignore"]:
@@ -213,10 +248,22 @@ class CentreFile:
         # we process it
         self.file_state = CentreFileState.FILE_NOT_PROCESSED_YET
 
-    def fetch_samples_with_field_value(self, field_name, field_value):
+    def fetch_samples_with_field_value(self, field_name, field_value) -> List[Dict[str, str]]:
+        """?
+
+            Returns:
+                ? - ?
+        """
+        # TODO
         return None
 
     def fetch_released_samples(self, samples):
+        """?
+
+            Returns:
+                ? - ?
+        """
+        # TODO
         return None
 
 
@@ -224,31 +271,51 @@ class CentreFile:
     #     """Checks the list of samples in the file and filters out any that have already been released.
 
     #         Arguments:
-    #             samples {?} -- a list of samples
+    #             samples_list {List[Dict[str, str]]} -- a list of samples
     #     """
     #     root_sample_ids = map(lambda(x): x['Root Sample Id'], samples)
     #     fetch_samples_with_field_value('Root Sample Id', root_sample_ids)
     #     return None
 
-    def archival_prepared_sample_conversor(self, sample, timestamp):
+    def archival_prepared_sample_conversor(self, sample, timestamp) -> Dict[str, str]:
+        """Deletes the old sample and sets up the sample object for archiving
+
+            Arguments:
+                sample {Dict[str, str]} -- a sample that needs to be archived
+
+            Returns:
+                Dict[str, str] - the modified sample for archiving
+        """
         sample['archived_at'] = timestamp
         sample['sample_object_id'] = sample['_id']
         del sample['_id']
         return sample
 
-    def archival_prepared_samples(self, samples):
+    def archival_prepared_samples(self, samples) -> List[Dict[str, str]]:
+        """Prepares the list of samples for archiving
+
+            Arguments:
+                samples_list {List[Dict[str, str]]} -- a list of samples
+
+            Returns:
+                List[Dict[str, str]] - the modified samples for archiving
+        """
         timestamp = current_time()
         return list(map(lambda sample: self.archival_prepared_sample_conversor(sample, timestamp), samples))
 
-    def archive_old_samples(self, samples_list) -> None:
+    def archive_old_samples(self, samples_list) -> bool:
         """Archives the old versions of samples we are updating so we retain a history.
 
             Arguments:
-                samples {?} -- a list of samples
+                samples_list {List[Dict[str, str]]} -- a list of samples
+
+            Returns:
+                boolean - whether the samples were archived
         """
         root_sample_ids = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], samples_list))
         samples_collection_connector = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
         existing_samples_to_archive = samples_collection_connector.find({FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}})
+        # TODO: Only archive a sample if there was any change by comparing with the the sample replacing
 
         samples_history_collection_connector = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES_HISTORY)
         if existing_samples_to_archive.count() > 0:
@@ -279,8 +346,24 @@ class CentreFile:
             # write to volume 'processed'
 
         self.insert_samples_from_docs(docs_to_insert)
+        self.backup_file()
+
+    def backup_file(self):
+        """Backup the file.
+        """
+        if len(self.errors) > 0:
+            logger.info(f"Errors present in file {self.file_name}")
+
+        else:
+            logger.info(f"File valid")
+
 
     def get_db(self):
+        """Fetch the mongo database.
+
+            Returns:
+                Database -- a reference to the database in mongo
+        """
         client = create_mongo_client(self.config)
         db = get_mongo_db(self.config, client)
         return db
@@ -288,8 +371,8 @@ class CentreFile:
     def insert_samples_from_docs(self, docs_to_insert) -> None:
         """Insert sample records from the parsed file information.
 
-        Arguments:
-            docs_to_insert {List[Dict[str, str]]} -- list of sample information extracted from csv files
+            Arguments:
+                docs_to_insert {List[Dict[str, str]]} -- list of sample information extracted from csv files
         """
         logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
         docs_inserted = 0

@@ -1,6 +1,7 @@
 import logging
 import logging.config
 import shutil
+import tempfile
 import pytest
 from unittest.mock import patch
 from typing import Dict, List, Any
@@ -101,3 +102,10 @@ def testing_samples(samples_collection_accessor):
     finally:
         samples_collection_accessor.delete_many({})
 
+
+@pytest.fixture
+def backups_folder():
+    try:
+        yield
+    finally:
+        shutil.rmtree("backups/files")
