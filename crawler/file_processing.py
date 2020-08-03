@@ -1,6 +1,7 @@
 import os
 from typing import Dict, List, Any, Tuple, Set
 from pymongo.errors import BulkWriteError
+from pymongo.database import Database
 from enum import Enum
 from csv import DictReader, DictWriter
 import shutil
@@ -87,6 +88,7 @@ class Centre:
         the database.
         """
         # iterate through each file in the centre
+
         for file_name in self.centre_files:
             logger.info(f"Checking file {file_name}")
 
@@ -145,9 +147,6 @@ class Centre:
 """Class to hold enum states for the files
 """
 class CentreFileState(Enum):
-    # def __str__(self):
-    #    return str(self)
-
     FILE_UNCHECKED = 1
     FILE_IN_BLACKLIST = 2
     FILE_NOT_PROCESSED_YET = 3
@@ -157,8 +156,6 @@ class CentreFileState(Enum):
 """Class to process an individual file
 """
 class CentreFile:
-    ERRORS_FOLDER = 'errors'
-    SUCCESS_FOLDER = 'success'
     REQUIRED_FIELDS = {
         FIELD_ROOT_SAMPLE_ID,
         FIELD_RNA_ID,
@@ -354,21 +351,38 @@ class CentreFile:
             # TODO: if this is a new version of a file we already processed do we overwrite it?
             # or rename the previous one with a timestamp?
             # write to volume 'processed'
-
         self.insert_samples_from_docs(docs_to_insert)
         self.backup_file()
 
-    def backup_file(self):
+    def backup_filename(self) -> str:
         """Backup the file.
+
+            Returns:
+                str -- the filepath of the file backup
         """
-        if len(self.errors) > 0:
-            logger.info(f"Errors present in file {self.file_name}")
-
+        if (len(self.errors) > 0):
+            return f"{self.centre_config['backups_folder']}/{ERRORS_DIR}/{self.timestamped_filename()}"
         else:
-            logger.info(f"File valid")
+            return f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}/{self.timestamped_filename()}"
 
+    def timestamped_filename(self):
+        return f"{current_time()}_{self.file_name}"
 
-    def get_db(self):
+    def full_path_to_file(self):
+        return PROJECT_ROOT.joinpath(self.centre.get_download_dir(), self.file_name)
+
+    def backup_file(self) -> str:
+        """Backup the file.
+
+            Returns:
+                str -- destination of the file
+        """
+        destination = self.backup_filename()
+        os.makedirs(os.path.dirname(destination), exist_ok=True)
+
+        shutil.copyfile(self.full_path_to_file(), destination)
+
+    def get_db(self) -> Database:
         """Fetch the mongo database.
 
             Returns:
@@ -391,7 +405,6 @@ class CentreFile:
         samples_collection = get_mongo_collection(db, COLLECTION_SAMPLES)
 
         logger.info(docs_to_insert)
-
 
         try:
             # Moves previous version into history of samples

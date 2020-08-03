@@ -102,7 +102,6 @@ def testing_samples(samples_collection_accessor):
     finally:
         samples_collection_accessor.delete_many({})
 
-
 @pytest.fixture
 def backups_folder():
     try:

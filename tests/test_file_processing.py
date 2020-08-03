@@ -8,9 +8,13 @@ from unittest.mock import patch
 from csv import DictReader
 import pytest
 
+from tempfile import mkstemp
+
 from crawler.file_processing import (
     Centre,
     CentreFile,
+    SUCCESSES_DIR,
+    ERRORS_DIR,
 )
 from crawler.constants import (
     COLLECTION_CENTRES,
@@ -157,7 +161,6 @@ def test_archival_prepared_sample_conversor_changes_data(config):
         val = centre_file.archival_prepared_sample_conversor({'_id': '1234', 'name': '4567'}, timestamp)
         assert val == {'sample_object_id': '1234', 'archived_at': '20/12/20', 'name': '4567'}
 
-
 def test_archival_prepared_samples_adds_timestamp(config):
     timestamp = '20/12/20'
 
@@ -173,7 +176,6 @@ def test_archival_prepared_samples_adds_timestamp(config):
             {'sample_object_id': '1234', 'archived_at': '20/12/20', 'name': '4567'},
             {'sample_object_id': '4567', 'archived_at': '20/12/20', 'name': '1234'}
         ]
-
 
 def test_archive_old_samples(config, testing_samples, samples_history_collection_accessor, samples_collection_accessor):
     sample_object_ids = list(map(lambda x: x['_id'], testing_samples))
@@ -199,11 +201,58 @@ def test_archive_old_samples_without_previous_samples(config, samples_history_co
     assert samples_history_collection_accessor.count() == 0
     assert samples_collection_accessor.count() == 0
 
+def test_backup_good_file(config, tmpdir):
+    # create temporary success and errors folders for the files to end up in
+    success_folder = tmpdir.mkdir(SUCCESSES_DIR)
+    errors_folder = tmpdir.mkdir(ERRORS_DIR)
 
-def test_backup_file(config, tmpdir):
+    # checks that they are empty
+    assert len(success_folder.listdir()) == 0
+    assert len(errors_folder.listdir()) == 0
+
+    # configure to use the backups folder for this test
+    config.CENTRES[0]['backups_folder'] = tmpdir.realpath()
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile('AP_sanger_report_200503_2338.csv', centre)
 
+    # create a file inside the centre download dir
+    filename = "AP_sanger_report_200503_2338.csv"
+
+    # test the backup of the file to the success folder
+    centre_file = CentreFile(filename, centre)
+    centre_file.backup_file()
+
+    assert len(success_folder.listdir()) == 1
+    assert len(errors_folder.listdir()) == 0
+
+    filename_with_timestamp = os.path.basename(success_folder.listdir()[0])
+    assert (filename in filename_with_timestamp)
+
+def test_backup_bad_file(config, tmpdir):
+    # create temporary success and errors folders for the files to end up in
+    success_folder = tmpdir.mkdir(SUCCESSES_DIR)
+    errors_folder = tmpdir.mkdir(ERRORS_DIR)
+
+    # checks that they are empty
+    assert len(success_folder.listdir()) == 0
+    assert len(errors_folder.listdir()) == 0
+
+    # configure to use the backups folder for this test
+    config.CENTRES[0]['backups_folder'] = tmpdir.realpath()
+    centre = Centre(config, config.CENTRES[0])
+
+    # create a file inside the centre download dir
+    filename = "AP_sanger_report_200518_2132.csv"
+
+    # test the backup of the file to the success folder
+    centre_file = CentreFile(filename, centre)
+    centre_file.errors.append("Some error happened")
+    centre_file.backup_file()
+
+    assert len(errors_folder.listdir()) == 1
+    assert len(success_folder.listdir()) == 0
+
+    filename_with_timestamp = os.path.basename(errors_folder.listdir()[0])
+    assert (filename in filename_with_timestamp)
 
 def test_get_download_dir(config):
     centre = Centre(config, config.CENTRES[0])
