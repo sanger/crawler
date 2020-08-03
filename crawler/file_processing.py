@@ -190,7 +190,7 @@ class CentreFile:
         """
         return PROJECT_ROOT.joinpath(f"{self.centre.get_download_dir()}{self.file_name}")
 
-    def checksum() -> str:
+    def checksum(self) -> str:
         """Returns the checksum for the file
 
             Returns:
@@ -226,7 +226,21 @@ class CentreFile:
             Returns:
                 boolean -- whether the file matches or not
         """
-        # TODO
+        regexp = re.compile("^([\d]{6}_[\d]{4})_(.*)_(\w*)$")
+
+        checksum_for_file = self.checksum()
+
+        backup_folder = f"{self.centre_config['backups_folder']}/{dir_path}"
+        files_from_backup_folder = os.listdir(backup_folder)
+        for stamped_filename in files_from_backup_folder:
+            matches = regexp.match(stamped_filename)
+            if matches:
+                backup_timestamp = matches.group(1)
+                backup_filename = matches.group(2)
+                backup_checksum = matches.group(3)
+
+                if checksum_for_file == backup_checksum:
+                    return True
         return False
 
     def set_state_for_file(self) -> CentreFileState:
@@ -254,35 +268,6 @@ class CentreFile:
         # if checksum differs or if the file was not present in success directory
         # we process it
         self.file_state = CentreFileState.FILE_NOT_PROCESSED_YET
-
-    def fetch_samples_with_field_value(self, field_name, field_value) -> List[Dict[str, str]]:
-        """?
-
-            Returns:
-                ? - ?
-        """
-        # TODO
-        return None
-
-    def fetch_released_samples(self, samples):
-        """?
-
-            Returns:
-                ? - ?
-        """
-        # TODO
-        return None
-
-
-    # def check_and_filter_out_released(self, samples) -> None:
-    #     """Checks the list of samples in the file and filters out any that have already been released.
-
-    #         Arguments:
-    #             samples_list {List[Dict[str, str]]} -- a list of samples
-    #     """
-    #     root_sample_ids = map(lambda(x): x['Root Sample Id'], samples)
-    #     fetch_samples_with_field_value('Root Sample Id', root_sample_ids)
-    #     return None
 
     def archival_prepared_sample_conversor(self, sample, timestamp) -> Dict[str, str]:
         """Deletes the old sample and sets up the sample object for archiving
@@ -366,7 +351,7 @@ class CentreFile:
             return f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}/{self.timestamped_filename()}"
 
     def timestamped_filename(self):
-        return f"{current_time()}_{self.file_name}"
+        return f"{current_time()}_{self.file_name}_{self.checksum()}"
 
     def full_path_to_file(self):
         return PROJECT_ROOT.joinpath(self.centre.get_download_dir(), self.file_name)

@@ -30,6 +30,59 @@ from crawler.constants import (
 from crawler.exceptions import CentreFileError
 from crawler.db import get_mongo_collection
 
+def create_checksum_files_for(filepath, filename, checksums, timestamp):
+    list_files = []
+    for checksum in checksums:
+        full_filename = f"{filepath}/{timestamp}_{filename}_{checksum}"
+        file = open(full_filename, "w")
+        file.write("Your text goes here")
+        file.close()
+        list_files.append(full_filename)
+    return list_files
+
+def test_checksum_not_match(config, tmpdir):
+    config.CENTRES[0]['backups_folder'] = tmpdir.realpath()
+
+    tmpdir.mkdir("successes")
+
+    list_files = create_checksum_files_for(
+        f"{config.CENTRES[0]['backups_folder']}/successes/",
+        "AP_sanger_report_200503_2338.csv",
+        ["adfsadf", "asdf"],
+        "200601_1414"
+    )
+
+    try:
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile('AP_sanger_report_200503_2338.csv', centre)
+
+        assert centre_file.checksum_match('successes') == False
+    finally:
+        for tmpfile_for_list in list_files:
+            os.remove(tmpfile_for_list)
+
+def test_checksum_match(config, tmpdir):
+    config.CENTRES[0]['backups_folder'] = tmpdir.realpath()
+
+    tmpdir.mkdir("successes")
+
+    list_files = create_checksum_files_for(
+        f"{config.CENTRES[0]['backups_folder']}/successes/",
+        "AP_sanger_report_200503_2338.csv",
+        ["adfsadf", "0b3f0de9aa86ae013f5b013a4bb189ba"],
+        "200601_1414"
+    )
+
+    try:
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile('AP_sanger_report_200503_2338.csv', centre)
+
+        assert centre_file.checksum_match('successes') == True
+    finally:
+        for tmpfile_for_list in list_files:
+            os.remove(tmpfile_for_list)
+
+
 def test_extract_fields(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile('some file', centre)
@@ -146,7 +199,6 @@ def test_check_for_required_fields(config):
         csv_to_test_reader = DictReader(fake_csv)
 
         assert centre_file.check_for_required_fields(csv_to_test_reader) is None
-
 
 def test_archival_prepared_sample_conversor_changes_data(config):
     timestamp = '20/12/20'
