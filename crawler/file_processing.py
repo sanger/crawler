@@ -1,8 +1,9 @@
 import os
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Set
 from pymongo.errors import BulkWriteError
 from enum import Enum
 from csv import DictReader, DictWriter
+import shutil
 import logging, pathlib
 import re
 from crawler.constants import (
@@ -130,7 +131,7 @@ class Centre:
         except FileExistsError:
             pass
 
-        with get_sftp_connection(config) as sftp:
+        with get_sftp_connection(self.config) as sftp:
             logger.debug("Connected to SFTP")
             logger.debug("Listing centre's root directory")
             logger.debug(f"ls: {sftp.listdir(self.centre_config['sftp_root_read'])}")
@@ -156,6 +157,15 @@ class CentreFileState(Enum):
 """Class to process an individual file
 """
 class CentreFile:
+    ERRORS_FOLDER = 'errors'
+    SUCCESS_FOLDER = 'success'
+    REQUIRED_FIELDS = {
+        FIELD_ROOT_SAMPLE_ID,
+        FIELD_RNA_ID,
+        FIELD_RESULT,
+        FIELD_DATE_TESTED,
+    }
+
     def __init__(self, file_name, centre):
         """Initialiser for the class representing the file
 
@@ -437,17 +447,12 @@ class CentreFile:
             CentreFileError: Raised when the required fields are not found in the file
         """
         logger.debug("Checking CSV for required headers")
-        required_fields = {
-            FIELD_ROOT_SAMPLE_ID,
-            FIELD_RNA_ID,
-            FIELD_RESULT,
-            FIELD_DATE_TESTED,
-        }
+
         if csvreader.fieldnames:
             fieldnames = set(csvreader.fieldnames)
-            if not required_fields <= fieldnames:
+            if not self.REQUIRED_FIELDS <= fieldnames:
                 raise CentreFileError(
-                    f"{', '.join(list(required_fields - fieldnames))} missing in CSV file"
+                    f"{', '.join(list(self.REQUIRED_FIELDS - fieldnames))} missing in CSV file"
                 )
         else:
             raise CentreFileError("Cannot read CSV fieldnames")

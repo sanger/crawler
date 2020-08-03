@@ -2,13 +2,15 @@ import logging
 import logging.config
 import shutil
 import os
+from io import StringIO
 from crawler.helpers import current_time
 from unittest.mock import patch
+from csv import DictReader
 import pytest
 
 from crawler.file_processing import (
     Centre,
-    CentreFile
+    CentreFile,
 )
 from crawler.constants import (
     COLLECTION_CENTRES,
@@ -16,9 +18,131 @@ from crawler.constants import (
     COLLECTION_SAMPLES,
     COLLECTION_SAMPLES_HISTORY,
     FIELD_ROOT_SAMPLE_ID,
+    FIELD_RNA_ID,
+    FIELD_RESULT,
+    FIELD_DATE_TESTED,
+    FIELD_LAB_ID,
 )
-
+from crawler.exceptions import CentreFileError
 from crawler.db import get_mongo_collection
+
+def test_extract_fields(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile('some file', centre)
+
+    barcode_field = "RNA ID"
+    barcode_regex = r"^(.*)_([A-Z]\d\d)$"
+    assert centre_file.extract_fields({"RNA ID": "ABC123_H01"}, barcode_field, barcode_regex) == (
+        "ABC123",
+        "H01",
+    )
+    assert centre_file.extract_fields({"RNA ID": "ABC123_A00"}, barcode_field, barcode_regex) == (
+        "ABC123",
+        "A00",
+    )
+    assert centre_file.extract_fields({"RNA ID": "ABC123_H0"}, barcode_field, barcode_regex) == ("", "")
+    assert centre_file.extract_fields({"RNA ID": "ABC123H0"}, barcode_field, barcode_regex) == ("", "")
+    assert centre_file.extract_fields({"RNA ID": "AB23_H01"}, barcode_field, barcode_regex) == ("AB23", "H01")
+
+
+def test_add_extra_fields(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile('some file', centre)
+
+    extra_fields_added = [
+        {
+            "id": "1",
+            "RNA ID": "RNA_0043_H09",
+            "plate_barcode": "RNA_0043",
+            "source": "Alderley",
+            "coordinate": "H09",
+        }
+    ]
+
+    with StringIO() as fake_csv:
+        fake_csv.write("id,RNA ID\n")
+        fake_csv.write("1,RNA_0043_H09\n")
+        fake_csv.seek(0)
+
+        csv_to_test_reader = DictReader(fake_csv)
+
+        augmented_data = centre_file.add_extra_fields(csv_to_test_reader)
+        assert augmented_data == extra_fields_added
+        assert len(centre_file.errors) == 0
+
+    wrong_barcode = [
+        {
+            "id": "1",
+            "RNA ID": "RNA_0043_",
+            "plate_barcode": "",
+            "source": "Alderley",
+            "coordinate": "",
+        }
+    ]
+
+    with StringIO() as fake_csv:
+        fake_csv.write("id,RNA ID\n")
+        fake_csv.write("1,RNA_0043_\n")
+        fake_csv.seek(0)
+
+        csv_to_test_reader = DictReader(fake_csv)
+
+        augmented_data = centre_file.add_extra_fields(csv_to_test_reader)
+        assert augmented_data == wrong_barcode
+        assert len(centre_file.errors) == 1
+
+
+def test_get_download_dir(config):
+    for centre_config in config.CENTRES:
+        centre = Centre(config, centre_config)
+
+        assert (
+            centre.get_download_dir() == f"{config.DIR_DOWNLOADED_DATA}{centre['prefix']}/"
+        )
+
+def test_check_for_required_fields(config):
+    config.CENTRES[0]["barcode_field"]="RNA ID"
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile('some file', centre)
+
+    with pytest.raises(CentreFileError, match=r"Cannot read CSV fieldnames"):
+        with StringIO() as fake_csv:
+
+            csv_to_test_reader = DictReader(fake_csv)
+            assert centre_file.check_for_required_fields(csv_to_test_reader) is None
+
+    config.CENTRES[0]["barcode_field"]="RNA ID"
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile('some file', centre)
+
+    with pytest.raises(CentreFileError, match=r".* missing in CSV file"):
+        with StringIO() as fake_csv:
+            fake_csv.write("id,RNA ID\n")
+            fake_csv.write("1,RNA_0043_\n")
+            fake_csv.seek(0)
+
+            csv_to_test_reader = DictReader(fake_csv)
+
+            assert (
+                centre_file.check_for_required_fields(csv_to_test_reader) is None
+            )
+
+    config.CENTRES[0]["barcode_field"]="RNA ID"
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile('some file', centre)
+
+    with StringIO() as fake_csv:
+        fake_csv.write(
+            f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},"
+            f"{FIELD_LAB_ID}\n"
+        )
+        fake_csv.write("1,RNA_0043,Positive,today,MK\n")
+        fake_csv.seek(0)
+
+        csv_to_test_reader = DictReader(fake_csv)
+
+        assert centre_file.check_for_required_fields(csv_to_test_reader) is None
+
 
 def test_archival_prepared_sample_conversor_changes_data(config):
     timestamp = '20/12/20'

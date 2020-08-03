@@ -27,7 +27,6 @@ from crawler.db import (
 )
 from crawler.helpers import (
     get_config,
-    upload_file_to_sftp,
     current_time,
 )
 from crawler.file_processing import Centre
@@ -80,9 +79,6 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
                     unique=True,
                 )
 
-                # errors: List[str] = []
-                #docs_inserted: int = 0
-                #latest_file_name: str = ""
                 critical_errors: int = 0
 
                 centres_instances = [Centre(config, centre_config) for centre_config in centres]
@@ -90,48 +86,11 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
                     logger.info("*" * 80)
                     logger.info(f"Processing {centre_config['name']}")
 
-                    # errors.clear()
-                    # docs_inserted = 0
-                    # latest_file_name = ""
                     try:
                         if sftp:
                             centre_instance.download_csv_files() #(config, centre)
 
                         centre_instance.process_files()
-
-                    #         download_csv_files(config, centre)
-
-                    #     if "merge_required" in centre.keys() and centre["merge_required"]:
-                    #         master_file_name = merge_daily_files(config, centre)
-
-                    #         # only upload to SFTP if config explicitly says so - this is to prevent
-                    #         #   accidental uploads from non-production envs
-                    #         if config.SFTP_UPLOAD:  # type: ignore
-                    #             upload_file_to_sftp(config, centre, master_file_name)
-
-                    #     latest_file_name, errors, docs_to_insert = parse_csv(config, centre)
-
-                    #     logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
-                    #     result = samples_collection.insert_many(docs_to_insert, ordered=False)
-
-                    #     docs_inserted = len(result.inserted_ids)
-                    # except BulkWriteError as e:
-                    #     # This is happening when there are duplicates in the data and the index prevents
-                    #     #   the records from being written
-                    #     logger.warning(
-                    #         f"{e} - usually happens when duplicates are trying to be inserted"
-                    #     )
-                    #     docs_inserted = e.details["nInserted"]
-                    #     write_errors = e.details["writeErrors"]
-
-                    #     write_errors_codes = {
-                    #         write_error["code"] for write_error in write_errors
-                    #     }
-                    #     for code in write_errors_codes:
-                    #         errors_list = list(filter(lambda x: x["code"] == code, write_errors))
-                    #         num_errors = len(errors_list)
-                    #         errors.append(f"{num_errors} records with error code {code}. Example message: {errors_list[0]['errmsg']}")
-
                     except Exception as e:
                         errors.append(f"Critical error: {e}")
                         critical_errors += 1
