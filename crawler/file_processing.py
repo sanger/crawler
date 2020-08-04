@@ -177,12 +177,15 @@ class CentreFile:
         """
         self.errors = []
         self.errors.clear()
+        self.critical_errors = 0
 
         self.centre = centre
         self.config = centre.config
         self.centre_config = centre.centre_config
         self.file_name = file_name
         self.file_state = CentreFileState.FILE_UNCHECKED
+
+        self.docs_inserted = 0
 
     def filepath(self) -> str:
         """Returns the filepath for the file
@@ -383,7 +386,6 @@ class CentreFile:
                 docs_to_insert {List[Dict[str, str]]} -- list of sample information extracted from csv files
         """
         logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
-        docs_inserted = 0
         client = create_mongo_client(self.config)
         db = get_mongo_db(self.config, client)
         samples_collection = get_mongo_collection(db, COLLECTION_SAMPLES)
@@ -396,14 +398,14 @@ class CentreFile:
 
             # Inserts new version for samples
             result = samples_collection.insert_many(docs_to_insert, ordered=False)
-            docs_inserted = len(result.inserted_ids)
+            self.docs_inserted = len(result.inserted_ids)
         except BulkWriteError as e:
             # This is happening when there are duplicates in the data and the index prevents
             # the records from being written
             logger.warning(
                 f"{e} - usually happens when duplicates are trying to be inserted"
             )
-            docs_inserted = e.details["nInserted"]
+            self.docs_inserted = e.details["nInserted"]
             write_errors = {
                 write_error["code"] for write_error in e.details["writeErrors"]
             }
@@ -414,7 +416,7 @@ class CentreFile:
                 self.errors.append(f"{num_errors} records with error code {error}")
         except Exception as e:
             self.errors.append(f"Critical error: {e}")
-            #critical_errors += 1
+            self.critical_errors += 1
             logger.exception(e)
 
     def parse_csv(self) -> Tuple[List[str], List[Dict[str, str]]]:
