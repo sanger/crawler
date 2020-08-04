@@ -18,7 +18,6 @@ from crawler.constants import (
 )
 from crawler.db import (
     CollectionError,
-    create_import_record,
     create_mongo_client,
     get_mongo_collection,
     get_mongo_db,
@@ -97,11 +96,6 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
                         logger.exception(e)
                     finally:
                         centre_instance.clean_up()
-                        # logger.info(f"{docs_inserted} documents inserted")
-                        # write status record
-                        # _ = create_import_record(
-                        #     imports_collection, centre_config, docs_inserted, latest_file_name, fp_centre.errors,
-                        # )
 
                 # All centres have processed, If we have any critical errors, raise a CollectionError exception
                 # to prevent the safe_collection from triggering the rename
