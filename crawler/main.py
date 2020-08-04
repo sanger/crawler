@@ -39,7 +39,7 @@ from crawler.helpers import (
 logger = logging.getLogger(__name__)
 
 
-def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
+def run(sftp: bool, keep_files: bool, settings_module: str = "", timestamp: str = None) -> None:
     try:
         timestamp = timestamp or current_time()
         start = time.time()
@@ -136,7 +136,9 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
                         critical_errors += 1
                         logger.exception(e)
                     finally:
-                        clean_up(config, centre)
+                        if not keep_files:
+                            clean_up(config, centre)
+
                         logger.info(f"{docs_inserted} documents inserted")
                         # write status record
                         _ = create_import_record(
