@@ -3,6 +3,7 @@ from csv import DictReader
 from io import StringIO
 
 import pytest
+from unittest.mock import patch
 
 from crawler.constants import (
     FIELD_DATE_TESTED,
@@ -173,3 +174,22 @@ def test_merge_daily_files_with_ignore_file(config):
                 assert mf.read() == tf.read()
     finally:
         os.remove(master_file)
+
+
+def test_merge_daily_files_with_extra_fields(config, centre_with_added_columns):
+    # We're using a different download directory here
+    with patch.object(config, "DIR_DOWNLOADED_DATA", "tests/extra_column_files/"):
+        master_file_name = "MALF_sanger_report_200518_2205_master.csv"
+        assert merge_daily_files(config, centre_with_added_columns) == master_file_name
+
+        master_file = f"{get_download_dir(config, centre_with_added_columns)}{master_file_name}"
+        test_file = (
+            f"{get_download_dir(config, centre_with_added_columns)}test_merge_daily_files.csv"
+        )
+
+        try:
+            with open(master_file, "r") as mf:
+                with open(test_file, "r") as tf:
+                    assert mf.read() == tf.read()
+        finally:
+            os.remove(master_file)
