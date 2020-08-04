@@ -312,12 +312,6 @@ def test_get_download_dir(config):
 
     assert centre.get_download_dir() == 'tests/files/ALDP/'
 
-# def test_get_filename_with_checksum(config):
-#     centre = Centre(config, config.CENTRES[0])
-#     centre_file = CentreFile('AP_sanger_report_200503_2338.csv', centre)
-
-#     assert centre_file.get_filename_with_checksum() == 'AP_sanger_report_200503_2338.csv_' + centre_file.checksum()
-
 def test_set_state_for_file_when_file_in_black_list(config, blacklist_for_centre):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile('AP_sanger_report_200503_2338.csv', centre)
