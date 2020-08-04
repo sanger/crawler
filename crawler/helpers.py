@@ -113,7 +113,6 @@ def add_extra_fields(
 
 
 # This is being called from parse_csv
-# TODO: Add validation for no unexpected headers (warning) - check with James
 def check_for_required_fields(csvreader: DictReader, centre: Dict[str, str]) -> None:
     """Checks that the CSV file has the required headers.
 
