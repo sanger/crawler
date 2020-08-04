@@ -432,14 +432,12 @@ class CentreFile:
         with open(csvfile_path, newline="") as csvfile:
             csvreader = DictReader(csvfile)
 
-            self.check_for_required_fields(csvreader)
+            self.check_for_required_headers(csvreader)
             documents = self.add_extra_fields(csvreader)
         return self.errors, documents
 
-    # TODO check why MK is passing given the below method
-    # This is being called from parse_csv
     # TODO: Add validation for no unexpected headers (warning) - check with James
-    def check_for_required_fields(self, csvreader: DictReader) -> None:
+    def check_for_required_headers(self, csvreader: DictReader) -> None:
         """Checks that the CSV file has the required headers.
 
         Raises:
