@@ -13,6 +13,7 @@ from tempfile import mkstemp
 from crawler.file_processing import (
     Centre,
     CentreFile,
+    CentreFileState,
     SUCCESSES_DIR,
     ERRORS_DIR,
 )
@@ -269,7 +270,7 @@ def test_backup_good_file(config, tmpdir):
     # create a file inside the centre download dir
     filename = "AP_sanger_report_200503_2338.csv"
 
-    # test the backup of the file to the success folder
+    # test the backup of the file to the successes folder
     centre_file = CentreFile(filename, centre)
     centre_file.backup_file()
 
@@ -295,7 +296,7 @@ def test_backup_bad_file(config, tmpdir):
     # create a file inside the centre download dir
     filename = "AP_sanger_report_200518_2132.csv"
 
-    # test the backup of the file to the success folder
+    # test the backup of the file to the errors folder
     centre_file = CentreFile(filename, centre)
     centre_file.errors.append("Some error happened")
     centre_file.backup_file()
@@ -311,19 +312,48 @@ def test_get_download_dir(config):
 
     assert centre.get_download_dir() == 'tests/files/ALDP/'
 
-def test_get_filename_with_checksum():
-    return True
+# def test_get_filename_with_checksum(config):
+#     centre = Centre(config, config.CENTRES[0])
+#     centre_file = CentreFile('AP_sanger_report_200503_2338.csv', centre)
 
-def test_set_state_for_file_when_file_in_black_list():
-    return False
+#     assert centre_file.get_filename_with_checksum() == 'AP_sanger_report_200503_2338.csv_' + centre_file.checksum()
 
-def test_set_state_for_file_when_never_seen_before():
-    return False
+def test_set_state_for_file_when_file_in_black_list(config, blacklist_for_centre):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile('AP_sanger_report_200503_2338.csv', centre)
+    centre_file.set_state_for_file()
 
-def test_set_state_for_file_when_in_error_folder():
-    return False
+    assert centre_file.file_state == CentreFileState.FILE_IN_BLACKLIST
 
-def test_set_state_for_file_when_in_success_folder():
+def test_set_state_for_file_when_never_seen_before(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile('AP_sanger_report_200503_2338.csv', centre)
+    centre_file.set_state_for_file()
+
+    assert centre_file.file_state == CentreFileState.FILE_NOT_PROCESSED_YET
+
+def test_set_state_for_file_when_in_error_folder(config, tmpdir):
+    errors_folder = tmpdir.mkdir(ERRORS_DIR)
+    success_folder = tmpdir.mkdir(SUCCESSES_DIR)
+
+    # configure to use the backups folder for this test
+    config.CENTRES[0]['backups_folder'] = tmpdir.realpath()
+    centre = Centre(config, config.CENTRES[0])
+
+    # create a backup of the file inside the errors directory as if previously processed there
+    filename = "AP_sanger_report_200518_2132.csv"
+    centre_file = CentreFile(filename, centre)
+    centre_file.errors.append("Some error happened")
+    centre_file.backup_file()
+
+    assert len(errors_folder.listdir()) == 1
+
+    # check the file state again now the error version exists
+    centre_file.set_state_for_file()
+
+    assert centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_ERROR
+
+def test_set_state_for_file_when_in_success_folder(config):
     return False
 
 def test_process_files(mongo_database, config, testing_files_for_process):

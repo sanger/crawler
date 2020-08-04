@@ -108,3 +108,11 @@ def backups_folder():
         yield
     finally:
         shutil.rmtree("backups/files")
+
+@pytest.fixture
+def blacklist_for_centre(config):
+    try:
+        config.CENTRES[0]['file_names_to_ignore'] = ['AP_sanger_report_200503_2338.csv']
+        yield config
+    finally:
+        config.CENTRES[0]['file_names_to_ignore'] = []

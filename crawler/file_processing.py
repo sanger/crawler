@@ -209,13 +209,13 @@ class CentreFile:
 #       /centre2/errors
 #               /successes
 
-    def get_filename_with_checksum(self) -> str:
-        """Returns a filename including the checksum for the file
+    # def get_filename_with_checksum(self) -> str:
+    #     """Returns a filename including the checksum for the file
 
-            Returns:
-                str -- the filename including the checksum for the file
-        """
-        return f"{self.file_name}_{checksum(self.file_name)}"
+    #         Returns:
+    #             str -- the filename including the checksum for the file
+    #     """
+    #     return f"{self.file_name}_{self.checksum()}"
 
     def checksum_match(self, dir_path) -> str:
         """Checks a directory for a file matching the checksum of this file
