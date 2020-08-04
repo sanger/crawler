@@ -119,6 +119,14 @@ def rename_collection(collection: Collection, new_name: str) -> None:
     logger.debug(f"Collection renamed to: '{new_name}'")
 
     return None
+@contextmanager
+def samples_collection_accessor(
+    database: Database, collection_name: str, timestamp: str
+) -> Iterator[Collection]:
+    logger.debug(f"Opening collection: {collection_name}")
+    temporary_collection = get_mongo_collection(database, collection_name)
+
+    yield temporary_collection
 
 
 @contextmanager

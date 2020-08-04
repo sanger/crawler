@@ -23,6 +23,7 @@ from crawler.db import (
     get_mongo_db,
     populate_collection,
     safe_collection,
+    samples_collection_accessor,
 )
 from crawler.helpers import (
     get_config,
@@ -59,12 +60,12 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
 
             imports_collection = get_mongo_collection(db, COLLECTION_IMPORTS)
 
-            with safe_collection(db, COLLECTION_SAMPLES, timestamp) as samples_collection:
+            with samples_collection_accessor(db, COLLECTION_SAMPLES, timestamp) as samples_collection:
                 logger.debug(
                     f"Creating index '{FIELD_PLATE_BARCODE}' on '{samples_collection.full_name}'"
                 )
                 samples_collection.create_index(FIELD_PLATE_BARCODE)
-                logger.debug(f"Creating compund index on '{samples_collection.full_name}'")
+                logger.debug(f"Creating compound index on '{samples_collection.full_name}'")
                 # create compound index on 'Root Sample ID', 'RNA ID', 'Result', 'Lab ID' - some data
                 #   had the same plate tested at another time so ignore the data if it is exactly the
                 #   same
@@ -83,19 +84,22 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
                 centres_instances = [Centre(config, centre_config) for centre_config in centres]
                 for centre_instance in centres_instances:
                     logger.info("*" * 80)
-                    logger.info(f"Processing {centre_config['name']}")
+                    logger.info(f"Processing {centre_instance.centre_config['name']}")
 
                     try:
                         if sftp:
-                            centre_instance.download_csv_files() #(config, centre)
+                            centre_instance.download_csv_files()
 
                         centre_instance.process_files()
                     except Exception as e:
-                        errors.append(f"Critical error: {e}")
+                        centre_instance.errors.append(f"Critical error: {e}")
                         critical_errors += 1
+                        logger.error(f"Error in centre {centre_instance.centre_config['name']}")
                         logger.exception(e)
                     finally:
+                        logger.debug('hi')
                         centre_instance.clean_up()
+                        # TODO: write imports for centre
 
                 # All centres have processed, If we have any critical errors, raise a CollectionError exception
                 # to prevent the safe_collection from triggering the rename

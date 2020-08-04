@@ -48,6 +48,11 @@ class Centre:
       # TODO: check if sorted is oldest first
       self.centre_files = sorted(self.get_files_in_download_dir())
 
+      # create backup directories for files
+      os.makedirs(f"{self.centre_config['backups_folder']}/{ERRORS_DIR}", exist_ok=True)
+      os.makedirs(f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}", exist_ok=True)
+
+
     def get_files_in_download_dir(self) -> List[str]:
         """Get all the files in the download directory for this centre and filter the file names using
         the regex described in the centre's 'regex_field'.
@@ -81,7 +86,7 @@ class Centre:
         """
         logger.debug("Remove files")
         try:
-            shutil.rmtree(get_download_dir())
+            shutil.rmtree(self.get_download_dir())
         except Exception as e:
             logger.exception("Failed clean up")
 
@@ -208,12 +213,6 @@ class CentreFile:
 
         return file_hash.hexdigest()
 
-# Volume structure:
-# volume/centre1/errors
-#               /successes
-#       /centre2/errors
-#               /successes
-
     def checksum_match(self, dir_path) -> str:
         """Checks a directory for a file matching the checksum of this file
 
@@ -310,8 +309,6 @@ class CentreFile:
         if existing_samples_to_archive.count() > 0:
             samples_history_collection_connector.insert_many(self.archival_prepared_samples(existing_samples_to_archive))
 
-            assert existing_samples_to_archive.count() == len(root_sample_ids)
-
             samples_collection_connector.delete_many({FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}})
 
         return True
@@ -356,7 +353,6 @@ class CentreFile:
                 str -- destination of the file
         """
         destination = self.backup_filename()
-        os.makedirs(os.path.dirname(destination), exist_ok=True)
 
         shutil.copyfile(self.full_path_to_file(), destination)
 
@@ -364,7 +360,7 @@ class CentreFile:
         logger.info(f"{self.docs_inserted} documents inserted")
 
         # write status record
-        imports_collection = get_mongo_collection(db, COLLECTION_IMPORTS)
+        imports_collection = get_mongo_collection(self.get_db(), COLLECTION_IMPORTS)
         _ = create_import_record(
             imports_collection, self.centre_config, self.docs_inserted, self.file_name, self.errors,
         )
@@ -386,11 +382,7 @@ class CentreFile:
                 docs_to_insert {List[Dict[str, str]]} -- list of sample information extracted from csv files
         """
         logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
-        client = create_mongo_client(self.config)
-        db = get_mongo_db(self.config, client)
-        samples_collection = get_mongo_collection(db, COLLECTION_SAMPLES)
-
-        logger.info(docs_to_insert)
+        samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
 
         try:
             # Moves previous version into history of samples
@@ -475,7 +467,7 @@ class CentreFile:
         return m.group(1), m.group(2)
 
     def add_extra_fields(self, csvreader: DictReader) -> Tuple[List[str], List[Dict[str, str]]]:
-        """Adds extra fields to the imported data which is required for querying.
+        """Adds extra fields to the imported data which are required for querying.
 
         Arguments:
             csvreader {DictReader} -- CSV file reader to iterate over
@@ -486,33 +478,40 @@ class CentreFile:
         logger.debug("Adding extra fields")
 
         augmented_data = []
-        barcode_mismatch = 0
+        missing_data_count = 0
+        empty_rows = 0
 
         barcode_regex = self.centre_config["barcode_regex"]
         barcode_field = self.centre_config["barcode_field"]
 
         for row in csvreader:
-            row["source"] = self.centre_config["name"]
+            # only process rows that contain something in the cells
+            if any(cell_txt.strip() for cell_txt in row):
+                row["source"] = self.centre_config["name"]
 
-            try:
-                if row[barcode_field] and barcode_regex:
-                    row[FIELD_PLATE_BARCODE], row[FIELD_COORDINATE] = self.extract_fields(
-                        row, barcode_field, barcode_regex
-                    )
-                else:
-                    row[FIELD_PLATE_BARCODE] = row[barcode_field]
+                try:
+                    if row[barcode_field] and barcode_regex:
+                        row[FIELD_PLATE_BARCODE], row[FIELD_COORDINATE] = self.extract_fields(
+                            row, barcode_field, barcode_regex
+                        )
+                    else:
+                        row[FIELD_PLATE_BARCODE] = row[barcode_field]
 
-                if not row[FIELD_PLATE_BARCODE]:
-                    barcode_mismatch += 1
-            except KeyError:
-                pass
+                    if not row[FIELD_PLATE_BARCODE]:
+                        missing_data_count += 1
+                except KeyError:
+                    pass
 
-            augmented_data.append(row)
+                augmented_data.append(row)
+            else:
+                empty_rows += 1
 
-        if barcode_regex and barcode_mismatch > 0:
+        logger.info(f"Empty rows = {empty_rows}")
+
+        if barcode_regex and missing_data_count > 0:
             error = (
-                f"{barcode_mismatch} sample barcodes did not match the regex: {barcode_regex} "
-                f"for field '{barcode_field}'"
+                f"{missing_data_count} sample rows are missing a barcode and or coordinate"
+                f"for sample '{row[FIELD_ROOT_SAMPLE_ID]}'"
             )
             self.errors.append(error)
             logger.warning(error)
