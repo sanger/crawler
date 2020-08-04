@@ -20,12 +20,14 @@ from crawler.helpers import current_time
 from crawler.constants import (
     COLLECTION_SAMPLES,
     COLLECTION_SAMPLES_HISTORY,
+    COLLECTION_IMPORTS,
 )
 from crawler.exceptions import CentreFileError
 from crawler.db import (
     get_mongo_collection,
     get_mongo_db,
-    create_mongo_client
+    create_mongo_client,
+    create_import_record,
 )
 
 from hashlib import md5
@@ -318,18 +320,14 @@ class CentreFile:
 
         parse_errors, docs_to_insert = self.parse_csv()
         if parse_errors:
-            logger.info(f"Errors present in file {self.file_name}")
-            # error handling - log error
-            # write to volume 'errors'
-            # add filename to blacklist?
-            #continue
+            logger.error(f"Errors present in file {self.file_name}")
+
         else:
-            logger.info(f"File valid")
-            # TODO: if this is a new version of a file we already processed do we overwrite it?
-            # or rename the previous one with a timestamp?
-            # write to volume 'processed'
+            logger.info(f"File {self.file_name} is valid")
+
         self.insert_samples_from_docs(docs_to_insert)
         self.backup_file()
+        self.create_import_record_for_file()
 
     def backup_filename(self) -> str:
         """Backup the file.
@@ -358,6 +356,15 @@ class CentreFile:
         os.makedirs(os.path.dirname(destination), exist_ok=True)
 
         shutil.copyfile(self.full_path_to_file(), destination)
+
+    def create_import_record_for_file(self):
+        logger.info(f"{self.docs_inserted} documents inserted")
+
+        # write status record
+        imports_collection = get_mongo_collection(db, COLLECTION_IMPORTS)
+        _ = create_import_record(
+            imports_collection, self.centre_config, self.docs_inserted, self.file_name, self.errors,
+        )
 
     def get_db(self) -> Database:
         """Fetch the mongo database.
