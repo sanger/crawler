@@ -36,7 +36,7 @@ def test_run(mongo_database):
     # 1) It also clears up the master files, which we'd otherwise need to handle
     # 2) It means we keep the tested process closer to the actual one
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
-    run(False, "crawler.config.integration")
+    run(False, False, "crawler.config.integration")
 
     # We expect to have three collections following import
     centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
@@ -69,12 +69,12 @@ def test_repeat_run(mongo_database):
     # 1) It also clears up the master files, which we'd otherwise need to handle
     # 2) It means we keep the tested process closer to the actual one
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
-    run(False, "crawler.config.integration")
+    run(False, False, "crawler.config.integration")
 
     timestamp = current_time()
 
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
-    run(False, "crawler.config.integration", timestamp)
+    run(False, False, "crawler.config.integration", timestamp)
     # We expect to have three collections following import
     centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
@@ -98,8 +98,8 @@ def test_repeat_run(mongo_database):
 def test_job_run(mongo_database):
     _, mongo_database = mongo_database
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
-    run(False, "crawler.config.integration")
-    run(False, "crawler.config.integration")
+    run(False, False, "crawler.config.integration")
+    run(False, False, "crawler.config.integration")
 
     centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
@@ -121,14 +121,14 @@ def test_error_run(mongo_database):
     # 1) It also clears up the master files, which we'd otherwise need to handle
     # 2) It means we keep the tested process closer to the actual one
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
-    run(False, "crawler.config.integration")
+    run(False, False, "crawler.config.integration")
 
     timestamp = current_time()
 
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
     _ = shutil.copytree("tests/malformed_files", "tmp/files", dirs_exist_ok=True)
 
-    run(False, "crawler.config.integration", timestamp)
+    run(False, False, "crawler.config.integration", timestamp)
     # We expect to have three collections following import
     centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
@@ -159,7 +159,7 @@ def test_error_run_imports_message(mongo_database):
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
     _ = shutil.copytree("tests/files_with_duplicate_samples", "tmp/files", dirs_exist_ok=True)
 
-    run(False, "crawler.config.integration")
+    run(False, False, "crawler.config.integration")
 
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
     doc = imports_collection.find_one({'centre_name': 'Test Centre'})
