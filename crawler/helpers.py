@@ -9,6 +9,7 @@ from datetime import datetime
 from importlib import import_module
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Tuple
+from pymongo.collection import Collection
 
 import pysftp  # type: ignore
 
@@ -264,14 +265,16 @@ def get_latest_csv(config: ModuleType, centre: Dict[str, str], regex_field: str)
     return latest_file_name
 
 
-def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
+def merge_daily_files(config: ModuleType, centre: Dict[str, str], centre_collection: Collection) -> str:
     """Merge all the daily incremental files of the centre into one 'master' file. The master
     file's name is created by appending '_master' to the latest CSV file name.
     Any files pre-dating the merge_start_date option in the centre configuration
     will be excluded from the merge.
 
     Arguments:
+        config
         centre {Dict[str, str]} -- the centre in question
+        centre_collection {Collection} -- the collection of the centre from the database
 
     Raises:
         CentreFileError: raised when no field names are found in the CSV file
@@ -301,7 +304,10 @@ def merge_daily_files(config: ModuleType, centre: Dict[str, str]) -> str:
         seen_rows = set()
 
         for filename in sorted(centre_files):
-            if filename in centre["file_names_to_ignore"]:
+            # TODO fix test
+            filenames_to_ignore = centre_collection['file_names_to_ignore']
+            
+            if filename in filenames_to_ignore:
                 continue
 
             # Ignore files which predate the merge_start_date if specified

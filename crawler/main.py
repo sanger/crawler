@@ -62,6 +62,7 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
                 f"Creating index '{FIELD_CENTRE_NAME}' on '{centres_collection.full_name}'"
             )
             centres_collection.create_index(FIELD_CENTRE_NAME, unique=True)
+            # TODO populate_centres_collection
             populate_collection(centres_collection, centres, FIELD_CENTRE_NAME)
 
             imports_collection = get_mongo_collection(db, COLLECTION_IMPORTS)
@@ -102,7 +103,9 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
                             download_csv_files(config, centre)
 
                         if "merge_required" in centre.keys() and centre["merge_required"]:
-                            master_file_name = merge_daily_files(config, centre)
+                            centre_collection = centres_collection.find_one({"name": centre['name']})
+                            
+                            master_file_name = merge_daily_files(config, centre, centre_collection)
 
                             # only upload to SFTP if config explicitly says so - this is to prevent
                             #   accidental uploads from non-production envs
