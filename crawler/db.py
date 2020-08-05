@@ -193,8 +193,7 @@ def create_import_record(
 
     return import_collection.insert_one(status_doc)
 
-# TODO: rename to populate_centres_collection
-def populate_collection(
+def populate_centres_collection(
     collection: Collection, documents: List[Dict[str, str]], filter_field: str
 ) -> None:
     """Populates a collection using the given documents. It uses the filter_field to replace any
@@ -209,11 +208,7 @@ def populate_collection(
         f"Populating/updating '{collection.full_name}' using '{filter_field}' as the filter"
     )
 
-    for document in documents:
-        # TODO: Handle the persisting of the file_names_to_ignore field
-        # Create test
-
-        #  upsert inserts a document if it does not find one with the filter
-        _ = collection.find_one_and_replace(
-            {filter_field: document[filter_field]}, document, upsert=True
+    for document in documents:        
+        _ = collection.find_one_and_update(
+            {filter_field: document[filter_field]},{'$set': document}, upsert=True
         )
