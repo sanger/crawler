@@ -36,22 +36,22 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = pathlib.Path(__file__).parent.parent
 REGEX_FIELD = "sftp_file_regex"
-ERRORS_DIR = 'errors'
-SUCCESSES_DIR = 'successes'
+ERRORS_DIR = "errors"
+SUCCESSES_DIR = "successes"
+
 
 class Centre:
     def __init__(self, config, centre_config):
-      self.errors = []
-      self.errors.clear()
-      self.config = config
-      self.centre_config = centre_config
-      # TODO: check if sorted is oldest first
-      self.centre_files = sorted(self.get_files_in_download_dir())
+        self.errors = []
+        self.errors.clear()
+        self.config = config
+        self.centre_config = centre_config
+        # TODO: check if sorted is oldest first
+        self.centre_files = sorted(self.get_files_in_download_dir())
 
-      # create backup directories for files
-      os.makedirs(f"{self.centre_config['backups_folder']}/{ERRORS_DIR}", exist_ok=True)
-      os.makedirs(f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}", exist_ok=True)
-
+        # create backup directories for files
+        os.makedirs(f"{self.centre_config['backups_folder']}/{ERRORS_DIR}", exist_ok=True)
+        os.makedirs(f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}", exist_ok=True)
 
     def get_files_in_download_dir(self) -> List[str]:
         """Get all the files in the download directory for this centre and filter the file names using
@@ -151,8 +151,11 @@ class Centre:
 
         return None
 
+
 """Class to hold enum states for the files
 """
+
+
 class CentreFileState(Enum):
     FILE_UNCHECKED = 1
     FILE_IN_BLACKLIST = 2
@@ -160,8 +163,11 @@ class CentreFileState(Enum):
     FILE_PROCESSED_WITH_ERROR = 4
     FILE_PROCESSED_WITH_SUCCESS = 5
 
+
 """Class to process an individual file
 """
+
+
 class CentreFile:
     REQUIRED_FIELDS = {
         FIELD_ROOT_SAMPLE_ID,
@@ -274,9 +280,9 @@ class CentreFile:
             Returns:
                 Dict[str, str] - the modified sample for archiving
         """
-        sample['archived_at'] = timestamp
-        sample['sample_object_id'] = sample['_id']
-        del sample['_id']
+        sample["archived_at"] = timestamp
+        sample["sample_object_id"] = sample["_id"]
+        del sample["_id"]
         return sample
 
     def archival_prepared_samples(self, samples) -> List[Dict[str, str]]:
@@ -289,7 +295,9 @@ class CentreFile:
                 List[Dict[str, str]] - the modified samples for archiving
         """
         timestamp = current_time()
-        return list(map(lambda sample: self.archival_prepared_sample_conversor(sample, timestamp), samples))
+        return list(
+            map(lambda sample: self.archival_prepared_sample_conversor(sample, timestamp), samples)
+        )
 
     def archive_old_samples(self, samples_list) -> bool:
         """Archives the old versions of samples we are updating so we retain a history.
@@ -302,14 +310,22 @@ class CentreFile:
         """
         root_sample_ids = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], samples_list))
         samples_collection_connector = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
-        existing_samples_to_archive = samples_collection_connector.find({FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}})
+        existing_samples_to_archive = samples_collection_connector.find(
+            {FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}
+        )
         # TODO: Only archive a sample if there was any change by comparing with the the sample replacing
 
-        samples_history_collection_connector = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES_HISTORY)
+        samples_history_collection_connector = get_mongo_collection(
+            self.get_db(), COLLECTION_SAMPLES_HISTORY
+        )
         if existing_samples_to_archive.count() > 0:
-            samples_history_collection_connector.insert_many(self.archival_prepared_samples(existing_samples_to_archive))
+            samples_history_collection_connector.insert_many(
+                self.archival_prepared_samples(existing_samples_to_archive)
+            )
 
-            samples_collection_connector.delete_many({FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}})
+            samples_collection_connector.delete_many(
+                {FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}
+            )
 
         return True
 
@@ -335,8 +351,10 @@ class CentreFile:
             Returns:
                 str -- the filepath of the file backup
         """
-        if (len(self.errors) > 0):
-            return f"{self.centre_config['backups_folder']}/{ERRORS_DIR}/{self.timestamped_filename()}"
+        if len(self.errors) > 0:
+            return (
+                f"{self.centre_config['backups_folder']}/{ERRORS_DIR}/{self.timestamped_filename()}"
+            )
         else:
             return f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}/{self.timestamped_filename()}"
 
@@ -394,13 +412,9 @@ class CentreFile:
         except BulkWriteError as e:
             # This is happening when there are duplicates in the data and the index prevents
             # the records from being written
-            logger.warning(
-                f"{e} - usually happens when duplicates are trying to be inserted"
-            )
+            logger.warning(f"{e} - usually happens when duplicates are trying to be inserted")
             self.docs_inserted = e.details["nInserted"]
-            write_errors = {
-                write_error["code"] for write_error in e.details["writeErrors"]
-            }
+            write_errors = {write_error["code"] for write_error in e.details["writeErrors"]}
             for error in write_errors:
                 num_errors = len(
                     list(filter(lambda x: x["code"] == error, e.details["writeErrors"]))
@@ -446,7 +460,9 @@ class CentreFile:
         else:
             raise CentreFileError("Cannot read CSV fieldnames")
 
-    def extract_fields(self, row: Dict[str, str], barcode_field: str, regex: str) -> Tuple[str, str]:
+    def extract_fields(
+        self, row: Dict[str, str], barcode_field: str, regex: str
+    ) -> Tuple[str, str]:
         """Extracts fields from a row of data (from the CSV file). Currently extracting the barcode and
         coordinate (well position) using regex groups.
 
@@ -466,7 +482,9 @@ class CentreFile:
 
         return m.group(1), m.group(2)
 
-    def format_and_filter_rows(self, csvreader: DictReader) -> Tuple[List[str], List[Dict[str, str]]]:
+    def format_and_filter_rows(
+        self, csvreader: DictReader
+    ) -> Tuple[List[str], List[Dict[str, str]]]:
         """Adds extra fields to the imported data which are required for querying.
 
         Arguments:
@@ -512,9 +530,7 @@ class CentreFile:
         logger.info(f"Invalid rows = {invalid_rows}")
 
         if barcode_regex and missing_data_count > 0:
-            error = (
-                f"{missing_data_count} sample rows are missing a plate barcode and / or a coordinate"
-            )
+            error = f"{missing_data_count} sample rows are missing a plate barcode and / or a coordinate"
             self.errors.append(error)
             logger.warning(error)
             # TODO: Update regex check to handle different format checks
@@ -524,14 +540,14 @@ class CentreFile:
 
     def row_valid_structure(self, row, row_index):
         # check whether row is completely empty (this is ok)
-        if not(any(cell_txt.strip() for cell_txt in row.values())):
+        if not (any(cell_txt.strip() for cell_txt in row.values())):
             return False
 
         # check both the Root Sample ID and barcode field are present
         barcode_field = self.centre_config["barcode_field"]
 
-        if not(row[FIELD_ROOT_SAMPLE_ID] and row[barcode_field]):
-            error = (f"Row {row_index} has an empty plate barcode.")
+        if not (row[FIELD_ROOT_SAMPLE_ID] and row[barcode_field]):
+            error = f"Row {row_index} has an empty plate barcode."
             self.errors.append(error)
             logger.error(error)
             return False

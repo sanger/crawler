@@ -49,7 +49,10 @@ def test_run(mongo_database, cleanup_backups):
     assert centres_collection.count_documents({"name": "Test Centre"}) == 1
 
     # We record *all* our samples
-    assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES, 'Wrong number of valid samples'
+
+    assert (
+        samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
+    ), "Wrong number of valid samples"
     assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
     assert samples_collection.count_documents({"RNA ID": "123_H09", "source": "UK Biocentre"}) == 1
 
@@ -58,11 +61,12 @@ def test_run(mongo_database, cleanup_backups):
 
     # check number of success files
     (_, _, files) = next(os.walk("tmp/backups/ALDP/successes"))
-    assert 3 == len(files), 'Wrong number of success files'
+    assert 3 == len(files), "Wrong number of success files"
 
     # check the code cleaned up the temporary files
     (_, subfolders, files) = next(os.walk("tmp/files/"))
     assert 0 == len(subfolders)
+
 
 def test_run_creates_right_files_backups(mongo_database, cleanup_backups):
     _, mongo_database = mongo_database
@@ -82,7 +86,7 @@ def test_run_creates_right_files_backups(mongo_database, cleanup_backups):
     assert 0 == len(files)
 
     (_, _, files) = next(os.walk("tmp/backups/CAMC/successes"))
-    assert 1 == len(files), 'Fail success CAMC'
+    assert 1 == len(files), "Fail success CAMC"
 
     (_, _, files) = next(os.walk("tmp/backups/CAMC/errors"))
     assert 0 == len(files)
@@ -94,7 +98,7 @@ def test_run_creates_right_files_backups(mongo_database, cleanup_backups):
     assert 0 == len(files)
 
     (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
-    assert 0 == len(files), 'Fail success TEST'
+    assert 0 == len(files), "Fail success TEST"
 
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
     assert 1 == len(files)
@@ -109,7 +113,7 @@ def test_run_creates_right_files_backups(mongo_database, cleanup_backups):
     assert imports_collection.count_documents({}) == 8
 
     (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
-    assert 1 == len(files), 'Fail success TEST'
+    assert 1 == len(files), "Fail success TEST"
 
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
     assert 1 == len(files)
@@ -117,6 +121,7 @@ def test_run_creates_right_files_backups(mongo_database, cleanup_backups):
     # check the code cleaned up the temporary files
     (_, subfolders, files) = next(os.walk("tmp/files/"))
     assert 0 == len(subfolders)
+
 
 # If we have multiple runs, the older runs are archived with a timestamps
 # def test_repeat_run(mongo_database, cleanup_backups):

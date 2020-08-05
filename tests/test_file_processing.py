@@ -31,6 +31,7 @@ from crawler.constants import (
 from crawler.exceptions import CentreFileError
 from crawler.db import get_mongo_collection
 
+
 def create_checksum_files_for(filepath, filename, checksums, timestamp):
     list_files = []
     for checksum in checksums:
@@ -41,78 +42,85 @@ def create_checksum_files_for(filepath, filename, checksums, timestamp):
         list_files.append(full_filename)
     return list_files
 
+
 def test_checksum_not_match(config, tmpdir):
-    config.CENTRES[0]['backups_folder'] = str(tmpdir.realpath())
+    with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
+        tmpdir.mkdir("successes")
 
-    tmpdir.mkdir("successes")
+        list_files = create_checksum_files_for(
+            f"{config.CENTRES[0]['backups_folder']}/successes/",
+            "AP_sanger_report_200503_2338.csv",
+            ["adfsadf", "asdf"],
+            "200601_1414",
+        )
 
-    list_files = create_checksum_files_for(
-        f"{config.CENTRES[0]['backups_folder']}/successes/",
-        "AP_sanger_report_200503_2338.csv",
-        ["adfsadf", "asdf"],
-        "200601_1414"
-    )
+        try:
+            centre = Centre(config, config.CENTRES[0])
+            centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
 
-    try:
-        centre = Centre(config, config.CENTRES[0])
-        centre_file = CentreFile('AP_sanger_report_200503_2338.csv', centre)
-
-        assert centre_file.checksum_match('successes') == False
-    finally:
-        for tmpfile_for_list in list_files:
-            os.remove(tmpfile_for_list)
+            assert centre_file.checksum_match("successes") == False
+        finally:
+            for tmpfile_for_list in list_files:
+                os.remove(tmpfile_for_list)
 
 
 def test_checksum_match(config, tmpdir):
-    config.CENTRES[0]['backups_folder'] = str(tmpdir.realpath())
+    with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
 
-    tmpdir.mkdir("successes")
+        tmpdir.mkdir("successes")
 
-    list_files = create_checksum_files_for(
-        f"{config.CENTRES[0]['backups_folder']}/successes/",
-        "AP_sanger_report_200503_2338.csv",
-        ["adfsadf", "0b3f0de9aa86ae013f5b013a4bb189ba"],
-        "200601_1414"
-    )
+        list_files = create_checksum_files_for(
+            f"{config.CENTRES[0]['backups_folder']}/successes/",
+            "AP_sanger_report_200503_2338.csv",
+            ["adfsadf", "0b3f0de9aa86ae013f5b013a4bb189ba"],
+            "200601_1414",
+        )
 
-    try:
-        centre = Centre(config, config.CENTRES[0])
-        centre_file = CentreFile('AP_sanger_report_200503_2338.csv', centre)
+        try:
+            centre = Centre(config, config.CENTRES[0])
+            centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
 
-        assert centre_file.checksum_match('successes') == True
-    finally:
-        for tmpfile_for_list in list_files:
-            os.remove(tmpfile_for_list)
+            assert centre_file.checksum_match("successes") == True
+        finally:
+            for tmpfile_for_list in list_files:
+                os.remove(tmpfile_for_list)
+
 
 def test_row_invalid_structure(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile('some file', centre)
+    centre_file = CentreFile("some file", centre)
 
     # Not maching regexp
     assert not centre_file.row_valid_structure(
-        {"Root Sample ID": "asdf", "Result": "Positive", "RNA ID": "", "Date tested": "adsf"}, 6), 'No RNA id'
+        {"Root Sample ID": "asdf", "Result": "Positive", "RNA ID": "", "Date tested": "adsf"}, 6
+    ), "No RNA id"
 
     assert not centre_file.row_valid_structure(
-        {"Root Sample ID": "asdf", "Result": "", "RNA ID": "", "Date Tested": "date"}, 1), 'Not barcode'
+        {"Root Sample ID": "asdf", "Result": "", "RNA ID": "", "Date Tested": "date"}, 1
+    ), "Not barcode"
 
     # All required but all empty
     assert not centre_file.row_valid_structure(
-        {"Root Sample ID": "", "Result": "", "RNA ID": "", "Date tested": ""}, 4), 'All are empty'
+        {"Root Sample ID": "", "Result": "", "RNA ID": "", "Date tested": ""}, 4
+    ), "All are empty"
+
 
 def test_row_valid_structure(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile('some file', centre)
+    centre_file = CentreFile("some file", centre)
 
     assert centre_file.row_valid_structure(
-        {"Root Sample ID": "asdf", "Result": "asdf", "RNA ID": "ASDF_A01", "Date tested": "asdf"}, 5)
+        {"Root Sample ID": "asdf", "Result": "asdf", "RNA ID": "ASDF_A01", "Date tested": "asdf"}, 5
+    )
 
     assert centre_file.row_valid_structure(
-        {"Root Sample ID": "asdf", "Result": "", "RNA ID": "ASDF_A01", "Date tested": ""}, 5)
+        {"Root Sample ID": "asdf", "Result": "", "RNA ID": "ASDF_A01", "Date tested": ""}, 5
+    )
 
 
 def test_extract_fields(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile('some file', centre)
+    centre_file = CentreFile("some file", centre)
 
     barcode_field = "RNA ID"
     barcode_regex = r"^(.*)_([A-Z]\d\d)$"
@@ -124,14 +132,23 @@ def test_extract_fields(config):
         "ABC123",
         "A00",
     )
-    assert centre_file.extract_fields({"RNA ID": "ABC123_H0"}, barcode_field, barcode_regex) == ("", "")
-    assert centre_file.extract_fields({"RNA ID": "ABC123H0"}, barcode_field, barcode_regex) == ("", "")
-    assert centre_file.extract_fields({"RNA ID": "AB23_H01"}, barcode_field, barcode_regex) == ("AB23", "H01")
+    assert centre_file.extract_fields({"RNA ID": "ABC123_H0"}, barcode_field, barcode_regex) == (
+        "",
+        "",
+    )
+    assert centre_file.extract_fields({"RNA ID": "ABC123H0"}, barcode_field, barcode_regex) == (
+        "",
+        "",
+    )
+    assert centre_file.extract_fields({"RNA ID": "AB23_H01"}, barcode_field, barcode_regex) == (
+        "AB23",
+        "H01",
+    )
 
 
 def test_format_and_filter_rows(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile('some file', centre)
+    centre_file = CentreFile("some file", centre)
 
     extra_fields_added = [
         {
@@ -180,14 +197,13 @@ def test_get_download_dir(config):
     for centre_config in config.CENTRES:
         centre = Centre(config, centre_config)
 
-        assert (
-            centre.get_download_dir() == f"{config.DIR_DOWNLOADED_DATA}{centre['prefix']}/"
-        )
+        assert centre.get_download_dir() == f"{config.DIR_DOWNLOADED_DATA}{centre['prefix']}/"
+
 
 def test_check_for_required_headers(config):
-    config.CENTRES[0]["barcode_field"]="RNA ID"
+    config.CENTRES[0]["barcode_field"] = "RNA ID"
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile('some file', centre)
+    centre_file = CentreFile("some file", centre)
 
     with pytest.raises(CentreFileError, match=r"Cannot read CSV fieldnames"):
         with StringIO() as fake_csv:
@@ -195,9 +211,9 @@ def test_check_for_required_headers(config):
             csv_to_test_reader = DictReader(fake_csv)
             assert centre_file.check_for_required_headers(csv_to_test_reader) is None
 
-    config.CENTRES[0]["barcode_field"]="RNA ID"
+    config.CENTRES[0]["barcode_field"] = "RNA ID"
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile('some file', centre)
+    centre_file = CentreFile("some file", centre)
 
     with pytest.raises(CentreFileError, match=r".* missing in CSV file"):
         with StringIO() as fake_csv:
@@ -207,13 +223,11 @@ def test_check_for_required_headers(config):
 
             csv_to_test_reader = DictReader(fake_csv)
 
-            assert (
-                centre_file.check_for_required_headers(csv_to_test_reader) is None
-            )
+            assert centre_file.check_for_required_headers(csv_to_test_reader) is None
 
-    config.CENTRES[0]["barcode_field"]="RNA ID"
+    config.CENTRES[0]["barcode_field"] = "RNA ID"
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile('some file', centre)
+    centre_file = CentreFile("some file", centre)
 
     with StringIO() as fake_csv:
         fake_csv.write(
@@ -227,50 +241,69 @@ def test_check_for_required_headers(config):
 
         assert centre_file.check_for_required_headers(csv_to_test_reader) is None
 
+
 def test_archival_prepared_sample_conversor_changes_data(config):
-    timestamp = '20/12/20'
+    timestamp = "20/12/20"
 
     centre = Centre(config, config.CENTRES[0])
 
     with patch(
         "crawler.file_processing.current_time", return_value=timestamp,
     ):
-        centre_file = CentreFile('some file', centre)
+        centre_file = CentreFile("some file", centre)
 
-        val = centre_file.archival_prepared_sample_conversor({'_id': '1234', 'name': '4567'}, timestamp)
-        assert val == {'sample_object_id': '1234', 'archived_at': '20/12/20', 'name': '4567'}
+        val = centre_file.archival_prepared_sample_conversor(
+            {"_id": "1234", "name": "4567"}, timestamp
+        )
+        assert val == {"sample_object_id": "1234", "archived_at": "20/12/20", "name": "4567"}
+
 
 def test_archival_prepared_samples_adds_timestamp(config):
-    timestamp = '20/12/20'
+    timestamp = "20/12/20"
 
     centre = Centre(config, config.CENTRES[0])
 
     with patch(
         "crawler.file_processing.current_time", return_value=timestamp,
     ):
-        centre_file = CentreFile('some file', centre)
+        centre_file = CentreFile("some file", centre)
 
-        val = centre_file.archival_prepared_samples([{'_id': '1234', 'name': '4567'}, {'_id': '4567', 'name': '1234'}])
+        val = centre_file.archival_prepared_samples(
+            [{"_id": "1234", "name": "4567"}, {"_id": "4567", "name": "1234"}]
+        )
         assert val == [
-            {'sample_object_id': '1234', 'archived_at': '20/12/20', 'name': '4567'},
-            {'sample_object_id': '4567', 'archived_at': '20/12/20', 'name': '1234'}
+            {"sample_object_id": "1234", "archived_at": "20/12/20", "name": "4567"},
+            {"sample_object_id": "4567", "archived_at": "20/12/20", "name": "1234"},
         ]
 
-def test_archive_old_samples(config, testing_samples, samples_history_collection_accessor, samples_collection_accessor):
-    sample_object_ids = list(map(lambda x: x['_id'], testing_samples))
+
+def test_archive_old_samples(
+    config, testing_samples, samples_history_collection_accessor, samples_collection_accessor
+):
+    sample_object_ids = list(map(lambda x: x["_id"], testing_samples))
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile('some file', centre)
-    current_archived_samples = samples_history_collection_accessor.find({"sample_object_id": {"$in": sample_object_ids}})
+    centre_file = CentreFile("some file", centre)
+    current_archived_samples = samples_history_collection_accessor.find(
+        {"sample_object_id": {"$in": sample_object_ids}}
+    )
     assert current_archived_samples.count() == 0
     centre_file.archive_old_samples(testing_samples)
 
-    archived_samples = samples_history_collection_accessor.find({"sample_object_id": {"$in": sample_object_ids}})
+    archived_samples = samples_history_collection_accessor.find(
+        {"sample_object_id": {"$in": sample_object_ids}}
+    )
     assert len(testing_samples) == archived_samples.count()
-    assert samples_collection_accessor.find({"Root Sample ID": {"$in": sample_object_ids}}).count() == 0
+    assert (
+        samples_collection_accessor.find({"Root Sample ID": {"$in": sample_object_ids}}).count()
+        == 0
+    )
 
-def test_archive_old_samples_without_previous_samples(config, samples_history_collection_accessor, samples_collection_accessor):
+
+def test_archive_old_samples_without_previous_samples(
+    config, samples_history_collection_accessor, samples_collection_accessor
+):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile('some file', centre)
+    centre_file = CentreFile("some file", centre)
 
     assert samples_collection_accessor.count() == 0
     assert samples_history_collection_accessor.count() == 0
@@ -280,101 +313,110 @@ def test_archive_old_samples_without_previous_samples(config, samples_history_co
     assert samples_history_collection_accessor.count() == 0
     assert samples_collection_accessor.count() == 0
 
+
 def test_backup_good_file(config, tmpdir):
-    # create temporary success and errors folders for the files to end up in
-    success_folder = tmpdir.mkdir(SUCCESSES_DIR)
-    errors_folder = tmpdir.mkdir(ERRORS_DIR)
+    with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
+        # create temporary success and errors folders for the files to end up in
+        success_folder = tmpdir.mkdir(SUCCESSES_DIR)
+        errors_folder = tmpdir.mkdir(ERRORS_DIR)
 
-    # checks that they are empty
-    assert len(success_folder.listdir()) == 0
-    assert len(errors_folder.listdir()) == 0
+        # checks that they are empty
+        assert len(success_folder.listdir()) == 0
+        assert len(errors_folder.listdir()) == 0
 
-    # configure to use the backups folder for this test
-    config.CENTRES[0]['backups_folder'] = str(tmpdir.realpath())
-    centre = Centre(config, config.CENTRES[0])
+        # configure to use the backups folder for this test
+        centre = Centre(config, config.CENTRES[0])
 
-    # create a file inside the centre download dir
-    filename = "AP_sanger_report_200503_2338.csv"
+        # create a file inside the centre download dir
+        filename = "AP_sanger_report_200503_2338.csv"
 
-    # test the backup of the file to the successes folder
-    centre_file = CentreFile(filename, centre)
-    centre_file.backup_file()
+        # test the backup of the file to the successes folder
+        centre_file = CentreFile(filename, centre)
+        centre_file.backup_file()
 
-    assert len(success_folder.listdir()) == 1
-    assert len(errors_folder.listdir()) == 0
+        assert len(success_folder.listdir()) == 1
+        assert len(errors_folder.listdir()) == 0
 
-    filename_with_timestamp = os.path.basename(success_folder.listdir()[0])
-    assert (filename in filename_with_timestamp)
+        filename_with_timestamp = os.path.basename(success_folder.listdir()[0])
+        assert filename in filename_with_timestamp
+
 
 def test_backup_bad_file(config, tmpdir):
-    # create temporary success and errors folders for the files to end up in
-    success_folder = tmpdir.mkdir(SUCCESSES_DIR)
-    errors_folder = tmpdir.mkdir(ERRORS_DIR)
+    with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
+        # create temporary success and errors folders for the files to end up in
+        success_folder = tmpdir.mkdir(SUCCESSES_DIR)
+        errors_folder = tmpdir.mkdir(ERRORS_DIR)
 
-    # checks that they are empty
-    assert len(success_folder.listdir()) == 0
-    assert len(errors_folder.listdir()) == 0
+        # checks that they are empty
+        assert len(success_folder.listdir()) == 0
+        assert len(errors_folder.listdir()) == 0
 
-    # configure to use the backups folder for this test
-    config.CENTRES[0]['backups_folder'] = str(tmpdir.realpath())
-    centre = Centre(config, config.CENTRES[0])
+        # configure to use the backups folder for this test
+        centre = Centre(config, config.CENTRES[0])
 
-    # create a file inside the centre download dir
-    filename = "AP_sanger_report_200518_2132.csv"
+        # create a file inside the centre download dir
+        filename = "AP_sanger_report_200518_2132.csv"
 
-    # test the backup of the file to the errors folder
-    centre_file = CentreFile(filename, centre)
-    centre_file.errors.append("Some error happened")
-    centre_file.backup_file()
+        # test the backup of the file to the errors folder
+        centre_file = CentreFile(filename, centre)
+        centre_file.errors.append("Some error happened")
+        centre_file.backup_file()
 
-    assert len(errors_folder.listdir()) == 1
-    assert len(success_folder.listdir()) == 0
+        assert len(errors_folder.listdir()) == 1
+        assert len(success_folder.listdir()) == 0
 
-    filename_with_timestamp = os.path.basename(errors_folder.listdir()[0])
-    assert (filename in filename_with_timestamp)
+        filename_with_timestamp = os.path.basename(errors_folder.listdir()[0])
+        assert filename in filename_with_timestamp
+
 
 def test_get_download_dir(config):
     centre = Centre(config, config.CENTRES[0])
 
-    assert centre.get_download_dir() == 'tests/files/ALDP/'
+    assert centre.get_download_dir() == "tests/files/ALDP/"
+
 
 def test_set_state_for_file_when_file_in_black_list(config, blacklist_for_centre):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile('AP_sanger_report_200503_2338.csv', centre)
+    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
     centre_file.set_state_for_file()
 
     assert centre_file.file_state == CentreFileState.FILE_IN_BLACKLIST
 
+
 def test_set_state_for_file_when_never_seen_before(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile('AP_sanger_report_200503_2338.csv', centre)
+    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
     centre_file.set_state_for_file()
 
     assert centre_file.file_state == CentreFileState.FILE_NOT_PROCESSED_YET
 
+
 def test_set_state_for_file_when_in_error_folder(config, tmpdir):
-    errors_folder = tmpdir.mkdir(ERRORS_DIR)
-    success_folder = tmpdir.mkdir(SUCCESSES_DIR)
+    with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
+        errors_folder = tmpdir.mkdir(ERRORS_DIR)
+        success_folder = tmpdir.mkdir(SUCCESSES_DIR)
 
-    # configure to use the backups folder for this test
-    config.CENTRES[0]['backups_folder'] = str(tmpdir.realpath())
-    centre = Centre(config, config.CENTRES[0])
+        # configure to use the backups folder for this test
 
-    # create a backup of the file inside the errors directory as if previously processed there
-    filename = "AP_sanger_report_200518_2132.csv"
-    centre_file = CentreFile(filename, centre)
-    centre_file.errors.append("Some error happened")
-    centre_file.backup_file()
+        centre = Centre(config, config.CENTRES[0])
 
-    assert len(errors_folder.listdir()) == 1
+        # create a backup of the file inside the errors directory as if previously processed there
+        filename = "AP_sanger_report_200518_2132.csv"
+        centre_file = CentreFile(filename, centre)
+        centre_file.errors.append("Some error happened")
+        centre_file.backup_file()
 
-    # check the file state again now the error version exists
-    centre_file.set_state_for_file()
+        assert len(errors_folder.listdir()) == 1
 
-    assert centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_ERROR
+        # check the file state again now the error version exists
+        centre_file.set_state_for_file()
+
+        assert centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_ERROR
+
 
 def test_set_state_for_file_when_in_success_folder(config):
     return False
+
 
 def test_process_files(mongo_database, config, testing_files_for_process):
     _, mongo_database = mongo_database
