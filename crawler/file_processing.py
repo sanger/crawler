@@ -222,14 +222,14 @@ class CentreFile:
             Returns:
                 boolean -- whether the file matches or not
         """
-        regexp = re.compile("^([\d]{6}_[\d]{4})_(.*)_(\w*)$")
+        regexp = re.compile(r"^([\d]{6}_[\d]{4})_(.*)_(\w*)$")
 
         checksum_for_file = self.checksum()
 
         backup_folder = f"{self.centre_config['backups_folder']}/{dir_path}"
         files_from_backup_folder = os.listdir(backup_folder)
-        for stamped_filename in files_from_backup_folder:
-            matches = regexp.match(stamped_filename)
+        for backup_filename in files_from_backup_folder:
+            matches = regexp.match(backup_filename)
             if matches:
                 backup_timestamp = matches.group(1)
                 backup_filename = matches.group(2)

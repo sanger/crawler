@@ -103,11 +103,11 @@ def testing_samples(samples_collection_accessor):
         samples_collection_accessor.delete_many({})
 
 @pytest.fixture
-def backups_folder():
+def cleanup_backups():
     try:
         yield
     finally:
-        shutil.rmtree("backups/files")
+        shutil.rmtree("tmp/backups")
 
 @pytest.fixture
 def blacklist_for_centre(config):

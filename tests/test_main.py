@@ -28,7 +28,7 @@ from crawler.db import get_mongo_collection
 # tests.
 
 
-def test_run(mongo_database):
+def test_run(mongo_database, cleanup_backups):
     _, mongo_database = mongo_database
     # Copy the test files to a new directory, as we expect run
     # to perform a clean up, and we don't want it cleaning up our

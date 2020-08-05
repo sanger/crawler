@@ -97,7 +97,6 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
                         logger.error(f"Error in centre {centre_instance.centre_config['name']}")
                         logger.exception(e)
                     finally:
-                        logger.debug('hi')
                         centre_instance.clean_up()
                         # TODO: write imports for centre
 
