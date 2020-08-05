@@ -21,8 +21,7 @@ logging.config.dictConfig(CONFIG.LOGGING)  # type: ignore
 
 @pytest.fixture
 def config():
-    return CONFIG
-
+    return get_config("crawler.config.test")[0]
 
 @pytest.fixture
 def centre_with_added_columns():
@@ -101,6 +100,7 @@ def testing_samples(samples_collection_accessor):
         yield samples
     finally:
         samples_collection_accessor.delete_many({})
+
 
 @pytest.fixture
 def cleanup_backups():

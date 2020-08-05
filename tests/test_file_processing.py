@@ -42,7 +42,7 @@ def create_checksum_files_for(filepath, filename, checksums, timestamp):
     return list_files
 
 def test_checksum_not_match(config, tmpdir):
-    config.CENTRES[0]['backups_folder'] = tmpdir.realpath()
+    config.CENTRES[0]['backups_folder'] = str(tmpdir.realpath())
 
     tmpdir.mkdir("successes")
 
@@ -64,7 +64,7 @@ def test_checksum_not_match(config, tmpdir):
 
 
 def test_checksum_match(config, tmpdir):
-    config.CENTRES[0]['backups_folder'] = tmpdir.realpath()
+    config.CENTRES[0]['backups_folder'] = str(tmpdir.realpath())
 
     tmpdir.mkdir("successes")
 
@@ -290,7 +290,7 @@ def test_backup_good_file(config, tmpdir):
     assert len(errors_folder.listdir()) == 0
 
     # configure to use the backups folder for this test
-    config.CENTRES[0]['backups_folder'] = tmpdir.realpath()
+    config.CENTRES[0]['backups_folder'] = str(tmpdir.realpath())
     centre = Centre(config, config.CENTRES[0])
 
     # create a file inside the centre download dir
@@ -316,7 +316,7 @@ def test_backup_bad_file(config, tmpdir):
     assert len(errors_folder.listdir()) == 0
 
     # configure to use the backups folder for this test
-    config.CENTRES[0]['backups_folder'] = tmpdir.realpath()
+    config.CENTRES[0]['backups_folder'] = str(tmpdir.realpath())
     centre = Centre(config, config.CENTRES[0])
 
     # create a file inside the centre download dir
@@ -357,7 +357,7 @@ def test_set_state_for_file_when_in_error_folder(config, tmpdir):
     success_folder = tmpdir.mkdir(SUCCESSES_DIR)
 
     # configure to use the backups folder for this test
-    config.CENTRES[0]['backups_folder'] = tmpdir.realpath()
+    config.CENTRES[0]['backups_folder'] = str(tmpdir.realpath())
     centre = Centre(config, config.CENTRES[0])
 
     # create a backup of the file inside the errors directory as if previously processed there
