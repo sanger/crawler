@@ -29,14 +29,8 @@ from crawler.db import get_mongo_collection
 # tests.
 
 
-def test_run(mongo_database, cleanup_backups):
+def test_run(mongo_database, testing_files_for_process):
     _, mongo_database = mongo_database
-    # Copy the test files to a new directory, as we expect run
-    # to perform a clean up, and we don't want it cleaning up our
-    # main copy of the data. We don't disable the clean up as:
-    # 1) It also clears up the master files, which we'd otherwise need to handle
-    # 2) It means we keep the tested process closer to the actual one
-    _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
     run(False, "crawler.config.integration")
 
     # We expect to have three collections following import
@@ -68,14 +62,13 @@ def test_run(mongo_database, cleanup_backups):
     assert 0 == len(subfolders)
 
 
-def test_run_creates_right_files_backups(mongo_database, cleanup_backups):
+def test_run_creates_right_files_backups(mongo_database, testing_files_for_process):
     _, mongo_database = mongo_database
     # Copy the test files to a new directory, as we expect run
     # to perform a clean up, and we don't want it cleaning up our
     # main copy of the data. We don't disable the clean up as:
     # 1) It also clears up the master files, which we'd otherwise need to handle
     # 2) It means we keep the tested process closer to the actual one
-    _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
     run(False, "crawler.config.integration")
 
     # check number of success files

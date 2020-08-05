@@ -52,7 +52,12 @@ def mongo_database(mongo_client):
 
 
 @pytest.fixture
-def testing_files_for_process():
+def testing_files_for_process(cleanup_backups):
+    # Copy the test files to a new directory, as we expect run
+    # to perform a clean up, and we don't want it cleaning up our
+    # main copy of the data. We don't disable the clean up as:
+    # 1) It also clears up the master files, which we'd otherwise need to handle
+    # 2) It means we keep the tested process closer to the actual one
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
     try:
         yield
