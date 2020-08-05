@@ -425,10 +425,10 @@ class CentreFile:
             csvreader = DictReader(csvfile)
 
             self.check_for_required_headers(csvreader)
-            documents = self.add_extra_fields(csvreader)
+            documents = self.format_and_filter_rows(csvreader)
+
         return self.errors, documents
 
-    # TODO: Add validation for no unexpected headers (warning) - check with James
     def check_for_required_headers(self, csvreader: DictReader) -> None:
         """Checks that the CSV file has the required headers.
 
@@ -466,7 +466,7 @@ class CentreFile:
 
         return m.group(1), m.group(2)
 
-    def add_extra_fields(self, csvreader: DictReader) -> Tuple[List[str], List[Dict[str, str]]]:
+    def format_and_filter_rows(self, csvreader: DictReader) -> Tuple[List[str], List[Dict[str, str]]]:
         """Adds extra fields to the imported data which are required for querying.
 
         Arguments:
@@ -479,39 +479,41 @@ class CentreFile:
 
         augmented_data = []
         missing_data_count = 0
-        empty_rows = 0
+        invalid_rows = 0
+        row_index = 1
 
         barcode_regex = self.centre_config["barcode_regex"]
         barcode_field = self.centre_config["barcode_field"]
 
         for row in csvreader:
             # only process rows that contain something in the cells
-            if any(cell_txt.strip() for cell_txt in row):
+            if self.row_valid_structure(row, row_index):
                 row["source"] = self.centre_config["name"]
-
+                row[FIELD_PLATE_BARCODE] = None
                 try:
                     if row[barcode_field] and barcode_regex:
                         row[FIELD_PLATE_BARCODE], row[FIELD_COORDINATE] = self.extract_fields(
                             row, barcode_field, barcode_regex
                         )
-                    else:
-                        row[FIELD_PLATE_BARCODE] = row[barcode_field]
 
-                    if not row[FIELD_PLATE_BARCODE]:
-                        missing_data_count += 1
                 except KeyError:
                     pass
 
-                augmented_data.append(row)
-            else:
-                empty_rows += 1
+                if row[FIELD_PLATE_BARCODE]:
+                    augmented_data.append(row)
+                else:
+                    missing_data_count += 1
 
-        logger.info(f"Empty rows = {empty_rows}")
+            else:
+                invalid_rows += 1
+
+            row_index += 1
+
+        logger.info(f"Invalid rows = {invalid_rows}")
 
         if barcode_regex and missing_data_count > 0:
             error = (
-                f"{missing_data_count} sample rows are missing a barcode and or coordinate"
-                f"for sample '{row[FIELD_ROOT_SAMPLE_ID]}'"
+                f"{missing_data_count} sample rows are missing a plate barcode and / or a coordinate"
             )
             self.errors.append(error)
             logger.warning(error)
@@ -519,3 +521,20 @@ class CentreFile:
             #  https://ssg-confluence.internal.sanger.ac.uk/pages/viewpage.action?pageId=101358138#ReceiptfromLighthouselaboratories(Largediagnosticcentres)-4.2.1VariantsofRNAplatebarcode
 
         return augmented_data
+
+    def row_valid_structure(self, row, row_index):
+        # check whether row is completely empty (this is ok)
+        if not(any(cell_txt.strip() for cell_txt in row.values())):
+            return False
+
+        # check both the Root Sample ID and barcode field are present
+        barcode_field = self.centre_config["barcode_field"]
+
+        if not(row[FIELD_ROOT_SAMPLE_ID] and row[barcode_field]):
+            error = (f"Row {row_index} has an empty plate barcode.")
+            self.errors.append(error)
+            logger.error(error)
+            return False
+
+        return True
+
