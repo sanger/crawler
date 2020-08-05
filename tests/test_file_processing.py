@@ -62,6 +62,7 @@ def test_checksum_not_match(config, tmpdir):
         for tmpfile_for_list in list_files:
             os.remove(tmpfile_for_list)
 
+
 def test_checksum_match(config, tmpdir):
     config.CENTRES[0]['backups_folder'] = tmpdir.realpath()
 
@@ -83,6 +84,31 @@ def test_checksum_match(config, tmpdir):
         for tmpfile_for_list in list_files:
             os.remove(tmpfile_for_list)
 
+def test_row_invalid_structure(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile('some file', centre)
+
+    # Not maching regexp
+    assert not centre_file.row_valid_structure(
+        {"Root Sample ID": "asdf", "Result": "Positive", "RNA ID": "", "Date tested": "adsf"}, 6), 'No RNA id'
+
+    assert not centre_file.row_valid_structure(
+        {"Root Sample ID": "asdf", "Result": "", "RNA ID": "", "Date Tested": "date"}, 1), 'Not barcode'
+
+    # All required but all empty
+    assert not centre_file.row_valid_structure(
+        {"Root Sample ID": "", "Result": "", "RNA ID": "", "Date tested": ""}, 4), 'All are empty'
+
+def test_row_valid_structure(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile('some file', centre)
+
+    assert centre_file.row_valid_structure(
+        {"Root Sample ID": "asdf", "Result": "asdf", "RNA ID": "ASDF_A01", "Date tested": "asdf"}, 5)
+
+    assert centre_file.row_valid_structure(
+        {"Root Sample ID": "asdf", "Result": "", "RNA ID": "ASDF_A01", "Date tested": ""}, 5)
+
 
 def test_extract_fields(config):
     centre = Centre(config, config.CENTRES[0])
@@ -103,13 +129,13 @@ def test_extract_fields(config):
     assert centre_file.extract_fields({"RNA ID": "AB23_H01"}, barcode_field, barcode_regex) == ("AB23", "H01")
 
 
-def test_add_extra_fields(config):
+def test_format_and_filter_rows(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile('some file', centre)
 
     extra_fields_added = [
         {
-            "id": "1",
+            "Root Sample ID": "1",
             "RNA ID": "RNA_0043_H09",
             "plate_barcode": "RNA_0043",
             "source": "Alderley",
@@ -118,19 +144,19 @@ def test_add_extra_fields(config):
     ]
 
     with StringIO() as fake_csv:
-        fake_csv.write("id,RNA ID\n")
+        fake_csv.write("Root Sample ID,RNA ID\n")
         fake_csv.write("1,RNA_0043_H09\n")
         fake_csv.seek(0)
 
         csv_to_test_reader = DictReader(fake_csv)
 
-        augmented_data = centre_file.add_extra_fields(csv_to_test_reader)
+        augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
         assert augmented_data == extra_fields_added
         assert len(centre_file.errors) == 0
 
     wrong_barcode = [
         {
-            "id": "1",
+            "Root Sample ID": "1",
             "RNA ID": "RNA_0043_",
             "plate_barcode": "",
             "source": "Alderley",
@@ -139,14 +165,14 @@ def test_add_extra_fields(config):
     ]
 
     with StringIO() as fake_csv:
-        fake_csv.write("id,RNA ID\n")
+        fake_csv.write("Root Sample ID,RNA ID\n")
         fake_csv.write("1,RNA_0043_\n")
         fake_csv.seek(0)
 
         csv_to_test_reader = DictReader(fake_csv)
 
-        augmented_data = centre_file.add_extra_fields(csv_to_test_reader)
-        assert augmented_data == wrong_barcode
+        augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
+        assert augmented_data == []
         assert len(centre_file.errors) == 1
 
 
@@ -158,7 +184,7 @@ def test_get_download_dir(config):
             centre.get_download_dir() == f"{config.DIR_DOWNLOADED_DATA}{centre['prefix']}/"
         )
 
-def test_check_for_required_fields(config):
+def test_check_for_required_headers(config):
     config.CENTRES[0]["barcode_field"]="RNA ID"
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile('some file', centre)
@@ -167,7 +193,7 @@ def test_check_for_required_fields(config):
         with StringIO() as fake_csv:
 
             csv_to_test_reader = DictReader(fake_csv)
-            assert centre_file.check_for_required_fields(csv_to_test_reader) is None
+            assert centre_file.check_for_required_headers(csv_to_test_reader) is None
 
     config.CENTRES[0]["barcode_field"]="RNA ID"
     centre = Centre(config, config.CENTRES[0])
@@ -182,7 +208,7 @@ def test_check_for_required_fields(config):
             csv_to_test_reader = DictReader(fake_csv)
 
             assert (
-                centre_file.check_for_required_fields(csv_to_test_reader) is None
+                centre_file.check_for_required_headers(csv_to_test_reader) is None
             )
 
     config.CENTRES[0]["barcode_field"]="RNA ID"
@@ -199,7 +225,7 @@ def test_check_for_required_fields(config):
 
         csv_to_test_reader = DictReader(fake_csv)
 
-        assert centre_file.check_for_required_fields(csv_to_test_reader) is None
+        assert centre_file.check_for_required_headers(csv_to_test_reader) is None
 
 def test_archival_prepared_sample_conversor_changes_data(config):
     timestamp = '20/12/20'
