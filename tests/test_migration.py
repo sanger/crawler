@@ -1,4 +1,4 @@
-from crawler.migration_script import ( add_timestamps_to_samples, CREATED_DATE_FIELD_NAME )
+from crawler.migration_script import ( add_timestamps_to_samples, query_samples, CREATED_DATE_FIELD_NAME )
 from crawler.db import get_mongo_collection
 
 def generate_example_samples(range):
@@ -42,9 +42,11 @@ def test_basic(mongo_database):
 
 # TODO: include other file name formats - samples_07052020_1610 & tmp_samples_200709_1710 ? DDMMYYYY
 
-# def test_query(mongo_database):
-#   _, db = mongo_database
+def test_query(mongo_database):
+  _, db = mongo_database
+  collection_name = 'samples_200519_1510'
 
-#   db.samples.insert_many(generate_example_samples(range(0, 4)))
+  db[collection_name].insert_many(generate_example_samples(range(0, 4)))
+  db.samples.insert_many(generate_example_samples(range(2, 4)))
 
-#   query_samples(db, ['TLS00000000', 'TLS00000001'])
+  query_samples(db, collection_name)
