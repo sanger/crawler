@@ -28,8 +28,8 @@ def add_timestamps_to_samples(db):
       root_sample_id = sample['Root Sample ID']
       if root_sample_id in processed_samples: continue
 
-      root_sample_ids.append(sample['Root Sample ID'])
-      processed_samples.add(sample['Root Sample ID']) # pylint doesn't like it because it thinks it's a dict, not a set
+      root_sample_ids.append(root_sample_id)
+      processed_samples.add(root_sample_id) # pylint doesn't like it because it thinks it's a dict, not a set
 
     logger.debug(f'Num root sample ids to process: {len(root_sample_ids)}')
 
