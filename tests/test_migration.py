@@ -1,4 +1,4 @@
-from crawler.migration_script import add_timestamps_to_samples
+from crawler.migration_script import ( add_timestamps_to_samples, CREATED_DATE_FIELD_NAME )
 from crawler.db import get_mongo_collection
 
 def generate_example_samples(range):
@@ -27,17 +27,24 @@ def test_basic(mongo_database):
 
     # TODO: switch to using count_documents as count() is deprecated
     total_samples = db.samples.count()
-    samples_with_timestamp = db.samples.find( { 'First Imported Date': { '$ne': None } } ).count()
+    samples_with_timestamp = db.samples.find( { CREATED_DATE_FIELD_NAME: { '$ne': None } } ).count()
     for sample in db.samples.find():
-        print('DEBUG: sample: ', sample)
+        print(f'DEBUG: sample: {sample}')
     assert total_samples == samples_with_timestamp
 
     from_samples_200519_1510 = db.samples.find( { 'Root Sample ID': { '$in': ['TLS00000000', 'TLS00000001'] } } )
     for sample in from_samples_200519_1510:
-        assert sample['First Imported Date'] == '2020-05-19 15:10:00 UTC'
+        assert sample[CREATED_DATE_FIELD_NAME] == '2020-05-19 15:10:00 UTC'
 
     from_samples_200520_1510 = db.samples.find( { 'Root Sample ID': { '$in': ['TLS00000002', 'TLS00000003'] } } )
     for sample in from_samples_200520_1510:
-        assert sample['First Imported Date'] == '2020-05-20 15:10:00 UTC'
+        assert sample[CREATED_DATE_FIELD_NAME] == '2020-05-20 15:10:00 UTC'
 
-# TODO: include other file name formats - samples_07052020_1610 & tmp_samples_200709_1710 ?
+# TODO: include other file name formats - samples_07052020_1610 & tmp_samples_200709_1710 ? DDMMYYYY
+
+# def test_query(mongo_database):
+#   _, db = mongo_database
+
+#   db.samples.insert_many(generate_example_samples(range(0, 4)))
+
+#   query_samples(db, ['TLS00000000', 'TLS00000001'])
