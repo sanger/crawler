@@ -1,5 +1,4 @@
 from crawler.migration_script import ( add_timestamps_to_samples, CREATED_DATE_FIELD_NAME )
-from crawler.db import get_mongo_collection
 
 def generate_example_samples(range):
   samples = []
