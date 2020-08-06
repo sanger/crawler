@@ -26,9 +26,6 @@ def run(settings_module: str = "") -> None:
 
   with create_mongo_client(config) as client:
     db = get_mongo_db(config, client)
-
-    # query_samples(db, 'samples_200728_1003')
-    # query_samples(db, 'samples')
     add_timestamps_to_samples(db)
 
 
@@ -155,67 +152,3 @@ def is_sample_archive_collection(collection_name):
 
 def format_date(date):
   return date.strftime('%Y-%m-%d %H:%M:%S %Z') # example: 2020-05-20 15:10:00 UTC
-
-
-
-
-# for testing only
-def query_samples(db, collection_name):
-  print(f'Time start: {datetime.datetime.now()}')
-
-  try:
-    print(f'update collection {collection_name} with new concatenated id column')
-    # TODO: this will not work if one of these fields is null
-    update_result_1 = db[collection_name].update_many(
-      { },
-      [
-        { '$set': { 'concat_id': { '$concat': [ "$Root Sample ID", " - ", "$RNA ID", " - ", "$Result", " - ", "$Lab ID" ] } } }
-      ]
-    )
-    print(f'Time after adding field to collection: {datetime.datetime.now()}')
-    print('update_result_1 modified: ', update_result_1.modified_count)
-
-    print('retrieve concatenated id column and build a list of the values')
-    concat_ids = []
-    concat_ids_result = db[collection_name].find({ }, { 'concat_id': True }) # Should probably add a condition that concat_id is not null
-    for sample in concat_ids_result:
-      concat_ids.append(sample['concat_id'])
-    print('Number of concat_ids in collection: ', len(concat_ids))
-    print(f'Time after querying field and building list: {datetime.datetime.now()}')
-
-    print('update samples collection with new concatenated id column')
-    update_result_2 = db.samples.update_many(
-      { },
-      [
-        { '$set': { 'concat_id': { '$concat': [ "$Root Sample ID", " - ", "$RNA ID", " - ", "$Result", " - ", "$Lab ID" ] } } }
-      ]
-    )
-    print(f'Time after adding field to samples collection: {datetime.datetime.now()}')
-    print('update_result_2 modified: ', update_result_2.modified_count)
-
-    print(f'update samples collection with timestamps, where concat id matches, in batches of {BATCH_SIZE}')
-    # in batches, because otherwise get "Error: 'update' command document too large"
-
-    num_batches = len(concat_ids) // BATCH_SIZE
-    if len(concat_ids) % BATCH_SIZE != 0:
-      num_batches += 1
-
-    for batch in range(num_batches):
-      print(f'Starting batch {batch + 1} of {num_batches}: {datetime.datetime.now()}')
-
-      start = batch * BATCH_SIZE
-      end = start + BATCH_SIZE # this will go out of bounds on the final batch but python is ok with that and just returns the remaining items
-
-      concat_ids_subset = concat_ids[start:end] # e.g. 0:250000, 250000:500000 etc.
-      print('concat_ids_subset: ', len(concat_ids_subset))
-      update_result_3 = db.samples.update_many(
-        { 'concat_id': { '$in': concat_ids_subset } },
-        { '$set': { 'test field': 'test date' } }
-      )
-      print(f'Time after querying based on new field and updating with timestamp: {datetime.datetime.now()}')
-      print('update_result_3 modified: ', update_result_3.modified_count)
-  except:
-    print('An exception occurred')
-    print('Time when exception occurred: ', datetime.datetime.now())
-    e = sys.exc_info()[1]
-    print( "<p>Error: %s</p>" % e )

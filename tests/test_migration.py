@@ -1,4 +1,4 @@
-from crawler.migration_script import ( add_timestamps_to_samples, query_samples, CREATED_DATE_FIELD_NAME )
+from crawler.migration_script import ( add_timestamps_to_samples, CREATED_DATE_FIELD_NAME )
 from crawler.db import get_mongo_collection
 
 def generate_example_samples(range):
@@ -25,7 +25,6 @@ def test_basic(mongo_database):
 
     add_timestamps_to_samples(db)
 
-    # TODO: switch to using count_documents as count() is deprecated
     total_samples = db.samples.count()
     samples_with_timestamp = db.samples.find( { CREATED_DATE_FIELD_NAME: { '$ne': None } } ).count()
     for sample in db.samples.find():
@@ -41,12 +40,3 @@ def test_basic(mongo_database):
         assert sample[CREATED_DATE_FIELD_NAME] == '2020-05-20 15:10:00 UTC'
 
 # TODO: include other file name formats - samples_07052020_1610 & tmp_samples_200709_1710 ? DDMMYYYY
-
-def test_query(mongo_database):
-  _, db = mongo_database
-  collection_name = 'samples_200519_1510'
-
-  db[collection_name].insert_many(generate_example_samples(range(0, 4)))
-  db.samples.insert_many(generate_example_samples(range(2, 4)))
-
-  query_samples(db, collection_name)
