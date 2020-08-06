@@ -14,10 +14,10 @@ from crawler.helpers import (
     get_config
 )
 
-CREATED_DATE_FIELD_NAME = 'First Imported Date'
+CREATED_DATE_FIELD_NAME = 'First Imported Date' # TODO: check with E & A
 BATCH_SIZE = 250000
-COLLECTION_NAME_FORMAT_1 = r'^samples_20(\d){4}_(\d){4}$'
-COLLECTION_NAME_FORMAT_2 = r'^samples_(\d){4}2020_(\d){4}$'
+COLLECTION_NAME_FORMAT_1 = r'^samples_20(\d){4}_(\d){4}$' # e.g. samples_200519_1510
+COLLECTION_NAME_FORMAT_2 = r'^samples_(\d){4}2020_(\d){4}$' # e.g. samples_21052020_1510
 
 
 def run(settings_module: str = "") -> None:
