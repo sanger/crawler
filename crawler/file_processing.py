@@ -21,7 +21,7 @@ from crawler.constants import (
     FIELD_CREATED_AT,
     FIELD_UPDATED_AT,
 )
-from crawler.helpers import current_time
+from crawler.helpers import current_time, get_sftp_connection
 from crawler.constants import (
     COLLECTION_SAMPLES,
     COLLECTION_SAMPLES_HISTORY,
@@ -86,7 +86,7 @@ class Centre:
 
             return centre_files
         except:
-            logger.fatal(f"Failed when reading files from {path_to_walk}")
+            logger.error(f"Failed when reading files from {path_to_walk}")
             return []
 
     def clean_up(self) -> None:
@@ -209,7 +209,7 @@ class CentreFile:
 
         self.docs_inserted = 0
 
-    def filepath(self) -> str:
+    def filepath(self) -> Any:
         """Returns the filepath for the file
 
             Returns:
@@ -230,7 +230,7 @@ class CentreFile:
 
         return file_hash.hexdigest()
 
-    def checksum_match(self, dir_path) -> str:
+    def checksum_match(self, dir_path) -> bool:
         """Checks a directory for a file matching the checksum of this file
 
             Arguments:
@@ -265,22 +265,23 @@ class CentreFile:
         # check whether file is on the blacklist and should be ignored
         if self.file_name in self.centre_config["file_names_to_ignore"]:
             self.file_state = CentreFileState.FILE_IN_BLACKLIST
-            return
+            return self.file_state
 
         # check whether file has already been processed to error directory
         if self.checksum_match(ERRORS_DIR):
             self.file_state = CentreFileState.FILE_PROCESSED_WITH_ERROR
-            return
+            return self.file_state
 
         # if checksum differs or file is not present in errors we check whether file has
         # already been processed successfully
         if self.checksum_match(SUCCESSES_DIR):
             self.file_state = CentreFileState.FILE_PROCESSED_WITH_SUCCESS
-            return
+            return self.file_state
 
         # if checksum differs or if the file was not present in success directory
         # we process it
         self.file_state = CentreFileState.FILE_NOT_PROCESSED_YET
+        return self.file_state
 
     def archival_prepared_sample_conversor(self, sample, timestamp) -> Dict[str, str]:
         """Deletes the old sample and sets up the sample object for archiving
@@ -375,7 +376,7 @@ class CentreFile:
     def full_path_to_file(self):
         return PROJECT_ROOT.joinpath(self.centre.get_download_dir(), self.file_name)
 
-    def backup_file(self) -> str:
+    def backup_file(self) -> None:
         """Backup the file.
 
             Returns:
@@ -446,7 +447,7 @@ class CentreFile:
             self.critical_errors += 1
             logger.exception(e)
 
-    def parse_csv(self) -> Tuple[List[str], List[Dict[str, str]]]:
+    def parse_csv(self) -> Tuple[Any, List[Dict[str, Any]]]:
         """Parses the CSV file of the centre.
 
         Returns:
@@ -506,9 +507,7 @@ class CentreFile:
     def get_now_timestamp(self):
         return datetime.datetime.now()
 
-    def format_and_filter_rows(
-        self, csvreader: DictReader
-    ) -> Tuple[List[str], List[Dict[str, str]]]:
+    def format_and_filter_rows(self, csvreader: DictReader) -> Any:
         """Adds extra fields to the imported data which are required for querying.
 
         Arguments:
@@ -533,7 +532,7 @@ class CentreFile:
             # only process rows that contain something in the cells
             if self.row_valid_structure(row, line_number):
                 row["source"] = self.centre_config["name"]
-                row[FIELD_PLATE_BARCODE] = None
+                row[FIELD_PLATE_BARCODE] = None  # type: ignore
                 try:
                     if row[barcode_field] and barcode_regex:
                         row[FIELD_PLATE_BARCODE], row[FIELD_COORDINATE] = self.extract_fields(
@@ -544,7 +543,7 @@ class CentreFile:
                     pass
 
                 if row[FIELD_PLATE_BARCODE]:
-                    row[FIELD_LINE_NUMBER] = line_number
+                    row[FIELD_LINE_NUMBER] = line_number  # type: ignore
                     row[FIELD_FILE_NAME] = self.file_name
                     row[FIELD_FILE_NAME_DATE] = self.file_name_date()
                     row[FIELD_CREATED_AT] = import_timestamp
