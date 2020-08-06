@@ -19,9 +19,11 @@ def generate_example_samples(range):
 def test_basic(mongo_database):
     _, db = mongo_database
 
-    db.samples.insert_many(generate_example_samples(range(0, 4)))
+    db.samples.insert_many(generate_example_samples(range(0, 6)))
+
     db.samples_200519_1510.insert_many(generate_example_samples(range(0, 2)))
     db.samples_200520_1510.insert_many(generate_example_samples(range(0, 4)))
+    db.samples_21052020_1510.insert_many(generate_example_samples(range(0, 6)))
 
     add_timestamps_to_samples(db)
 
@@ -39,4 +41,6 @@ def test_basic(mongo_database):
     for sample in from_samples_200520_1510:
         assert sample[CREATED_DATE_FIELD_NAME] == '2020-05-20 15:10:00 UTC'
 
-# TODO: include other file name formats - samples_07052020_1610 & tmp_samples_200709_1710 ? DDMMYYYY
+    samples_07052020_1610 = db.samples.find( { 'Root Sample ID': { '$in': ['TLS00000004', 'TLS00000005'] } } )
+    for sample in samples_07052020_1610:
+        assert sample[CREATED_DATE_FIELD_NAME] == '2020-05-21 15:10:00 UTC'

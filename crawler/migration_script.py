@@ -16,6 +16,8 @@ from crawler.helpers import (
 
 CREATED_DATE_FIELD_NAME = 'First Imported Date'
 BATCH_SIZE = 250000
+COLLECTION_NAME_FORMAT_1 = r'^samples_20(\d){4}_(\d){4}$'
+COLLECTION_NAME_FORMAT_2 = r'^samples_(\d){4}2020_(\d){4}$'
 
 
 def run(settings_module: str = "") -> None:
@@ -33,7 +35,7 @@ def add_timestamps_to_samples(db):
   print(f'Time start: {datetime.datetime.now()}')
 
   try:
-    print('-- Update samples collection with new concatenated id column --')
+    print('\n-- Update samples collection with new concatenated id column --')
     update_result_1 = db.samples.update_many(
       { },
       [
@@ -44,20 +46,20 @@ def add_timestamps_to_samples(db):
     print('Number samples modified: ', update_result_1.modified_count)
 
 
-    print('-- Order the collections chronologically (oldest first) --')
+    print('\n-- Order the collections chronologically (oldest first) --')
     # so that when we loop through, the timestamp we set is when the sample first appeared in a collection
     collection_name_to_timestamp = map_collection_name_to_timestamp(db)
     collection_names_chrono_order = sorted(collection_name_to_timestamp)
+    # collection_names_chrono_order = ['samples_200804_1430'] # for testing specific files only
     print(f'Time after ordering collections: {datetime.datetime.now()}')
     print(f'Collections in chronological order: {collection_names_chrono_order}')
-
 
     processed_concat_ids = []
 
     for collection_name in collection_names_chrono_order:
-      print(f'-- Starting processing collection: {collection_name} at {datetime.datetime.now()} --')
+      print(f'\n-- Starting processing collection: {collection_name} at {datetime.datetime.now()} --')
 
-      print(f'-- Update collection {collection_name} with new concatenated id column --')
+      print(f'\n-- Update collection {collection_name} with new concatenated id column --')
       # TODO: concat_id will be set to null if any of the constituent fields is null - do something about this?
       update_result_2 = db[collection_name].update_many(
         { },
@@ -69,7 +71,7 @@ def add_timestamps_to_samples(db):
       print('Number samples modified: ', update_result_2.modified_count)
 
       # TODO: save this to a file in case of partial success?
-      print('-- Retrieve all concatenated ids for records we haven\'t processed yet --')
+      print('\n-- Retrieve all concatenated ids for records we haven\'t processed yet --')
       concat_ids = []
       # TODO: add a condition that concat_id is not null?
       concat_ids_result = db[collection_name].find(
@@ -85,7 +87,7 @@ def add_timestamps_to_samples(db):
       print(f'Of which, number to process: {len(concat_ids)}')
 
 
-      print(f'-- Update samples collection with timestamps, where concat id matches, in batches of {BATCH_SIZE} --')
+      print(f'\n-- Update samples collection with timestamps, where concat id matches, in batches of {BATCH_SIZE} --')
       # in batches, because otherwise get "Error: 'update' command document too large"
 
       num_batches = len(concat_ids) // BATCH_SIZE
@@ -93,7 +95,8 @@ def add_timestamps_to_samples(db):
       print(f'Number of batches: {num_batches}')
 
       for batch in range(num_batches):
-        print(f'-- Starting batch {batch + 1} of {num_batches}: {datetime.datetime.now()} --')
+        # Each batch takes ~30 secs for batch size of 250,000
+        print(f'\n-- Starting batch {batch + 1} of {num_batches}: {datetime.datetime.now()} --')
 
         start = batch * BATCH_SIZE
         end = start + BATCH_SIZE # this will go out of bounds on the final batch but python is ok with that and just returns the remaining items
@@ -104,6 +107,11 @@ def add_timestamps_to_samples(db):
           { 'concat_id': { '$in': concat_ids_subset } },
           { '$set': { CREATED_DATE_FIELD_NAME: format_date(collection_name_to_timestamp[collection_name]) } }
         )
+        # for testing with static string
+        # update_result_3 = db.samples.update_many(
+        #   { 'concat_id': { '$in': concat_ids_subset } },
+        #   { '$set': { CREATED_DATE_FIELD_NAME: '2020-08-06 14:06 test' } }
+        # )
         print(f'Time after querying based on new field and updating with timestamp: {datetime.datetime.now()}')
         print('Number samples modified: ', update_result_3.modified_count)
   except:
@@ -118,12 +126,16 @@ def add_timestamps_to_samples(db):
 
 def extract_timestamp(collection_name):
   _, date_string, time_string = collection_name.split('_')
-  assert len(date_string) == 6
-  assert len(time_string) == 4
 
-  year = int('20' + date_string[0:2])
-  month = int(date_string[2:4])
-  day = int(date_string[4:6])
+  if(re.search(COLLECTION_NAME_FORMAT_1, collection_name)):
+    year = int('20' + date_string[0:2])
+    month = int(date_string[2:4])
+    day = int(date_string[4:6])
+  else:
+    year = int(date_string[4:8])
+    month = int(date_string[2:4])
+    day = int(date_string[0:2])
+
   hour = int(time_string[0:2])
   minute = int(time_string[2:4])
   second = 0
@@ -144,7 +156,7 @@ def map_collection_name_to_timestamp(db):
 
 
 def is_sample_archive_collection(collection_name):
-  return bool(re.search(r'^samples_(\d){6}_(\d){4}$', collection_name))
+  return ( bool(re.search(COLLECTION_NAME_FORMAT_1, collection_name)) or bool(re.search(COLLECTION_NAME_FORMAT_2, collection_name)) )
 
 
 def format_date(date):
