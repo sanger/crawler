@@ -1,19 +1,23 @@
 import logging
 import os
+
 # import pathlib
 # import re
 # import shutil
 import sys
+
 # from csv import DictReader, DictWriter
 from datetime import datetime
 from importlib import import_module
 from types import ModuleType
+
 # from typing import Any, Dict, List, Optional, Tuple
 from typing import Tuple
 
 import pysftp  # type: ignore
 
 logger = logging.getLogger(__name__)
+
 
 def current_time() -> str:
     """Generates a String containing a current timestamp in the format
@@ -24,6 +28,7 @@ def current_time() -> str:
         str -- A string with the current timestamp
     """
     return datetime.now().strftime("%y%m%d_%H%M")
+
 
 def get_sftp_connection(
     config: ModuleType, username: str = None, password: str = None
@@ -58,6 +63,7 @@ def get_sftp_connection(
         password=sftp_password,
         cnopts=cnopts,
     )
+
 
 def get_config(settings_module: str) -> Tuple[ModuleType, str]:
     """Get the config for the app by importing a module named by an environmental variable. This
