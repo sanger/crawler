@@ -1,4 +1,4 @@
-from crawler.migration_script import ( add_timestamps_to_samples, CREATED_DATE_FIELD_NAME )
+from migrations.helpers.sample_timestamps_helper import ( add_timestamps_to_samples, CREATED_DATE_FIELD_NAME )
 
 def generate_example_samples(range):
   samples = []

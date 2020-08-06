@@ -3,29 +3,10 @@ import re
 import sys
 import traceback
 
-import pymongo
-from pymongo.errors import BulkWriteError
-
-from crawler.db import (
-    create_mongo_client,
-    get_mongo_db
-)
-from crawler.helpers import (
-    get_config
-)
-
 CREATED_DATE_FIELD_NAME = 'First Imported Date' # TODO: check with E & A
 BATCH_SIZE = 250000
 COLLECTION_NAME_FORMAT_1 = r'^samples_20(\d){4}_(\d){4}$' # e.g. samples_200519_1510
 COLLECTION_NAME_FORMAT_2 = r'^samples_(\d){4}2020_(\d){4}$' # e.g. samples_21052020_1510
-
-
-def run(settings_module: str = "") -> None:
-  config, settings_module = get_config(settings_module)
-
-  with create_mongo_client(config) as client:
-    db = get_mongo_db(config, client)
-    add_timestamps_to_samples(db)
 
 
 # For updates, '$set' syntax is important, otherwise it overwrites the whole document!
