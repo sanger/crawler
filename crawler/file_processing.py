@@ -507,6 +507,13 @@ class CentreFile:
     def get_now_timestamp(self):
         return datetime.datetime.now()
 
+    def get_row_signature(self, row):
+        memo = []
+        for key in [FIELD_RESULT, FIELD_RNA_ID, FIELD_ROOT_SAMPLE_ID]:
+            if key in row:
+                memo.append(row[key])
+        return tuple(memo)
+
     def format_and_filter_rows(self, csvreader: DictReader) -> Any:
         """Adds extra fields to the imported data which are required for querying.
 
@@ -519,6 +526,11 @@ class CentreFile:
         logger.debug("Adding extra fields")
 
         augmented_data = []
+
+        # Detect duplications and filters them out
+        seen_rows: Set[tuple] = set()
+        number_of_duplicates_inside_this_file = 0
+
         missing_data_count = 0
         invalid_rows = 0
         line_number = 1
@@ -548,6 +560,14 @@ class CentreFile:
                     row[FIELD_FILE_NAME_DATE] = self.file_name_date()
                     row[FIELD_CREATED_AT] = import_timestamp
                     row[FIELD_UPDATED_AT] = import_timestamp
+
+                    row_signature = self.get_row_signature(row)
+
+                    if row_signature in seen_rows:
+                        logger.debug(f"Skipping {row_signature}: duplicate")
+                        number_of_duplicates_inside_this_file += 1
+                        continue
+                    seen_rows.add(row_signature)
                     augmented_data.append(row)
                 else:
                     missing_data_count += 1
@@ -558,6 +578,10 @@ class CentreFile:
             line_number += 1
 
         logger.info(f"Invalid rows = {invalid_rows}")
+
+        if number_of_duplicates_inside_this_file > 0:
+            error = f"{number_of_duplicates_inside_this_file} number of duplicates (sample,location,result,barcode)"
+            self.errors.append(error)
 
         if barcode_regex and missing_data_count > 0:
             error = f"{missing_data_count} sample rows are missing a plate barcode and / or a coordinate"

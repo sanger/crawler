@@ -249,6 +249,41 @@ def test_format_and_filter_rows_parsing_filename(config):
             assert len(centre_file.errors) == 0
 
 
+def test_format_and_filter_rows_detects_duplicates(config):
+    timestamp = "some timestamp"
+    # with patch("crawler.file_processing.get_now_timestamp", return_value=timestamp):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("ASDF_200507_1340.csv", centre)
+    with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
+
+        extra_fields_added = [
+            {
+                "Root Sample ID": "1",
+                "RNA ID": "RNA_0043_H09",
+                "plate_barcode": "RNA_0043",
+                "source": "Alderley",
+                "coordinate": "H09",
+                "line_number": 1,
+                "file_name": "ASDF_200507_1340.csv",
+                "file_name_date": datetime.datetime(2020, 5, 7, 13, 40),
+                "created_at": timestamp,
+                "updated_at": timestamp,
+            },
+        ]
+
+        with StringIO() as fake_csv:
+            fake_csv.write("Root Sample ID,RNA ID\n")
+            fake_csv.write("1,RNA_0043_H09\n")
+            fake_csv.write("1,RNA_0043_H09\n")
+            fake_csv.seek(0)
+
+            csv_to_test_reader = DictReader(fake_csv)
+
+            augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
+            assert augmented_data == extra_fields_added
+            assert len(centre_file.errors) == 1
+
+
 def test_get_download_dir(config):
     for centre_config in config.CENTRES:
         centre = Centre(config, centre_config)
