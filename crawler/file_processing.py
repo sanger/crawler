@@ -283,64 +283,6 @@ class CentreFile:
         self.file_state = CentreFileState.FILE_NOT_PROCESSED_YET
         return self.file_state
 
-    def archival_prepared_sample_conversor(self, sample, timestamp) -> Dict[str, str]:
-        """Deletes the old sample and sets up the sample object for archiving
-
-            Arguments:
-                sample {Dict[str, str]} -- a sample that needs to be archived
-
-            Returns:
-                Dict[str, str] - the modified sample for archiving
-        """
-        sample["archived_at"] = timestamp
-        sample["sample_object_id"] = sample["_id"]
-        del sample["_id"]
-        return sample
-
-    # def archival_prepared_samples(self, samples) -> List[Dict[str, str]]:
-    #     """Prepares the list of samples for archiving
-
-    #         Arguments:
-    #             samples_list {List[Dict[str, str]]} -- a list of samples
-
-    #         Returns:
-    #             List[Dict[str, str]] - the modified samples for archiving
-    #     """
-    #     timestamp = current_time()
-    #     return list(
-    #         map(lambda sample: self.archival_prepared_sample_conversor(sample, timestamp), samples)
-    #     )
-
-    # def archive_old_samples(self, samples_list) -> bool:
-    #     """Archives the old versions of samples we are updating so we retain a history.
-
-    #         Arguments:
-    #             samples_list {List[Dict[str, str]]} -- a list of samples
-
-    #         Returns:
-    #             boolean - whether the samples were archived
-    #     """
-    #     root_sample_ids = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], samples_list))
-    #     samples_collection_connector = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
-    #     existing_samples_to_archive = samples_collection_connector.find(
-    #         {FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}
-    #     )
-    #     # TODO: Only archive a sample if there was any change by comparing with the the sample replacing
-
-    #     samples_history_collection_connector = get_mongo_collection(
-    #         self.get_db(), COLLECTION_SAMPLES_HISTORY
-    #     )
-    #     if existing_samples_to_archive.count() > 0:
-    #         samples_history_collection_connector.insert_many(
-    #             self.archival_prepared_samples(existing_samples_to_archive)
-    #         )
-
-    #         samples_collection_connector.delete_many(
-    #             {FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}
-    #         )
-
-    #     return True
-
     def process_samples(self) -> None:
         """Processes the samples extracted from the centre file.
         """
@@ -429,9 +371,6 @@ class CentreFile:
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
 
         try:
-            # Moves previous version into history of samples
-            # self.archive_old_samples(docs_to_insert)
-
             # Inserts new version for samples
             result = samples_collection.insert_many(docs_to_insert, ordered=False)
             self.docs_inserted = len(result.inserted_ids)
