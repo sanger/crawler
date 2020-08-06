@@ -73,7 +73,6 @@ def add_timestamps_to_samples(db):
       # TODO: save this to a file in case of partial success?
       print('\n-- Retrieve all concatenated ids for records we haven\'t processed yet --')
       concat_ids = []
-      # TODO: add a condition that concat_id is not null?
       concat_ids_result = db[collection_name].find(
         { 'concat_id': { '$nin': processed_concat_ids, '$ne': None } },
         { 'concat_id': True }
