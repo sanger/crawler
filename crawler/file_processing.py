@@ -292,49 +292,49 @@ class CentreFile:
         del sample["_id"]
         return sample
 
-    def archival_prepared_samples(self, samples) -> List[Dict[str, str]]:
-        """Prepares the list of samples for archiving
+    # def archival_prepared_samples(self, samples) -> List[Dict[str, str]]:
+    #     """Prepares the list of samples for archiving
 
-            Arguments:
-                samples_list {List[Dict[str, str]]} -- a list of samples
+    #         Arguments:
+    #             samples_list {List[Dict[str, str]]} -- a list of samples
 
-            Returns:
-                List[Dict[str, str]] - the modified samples for archiving
-        """
-        timestamp = current_time()
-        return list(
-            map(lambda sample: self.archival_prepared_sample_conversor(sample, timestamp), samples)
-        )
+    #         Returns:
+    #             List[Dict[str, str]] - the modified samples for archiving
+    #     """
+    #     timestamp = current_time()
+    #     return list(
+    #         map(lambda sample: self.archival_prepared_sample_conversor(sample, timestamp), samples)
+    #     )
 
-    def archive_old_samples(self, samples_list) -> bool:
-        """Archives the old versions of samples we are updating so we retain a history.
+    # def archive_old_samples(self, samples_list) -> bool:
+    #     """Archives the old versions of samples we are updating so we retain a history.
 
-            Arguments:
-                samples_list {List[Dict[str, str]]} -- a list of samples
+    #         Arguments:
+    #             samples_list {List[Dict[str, str]]} -- a list of samples
 
-            Returns:
-                boolean - whether the samples were archived
-        """
-        root_sample_ids = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], samples_list))
-        samples_collection_connector = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
-        existing_samples_to_archive = samples_collection_connector.find(
-            {FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}
-        )
-        # TODO: Only archive a sample if there was any change by comparing with the the sample replacing
+    #         Returns:
+    #             boolean - whether the samples were archived
+    #     """
+    #     root_sample_ids = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], samples_list))
+    #     samples_collection_connector = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
+    #     existing_samples_to_archive = samples_collection_connector.find(
+    #         {FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}
+    #     )
+    #     # TODO: Only archive a sample if there was any change by comparing with the the sample replacing
 
-        samples_history_collection_connector = get_mongo_collection(
-            self.get_db(), COLLECTION_SAMPLES_HISTORY
-        )
-        if existing_samples_to_archive.count() > 0:
-            samples_history_collection_connector.insert_many(
-                self.archival_prepared_samples(existing_samples_to_archive)
-            )
+    #     samples_history_collection_connector = get_mongo_collection(
+    #         self.get_db(), COLLECTION_SAMPLES_HISTORY
+    #     )
+    #     if existing_samples_to_archive.count() > 0:
+    #         samples_history_collection_connector.insert_many(
+    #             self.archival_prepared_samples(existing_samples_to_archive)
+    #         )
 
-            samples_collection_connector.delete_many(
-                {FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}
-            )
+    #         samples_collection_connector.delete_many(
+    #             {FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}
+    #         )
 
-        return True
+    #     return True
 
     def process_samples(self) -> None:
         """Processes the samples extracted from the centre file.
@@ -400,6 +400,20 @@ class CentreFile:
         db = get_mongo_db(self.config, client)
         return db
 
+    def add_duplication_errors(self, exception):
+        try:
+            wrong_instances = [
+                write_error["op"] for write_error in exception.details["writeErrors"]
+            ]
+
+            for wrong_instance in wrong_instances:
+                self.errors.append(
+                    f"Duplicate insertion while inserting entry {wrong_instance['Root Sample ID']} from file {wrong_instance['file_name']} at line {wrong_instance['line_number']}"
+                )
+        except Exception:
+            self.critical_errors += 1
+            self.errors.append(f"Unknown error with file {self.file_name}")
+
     def insert_samples_from_docs(self, docs_to_insert) -> None:
         """Insert sample records from the parsed file information.
 
@@ -411,7 +425,7 @@ class CentreFile:
 
         try:
             # Moves previous version into history of samples
-            self.archive_old_samples(docs_to_insert)
+            # self.archive_old_samples(docs_to_insert)
 
             # Inserts new version for samples
             result = samples_collection.insert_many(docs_to_insert, ordered=False)
@@ -421,14 +435,10 @@ class CentreFile:
             # the records from being written
             logger.warning(f"{e} - usually happens when duplicates are trying to be inserted")
             self.docs_inserted = e.details["nInserted"]
-            write_errors = {write_error["code"] for write_error in e.details["writeErrors"]}
-            for error in write_errors:
-                num_errors = len(
-                    list(filter(lambda x: x["code"] == error, e.details["writeErrors"]))
-                )
-                self.errors.append(f"{num_errors} records with error code {error}")
+
+            self.add_duplication_errors(e)
         except Exception as e:
-            self.errors.append(f"Critical error: {e}")
+            self.errors.append(f"Critical error in file {self.file_name}: {e}")
             self.critical_errors += 1
             logger.exception(e)
 

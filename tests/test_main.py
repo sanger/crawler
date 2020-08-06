@@ -46,7 +46,7 @@ def test_run(mongo_database, testing_files_for_process):
 
     assert (
         samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
-    ), "Wrong number of valid samples"
+    ), f"Wrong number of valid samples is not {NUMBER_VALID_SAMPLES}, {samples_collection.count_documents({})}"
     assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
     assert samples_collection.count_documents({"RNA ID": "123_H09", "source": "UK Biocentre"}) == 1
 
@@ -55,7 +55,10 @@ def test_run(mongo_database, testing_files_for_process):
 
     # check number of success files
     (_, _, files) = next(os.walk("tmp/backups/ALDP/successes"))
-    assert 3 == len(files), "Wrong number of success files"
+    assert 2 == len(files), "Wrong number of success files"
+
+    (_, _, files) = next(os.walk("tmp/backups/ALDP/errors"))
+    assert 1 == len(files), "Wrong number of error files"
 
     # check the code cleaned up the temporary files
     (_, subfolders, files) = next(os.walk("tmp/files/"))
@@ -73,10 +76,10 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
 
     # check number of success files
     (_, _, files) = next(os.walk("tmp/backups/ALDP/successes"))
-    assert 3 == len(files)
+    assert 2 == len(files)
 
     (_, _, files) = next(os.walk("tmp/backups/ALDP/errors"))
-    assert 0 == len(files)
+    assert 1 == len(files)
 
     (_, _, files) = next(os.walk("tmp/backups/CAMC/successes"))
     assert 1 == len(files), "Fail success CAMC"
