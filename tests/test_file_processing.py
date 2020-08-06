@@ -7,6 +7,7 @@ from crawler.helpers import current_time
 from unittest.mock import patch
 from csv import DictReader
 import pytest
+import datetime
 
 from tempfile import mkstemp
 
@@ -147,50 +148,104 @@ def test_extract_fields(config):
 
 
 def test_format_and_filter_rows(config):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
+    timestamp = "some timestamp"
+    with patch("crawler.file_processing.current_time", return_value=timestamp):
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
 
-    extra_fields_added = [
-        {
-            "Root Sample ID": "1",
-            "RNA ID": "RNA_0043_H09",
-            "plate_barcode": "RNA_0043",
-            "source": "Alderley",
-            "coordinate": "H09",
-        }
-    ]
+        extra_fields_added = [
+            {
+                "Root Sample ID": "1",
+                "RNA ID": "RNA_0043_H09",
+                "plate_barcode": "RNA_0043",
+                "source": "Alderley",
+                "coordinate": "H09",
+                "line_number": 1,
+                "file_name": "some file",
+                "file_name_date": None,
+                "_created": timestamp,
+                "_updated": timestamp,
+            }
+        ]
 
-    with StringIO() as fake_csv:
-        fake_csv.write("Root Sample ID,RNA ID\n")
-        fake_csv.write("1,RNA_0043_H09\n")
-        fake_csv.seek(0)
+        with StringIO() as fake_csv:
+            fake_csv.write("Root Sample ID,RNA ID\n")
+            fake_csv.write("1,RNA_0043_H09\n")
+            fake_csv.seek(0)
 
-        csv_to_test_reader = DictReader(fake_csv)
+            csv_to_test_reader = DictReader(fake_csv)
 
-        augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
-        assert augmented_data == extra_fields_added
-        assert len(centre_file.errors) == 0
+            augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
+            assert augmented_data == extra_fields_added
+            assert len(centre_file.errors) == 0
 
-    wrong_barcode = [
-        {
-            "Root Sample ID": "1",
-            "RNA ID": "RNA_0043_",
-            "plate_barcode": "",
-            "source": "Alderley",
-            "coordinate": "",
-        }
-    ]
+        wrong_barcode = [
+            {
+                "Root Sample ID": "1",
+                "RNA ID": "RNA_0043_",
+                "plate_barcode": "",
+                "source": "Alderley",
+                "coordinate": "",
+            }
+        ]
 
-    with StringIO() as fake_csv:
-        fake_csv.write("Root Sample ID,RNA ID\n")
-        fake_csv.write("1,RNA_0043_\n")
-        fake_csv.seek(0)
+        with StringIO() as fake_csv:
+            fake_csv.write("Root Sample ID,RNA ID\n")
+            fake_csv.write("1,RNA_0043_\n")
+            fake_csv.seek(0)
 
-        csv_to_test_reader = DictReader(fake_csv)
+            csv_to_test_reader = DictReader(fake_csv)
 
-        augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
-        assert augmented_data == []
-        assert len(centre_file.errors) == 1
+            augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
+            assert augmented_data == []
+            assert len(centre_file.errors) == 1
+
+
+def test_format_and_filter_rows_parsing_filename(config):
+    timestamp = "some timestamp"
+    with patch("crawler.file_processing.current_time", return_value=timestamp):
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("ASDF_200507_1340.csv", centre)
+
+        extra_fields_added = [
+            {
+                "Root Sample ID": "1",
+                "RNA ID": "RNA_0043_H09",
+                "plate_barcode": "RNA_0043",
+                "source": "Alderley",
+                "coordinate": "H09",
+                "line_number": 1,
+                "file_name": "ASDF_200507_1340.csv",
+                "file_name_date": datetime.datetime(2020, 5, 7, 13, 40),
+                "_created": timestamp,
+                "_updated": timestamp,
+            },
+            {
+                "Root Sample ID": "2",
+                "RNA ID": "RNA_0043_B08",
+                "plate_barcode": "RNA_0043",
+                "source": "Alderley",
+                "coordinate": "B08",
+                "line_number": 2,
+                "file_name": "ASDF_200507_1340.csv",
+                "file_name_date": datetime.datetime(2020, 5, 7, 13, 40),
+                "_created": timestamp,
+                "_updated": timestamp,
+            },
+        ]
+
+        with StringIO() as fake_csv:
+            fake_csv.write("Root Sample ID,RNA ID\n")
+            fake_csv.write("1,RNA_0043_H09\n")
+            fake_csv.write("2,RNA_0043_B08\n")
+            fake_csv.seek(0)
+
+            csv_to_test_reader = DictReader(fake_csv)
+
+            augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
+            print(augmented_data)
+            assert augmented_data == extra_fields_added
+            assert len(centre_file.errors) == 0
 
 
 def test_get_download_dir(config):
@@ -367,6 +422,16 @@ def test_backup_bad_file(config, tmpdir):
 
         filename_with_timestamp = os.path.basename(errors_folder.listdir()[0])
         assert filename in filename_with_timestamp
+
+
+def test_file_name_date_parses_right(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
+    assert centre_file.file_name_date().year == 2020
+    assert centre_file.file_name_date().month == 5
+    assert centre_file.file_name_date().day == 3
+    assert centre_file.file_name_date().hour == 23
+    assert centre_file.file_name_date().minute == 38
 
 
 def test_get_download_dir(config):

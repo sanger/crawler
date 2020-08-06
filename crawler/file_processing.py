@@ -15,6 +15,11 @@ from crawler.constants import (
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
+    FIELD_LINE_NUMBER,
+    FIELD_FILE_NAME,
+    FIELD_FILE_NAME_DATE,
+    FIELD_CREATED_AT,
+    FIELD_UPDATED_AT,
 )
 from crawler.helpers import current_time
 from crawler.constants import (
@@ -31,6 +36,8 @@ from crawler.db import (
 )
 
 from hashlib import md5
+
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -498,14 +505,15 @@ class CentreFile:
         augmented_data = []
         missing_data_count = 0
         invalid_rows = 0
-        row_index = 1
+        line_number = 1
+        import_timestamp = current_time()
 
         barcode_regex = self.centre_config["barcode_regex"]
         barcode_field = self.centre_config["barcode_field"]
 
         for row in csvreader:
             # only process rows that contain something in the cells
-            if self.row_valid_structure(row, row_index):
+            if self.row_valid_structure(row, line_number):
                 row["source"] = self.centre_config["name"]
                 row[FIELD_PLATE_BARCODE] = None
                 try:
@@ -518,6 +526,11 @@ class CentreFile:
                     pass
 
                 if row[FIELD_PLATE_BARCODE]:
+                    row[FIELD_LINE_NUMBER] = line_number
+                    row[FIELD_FILE_NAME] = self.file_name
+                    row[FIELD_FILE_NAME_DATE] = self.file_name_date()
+                    row[FIELD_CREATED_AT] = import_timestamp
+                    row[FIELD_UPDATED_AT] = import_timestamp
                     augmented_data.append(row)
                 else:
                     missing_data_count += 1
@@ -525,7 +538,7 @@ class CentreFile:
             else:
                 invalid_rows += 1
 
-            row_index += 1
+            line_number += 1
 
         logger.info(f"Invalid rows = {invalid_rows}")
 
@@ -538,7 +551,17 @@ class CentreFile:
 
         return augmented_data
 
-    def row_valid_structure(self, row, row_index):
+    def row_valid_structure(self, row, line_number) -> bool:
+        """Checks whether the row has the expected structure.
+            Checks for blank rows and if we have the sample id and plate barcode.boolean
+
+        Arguments:
+            row {Row} - row object from the csvreader
+            line_number - line number within the file
+
+        Returns:
+            bool -- whether the row has valid structure or not
+        """
         # check whether row is completely empty (this is ok)
         if not (any(cell_txt.strip() for cell_txt in row.values())):
             return False
@@ -547,10 +570,29 @@ class CentreFile:
         barcode_field = self.centre_config["barcode_field"]
 
         if not (row[FIELD_ROOT_SAMPLE_ID] and row[barcode_field]):
-            error = f"Row {row_index} has an empty plate barcode."
+            error = f"Row {line_number} has an empty plate barcode."
             self.errors.append(error)
             logger.error(error)
             return False
 
         return True
 
+    def file_name_date(self) -> Any:
+        """Extracts date from the filename if it matches the expected format.
+            Otherwise returns None.
+
+        Returns:
+            datetime -- date extracted from the filename
+        """
+        # example filenames:
+        # AP_sanger_report_200527_0818.csv
+        # MK_sanger_report_200418_0800.csv
+        # GLS_sanger_report_200529_2030.csv
+        m = re.match(".*_([\d]{6}_[\d]{4})\.csv", self.file_name)
+
+        if not m:
+            return None
+
+        file_timestamp = m.group(1)
+
+        return datetime.datetime.strptime(file_timestamp, "%y%m%d_%H%M")
