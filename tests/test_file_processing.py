@@ -149,10 +149,10 @@ def test_extract_fields(config):
 
 def test_format_and_filter_rows(config):
     timestamp = "some timestamp"
-    with patch("crawler.file_processing.current_time", return_value=timestamp):
-        centre = Centre(config, config.CENTRES[0])
-        centre_file = CentreFile("some file", centre)
-
+    # with patch("crawler.file_processing.get_now_timestamp", return_value=timestamp):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some file", centre)
+    with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
         extra_fields_added = [
             {
                 "Root Sample ID": "1",
@@ -163,8 +163,8 @@ def test_format_and_filter_rows(config):
                 "line_number": 1,
                 "file_name": "some file",
                 "file_name_date": None,
-                "_created": timestamp,
-                "_updated": timestamp,
+                "created_at": timestamp,
+                "updated_at": timestamp,
             }
         ]
 
@@ -203,9 +203,10 @@ def test_format_and_filter_rows(config):
 
 def test_format_and_filter_rows_parsing_filename(config):
     timestamp = "some timestamp"
-    with patch("crawler.file_processing.current_time", return_value=timestamp):
-        centre = Centre(config, config.CENTRES[0])
-        centre_file = CentreFile("ASDF_200507_1340.csv", centre)
+    # with patch("crawler.file_processing.get_now_timestamp", return_value=timestamp):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("ASDF_200507_1340.csv", centre)
+    with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
 
         extra_fields_added = [
             {
@@ -217,8 +218,8 @@ def test_format_and_filter_rows_parsing_filename(config):
                 "line_number": 1,
                 "file_name": "ASDF_200507_1340.csv",
                 "file_name_date": datetime.datetime(2020, 5, 7, 13, 40),
-                "_created": timestamp,
-                "_updated": timestamp,
+                "created_at": timestamp,
+                "updated_at": timestamp,
             },
             {
                 "Root Sample ID": "2",
@@ -229,8 +230,8 @@ def test_format_and_filter_rows_parsing_filename(config):
                 "line_number": 2,
                 "file_name": "ASDF_200507_1340.csv",
                 "file_name_date": datetime.datetime(2020, 5, 7, 13, 40),
-                "_created": timestamp,
-                "_updated": timestamp,
+                "created_at": timestamp,
+                "updated_at": timestamp,
             },
         ]
 
@@ -243,7 +244,7 @@ def test_format_and_filter_rows_parsing_filename(config):
             csv_to_test_reader = DictReader(fake_csv)
 
             augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
-            print(augmented_data)
+
             assert augmented_data == extra_fields_added
             assert len(centre_file.errors) == 0
 

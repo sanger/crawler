@@ -75,15 +75,19 @@ class Centre:
         # get a list of files in the download directory
         # https://stackoverflow.com/a/3207973
         path_to_walk = PROJECT_ROOT.joinpath(self.get_download_dir())
-        logger.debug(f"Attempting to walk {path_to_walk}")
-        (_, _, files) = next(os.walk(path_to_walk))
+        try:
+            logger.debug(f"Attempting to walk {path_to_walk}")
+            (_, _, files) = next(os.walk(path_to_walk))
 
-        pattern = re.compile(self.centre_config[REGEX_FIELD])
+            pattern = re.compile(self.centre_config[REGEX_FIELD])
 
-        # filter the list of files to only those which match the pattern
-        centre_files = list(filter(pattern.match, files))
+            # filter the list of files to only those which match the pattern
+            centre_files = list(filter(pattern.match, files))
 
-        return centre_files
+            return centre_files
+        except:
+            logger.fatal(f"Failed when reading files from {path_to_walk}")
+            return []
 
     def clean_up(self) -> None:
         """Remove the files downloaded from the SFTP for the given centre.
@@ -499,6 +503,9 @@ class CentreFile:
 
         return m.group(1), m.group(2)
 
+    def get_now_timestamp(self):
+        return datetime.datetime.now()
+
     def format_and_filter_rows(
         self, csvreader: DictReader
     ) -> Tuple[List[str], List[Dict[str, str]]]:
@@ -516,7 +523,8 @@ class CentreFile:
         missing_data_count = 0
         invalid_rows = 0
         line_number = 1
-        import_timestamp = current_time()
+
+        import_timestamp = self.get_now_timestamp()
 
         barcode_regex = self.centre_config["barcode_regex"]
         barcode_field = self.centre_config["barcode_field"]
