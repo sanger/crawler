@@ -397,6 +397,9 @@ def test_file_name_date_parses_right(config):
     assert centre_file.file_name_date().hour == 23
     assert centre_file.file_name_date().minute == 38
 
+    centre_file = CentreFile("AP_sanger_report_200503_2338 (2).csv", centre)
+    assert centre_file.file_name_date() == None
+
 
 def test_get_download_dir(config):
     centre = Centre(config, config.CENTRES[0])
