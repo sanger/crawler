@@ -1,6 +1,5 @@
 import datetime
 import re
-import logging
 import sys
 import traceback
 
@@ -14,8 +13,6 @@ from crawler.db import (
 from crawler.helpers import (
     get_config
 )
-
-logger = logging.getLogger(__name__)
 
 CREATED_DATE_FIELD_NAME = 'First Imported Date'
 BATCH_SIZE = 250000
