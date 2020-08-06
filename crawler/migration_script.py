@@ -75,7 +75,7 @@ def add_timestamps_to_samples(db):
       concat_ids = []
       # TODO: add a condition that concat_id is not null?
       concat_ids_result = db[collection_name].find(
-        { 'concat_id': { '$nin': processed_concat_ids } },
+        { 'concat_id': { '$nin': processed_concat_ids, '$ne': None } },
         { 'concat_id': True }
       )
       for sample in concat_ids_result:
