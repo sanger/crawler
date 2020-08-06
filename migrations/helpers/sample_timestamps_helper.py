@@ -11,7 +11,6 @@ COLLECTION_NAME_FORMAT_2 = r'^samples_(\d){4}2020_(\d){4}$' # e.g. samples_21052
 
 # For updates, '$set' syntax is important, otherwise it overwrites the whole document!
 # TODO: check why _created and _updated are 1970, and whether I can insert into _created here, to back-fill data
-# TODO: put this file in a migrations folder
 def add_timestamps_to_samples(db):
   print(f'Time start: {datetime.datetime.now()}')
 
@@ -41,7 +40,6 @@ def add_timestamps_to_samples(db):
       print(f'\n-- Starting processing collection: {collection_name} at {datetime.datetime.now()} --')
 
       print(f'\n-- Update collection {collection_name} with new concatenated id column --')
-      # TODO: concat_id will be set to null if any of the constituent fields is null - do something about this?
       update_result_2 = db[collection_name].update_many(
         { },
         [
@@ -51,7 +49,6 @@ def add_timestamps_to_samples(db):
       print(f'Time after adding field to collection: {datetime.datetime.now()}')
       print('Number samples modified: ', update_result_2.modified_count)
 
-      # TODO: save this to a file in case of partial success?
       print('\n-- Retrieve all concatenated ids for records we haven\'t processed yet --')
       concat_ids = []
       concat_ids_result = db[collection_name].find(
