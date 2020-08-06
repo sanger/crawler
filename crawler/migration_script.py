@@ -58,7 +58,7 @@ def add_timestamps_to_samples(db):
     print(f'Collections in chronological order: {collection_names_chrono_order}')
 
 
-    processed_concat_ids = set()
+    processed_concat_ids = []
 
     for collection_name in collection_names_chrono_order:
       print(f'-- Starting processing collection: {collection_name} at {datetime.datetime.now()} --')
@@ -84,7 +84,7 @@ def add_timestamps_to_samples(db):
       )
       for sample in concat_ids_result:
         concat_ids.append(sample['concat_id'])
-        processed_concat_ids.add(sample['concat_id'])
+        processed_concat_ids.append(sample['concat_id'])
 
       print(f'Time after querying field and building list: {datetime.datetime.now()}')
       print(f'Total number of samples in collection: {db[collection_name].count()}')
