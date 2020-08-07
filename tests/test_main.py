@@ -55,10 +55,10 @@ def test_run(mongo_database, testing_files_for_process):
 
     # check number of success files
     (_, _, files) = next(os.walk("tmp/backups/ALDP/successes"))
-    assert 2 == len(files), "Wrong number of success files"
+    assert 3 == len(files), "Wrong number of success files"
 
     (_, _, files) = next(os.walk("tmp/backups/ALDP/errors"))
-    assert 1 == len(files), "Wrong number of error files"
+    assert 0 == len(files), "Wrong number of error files"
 
     # check the code cleaned up the temporary files
     (_, subfolders, files) = next(os.walk("tmp/files/"))
@@ -76,10 +76,10 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
 
     # check number of success files
     (_, _, files) = next(os.walk("tmp/backups/ALDP/successes"))
-    assert 2 == len(files)
+    assert 3 == len(files)
 
     (_, _, files) = next(os.walk("tmp/backups/ALDP/errors"))
-    assert 1 == len(files)
+    assert 0 == len(files)
 
     (_, _, files) = next(os.walk("tmp/backups/CAMC/successes"))
     assert 1 == len(files), "Fail success CAMC"
@@ -94,10 +94,10 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     assert 0 == len(files)
 
     (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
-    assert 0 == len(files), "Fail success TEST"
+    assert 1 == len(files), "Fail success TEST"
 
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
-    assert 1 == len(files)
+    assert 0 == len(files)
 
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
     assert imports_collection.count_documents({}) == 7
@@ -109,10 +109,10 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     assert imports_collection.count_documents({}) == 8
 
     (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
-    assert 1 == len(files), "Fail success TEST"
+    assert 2 == len(files), "Fail success TEST"
 
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
-    assert 1 == len(files)
+    assert 0 == len(files)
 
     # check the code cleaned up the temporary files
     (_, subfolders, files) = next(os.walk("tmp/files/"))

@@ -82,3 +82,48 @@ def get_config(settings_module: str) -> Tuple[ModuleType, str]:
         return import_module(settings_module), settings_module  # type: ignore
     except KeyError as e:
         sys.exit(f"{e} required in environmental variables for config")
+
+
+class LoggingCollection:
+    def __init__(self):
+        self.warning = []
+        self.error = []
+        self.critical = []
+
+    def add_warning(self, message):
+        self.warning.append(f"WARNING: {message}")
+
+    def add_error(self, message):
+        self.error.append(f"ERROR: {message}")
+
+    def add_critical(self, message):
+        self.critical.append(f"CRITICAL: {message}")
+
+    def messages(self):
+        return self.critical + self.error + self.warning
+
+    def count_errors_and_criticals(self):
+        return self.count_errors() + self.count_criticals()
+
+    def count_warnings(self):
+        return len(self.warning)
+
+    def count_errors(self):
+        return len(self.error)
+
+    def count_criticals(self):
+        return len(self.critical)
+
+
+class Aggregator:
+    def __init__(self, description):
+        self.counter = 0
+
+    def reset(self):
+        self.counter = 0
+
+    def aggregate(self):
+        self.counter += 1
+
+    def total(self):
+        return self.counter

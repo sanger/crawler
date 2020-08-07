@@ -89,9 +89,7 @@ def get_mongo_collection(database: Database, collection_name: str) -> Collection
     return database[collection_name]
 
 
-def rename_collection_with_suffix(
-    collection: Collection, suffix: str = current_time()
-) -> None:
+def rename_collection_with_suffix(collection: Collection, suffix: str = current_time()) -> None:
     """Renames a collection to a timestamped version of itself
 
     Arguments:
@@ -119,6 +117,8 @@ def rename_collection(collection: Collection, new_name: str) -> None:
     logger.debug(f"Collection renamed to: '{new_name}'")
 
     return None
+
+
 @contextmanager
 def samples_collection_accessor(
     database: Database, collection_name: str, timestamp: str

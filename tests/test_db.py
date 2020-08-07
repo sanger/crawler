@@ -14,6 +14,7 @@ from crawler.db import (
     rename_collection_with_suffix,
     safe_collection,
 )
+from crawler.helpers import LoggingCollection
 
 
 def test_create_mongo_client(config):
@@ -125,15 +126,19 @@ def test_create_import_record(freezer, mongo_database):
     import_collection = mongo_database["imports"]
 
     docs = [{"x": 1}, {"y": 2}, {"z": 3}]
-    errors = ["error1", "error2"]
+    errors = LoggingCollection()
+    errors.add_error("error1")
+    errors.add_error("error2")
 
     for centre in config.CENTRES:
         now = datetime.now().isoformat(timespec="seconds")
-        result = create_import_record(import_collection, centre, len(docs), "test", errors)
+        result = create_import_record(
+            import_collection, centre, len(docs), "test", errors.messages()
+        )
         import_doc = import_collection.find_one({"_id": result.inserted_id})
 
         assert import_doc["date"] == now
         assert import_doc["centre_name"] == centre["name"]
         assert import_doc["csv_file_used"] == "test"
         assert import_doc["number_of_records"] == len(docs)
-        assert import_doc["errors"] == errors
+        assert import_doc["errors"] == errors.messages()

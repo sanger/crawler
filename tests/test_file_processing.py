@@ -29,7 +29,7 @@ from crawler.constants import (
     FIELD_DATE_TESTED,
     FIELD_LAB_ID,
 )
-from crawler.exceptions import CentreFileError
+from crawler.helpers import LoggingCollection
 from crawler.db import get_mongo_collection
 
 
@@ -125,23 +125,21 @@ def test_extract_fields(config):
 
     barcode_field = "RNA ID"
     barcode_regex = r"^(.*)_([A-Z]\d\d)$"
-    assert centre_file.extract_fields({"RNA ID": "ABC123_H01"}, barcode_field, barcode_regex) == (
-        "ABC123",
-        "H01",
-    )
-    assert centre_file.extract_fields({"RNA ID": "ABC123_A00"}, barcode_field, barcode_regex) == (
-        "ABC123",
-        "A00",
-    )
-    assert centre_file.extract_fields({"RNA ID": "ABC123_H0"}, barcode_field, barcode_regex) == (
+    assert centre_file.extract_fields(
+        {"RNA ID": "ABC123_H01"}, 0, barcode_field, barcode_regex
+    ) == ("ABC123", "H01",)
+    assert centre_file.extract_fields(
+        {"RNA ID": "ABC123_A00"}, 0, barcode_field, barcode_regex
+    ) == ("ABC123", "A00",)
+    assert centre_file.extract_fields({"RNA ID": "ABC123_H0"}, 0, barcode_field, barcode_regex) == (
         "",
         "",
     )
-    assert centre_file.extract_fields({"RNA ID": "ABC123H0"}, barcode_field, barcode_regex) == (
+    assert centre_file.extract_fields({"RNA ID": "ABC123H0"}, 0, barcode_field, barcode_regex) == (
         "",
         "",
     )
-    assert centre_file.extract_fields({"RNA ID": "AB23_H01"}, barcode_field, barcode_regex) == (
+    assert centre_file.extract_fields({"RNA ID": "AB23_H01"}, 0, barcode_field, barcode_regex) == (
         "AB23",
         "H01",
     )
@@ -149,7 +147,6 @@ def test_extract_fields(config):
 
 def test_format_and_filter_rows(config):
     timestamp = "some timestamp"
-    # with patch("crawler.file_processing.get_now_timestamp", return_value=timestamp):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
@@ -177,7 +174,7 @@ def test_format_and_filter_rows(config):
 
             augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
             assert augmented_data == extra_fields_added
-            assert len(centre_file.errors) == 0
+            assert centre_file.errors_collection.count_errors_and_criticals() == 0
 
         wrong_barcode = [
             {
@@ -198,7 +195,7 @@ def test_format_and_filter_rows(config):
 
             augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
             assert augmented_data == []
-            assert len(centre_file.errors) == 1
+            assert centre_file.errors_collection.count_criticals() == 2
 
 
 def test_format_and_filter_rows_parsing_filename(config):
@@ -246,7 +243,9 @@ def test_format_and_filter_rows_parsing_filename(config):
             augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
 
             assert augmented_data == extra_fields_added
-            assert len(centre_file.errors) == 0
+            assert centre_file.errors_collection.count_errors() == 0
+            assert centre_file.errors_collection.count_criticals() == 0
+            assert centre_file.errors_collection.count_warnings() == 0
 
 
 def test_format_and_filter_rows_detects_duplicates(config):
@@ -281,7 +280,9 @@ def test_format_and_filter_rows_detects_duplicates(config):
 
             augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
             assert augmented_data == extra_fields_added
-            assert len(centre_file.errors) == 1
+            assert centre_file.errors_collection.count_warnings() == 1
+            assert centre_file.errors_collection.count_errors() == 0
+            assert centre_file.errors_collection.count_criticals() == 0
 
 
 def test_get_download_dir(config):
@@ -292,34 +293,36 @@ def test_get_download_dir(config):
 
 
 def test_check_for_required_headers(config):
-    config.CENTRES[0]["barcode_field"] = "RNA ID"
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
 
-    with pytest.raises(CentreFileError, match=r"Cannot read CSV fieldnames"):
-        with StringIO() as fake_csv:
+    # empty file
+    with StringIO() as fake_csv:
 
-            csv_to_test_reader = DictReader(fake_csv)
-            assert centre_file.check_for_required_headers(csv_to_test_reader) is None
+        csv_to_test_reader = DictReader(fake_csv)
+        assert centre_file.check_for_required_headers(csv_to_test_reader) is False
+        assert centre_file.errors_collection.count_warnings() == 0
+        assert centre_file.errors_collection.count_errors() == 0
+        assert centre_file.errors_collection.count_criticals() == 1
 
-    config.CENTRES[0]["barcode_field"] = "RNA ID"
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
 
-    with pytest.raises(CentreFileError, match=r".* missing in CSV file"):
-        with StringIO() as fake_csv:
-            fake_csv.write("id,RNA ID\n")
-            fake_csv.write("1,RNA_0043_\n")
-            fake_csv.seek(0)
+    # file with incorrect headers
+    with StringIO() as fake_csv:
+        fake_csv.write("id,RNA ID\n")
+        fake_csv.write("1,RNA_0043_\n")
+        fake_csv.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv)
+        csv_to_test_reader = DictReader(fake_csv)
 
-            assert centre_file.check_for_required_headers(csv_to_test_reader) is None
+        assert centre_file.check_for_required_headers(csv_to_test_reader) is False
+        assert centre_file.errors_collection.count_criticals() == 1
 
-    config.CENTRES[0]["barcode_field"] = "RNA ID"
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
 
+    # file with valid headers
     with StringIO() as fake_csv:
         fake_csv.write(
             f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},"
@@ -330,7 +333,8 @@ def test_check_for_required_headers(config):
 
         csv_to_test_reader = DictReader(fake_csv)
 
-        assert centre_file.check_for_required_headers(csv_to_test_reader) is None
+        assert centre_file.check_for_required_headers(csv_to_test_reader) is True
+        assert centre_file.errors_collection.count_criticals() == 0
 
 
 def test_backup_good_file(config, tmpdir):
@@ -378,7 +382,7 @@ def test_backup_bad_file(config, tmpdir):
 
         # test the backup of the file to the errors folder
         centre_file = CentreFile(filename, centre)
-        centre_file.errors.append("Some error happened")
+        centre_file.errors_collection.error.append("Some error happened")
         centre_file.backup_file()
 
         assert len(errors_folder.listdir()) == 1
@@ -435,7 +439,7 @@ def test_set_state_for_file_when_in_error_folder(config, tmpdir):
         # create a backup of the file inside the errors directory as if previously processed there
         filename = "AP_sanger_report_200518_2132.csv"
         centre_file = CentreFile(filename, centre)
-        centre_file.errors.append("Some error happened")
+        centre_file.errors_collection.error.append("Some error happened")
         centre_file.backup_file()
 
         assert len(errors_folder.listdir()) == 1

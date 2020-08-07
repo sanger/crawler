@@ -33,6 +33,7 @@ from crawler.file_processing import Centre
 
 logger = logging.getLogger(__name__)
 
+
 def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
     try:
         timestamp = timestamp or current_time()
@@ -60,7 +61,9 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
 
             imports_collection = get_mongo_collection(db, COLLECTION_IMPORTS)
 
-            with samples_collection_accessor(db, COLLECTION_SAMPLES, timestamp) as samples_collection:
+            with samples_collection_accessor(
+                db, COLLECTION_SAMPLES, timestamp
+            ) as samples_collection:
                 logger.debug(
                     f"Creating index '{FIELD_PLATE_BARCODE}' on '{samples_collection.full_name}'"
                 )

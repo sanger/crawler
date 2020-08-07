@@ -21,7 +21,7 @@ from crawler.constants import (
     FIELD_CREATED_AT,
     FIELD_UPDATED_AT,
 )
-from crawler.helpers import current_time, get_sftp_connection
+from crawler.helpers import current_time, get_sftp_connection, LoggingCollection, Aggregator
 from crawler.constants import (
     COLLECTION_SAMPLES,
     COLLECTION_SAMPLES_HISTORY,
@@ -49,8 +49,7 @@ SUCCESSES_DIR = "successes"
 
 class Centre:
     def __init__(self, config, centre_config):
-        self.errors = []
-        self.errors.clear()
+        self.errors_collection = ()
         self.config = config
         self.centre_config = centre_config
         # TODO: check if sorted is oldest first
@@ -59,6 +58,22 @@ class Centre:
         # create backup directories for files
         os.makedirs(f"{self.centre_config['backups_folder']}/{ERRORS_DIR}", exist_ok=True)
         os.makedirs(f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}", exist_ok=True)
+
+        self.init_aggregators()
+
+    def init_aggregators(self):
+        self.aggregators = {
+            "TYPE 1": Aggregator("Blank rows in files"),
+            "TYPE 2": Aggregator(
+                "Files where we do not have the expected main column headers of Root Sample ID, RNA ID and Result",
+            ),
+            "TYPE 3": Aggregator(
+                "Sample rows that have Root Sample ID value but no other information"
+            ),
+            "TYPE 4": Aggregator(
+                "Sample rows that have Root Sample ID and Result values but no RNA ID (plate barcode)"
+            ),
+        }
 
     def get_files_in_download_dir(self) -> List[str]:
         """Get all the files in the download directory for this centre and filter the file names using
@@ -197,9 +212,7 @@ class CentreFile:
             Returns:
                 str -- the filepath for the file
         """
-        self.errors = []
-        self.errors.clear()
-        self.critical_errors = 0
+        self.errors_collection = LoggingCollection()
 
         self.centre = centre
         self.config = centre.config
@@ -288,10 +301,11 @@ class CentreFile:
         """
         logger.info(f"Processing samples")
 
-        parse_errors, docs_to_insert = self.parse_csv()
-        if parse_errors:
-            logger.error(f"Errors present in file {self.file_name}")
+        # LOG_HANDLER TYPE 2: Docs to insert is [] so no insert
+        docs_to_insert = self.parse_csv()
 
+        if self.errors_collection.count_criticals() > 0:
+            logger.critical(f"Errors present in file {self.file_name}")
         else:
             logger.info(f"File {self.file_name} is valid")
 
@@ -305,7 +319,8 @@ class CentreFile:
             Returns:
                 str -- the filepath of the file backup
         """
-        if len(self.errors) > 0:
+        if self.errors_collection.count_errors_and_criticals() > 0:
+            # LOG_HANDLER TYPE 2: Fail file
             return (
                 f"{self.centre_config['backups_folder']}/{ERRORS_DIR}/{self.timestamped_filename()}"
             )
@@ -334,7 +349,11 @@ class CentreFile:
         # write status record
         imports_collection = get_mongo_collection(self.get_db(), COLLECTION_IMPORTS)
         _ = create_import_record(
-            imports_collection, self.centre_config, self.docs_inserted, self.file_name, self.errors,
+            imports_collection,
+            self.centre_config,
+            self.docs_inserted,
+            self.file_name,
+            self.errors_collection.messages(),
         )
 
     def get_db(self) -> Database:
@@ -347,6 +366,7 @@ class CentreFile:
         db = get_mongo_db(self.config, client)
         return db
 
+    # Database clash
     def add_duplication_errors(self, exception):
         try:
             wrong_instances = [
@@ -354,12 +374,11 @@ class CentreFile:
             ]
 
             for wrong_instance in wrong_instances:
-                self.errors.append(
+                self.errors_collection.warning.append(
                     f"Duplicate insertion while inserting entry {wrong_instance['Root Sample ID']} from file {wrong_instance['file_name']} at line {wrong_instance['line_number']}"
                 )
         except Exception:
-            self.critical_errors += 1
-            self.errors.append(f"Unknown error with file {self.file_name}")
+            self.errors_collection.critical.append(f"Unknown error with file {self.file_name}")
 
     def insert_samples_from_docs(self, docs_to_insert) -> None:
         """Insert sample records from the parsed file information.
@@ -382,15 +401,14 @@ class CentreFile:
 
             self.add_duplication_errors(e)
         except Exception as e:
-            self.errors.append(f"Critical error in file {self.file_name}: {e}")
-            self.critical_errors += 1
+            self.errors_collection.critical.append(f"Critical error in file {self.file_name}: {e}")
             logger.exception(e)
 
-    def parse_csv(self) -> Tuple[Any, List[Dict[str, Any]]]:
+    def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.
 
         Returns:
-            Tuple[List[str], List[str, str]] -- list of errors and the augmented data
+            List[str, str] -- the augmented data
         """
         csvfile_path = self.filepath()
 
@@ -399,10 +417,12 @@ class CentreFile:
         with open(csvfile_path, newline="") as csvfile:
             csvreader = DictReader(csvfile)
 
-            self.check_for_required_headers(csvreader)
-            documents = self.format_and_filter_rows(csvreader)
+            if self.check_for_required_headers(csvreader):
+                documents = self.format_and_filter_rows(csvreader)
 
-        return self.errors, documents
+                return documents
+
+        return []
 
     def check_for_required_headers(self, csvreader: DictReader) -> None:
         """Checks that the CSV file has the required headers.
@@ -415,14 +435,19 @@ class CentreFile:
         if csvreader.fieldnames:
             fieldnames = set(csvreader.fieldnames)
             if not self.REQUIRED_FIELDS <= fieldnames:
-                raise CentreFileError(
+                # LOG_HANDLER TYPE 2: Fail file
+                self.errors_collection.critical.append(
                     f"{', '.join(list(self.REQUIRED_FIELDS - fieldnames))} missing in CSV file"
                 )
+                return False
         else:
-            raise CentreFileError("Cannot read CSV fieldnames")
+            self.errors_collection.critical.append("Cannot read CSV fieldnames")
+            return False
+
+        return True
 
     def extract_fields(
-        self, row: Dict[str, str], barcode_field: str, regex: str
+        self, row: Dict[str, str], line_number, barcode_field: str, regex: str
     ) -> Tuple[str, str]:
         """Extracts fields from a row of data (from the CSV file). Currently extracting the barcode and
         coordinate (well position) using regex groups.
@@ -439,6 +464,9 @@ class CentreFile:
         m = re.match(regex, row[barcode_field])
 
         if not m:
+            self.errors_collection.add_critical(
+                f"{barcode_field} does not match expected format from regex for line {line_number}"
+            )
             return "", ""
 
         return m.group(1), m.group(2)
@@ -484,14 +512,11 @@ class CentreFile:
             if self.row_valid_structure(row, line_number):
                 row["source"] = self.centre_config["name"]
                 row[FIELD_PLATE_BARCODE] = None  # type: ignore
-                try:
-                    if row[barcode_field] and barcode_regex:
-                        row[FIELD_PLATE_BARCODE], row[FIELD_COORDINATE] = self.extract_fields(
-                            row, barcode_field, barcode_regex
-                        )
 
-                except KeyError:
-                    pass
+                if row[barcode_field] and barcode_regex:
+                    row[FIELD_PLATE_BARCODE], row[FIELD_COORDINATE] = self.extract_fields(
+                        row, line_number, barcode_field, barcode_regex
+                    )
 
                 if row[FIELD_PLATE_BARCODE]:
                     row[FIELD_LINE_NUMBER] = line_number  # type: ignore
@@ -509,22 +534,38 @@ class CentreFile:
                     seen_rows.add(row_signature)
                     augmented_data.append(row)
                 else:
+
+                    # if FIELD_RESULT in row:
+                    # LOG_HANDLER TYPE 4: Aggregation
+                    # self.aggregators["TYPE 4"].aggregate()
+                    # else:
+                    # LOG_HANDLER TYPE 3: Aggregation
+                    # self.aggregators["TYPE 3"].aggregate()
+
                     missing_data_count += 1
 
             else:
+                # LOG_HANDLER TYPE 1: Aggregate element line
                 invalid_rows += 1
 
             line_number += 1
 
         logger.info(f"Invalid rows = {invalid_rows}")
+        if invalid_rows > 0:
+            # LOG_HANDLER TYPE 1: Aggregate report element line
+            self.errors_collection.warning.append(
+                f"Duplicates Type 1: Total of Empty samples with no result: {invalid_rows}"
+            )
 
         if number_of_duplicates_inside_this_file > 0:
             error = f"{number_of_duplicates_inside_this_file} number of duplicates (sample,location,result,barcode)"
-            self.errors.append(error)
+            self.errors_collection.warning.append(error)
 
         if barcode_regex and missing_data_count > 0:
-            error = f"{missing_data_count} sample rows are missing a plate barcode and / or a coordinate"
-            self.errors.append(error)
+            # LOG_HANDLER TYPE 4: Aggregation report element line
+            error = f"Duplicates Type 4: Total of Empty samples (no barcode or coordinate) with a result: {missing_data_count}"
+            # error = f"{missing_data_count} sample rows are missing a plate barcode and / or a coordinate"
+            self.errors_collection.critical.append(error)
             logger.warning(error)
             # TODO: Update regex check to handle different format checks
             #  https://ssg-confluence.internal.sanger.ac.uk/pages/viewpage.action?pageId=101358138#ReceiptfromLighthouselaboratories(Largediagnosticcentres)-4.2.1VariantsofRNAplatebarcode
@@ -548,11 +589,13 @@ class CentreFile:
 
         # check both the Root Sample ID and barcode field are present
         barcode_field = self.centre_config["barcode_field"]
+        if not (row[FIELD_ROOT_SAMPLE_ID]):
+            # ignore row
+            return False
 
-        if not (row[FIELD_ROOT_SAMPLE_ID] and row[barcode_field]):
-            error = f"Row {line_number} has an empty plate barcode."
-            self.errors.append(error)
-            logger.error(error)
+        if not (row[barcode_field]):
+            # ignore row
+            # TODO: aggregate count error
             return False
 
         return True
