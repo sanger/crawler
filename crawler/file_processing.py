@@ -267,11 +267,13 @@ class CentreFile:
                   CentreFileState - enum representation of file state
         """
         # check whether file is on the blacklist and should be ignored
-        filenames_to_ignore = self.get_centre_from_db()["file_names_to_ignore"]
+        centre = self.get_centre_from_db()
+        if "file_names_to_ignore" in centre:
+            filenames_to_ignore = centre["file_names_to_ignore"]
 
-        if self.file_name in filenames_to_ignore:
-            self.file_state = CentreFileState.FILE_IN_BLACKLIST
-            return self.file_state
+            if self.file_name in filenames_to_ignore:
+                self.file_state = CentreFileState.FILE_IN_BLACKLIST
+                return self.file_state
 
         # check whether file has already been processed to error directory
         if self.checksum_match(ERRORS_DIR):
