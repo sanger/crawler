@@ -158,15 +158,17 @@ def test_format_and_filter_rows(config):
                 "source": "Alderley",
                 "coordinate": "H09",
                 "line_number": 1,
+                "Result": None,
                 "file_name": "some file",
                 "file_name_date": None,
                 "created_at": timestamp,
                 "updated_at": timestamp,
+                "Lab ID": None,
             }
         ]
 
         with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID\n")
+            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
             fake_csv.write("1,RNA_0043_H09\n")
             fake_csv.seek(0)
 
@@ -174,20 +176,22 @@ def test_format_and_filter_rows(config):
 
             augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
             assert augmented_data == extra_fields_added
-            assert centre_file.errors_collection.count_errors_and_criticals() == 0
+            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
         wrong_barcode = [
             {
                 "Root Sample ID": "1",
                 "RNA ID": "RNA_0043_",
+                "Result": "",
                 "plate_barcode": "",
                 "source": "Alderley",
                 "coordinate": "",
+                "Lab ID": "",
             }
         ]
 
         with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID\n")
+            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
             fake_csv.write("1,RNA_0043_\n")
             fake_csv.seek(0)
 
@@ -195,7 +199,9 @@ def test_format_and_filter_rows(config):
 
             augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
             assert augmented_data == []
-            assert centre_file.errors_collection.count_criticals() == 2
+
+            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+            assert centre_file.logging_collection.aggregator_types["TYPE 9"].count_errors == 1
 
 
 def test_format_and_filter_rows_parsing_filename(config):
@@ -217,6 +223,8 @@ def test_format_and_filter_rows_parsing_filename(config):
                 "file_name_date": datetime.datetime(2020, 5, 7, 13, 40),
                 "created_at": timestamp,
                 "updated_at": timestamp,
+                "Result": None,
+                "Lab ID": None,
             },
             {
                 "Root Sample ID": "2",
@@ -229,11 +237,13 @@ def test_format_and_filter_rows_parsing_filename(config):
                 "file_name_date": datetime.datetime(2020, 5, 7, 13, 40),
                 "created_at": timestamp,
                 "updated_at": timestamp,
+                "Result": None,
+                "Lab ID": None,
             },
         ]
 
         with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID\n")
+            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
             fake_csv.write("1,RNA_0043_H09\n")
             fake_csv.write("2,RNA_0043_B08\n")
             fake_csv.seek(0)
@@ -243,9 +253,7 @@ def test_format_and_filter_rows_parsing_filename(config):
             augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
 
             assert augmented_data == extra_fields_added
-            assert centre_file.errors_collection.count_errors() == 0
-            assert centre_file.errors_collection.count_criticals() == 0
-            assert centre_file.errors_collection.count_warnings() == 0
+            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
 def test_format_and_filter_rows_detects_duplicates(config):
@@ -267,22 +275,24 @@ def test_format_and_filter_rows_detects_duplicates(config):
                 "file_name_date": datetime.datetime(2020, 5, 7, 13, 40),
                 "created_at": timestamp,
                 "updated_at": timestamp,
+                "Result": "Positive",
+                "Lab ID": "Val",
             },
         ]
 
         with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID\n")
-            fake_csv.write("1,RNA_0043_H09\n")
-            fake_csv.write("1,RNA_0043_H09\n")
+            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
+            fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
+            fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
 
             augmented_data = centre_file.format_and_filter_rows(csv_to_test_reader)
             assert augmented_data == extra_fields_added
-            assert centre_file.errors_collection.count_warnings() == 1
-            assert centre_file.errors_collection.count_errors() == 0
-            assert centre_file.errors_collection.count_criticals() == 0
+
+            assert centre_file.logging_collection.aggregator_types["TYPE 5"].count_errors == 1
+            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
 def test_get_download_dir(config):
@@ -301,9 +311,8 @@ def test_check_for_required_headers(config):
 
         csv_to_test_reader = DictReader(fake_csv)
         assert centre_file.check_for_required_headers(csv_to_test_reader) is False
-        assert centre_file.errors_collection.count_warnings() == 0
-        assert centre_file.errors_collection.count_errors() == 0
-        assert centre_file.errors_collection.count_criticals() == 1
+        assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 1
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
@@ -317,7 +326,8 @@ def test_check_for_required_headers(config):
         csv_to_test_reader = DictReader(fake_csv)
 
         assert centre_file.check_for_required_headers(csv_to_test_reader) is False
-        assert centre_file.errors_collection.count_criticals() == 1
+        assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 1
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
@@ -334,7 +344,8 @@ def test_check_for_required_headers(config):
         csv_to_test_reader = DictReader(fake_csv)
 
         assert centre_file.check_for_required_headers(csv_to_test_reader) is True
-        assert centre_file.errors_collection.count_criticals() == 0
+        assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 0
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
 def test_backup_good_file(config, tmpdir):
@@ -382,7 +393,7 @@ def test_backup_bad_file(config, tmpdir):
 
         # test the backup of the file to the errors folder
         centre_file = CentreFile(filename, centre)
-        centre_file.errors_collection.error.append("Some error happened")
+        centre_file.logging_collection.add_error("TYPE 4", "Some error happened")
         centre_file.backup_file()
 
         assert len(errors_folder.listdir()) == 1
@@ -439,7 +450,7 @@ def test_set_state_for_file_when_in_error_folder(config, tmpdir):
         # create a backup of the file inside the errors directory as if previously processed there
         filename = "AP_sanger_report_200518_2132.csv"
         centre_file = CentreFile(filename, centre)
-        centre_file.errors_collection.error.append("Some error happened")
+        centre_file.logging_collection.add_error("TYPE 4", "Some error happened")
         centre_file.backup_file()
 
         assert len(errors_folder.listdir()) == 1

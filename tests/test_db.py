@@ -126,14 +126,14 @@ def test_create_import_record(freezer, mongo_database):
     import_collection = mongo_database["imports"]
 
     docs = [{"x": 1}, {"y": 2}, {"z": 3}]
-    errors = LoggingCollection()
-    errors.add_error("error1")
-    errors.add_error("error2")
+    error_collection = LoggingCollection()
+    error_collection.add_error("TYPE 4", "error1")
+    error_collection.add_error("TYPE 5", "error2")
 
     for centre in config.CENTRES:
         now = datetime.now().isoformat(timespec="seconds")
         result = create_import_record(
-            import_collection, centre, len(docs), "test", errors.messages()
+            import_collection, centre, len(docs), "test", error_collection.get_messages_for_import()
         )
         import_doc = import_collection.find_one({"_id": result.inserted_id})
 
@@ -141,4 +141,4 @@ def test_create_import_record(freezer, mongo_database):
         assert import_doc["centre_name"] == centre["name"]
         assert import_doc["csv_file_used"] == "test"
         assert import_doc["number_of_records"] == len(docs)
-        assert import_doc["errors"] == errors.messages()
+        assert import_doc["errors"] == error_collection.get_messages_for_import()

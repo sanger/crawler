@@ -1,17 +1,11 @@
 import logging
 import os
-
-# import pathlib
-# import re
-# import shutil
 import sys
 
-# from csv import DictReader, DictWriter
 from datetime import datetime
 from importlib import import_module
 from types import ModuleType
-
-# from typing import Any, Dict, List, Optional, Tuple
+from enum import Enum
 from typing import Tuple
 
 import pysftp  # type: ignore
@@ -84,46 +78,178 @@ def get_config(settings_module: str) -> Tuple[ModuleType, str]:
         sys.exit(f"{e} required in environmental variables for config")
 
 
+class ErrorLevel(Enum):
+    DEBUG = 1
+    INFO = 2
+    WARNING = 3
+    ERROR = 4
+    CRITICAL = 5
+    FATAL = 6
+
+
+class AggregateTypeBase:
+    """ Base class for Aggregate types. Should not be instantiated directly.
+    """
+
+    def __init__(self):
+        self.error_level = ErrorLevel.DEBUG
+        self.count_errors = 0
+        self.max_errors = -1
+        self.message = ""
+        self.short_display_description = ""
+
+    def add_error(self, message) -> None:
+        """Adds a new error to the aggregate type. Checks max_errors to decide whether message should be appended
+            to the default message or not. Increments total counter for this type of error.
+
+            Arguments:
+                message {str} -- the specific message for this error e.g. with a line number or barcode
+        """
+        self.count_errors += 1
+        if self.max_errors > 0 and self.count_errors <= self.max_errors:
+            self.message = self.message + f" (e.g. {message})"
+
+    def get_message(self):
+        return self.message
+
+    def get_report_message(self):
+        return f"Total number of {self.short_display_description} errors: {self.count_errors}"
+
+
+# See confluence for full table of aggregate types https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/i.+Low+Occupancy+Cherry+Picking
+
+
+class AggregateType1(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.error_level = ErrorLevel.DEBUG
+        self.message = "DEBUG: Blank rows in files."
+        self.short_display_description = "Blank row"
+
+
+class AggregateType2(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = "CRITICAL: Files where we do not have the expected main column headers of Root Sample ID, RNA ID and Result."
+        self.short_display_description = "Missing header column"
+
+
+class AggregateType3(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.error_level = ErrorLevel.WARNING
+        self.message = (
+            "WARNING: Sample rows that have Root Sample ID value but no other information."
+        )
+        self.max_errors = 5
+        self.short_display_description = "Only root sample id"
+
+
+class AggregateType4(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.error_level = ErrorLevel.ERROR
+        self.message = "ERROR: Sample rows that have Root Sample ID and Result values but no RNA ID (no plate barcode)."
+        self.max_errors = 5
+        self.short_display_description = "No plate barcode"
+
+
+class AggregateType5(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.error_level = ErrorLevel.WARNING
+        self.message = "WARNING: Duplicates detected within the file."
+        self.max_errors = 5
+        self.short_display_description = "Duplicates within file"
+
+
+class AggregateType6(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.error_level = ErrorLevel.WARNING
+        self.message = "WARNING: Duplicates detected matching rows in previous files."
+        self.max_errors = 5
+        self.short_display_description = "Duplicates to previous files"
+
+
+class AggregateType7(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.error_level = ErrorLevel.WARNING
+        self.message = (
+            "WARNING: Samples rows matching previously uploaded rows but with different test date."
+        )
+        self.max_errors = 5
+        self.short_display_description = "Different test date"
+
+
+# Type 8 is valid and not logged (re-tests of samples)
+
+
+class AggregateType9(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = (
+            "CRITICIAL: Sample rows failing to match expected format (regex) for RNA ID field."
+        )
+        self.max_errors = 5
+        self.short_display_description = "Failed regex on plate barcode"
+
+
+class AggregateType10(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = "CRITICIAL: File is unexpected type and cannot be processed."
+        self.max_errors = -1
+        self.short_display_description = "File wrong type"
+
+
+# Type 11 is blacklisted file, not logged
+
+
 class LoggingCollection:
     def __init__(self):
-        self.warning = []
-        self.error = []
-        self.critical = []
+        self.aggregator_types = {
+            "TYPE 1": AggregateType1(),
+            "TYPE 2": AggregateType2(),
+            "TYPE 3": AggregateType3(),
+            "TYPE 4": AggregateType4(),
+            "TYPE 5": AggregateType5(),
+            "TYPE 6": AggregateType6(),
+            "TYPE 7": AggregateType7(),
+            "TYPE 9": AggregateType9(),
+            "TYPE 10": AggregateType10(),
+        }
 
-    def add_warning(self, message):
-        self.warning.append(f"WARNING: {message}")
+    def add_error(self, aggregate_error_type, message):
+        self.aggregator_types[aggregate_error_type].add_error(message)
 
-    def add_error(self, message):
-        self.error.append(f"ERROR: {message}")
+    def get_aggregate_messages(self):
+        msgs = []
+        for (k, v) in sorted(self.aggregator_types.items()):
+            if v.count_errors > 0:
+                msgs.append(v.get_message())
 
-    def add_critical(self, message):
-        self.critical.append(f"CRITICAL: {message}")
+        return msgs
 
-    def messages(self):
-        return self.critical + self.error + self.warning
+    def get_aggregate_total_messages(self):
+        msgs = []
+        for (k, v) in sorted(self.aggregator_types.items()):
+            if v.count_errors > 0:
+                msgs.append(v.get_report_message())
 
-    def count_errors_and_criticals(self):
-        return self.count_errors() + self.count_criticals()
+        return msgs
 
-    def count_warnings(self):
-        return len(self.warning)
+    def get_messages_for_import(self):
+        return self.get_aggregate_total_messages() + self.get_aggregate_messages()
 
-    def count_errors(self):
-        return len(self.error)
+    def get_count_of_all_errors_and_criticals(self):
+        count = 0
+        for (k, v) in self.aggregator_types.items():
+            if v.error_level == ErrorLevel.ERROR or v.error_level == ErrorLevel.CRITICAL:
+                count += v.count_errors
 
-    def count_criticals(self):
-        return len(self.critical)
-
-
-class Aggregator:
-    def __init__(self, description):
-        self.counter = 0
-
-    def reset(self):
-        self.counter = 0
-
-    def aggregate(self):
-        self.counter += 1
-
-    def total(self):
-        return self.counter
+        return count
