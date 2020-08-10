@@ -21,7 +21,7 @@ from crawler.db import (
     create_mongo_client,
     get_mongo_collection,
     get_mongo_db,
-    populate_collection,
+    populate_centres_collection,
     safe_collection,
     samples_collection_accessor,
 )
@@ -34,7 +34,7 @@ from crawler.file_processing import Centre
 logger = logging.getLogger(__name__)
 
 
-def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
+def run(sftp: bool, keep_files: bool, settings_module: str = "", timestamp: str = None) -> None:
     try:
         timestamp = timestamp or current_time()
         start = time.time()
@@ -57,7 +57,7 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
                 f"Creating index '{FIELD_CENTRE_NAME}' on '{centres_collection.full_name}'"
             )
             centres_collection.create_index(FIELD_CENTRE_NAME, unique=True)
-            populate_collection(centres_collection, centres, FIELD_CENTRE_NAME)
+            populate_centres_collection(centres_collection, centres, FIELD_CENTRE_NAME)
 
             imports_collection = get_mongo_collection(db, COLLECTION_IMPORTS)
 

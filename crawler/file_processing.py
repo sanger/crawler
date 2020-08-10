@@ -27,6 +27,7 @@ from crawler.constants import (
     COLLECTION_SAMPLES,
     COLLECTION_SAMPLES_HISTORY,
     COLLECTION_IMPORTS,
+    COLLECTION_CENTRES,
 )
 from crawler.exceptions import CentreFileError
 from crawler.db import (
@@ -253,6 +254,11 @@ class CentreFile:
                     return True
         return False
 
+    def get_centre_from_db(self):
+
+        centre_collection = get_mongo_collection(self.get_db(), COLLECTION_CENTRES)
+        return centre_collection.find({"name": self.centre_config["name"]})[0]
+
     def set_state_for_file(self) -> CentreFileState:
         """Determines what state the file is in and whether it needs to be processed.
 
@@ -260,7 +266,9 @@ class CentreFile:
                   CentreFileState - enum representation of file state
         """
         # check whether file is on the blacklist and should be ignored
-        if self.file_name in self.centre_config["file_names_to_ignore"]:
+        filenames_to_ignore = self.get_centre_from_db()['file_names_to_ignore']
+        
+        if self.file_name in filenames_to_ignore:
             self.file_state = CentreFileState.FILE_IN_BLACKLIST
             return self.file_state
 
@@ -431,7 +439,7 @@ class CentreFile:
 
         return []
 
-    def check_for_required_headers(self, csvreader: DictReader) -> None:
+    def check_for_required_headers(self, csvreader: DictReader) -> bool:
         """Checks that the CSV file has the required headers.
 
         Raises:

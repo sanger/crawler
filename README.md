@@ -56,6 +56,7 @@ The following runtime flags are available:
     -h, --help   show this help message and exit
     --scheduled  start scheduled execution, defaults to running once
     --sftp       use SFTP to download CSV files, defaults to using local files
+    --keep-files keeps centre csv files after runner has been executed
 
 ## Testing
 

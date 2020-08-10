@@ -7,6 +7,7 @@ from unittest.mock import patch
 from typing import Dict, List, Any
 from crawler.constants import (
     COLLECTION_SAMPLES,
+    COLLECTION_CENTRES,
     COLLECTION_SAMPLES_HISTORY,
 )
 
@@ -100,6 +101,10 @@ def samples_collection_accessor(mongo_database):
 
 
 @pytest.fixture
+def centres_collection_accessor(mongo_database):
+    return get_mongo_collection(mongo_database[1], COLLECTION_CENTRES)
+
+@pytest.fixture
 def samples_history_collection_accessor(mongo_database):
     return get_mongo_collection(mongo_database[1], COLLECTION_SAMPLES_HISTORY)
 
@@ -113,6 +118,14 @@ def testing_samples(samples_collection_accessor):
     finally:
         samples_collection_accessor.delete_many({})
 
+
+@pytest.fixture
+def testing_centres(centres_collection_accessor, config):
+    result = centres_collection_accessor.insert_many(config.CENTRES)
+    try:
+        yield result
+    finally:
+        centres_collection_accessor.delete_many({})
 
 @pytest.fixture
 def cleanup_backups():
