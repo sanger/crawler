@@ -411,7 +411,7 @@ def test_get_download_dir(config):
     assert centre.get_download_dir() == "tests/files/ALDP/"
 
 
-def test_set_state_for_file_when_file_in_black_list(config, blacklist_for_centre):
+def test_set_state_for_file_when_file_in_black_list(config, blacklist_for_centre, testing_centres):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
     centre_file.set_state_for_file()
@@ -419,7 +419,7 @@ def test_set_state_for_file_when_file_in_black_list(config, blacklist_for_centre
     assert centre_file.file_state == CentreFileState.FILE_IN_BLACKLIST
 
 
-def test_set_state_for_file_when_never_seen_before(config):
+def test_set_state_for_file_when_never_seen_before(config, testing_centres):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
     centre_file.set_state_for_file()
@@ -427,7 +427,7 @@ def test_set_state_for_file_when_never_seen_before(config):
     assert centre_file.file_state == CentreFileState.FILE_NOT_PROCESSED_YET
 
 
-def test_set_state_for_file_when_in_error_folder(config, tmpdir):
+def test_set_state_for_file_when_in_error_folder(config, tmpdir, testing_centres):
     with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
         errors_folder = tmpdir.mkdir(ERRORS_DIR)
         success_folder = tmpdir.mkdir(SUCCESSES_DIR)
@@ -454,7 +454,7 @@ def test_set_state_for_file_when_in_success_folder(config):
     return False
 
 
-def test_process_files(mongo_database, config, testing_files_for_process):
+def test_process_files(mongo_database, config, testing_files_for_process, testing_centres):
     _, mongo_database = mongo_database
     logger = logging.getLogger(__name__)
 
