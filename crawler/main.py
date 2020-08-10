@@ -34,7 +34,7 @@ from crawler.file_processing import Centre
 logger = logging.getLogger(__name__)
 
 
-def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
+def run(sftp: bool, keep_files: bool, settings_module: str = "", timestamp: str = None) -> None:
     try:
         timestamp = timestamp or current_time()
         start = time.time()

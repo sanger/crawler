@@ -31,7 +31,7 @@ from crawler.db import get_mongo_collection
 
 def test_run(mongo_database, testing_files_for_process):
     _, mongo_database = mongo_database
-    run(False, "crawler.config.integration")
+    run(False, False, "crawler.config.integration")
 
     # We expect to have three collections following import
     centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
@@ -72,7 +72,7 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     # main copy of the data. We don't disable the clean up as:
     # 1) It also clears up the master files, which we'd otherwise need to handle
     # 2) It means we keep the tested process closer to the actual one
-    run(False, "crawler.config.integration")
+    run(False, False, "crawler.config.integration")
 
     # check number of success files
     (_, _, files) = next(os.walk("tmp/backups/ALDP/successes"))
@@ -104,7 +104,7 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
 
     # New upload
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
-    run(False, "crawler.config.integration_with_blacklist_change")
+    run(False, False, "crawler.config.integration_with_blacklist_change")
 
     assert imports_collection.count_documents({}) == 8
 
@@ -117,7 +117,6 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     # check the code cleaned up the temporary files
     (_, subfolders, files) = next(os.walk("tmp/files/"))
     assert 0 == len(subfolders)
-
 
 # If we have multiple runs, the older runs are archived with a timestamps
 # def test_repeat_run(mongo_database, cleanup_backups):
