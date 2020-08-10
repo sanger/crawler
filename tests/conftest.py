@@ -2,6 +2,7 @@ import logging
 import logging.config
 
 import pytest
+from unittest.mock import patch
 
 from crawler.db import create_mongo_client, get_mongo_db
 from crawler.helpers import get_config
@@ -14,6 +15,11 @@ logging.config.dictConfig(CONFIG.LOGGING)  # type: ignore
 @pytest.fixture
 def config():
     return CONFIG
+
+
+@pytest.fixture
+def centre_with_added_columns():
+    return CONFIG.EXTRA_COLUMN_CENTRE
 
 
 @pytest.fixture

@@ -122,14 +122,15 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
                             f"{e} - usually happens when duplicates are trying to be inserted"
                         )
                         docs_inserted = e.details["nInserted"]
-                        write_errors = {
-                            write_error["code"] for write_error in e.details["writeErrors"]
+                        write_errors = e.details["writeErrors"]
+
+                        write_errors_codes = {
+                            write_error["code"] for write_error in write_errors
                         }
-                        for error in write_errors:
-                            num_errors = len(
-                                list(filter(lambda x: x["code"] == error, e.details["writeErrors"]))
-                            )
-                            errors.append(f"{num_errors} records with error code {error}")
+                        for code in write_errors_codes:
+                            errors_list = list(filter(lambda x: x["code"] == code, write_errors))
+                            num_errors = len(errors_list)
+                            errors.append(f"{num_errors} records with error code {code}. Example message: {errors_list[0]['errmsg']}")
                     except Exception as e:
                         errors.append(f"Critical error: {e}")
                         critical_errors += 1
