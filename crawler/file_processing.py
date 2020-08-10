@@ -432,7 +432,7 @@ class CentreFile:
 
         return []
 
-    def check_for_required_headers(self, csvreader: DictReader) -> None:
+    def check_for_required_headers(self, csvreader: DictReader) -> bool:
         """Checks that the CSV file has the required headers.
 
         Raises:

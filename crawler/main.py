@@ -95,7 +95,7 @@ def run(sftp: bool, keep_files: bool, settings_module: str = "", timestamp: str 
 
                         centre_instance.process_files()
                     except Exception as e:
-                        centre_instance.errors.append(f"Critical error: {e}")
+                        #centre_instance.errors.append(f"Critical error: {e}")
                         critical_errors += 1
                         logger.error(f"Error in centre {centre_instance.centre_config['name']}")
                         logger.exception(e)
