@@ -1,4 +1,5 @@
 import os
+import csv
 from typing import Dict, List, Any, Tuple, Set
 from pymongo.errors import BulkWriteError
 from pymongo.database import Database
@@ -266,8 +267,8 @@ class CentreFile:
                   CentreFileState - enum representation of file state
         """
         # check whether file is on the blacklist and should be ignored
-        filenames_to_ignore = self.get_centre_from_db()['file_names_to_ignore']
-        
+        filenames_to_ignore = self.get_centre_from_db()["file_names_to_ignore"]
+
         if self.file_name in filenames_to_ignore:
             self.file_state = CentreFileState.FILE_IN_BLACKLIST
             return self.file_state
