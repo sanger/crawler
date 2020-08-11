@@ -136,8 +136,6 @@ def test_error_run(mongo_database, testing_files_for_process):
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
 
-    timestamp = current_time()
-
     # we expect one file in the errors directory after the first run
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
     assert 1 == len(files)
@@ -145,7 +143,7 @@ def test_error_run(mongo_database, testing_files_for_process):
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
     _ = shutil.copytree("tests/malformed_files", "tmp/files", dirs_exist_ok=True)
 
-    run(False, False, "crawler.config.integration", timestamp)
+    run(False, False, "crawler.config.integration")
 
     # We still have 4 test centers
     assert centres_collection.count_documents({}) == NUMBER_CENTRES
@@ -158,6 +156,7 @@ def test_error_run(mongo_database, testing_files_for_process):
 
     # We get an additional imports
     assert imports_collection.count_documents({}) == 8
+
 
 def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_for_process):
     _, mongo_database = mongo_database
@@ -172,11 +171,17 @@ def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_f
     assert imports_collection.count_documents({}) == 8
 
     # Fetch the Test centre record
-    test_centre_imports = imports_collection.find_one({'centre_name': 'Test Centre'})
+    test_centre_imports = imports_collection.find_one({"centre_name": "Test Centre"})
 
     # We expect 2 errors per file, 1 for the aggregate total and one for the error message
-    assert len(test_centre_imports['errors']) == 2
+    assert len(test_centre_imports["errors"]) == 2
 
     # We expect errors to contain certain messages for duplicates, an aggregate total and a message line
-    assert 'Total number of Duplicates within file errors: 1' in test_centre_imports['errors'][0]
-    assert 'WARNING: Duplicates detected within the file. (e.g. Duplicated, line: 2, root_sample_id: 1)' in test_centre_imports['errors'][1]
+    assert (
+        "Total number of Duplicates within file errors (TYPE 5): 1"
+        in test_centre_imports["errors"][0]
+    )
+    assert (
+        "WARNING: Duplicates detected within the file. (TYPE 5) (e.g. Duplicated, line: 3, root_sample_id: 1)"
+        in test_centre_imports["errors"][1]
+    )

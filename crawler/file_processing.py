@@ -391,8 +391,8 @@ class CentreFile:
                         "TYPE 6",
                         f"Already in database, line: {wrong_instance['line_number']}, root sample id: {wrong_instance['Root Sample ID']}",
                     )
-        except Exception:
-            logger.critical(f"Unknown error with file {self.file_name}")
+        except Exception as e:
+            logger.critical(f"Unknown error with file {self.file_name}: {e}")
 
     def insert_samples_from_docs(self, docs_to_insert) -> None:
         """Insert sample records from the parsed file information.
@@ -436,9 +436,7 @@ class CentreFile:
 
                     return documents
             except csv.Error as e:
-                self.logging_collection.add_error(
-                    "TYPE 10", f"Wrong read from file"
-                )
+                self.logging_collection.add_error("TYPE 10", f"Wrong read from file")
 
         return []
 
@@ -485,9 +483,12 @@ class CentreFile:
         #  https://ssg-confluence.internal.sanger.ac.uk/pages/viewpage.action?pageId=101358138#ReceiptfromLighthouselaboratories(Largediagnosticcentres)-4.2.1VariantsofRNAplatebarcode
 
         if not m:
+            sample_id = None
+            if FIELD_ROOT_SAMPLE_ID in row:
+                sample_id = row[FIELD_ROOT_SAMPLE_ID]
             self.logging_collection.add_error(
                 "TYPE 9",
-                f"Wrong reg. exp. {barcode_field}, line:{line_number}, root_sample_id={row[FIELD_ROOT_SAMPLE_ID]}, value:{row[barcode_field]}",
+                f"Wrong reg. exp. {barcode_field}, line:{line_number}, root_sample_id={sample_id}, value:{row[barcode_field]}",
             )
             return "", ""
 
@@ -522,7 +523,7 @@ class CentreFile:
 
         missing_data_count = 0
         invalid_rows = 0
-        line_number = 1
+        line_number = 2
 
         import_timestamp = self.get_now_timestamp()
 
@@ -553,7 +554,8 @@ class CentreFile:
                         logger.debug(f"Skipping {row_signature}: duplicate")
                         # number_of_duplicates_inside_this_file += 1
                         self.logging_collection.add_error(
-                            "TYPE 5", f"Duplicated, line: {line_number}, root_sample_id: {row[FIELD_ROOT_SAMPLE_ID]}"
+                            "TYPE 5",
+                            f"Duplicated, line: {line_number}, root_sample_id: {row[FIELD_ROOT_SAMPLE_ID]}",
                         )
                         continue
                     seen_rows.add(row_signature)
@@ -613,9 +615,7 @@ class CentreFile:
         """
         # check whether row is completely empty (this is ok)
         if not (any(cell_txt.strip() for cell_txt in row.values())):
-            self.logging_collection.add_error(
-                "TYPE 1", f"Empty line, line: {line_number}"
-            )
+            self.logging_collection.add_error("TYPE 1", f"Empty line, line: {line_number}")
             return False
 
         # check both the Root Sample ID and barcode field are present
@@ -630,15 +630,11 @@ class CentreFile:
         if not (row[barcode_field]):
             # ignore row
             # TODO: aggregate count error
-            self.logging_collection.add_error(
-                "TYPE 4", f"RNA ID missing, line: {line_number}"
-            )
+            self.logging_collection.add_error("TYPE 4", f"RNA ID missing, line: {line_number}")
             return False
 
         if not (row[FIELD_RESULT]):
-            self.logging_collection.add_error(
-                "TYPE 3", f"Result missing, line: {line_number}"
-            )
+            self.logging_collection.add_error("TYPE 3", f"Result missing, line: {line_number}")
 
         return True
 

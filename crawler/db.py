@@ -14,6 +14,7 @@ from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
 
+
 def create_mongo_client(config: ModuleType) -> MongoClient:
     """Create a MongoClient with the given config parameters.
 
@@ -24,12 +25,12 @@ def create_mongo_client(config: ModuleType) -> MongoClient:
         MongoClient -- a client used to interact with the database server
     """
     try:
-        logger.info(f"Connecting to mongo")
+        logger.debug(f"Connecting to mongo")
         mongo_uri = config.MONGO_URI  # type: ignore
         return MongoClient(mongo_uri)
     except AttributeError as e:
         #  there is no MONGO_URI so try each config separately
-        logger.warning(e)
+        # logger.warning(e)
 
         mongo_host = config.MONGO_HOST  # type: ignore
         mongo_port = config.MONGO_PORT  # type: ignore
@@ -37,7 +38,7 @@ def create_mongo_client(config: ModuleType) -> MongoClient:
         mongo_password = config.MONGO_PASSWORD  # type: ignore
         mongo_db = config.MONGO_DB  # type: ignore
 
-        logger.info(f"Connecting to {mongo_host} on port {mongo_port}")
+        logger.debug(f"Connecting to {mongo_host} on port {mongo_port}")
 
         return MongoClient(
             host=mongo_host,
@@ -82,11 +83,8 @@ def get_mongo_collection(database: Database, collection_name: str) -> Collection
     return database[collection_name]
 
 
-
 @contextmanager
-def samples_collection_accessor(
-    database: Database, collection_name: str
-) -> Iterator[Collection]:
+def samples_collection_accessor(database: Database, collection_name: str) -> Iterator[Collection]:
     logger.debug(f"Opening collection: {collection_name}")
     temporary_collection = get_mongo_collection(database, collection_name)
 
@@ -124,6 +122,7 @@ def create_import_record(
 
     return import_collection.insert_one(status_doc)
 
+
 def populate_centres_collection(
     collection: Collection, documents: List[Dict[str, str]], filter_field: str
 ) -> None:
@@ -141,5 +140,5 @@ def populate_centres_collection(
 
     for document in documents:
         _ = collection.find_one_and_update(
-            {filter_field: document[filter_field]},{'$set': document}, upsert=True
+            {filter_field: document[filter_field]}, {"$set": document}, upsert=True
         )

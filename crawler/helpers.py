@@ -97,6 +97,7 @@ class AggregateTypeBase:
         self.max_errors = -1
         self.message = ""
         self.short_display_description = ""
+        self.type_str = ""
 
     def add_error(self, message) -> None:
         """Adds a new error to the aggregate type. Checks max_errors to decide whether message should be appended
@@ -113,7 +114,7 @@ class AggregateTypeBase:
         return self.message
 
     def get_report_message(self):
-        return f"Total number of {self.short_display_description} errors: {self.count_errors}"
+        return f"Total number of {self.short_display_description} errors ({self.type_str}): {self.count_errors}"
 
 
 # See confluence for full table of aggregate types https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/i.+Low+Occupancy+Cherry+Picking
@@ -122,26 +123,27 @@ class AggregateTypeBase:
 class AggregateType1(AggregateTypeBase):
     def __init__(self):
         super().__init__()
+        self.type_str = "TYPE 1"
         self.error_level = ErrorLevel.DEBUG
-        self.message = "DEBUG: Blank rows in files."
+        self.message = f"DEBUG: Blank rows in files. ({self.type_str})"
         self.short_display_description = "Blank row"
 
 
 class AggregateType2(AggregateTypeBase):
     def __init__(self):
         super().__init__()
+        self.type_str = "TYPE 2"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = "CRITICAL: Files where we do not have the expected main column headers of Root Sample ID, RNA ID and Result."
+        self.message = f"CRITICAL: Files where we do not have the expected main column headers of Root Sample ID, RNA ID and Result. ({self.type_str})"
         self.short_display_description = "Missing header column"
 
 
 class AggregateType3(AggregateTypeBase):
     def __init__(self):
         super().__init__()
+        self.type_str = "TYPE 3"
         self.error_level = ErrorLevel.WARNING
-        self.message = (
-            "WARNING: Sample rows that have Root Sample ID value but no other information."
-        )
+        self.message = f"WARNING: Sample rows that have Root Sample ID value but no other information. ({self.type_str})"
         self.max_errors = 5
         self.short_display_description = "Only root sample id"
 
@@ -149,8 +151,9 @@ class AggregateType3(AggregateTypeBase):
 class AggregateType4(AggregateTypeBase):
     def __init__(self):
         super().__init__()
+        self.type_str = "TYPE 4"
         self.error_level = ErrorLevel.ERROR
-        self.message = "ERROR: Sample rows that have Root Sample ID and Result values but no RNA ID (no plate barcode)."
+        self.message = f"ERROR: Sample rows that have Root Sample ID and Result values but no RNA ID (no plate barcode). ({self.type_str})"
         self.max_errors = 5
         self.short_display_description = "No plate barcode"
 
@@ -158,8 +161,9 @@ class AggregateType4(AggregateTypeBase):
 class AggregateType5(AggregateTypeBase):
     def __init__(self):
         super().__init__()
+        self.type_str = "TYPE 5"
         self.error_level = ErrorLevel.WARNING
-        self.message = "WARNING: Duplicates detected within the file."
+        self.message = f"WARNING: Duplicates detected within the file. ({self.type_str})"
         self.max_errors = 5
         self.short_display_description = "Duplicates within file"
 
@@ -167,8 +171,11 @@ class AggregateType5(AggregateTypeBase):
 class AggregateType6(AggregateTypeBase):
     def __init__(self):
         super().__init__()
+        self.type_str = "TYPE 6"
         self.error_level = ErrorLevel.WARNING
-        self.message = "WARNING: Duplicates detected matching rows in previous files."
+        self.message = (
+            f"WARNING: Duplicates detected matching rows in previous files. ({self.type_str})"
+        )
         self.max_errors = 5
         self.short_display_description = "Duplicates to previous files"
 
@@ -176,10 +183,9 @@ class AggregateType6(AggregateTypeBase):
 class AggregateType7(AggregateTypeBase):
     def __init__(self):
         super().__init__()
+        self.type_str = "TYPE 7"
         self.error_level = ErrorLevel.WARNING
-        self.message = (
-            "WARNING: Samples rows matching previously uploaded rows but with different test date."
-        )
+        self.message = f"WARNING: Samples rows matching previously uploaded rows but with different test date. ({self.type_str})"
         self.max_errors = 5
         self.short_display_description = "Different test date"
 
@@ -190,10 +196,9 @@ class AggregateType7(AggregateTypeBase):
 class AggregateType9(AggregateTypeBase):
     def __init__(self):
         super().__init__()
+        self.type_str = "TYPE 9"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = (
-            "CRITICIAL: Sample rows failing to match expected format (regex) for RNA ID field."
-        )
+        self.message = f"CRITICAL: Sample rows failing to match expected format (regex) for RNA ID field. ({self.type_str})"
         self.max_errors = 5
         self.short_display_description = "Failed regex on plate barcode"
 
@@ -201,8 +206,11 @@ class AggregateType9(AggregateTypeBase):
 class AggregateType10(AggregateTypeBase):
     def __init__(self):
         super().__init__()
+        self.type_str = "TYPE 10"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = "CRITICIAL: File is unexpected type and cannot be processed."
+        self.message = (
+            f"CRITICAL: File is unexpected type and cannot be processed. ({self.type_str})"
+        )
         self.max_errors = -1
         self.short_display_description = "File wrong type"
 
