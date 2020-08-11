@@ -9,13 +9,12 @@ COLLECTION_NAME_FORMAT_1 = r'^samples_20(\d){4}_(\d){4}$' # e.g. samples_200519_
 COLLECTION_NAME_FORMAT_2 = r'^samples_(\d){4}2020_(\d){4}$' # e.g. samples_21052020_1510
 
 
-# For updates, '$set' syntax is important, otherwise it overwrites the whole document!
-# TODO: check why _created and _updated are 1970, and whether I can insert into _created here, to back-fill data
 def add_timestamps_to_samples(db):
   print(f'Time start: {datetime.datetime.now()}')
 
   try:
     print('\n-- Update samples collection with new concatenated id column --')
+    # For updates, '$set' syntax is important, otherwise it overwrites the whole document!
     update_result_1 = db.samples.update_many(
       { },
       [
