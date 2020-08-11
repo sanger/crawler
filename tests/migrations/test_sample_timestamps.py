@@ -1,5 +1,7 @@
 from migrations.helpers.sample_timestamps_helper import ( add_timestamps_to_samples, CREATED_DATE_FIELD_NAME )
 
+import datetime
+
 def generate_example_samples(range):
   samples = []
   for n in range:
@@ -61,15 +63,15 @@ def test_basic(mongo_database):
 
     from_samples_200519_1510 = db.samples.find( { 'Root Sample ID': { '$in': ['TLS00000000', 'TLS00000001'] } } )
     for sample in from_samples_200519_1510:
-        assert sample[CREATED_DATE_FIELD_NAME] == '2020-05-19 15:10:00 UTC'
+        assert sample[CREATED_DATE_FIELD_NAME] == datetime.datetime(2020, 5, 19, 15, 10)
 
     from_samples_200520_1510 = db.samples.find( { 'Root Sample ID': { '$in': ['TLS00000002', 'TLS00000003'] } } )
     for sample in from_samples_200520_1510:
-        assert sample[CREATED_DATE_FIELD_NAME] == '2020-05-20 15:10:00 UTC'
+        assert sample[CREATED_DATE_FIELD_NAME] == datetime.datetime(2020, 5, 20, 15, 10)
 
     samples_07052020_1610 = db.samples.find( { 'Root Sample ID': { '$in': ['TLS00000004', 'TLS00000005'] } } )
     for sample in samples_07052020_1610:
-        assert sample[CREATED_DATE_FIELD_NAME] == '2020-05-21 15:10:00 UTC'
+        assert sample[CREATED_DATE_FIELD_NAME] == datetime.datetime(2020, 5, 21, 15, 10)
 
 def test_fields_null(mongo_database):
     _, db = mongo_database

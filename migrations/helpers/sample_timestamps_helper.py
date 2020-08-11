@@ -5,8 +5,8 @@ import traceback
 
 CREATED_DATE_FIELD_NAME = 'First Imported Date' # TODO: check with E & A
 BATCH_SIZE = 250000
-COLLECTION_NAME_FORMAT_1 = r'^samples_20(\d){4}_(\d){4}$' # e.g. samples_200519_1510
-COLLECTION_NAME_FORMAT_2 = r'^samples_(\d){4}2020_(\d){4}$' # e.g. samples_21052020_1510
+COLLECTION_NAME_FORMAT_1 = r'^samples_(20[\d]{4}_[\d]{4})$' # e.g. samples_200519_1510
+COLLECTION_NAME_FORMAT_2 = r'^samples_([\d]{4}2020_[\d]{4})$' # e.g. samples_21052020_1510
 
 
 def add_timestamps_to_samples(db):
@@ -81,7 +81,7 @@ def add_timestamps_to_samples(db):
 
         update_result_3 = db.samples.update_many(
           { 'concat_id': { '$in': concat_ids_subset } },
-          { '$set': { CREATED_DATE_FIELD_NAME: format_date(collection_name_to_timestamp[collection_name]) } }
+          { '$set': { CREATED_DATE_FIELD_NAME: collection_name_to_timestamp[collection_name] } }
         )
         # for testing with static string
         # update_result_3 = db.samples.update_many(
@@ -101,24 +101,22 @@ def add_timestamps_to_samples(db):
 
 
 def extract_timestamp(collection_name):
-  _, date_string, time_string = collection_name.split('_')
+  m = re.match(COLLECTION_NAME_FORMAT_1, collection_name) # e.g. samples_200519_1510
 
-  if(re.search(COLLECTION_NAME_FORMAT_1, collection_name)):
-    year = int('20' + date_string[0:2])
-    month = int(date_string[2:4])
-    day = int(date_string[4:6])
+  if m:
+    timestamp_string = m.group(1)
+    timestamp_datetime = datetime.datetime.strptime(timestamp_string, "%y%m%d_%H%M")
   else:
-    year = int(date_string[4:8])
-    month = int(date_string[2:4])
-    day = int(date_string[0:2])
+    m = re.match(COLLECTION_NAME_FORMAT_2, collection_name) # e.g. samples_21052020_1510
 
-  hour = int(time_string[0:2])
-  minute = int(time_string[2:4])
-  second = 0
-  microsecond = 0
-  tzone = datetime.timezone.utc
+    if m:
+      timestamp_string = m.group(1)
+      timestamp_datetime = datetime.datetime.strptime(timestamp_string, "%d%m%Y_%H%M")
+    else:
+      return None # Exception?
 
-  return datetime.datetime(year, month, day, hour, minute, second, microsecond, tzone)
+  return timestamp_datetime
+
 
 
 def map_collection_name_to_timestamp(db):
@@ -133,7 +131,3 @@ def map_collection_name_to_timestamp(db):
 
 def is_sample_archive_collection(collection_name):
   return ( bool(re.search(COLLECTION_NAME_FORMAT_1, collection_name)) or bool(re.search(COLLECTION_NAME_FORMAT_2, collection_name)) )
-
-
-def format_date(date):
-  return date.strftime('%Y-%m-%d %H:%M:%S %Z') # example: 2020-05-20 15:10:00 UTC
