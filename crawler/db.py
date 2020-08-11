@@ -14,13 +14,6 @@ from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
 
-
-class CollectionError(Exception):
-    """Raise to prevent safe_collection renaming the original collection"""
-
-    pass
-
-
 def create_mongo_client(config: ModuleType) -> MongoClient:
     """Create a MongoClient with the given config parameters.
 
@@ -89,85 +82,15 @@ def get_mongo_collection(database: Database, collection_name: str) -> Collection
     return database[collection_name]
 
 
-def rename_collection_with_suffix(collection: Collection, suffix: str = current_time()) -> None:
-    """Renames a collection to a timestamped version of itself
-
-    Arguments:
-        collection {Collection} -- the collection to rename
-        suffix {str} -- The suffix to add to the collection name
-    """
-    new_name = f"{collection.name}_{suffix}"
-
-    rename_collection(collection, new_name)
-    return None
-
-
-def rename_collection(collection: Collection, new_name: str) -> None:
-    """Renames a collection to the new name.
-
-    Arguments:
-        collection {Collection} -- the collection to rename
-        new_name {str} -- the new name of the collection
-    """
-    logger.debug(f"Renaming '{collection.name}' to '{new_name}'")
-
-    # get a list of all docs
-    collection.rename(new_name)
-
-    logger.debug(f"Collection renamed to: '{new_name}'")
-
-    return None
-
 
 @contextmanager
 def samples_collection_accessor(
-    database: Database, collection_name: str, timestamp: str
+    database: Database, collection_name: str
 ) -> Iterator[Collection]:
     logger.debug(f"Opening collection: {collection_name}")
     temporary_collection = get_mongo_collection(database, collection_name)
 
     yield temporary_collection
-
-
-@contextmanager
-def safe_collection(
-    database: Database, collection_name: str, timestamp: str
-) -> Iterator[Collection]:
-    """
-    Creates a context which yields a new temporary collection.
-    If the context runs successfully, renames collection_name to collection_name_timestamp
-    and renames the temporary collection to replace collection_name.
-    If the context fails, the original collection is left in place. The temporary collection is not
-    cleaned up to assist with debugging.
-
-    Arguments:
-        database {Database} -- the database of the collection to replace
-        collection {Collection} -- the collection to replace
-        timestamp {str} -- A timestamp to apply to the original and temporary collection names
-    """
-    temporary_collection_name = f"tmp_{collection_name}_{timestamp}"
-    logger.debug(f"Generating temporary collection: {temporary_collection_name}")
-    temporary_collection = get_mongo_collection(database, temporary_collection_name)
-
-    try:
-        yield temporary_collection
-    except CollectionError:
-        # We've seen a collection error. Log it and return to prevent the rename
-        logger.error("Collection error: original collection left in place")
-        return None
-    except Exception:
-        # We've seen a different exception. Log it (for reassurance) and re-raise
-        logger.error("Exception: original collection left in place")
-        raise
-
-    # Mongo provides no simple way of checking if a collection exists
-    if collection_name in database.list_collection_names():
-        logger.debug("Successful, renaming original collection")
-        original_collection = get_mongo_collection(database, collection_name)
-        rename_collection_with_suffix(original_collection, timestamp)
-
-    rename_collection(temporary_collection, collection_name)
-    return None
 
 
 def create_import_record(
@@ -216,7 +139,7 @@ def populate_centres_collection(
         f"Populating/updating '{collection.full_name}' using '{filter_field}' as the filter"
     )
 
-    for document in documents:        
+    for document in documents:
         _ = collection.find_one_and_update(
             {filter_field: document[filter_field]},{'$set': document}, upsert=True
         )

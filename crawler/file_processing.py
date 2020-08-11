@@ -144,7 +144,7 @@ class Centre:
     def download_csv_files(self) -> None:
         """Downloads the centre's file from the SFTP server
         """
-        logger.debug("Download CSV file(s) from SFTP")
+        logger.info("Downloading CSV file(s) from SFTP")
 
         logger.debug("Create download directory for centre")
         try:
@@ -437,7 +437,7 @@ class CentreFile:
                     return documents
             except csv.Error as e:
                 self.logging_collection.add_error(
-                    "TYPE 10", f"Wrong read from file {self.file_name}"
+                    "TYPE 10", f"Wrong read from file"
                 )
 
         return []
@@ -456,7 +456,7 @@ class CentreFile:
                 # LOG_HANDLER TYPE 2: Fail file
                 self.logging_collection.add_error(
                     "TYPE 2",
-                    f"{', '.join(list(self.REQUIRED_FIELDS - fieldnames))} missing in CSV file",
+                    f"Wrong headers, {', '.join(list(self.REQUIRED_FIELDS - fieldnames))} missing in CSV file",
                 )
                 return False
         else:
@@ -481,11 +481,13 @@ class CentreFile:
             Tuple[str, str] -- the barcode and coordinate
         """
         m = re.match(regex, row[barcode_field])
+        # TODO: Update regex check to handle different format checks
+        #  https://ssg-confluence.internal.sanger.ac.uk/pages/viewpage.action?pageId=101358138#ReceiptfromLighthouselaboratories(Largediagnosticcentres)-4.2.1VariantsofRNAplatebarcode
 
         if not m:
             self.logging_collection.add_error(
                 "TYPE 9",
-                f"{barcode_field} does not match expected format from regex for line {line_number}",
+                f"Wrong reg. exp. {barcode_field}, line:{line_number}, root_sample_id={row[FIELD_ROOT_SAMPLE_ID]}, value:{row[barcode_field]}",
             )
             return "", ""
 
@@ -551,7 +553,7 @@ class CentreFile:
                         logger.debug(f"Skipping {row_signature}: duplicate")
                         # number_of_duplicates_inside_this_file += 1
                         self.logging_collection.add_error(
-                            "TYPE 5", "Duplicated sample info in line: {line_number}"
+                            "TYPE 5", f"Duplicated, line: {line_number}, root_sample_id: {row[FIELD_ROOT_SAMPLE_ID]}"
                         )
                         continue
                     seen_rows.add(row_signature)
@@ -595,8 +597,6 @@ class CentreFile:
         #    # error = f"{missing_data_count} sample rows are missing a plate barcode and / or a coordinate"
         #    self.logging_collection.add_error("TYPE 4", error)
         #    logger.warning(error)
-        #    # TODO: Update regex check to handle different format checks
-        #    #  https://ssg-confluence.internal.sanger.ac.uk/pages/viewpage.action?pageId=101358138#ReceiptfromLighthouselaboratories(Largediagnosticcentres)-4.2.1VariantsofRNAplatebarcode
 
         return augmented_data
 
@@ -614,7 +614,7 @@ class CentreFile:
         # check whether row is completely empty (this is ok)
         if not (any(cell_txt.strip() for cell_txt in row.values())):
             self.logging_collection.add_error(
-                "TYPE 1", f"Line {line_number} for file {self.file_name}"
+                "TYPE 1", f"Empty line, line: {line_number}"
             )
             return False
 
@@ -623,7 +623,7 @@ class CentreFile:
         if not (row[FIELD_ROOT_SAMPLE_ID]):
             # ignore row
             self.logging_collection.add_error(
-                "TYPE 3", f"Root Sample ID missing - Line {line_number} for file {self.file_name}"
+                "TYPE 3", f"Root Sample ID missing, line: {line_number}"
             )
             return False
 
@@ -631,13 +631,13 @@ class CentreFile:
             # ignore row
             # TODO: aggregate count error
             self.logging_collection.add_error(
-                "TYPE 4", f"RNA ID missing - Line {line_number} for file {self.file_name}"
+                "TYPE 4", f"RNA ID missing, line: {line_number}"
             )
             return False
 
         if not (row[FIELD_RESULT]):
             self.logging_collection.add_error(
-                "TYPE 3", f"Result missing - Line {line_number} for file {self.file_name}"
+                "TYPE 3", f"Result missing, line: {line_number}"
             )
 
         return True

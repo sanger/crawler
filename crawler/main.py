@@ -17,12 +17,10 @@ from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
 )
 from crawler.db import (
-    CollectionError,
     create_mongo_client,
     get_mongo_collection,
     get_mongo_db,
     populate_centres_collection,
-    safe_collection,
     samples_collection_accessor,
 )
 from crawler.helpers import (
@@ -33,10 +31,8 @@ from crawler.file_processing import Centre
 
 logger = logging.getLogger(__name__)
 
-
-def run(sftp: bool, keep_files: bool, settings_module: str = "", timestamp: str = None) -> None:
+def run(sftp: bool, keep_files: bool, settings_module: str = "") -> None:
     try:
-        timestamp = timestamp or current_time()
         start = time.time()
         config, settings_module = get_config(settings_module)
 
@@ -62,7 +58,7 @@ def run(sftp: bool, keep_files: bool, settings_module: str = "", timestamp: str 
             imports_collection = get_mongo_collection(db, COLLECTION_IMPORTS)
 
             with samples_collection_accessor(
-                db, COLLECTION_SAMPLES, timestamp
+                db, COLLECTION_SAMPLES
             ) as samples_collection:
                 logger.debug(
                     f"Creating index '{FIELD_PLATE_BARCODE}' on '{samples_collection.full_name}'"
@@ -82,8 +78,6 @@ def run(sftp: bool, keep_files: bool, settings_module: str = "", timestamp: str 
                     unique=True,
                 )
 
-                critical_errors: int = 0
-
                 centres_instances = [Centre(config, centre_config) for centre_config in centres]
                 for centre_instance in centres_instances:
                     logger.info("*" * 80)
@@ -95,18 +89,11 @@ def run(sftp: bool, keep_files: bool, settings_module: str = "", timestamp: str 
 
                         centre_instance.process_files()
                     except Exception as e:
-                        # centre_instance.errors.append(f"Critical error: {e}")
-                        critical_errors += 1
                         logger.error(f"Error in centre {centre_instance.centre_config['name']}")
                         logger.exception(e)
                     finally:
-                        centre_instance.clean_up()
-                        # TODO: write imports for centre
-
-                # All centres have processed, If we have any critical errors, raise a CollectionError exception
-                # to prevent the safe_collection from triggering the rename
-                if critical_errors > 0:
-                    raise CollectionError
+                        if not(keep_files):
+                            centre_instance.clean_up()
 
         logger.info(f"Import complete in {round(time.time() - start, 2)}s")
         logger.info("=" * 80)

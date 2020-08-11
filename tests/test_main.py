@@ -24,7 +24,7 @@ from crawler.db import get_mongo_collection
 # The run method encompasses the main actions of the crawler
 # As a result, this may be considered an integration test,
 # although it stops short of pulling the files in over FTP.
-# Instead we disable the FTp by passing in false as the first argument
+# Instead we disable the FTP by passing in false as the first argument
 # and instead use a download directory that we populate prior to running the
 # tests.
 
@@ -67,14 +67,14 @@ def test_run(mongo_database, testing_files_for_process):
 
 def test_run_creates_right_files_backups(mongo_database, testing_files_for_process):
     _, mongo_database = mongo_database
-    # Copy the test files to a new directory, as we expect run
+    # First copy the test files to a new directory, as we expect run
     # to perform a clean up, and we don't want it cleaning up our
     # main copy of the data. We don't disable the clean up as:
-    # 1) It also clears up the master files, which we'd otherwise need to handle
+    # 1) It also clears up any modified test files, which we'd otherwise need to handle
     # 2) It means we keep the tested process closer to the actual one
     run(False, False, "crawler.config.integration")
 
-    # check number of success files
+    # check number of success files after first run
     (_, _, files) = next(os.walk("tmp/backups/ALDP/successes"))
     assert 3 == len(files)
 
@@ -102,15 +102,22 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
     assert imports_collection.count_documents({}) == 7
 
-    # New upload
+    # Second run to test that already processed files are skipped
+    # and that a file previously in the blacklist is now processed
+    # First copy full set of files as before.
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
+
+    # Run with a different config that does not blacklist one of the files
     run(False, False, "crawler.config.integration_with_blacklist_change")
 
+    # We expect an additional import entry
     assert imports_collection.count_documents({}) == 8
 
+    # We expect the previously blacklisted file to now be processed
     (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
     assert 1 == len(files), "Fail success TEST"
 
+    # We expect the previous blacklisted file to still be in the errors directory as well
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
     assert 1 == len(files)
 
@@ -118,110 +125,58 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     (_, subfolders, files) = next(os.walk("tmp/files/"))
     assert 0 == len(subfolders)
 
-# If we have multiple runs, the older runs are archived with a timestamps
-# def test_repeat_run(mongo_database, cleanup_backups):
-#     _, mongo_database = mongo_database
-#     # Copy the test files to a new directory, as we expect run
-#     # to perform a clean up, and we don't want it cleaning up our
-#     # main copy of the data. We don't disable the clean up as:
-#     # 1) It also clears up the master files, which we'd otherwise need to handle
-#     # 2) It means we keep the tested process closer to the actual one
-#     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
-#     run(False, "crawler.config.integration")
 
-#     timestamp = current_time()
+def test_error_run(mongo_database, testing_files_for_process):
+    _, mongo_database = mongo_database
 
-#     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
-#     run(False, "crawler.config.integration", timestamp)
-#     # We expect to have three collections following import
-#     centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
-#     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
-#     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    run(False, False, "crawler.config.integration")
 
-#     previous_samples_collection = get_mongo_collection(
-#         mongo_database, f"{COLLECTION_SAMPLES}_{timestamp}"
-#     )
+    # We expect to have three collections following import
+    centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
 
-#     # We still have 4 test centers
-#     assert centres_collection.count_documents({}) == NUMBER_CENTRES
-#     # We don't get extra samples
-#     assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
-#     # But we have the previous collection available
-#     assert previous_samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
-#     # We get additional imports
-#     assert imports_collection.count_documents({}) == NUMBER_CENTRES * 2
+    timestamp = current_time()
 
+    # we expect one file in the errors directory after the first run
+    (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
+    assert 1 == len(files)
 
-# # If we run it without timestamp, the process dont fail
-# def test_job_run(mongo_database, cleanup_backups):
-#     _, mongo_database = mongo_database
-#     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
-#     run(False, "crawler.config.integration")
-#     run(False, "crawler.config.integration")
+    _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
+    _ = shutil.copytree("tests/malformed_files", "tmp/files", dirs_exist_ok=True)
 
-#     centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
-#     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
-#     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    run(False, False, "crawler.config.integration", timestamp)
 
-#     # We still have 4 test centers
-#     assert centres_collection.count_documents({}) == NUMBER_CENTRES
-#     # We don't get extra samples
-#     assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
-#     # We get additional imports
-#     assert imports_collection.count_documents({}) == NUMBER_CENTRES * 2
+    # We still have 4 test centers
+    assert centres_collection.count_documents({}) == NUMBER_CENTRES
+    # The samples count should be the same as before
+    assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
 
+    # We expect an additional file in the errors directory after the second run
+    (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
+    assert 2 == len(files)
 
-# def test_error_run(mongo_database, cleanup_backups):
-#     _, mongo_database = mongo_database
-#     # Copy the test files to a new directory, as we expect run
-#     # to perform a clean up, and we don't want it cleaning up our
-#     # main copy of the data. We don't disable the clean up as:
-#     # 1) It also clears up the master files, which we'd otherwise need to handle
-#     # 2) It means we keep the tested process closer to the actual one
-#     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
-#     run(False, "crawler.config.integration")
+    # We get an additional imports
+    assert imports_collection.count_documents({}) == 8
 
-#     timestamp = current_time()
+def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_for_process):
+    _, mongo_database = mongo_database
 
-#     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
-#     _ = shutil.copytree("tests/malformed_files", "tmp/files", dirs_exist_ok=True)
+    # copy an additional file with duplicates
+    _ = shutil.copytree("tests/files_with_duplicate_samples", "tmp/files", dirs_exist_ok=True)
 
-#     run(False, "crawler.config.integration", timestamp)
-#     # We expect to have three collections following import
-#     centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
-#     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
-#     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    run(False, False, "crawler.config.integration")
 
-#     temporary_samples_collection = get_mongo_collection(
-#         mongo_database, f"tmp_{COLLECTION_SAMPLES}_{timestamp}"
-#     )
+    # Fetch the imports collection, expect it to contain the additional duplicate error file record
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    assert imports_collection.count_documents({}) == 8
 
-#     # We still have 4 test centers
-#     assert centres_collection.count_documents({}) == NUMBER_CENTRES
-#     # The samples count should be the same as before
-#     assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
+    # Fetch the Test centre record
+    test_centre_imports = imports_collection.find_one({'centre_name': 'Test Centre'})
 
-#     # But we have the new collection available, with all successful centres
-#     assert temporary_samples_collection.count_documents({}) == NUMBER_SAMPLES_ON_PARTIAL_IMPORT
-#     # We get additional imports
-#     assert imports_collection.count_documents({}) == NUMBER_CENTRES * 2
+    # We expect 2 errors per file, 1 for the aggregate total and one for the error message
+    assert len(test_centre_imports['errors']) == 2
 
-# def test_error_run_imports_message(mongo_database):
-#     _, mongo_database = mongo_database
-#     # Copy the test files to a new directory, as we expect run
-#     # to perform a clean up, and we don't want it cleaning up our
-#     # main copy of the data. We don't disable the clean up as:
-#     # 1) It also clears up the master files, which we'd otherwise need to handle
-#     # 2) It means we keep the tested process closer to the actual one
-
-#     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
-#     _ = shutil.copytree("tests/files_with_duplicate_samples", "tmp/files", dirs_exist_ok=True)
-
-#     run(False, "crawler.config.integration")
-
-#     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
-#     doc = imports_collection.find_one({'centre_name': 'Test Centre'})
-
-#     assert imports_collection.count_documents({}) == NUMBER_CENTRES
-#     assert len(doc['errors']) == 1
-#     assert '1 records with error code 11000. Example message: E11000 duplicate key error' in doc['errors'][0]
+    # We expect errors to contain certain messages for duplicates, an aggregate total and a message line
+    assert 'Total number of Duplicates within file errors: 1' in test_centre_imports['errors'][0]
+    assert 'WARNING: Duplicates detected within the file. (e.g. Duplicated, line: 2, root_sample_id: 1)' in test_centre_imports['errors'][1]
