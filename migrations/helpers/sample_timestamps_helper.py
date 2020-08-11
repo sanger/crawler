@@ -37,8 +37,6 @@ def add_timestamps_to_samples(db):
     print(f'Time after ordering collections: {datetime.datetime.now()}')
     print(f'Collections in chronological order: {collection_names_chrono_order}')
 
-    processed_concat_ids = []
-
     for collection_name in collection_names_chrono_order:
       print(f'\n-- Starting processing collection: {collection_name} at {datetime.datetime.now()} --')
 
@@ -52,22 +50,21 @@ def add_timestamps_to_samples(db):
       print(f'Time after adding field to collection: {datetime.datetime.now()}')
       print('Number samples modified: ', update_result_2.modified_count)
 
-      print('\n-- Retrieve all concatenated ids for records we haven\'t processed yet --')
+      print('\n-- Retrieve all concatenated ids --')
       concat_ids = []
       concat_ids_result = db[collection_name].find(
-        { 'concat_id': { '$nin': processed_concat_ids, '$ne': None } },
+        { 'concat_id': { '$ne': None } },
         { 'concat_id': True }
       )
       for sample in concat_ids_result:
         concat_ids.append(sample['concat_id'])
-        processed_concat_ids.append(sample['concat_id'])
 
       print(f'Time after querying field and building list: {datetime.datetime.now()}')
       print(f'Total number of samples in collection: {db[collection_name].count()}')
       print(f'Of which, number to process: {len(concat_ids)}')
 
 
-      print(f'\n-- Update samples collection with timestamps, where concat id matches, in batches of {BATCH_SIZE} --')
+      print(f'\n-- Update samples collection with timestamps, where concat id matches and not yet migrated, in batches of {BATCH_SIZE} --')
       # in batches, because otherwise get "Error: 'update' command document too large"
 
       num_batches = len(concat_ids) // BATCH_SIZE
@@ -84,8 +81,8 @@ def add_timestamps_to_samples(db):
         concat_ids_subset = concat_ids[start:end] # e.g. 0:250000, 250000:500000 etc.
 
         update_result_3 = db.samples.update_many(
-          { 'concat_id': { '$in': concat_ids_subset } },
-          { '$set': { CREATED_DATE_FIELD_NAME: collection_name_to_timestamp[collection_name] } }
+          { 'concat_id': { '$in': concat_ids_subset }, 'migrated_temp': None },
+          { '$set': { CREATED_DATE_FIELD_NAME: collection_name_to_timestamp[collection_name], 'migrated_temp': 'Yes' } }
         )
         # for testing with static string
         # update_result_3 = db.samples.update_many(
