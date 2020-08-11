@@ -2,6 +2,7 @@ import datetime
 import re
 import sys
 import traceback
+import pymongo
 
 CREATED_DATE_FIELD_NAME = 'created_at' # TODO: check with E & A
 BATCH_SIZE = 250000
@@ -24,6 +25,9 @@ def add_timestamps_to_samples(db):
     print(f'Time after adding field to samples collection: {datetime.datetime.now()}')
     print('Number samples modified: ', update_result_1.modified_count)
 
+    print('\n-- Add an index for the new concatenated id column --')
+    db.samples.create_index([('concat_id', pymongo.ASCENDING)])
+    print(f'Time after adding index to samples collection: {datetime.datetime.now()}')
 
     print('\n-- Order the collections chronologically (oldest first) --')
     # so that when we loop through, the timestamp we set is when the sample first appeared in a collection
