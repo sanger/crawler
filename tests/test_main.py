@@ -115,7 +115,7 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
 
     # We expect the previously blacklisted file to now be processed
     (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
-    assert 1 == len(files), "Fail success TEST"
+    assert 1 == len(files), "Fail success TEST2"
 
     # We expect the previous blacklisted file to still be in the errors directory as well
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
@@ -182,6 +182,6 @@ def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_f
         in test_centre_imports["errors"][0]
     )
     assert (
-        "WARNING: Duplicates detected within the file. (TYPE 5) (e.g. Duplicated, line: 3, root_sample_id: 1)"
+        "WARNING: Duplicates detected within the file. (TYPE 5) (e.g. Duplicated, line: 3, root_sample_id: 16)"
         in test_centre_imports["errors"][1]
     )

@@ -296,15 +296,17 @@ class CentreFile:
         """
         logger.info(f"Processing samples")
 
-        # LOG_HANDLER TYPE 2: Docs to insert is [] so no insert
+        # Internally traps TYPE 2: missing headers and TYPE 10 malformed files and returns docs_to_insert = []
         docs_to_insert = self.parse_csv()
 
         if self.logging_collection.get_count_of_all_errors_and_criticals() > 0:
-            logger.critical(f"Errors present in file {self.file_name}")
+            logger.error(f"Errors present in file {self.file_name}")
         else:
             logger.info(f"File {self.file_name} is valid")
 
-        self.insert_samples_from_docs(docs_to_insert)
+        if len(docs_to_insert) > 0:
+            self.insert_samples_from_docs(docs_to_insert)
+
         self.backup_file()
         self.create_import_record_for_file()
 
@@ -315,7 +317,6 @@ class CentreFile:
                 str -- the filepath of the file backup
         """
         if self.logging_collection.get_count_of_all_errors_and_criticals() > 0:
-            # LOG_HANDLER TYPE 2: Fail file
             return (
                 f"{self.centre_config['backups_folder']}/{ERRORS_DIR}/{self.timestamped_filename()}"
             )
@@ -373,18 +374,21 @@ class CentreFile:
                 entry = samples_collection.find(
                     {
                         FIELD_ROOT_SAMPLE_ID: wrong_instance[FIELD_ROOT_SAMPLE_ID],
-                        FIELD_RNA_ID: wrong_instances[FIELD_RNA_ID],
-                        FIELD_RESULT: wrong_instances[FIELD_RESULT],
-                        FIELD_LAB_ID: wrong_instances[FIELD_LAB_ID],
+                        FIELD_RNA_ID: wrong_instance[FIELD_RNA_ID],
+                        FIELD_RESULT: wrong_instance[FIELD_RESULT],
+                        FIELD_LAB_ID: wrong_instance[FIELD_LAB_ID],
                     }
                 )[0]
                 if not (entry):
+                    logger.critical(
+                        f"When trying to insert root_sample_id: {wrong_instance[FIELD_ROOT_SAMPLE_ID]}, contents: {wrong_instance}"
+                    )
                     continue
 
                 if entry[FIELD_DATE_TESTED] != wrong_instance[FIELD_DATE_TESTED]:
                     self.logging_collection.add_error(
                         "TYPE 7",
-                        f"Already in database, line: {wrong_instance['line_number']}, root sample id: {wrong_instance['Root Sample ID']}, dates: (entry[FIELD_DATE_TESTED] != wrong_instance[FIELD_DATE_TESTED])",
+                        f"Already in database, line: {wrong_instance['line_number']}, root sample id: {wrong_instance['Root Sample ID']}, dates: ({entry[FIELD_DATE_TESTED]} != {wrong_instance[FIELD_DATE_TESTED]})",
                     )
                 else:
                     self.logging_collection.add_error(
@@ -407,12 +411,22 @@ class CentreFile:
             # Inserts new version for samples
             result = samples_collection.insert_many(docs_to_insert, ordered=False)
             self.docs_inserted = len(result.inserted_ids)
+        # TODO could trap DuplicateKeyError specifically
         except BulkWriteError as e:
             # This is happening when there are duplicates in the data and the index prevents
             # the records from being written
             logger.warning(f"{e} - usually happens when duplicates are trying to be inserted")
-            self.docs_inserted = e.details["nInserted"]
 
+            # filter out any errors that are duplicates by checking the code in e.details["writeErrors"]
+            filtered_errors = list(filter(lambda x: x["code"] != 11000, e.details["writeErrors"]))
+
+            if len(filtered_errors) > 0:
+                logger.info(
+                    f"Number of exceptions left after filtering out duplicates = {len(filtered_errors)}. Example:"
+                )
+                logger.info(filtered_errors[0])
+
+            self.docs_inserted = e.details["nInserted"]
             self.add_duplication_errors(e)
         except Exception as e:
             logger.critical(f"Critical error in file {self.file_name}: {e}")
@@ -488,7 +502,7 @@ class CentreFile:
                 sample_id = row[FIELD_ROOT_SAMPLE_ID]
             self.logging_collection.add_error(
                 "TYPE 9",
-                f"Wrong reg. exp. {barcode_field}, line:{line_number}, root_sample_id={sample_id}, value:{row[barcode_field]}",
+                f"Wrong reg. exp. {barcode_field}, line:{line_number}, root_sample_id: {sample_id}, value: {row[barcode_field]}",
             )
             return "", ""
 
@@ -519,10 +533,8 @@ class CentreFile:
 
         # Detect duplications and filters them out
         seen_rows: Set[tuple] = set()
-        # number_of_duplicates_inside_this_file = 0
-
         missing_data_count = 0
-        invalid_rows = 0
+        invalid_rows_count = 0
         line_number = 2
 
         import_timestamp = self.get_now_timestamp()
@@ -552,7 +564,6 @@ class CentreFile:
 
                     if row_signature in seen_rows:
                         logger.debug(f"Skipping {row_signature}: duplicate")
-                        # number_of_duplicates_inside_this_file += 1
                         self.logging_collection.add_error(
                             "TYPE 5",
                             f"Duplicated, line: {line_number}, root_sample_id: {row[FIELD_ROOT_SAMPLE_ID]}",
@@ -561,44 +572,14 @@ class CentreFile:
                     seen_rows.add(row_signature)
                     augmented_data.append(row)
                 else:
-
-                    # if FIELD_RESULT in row:
-                    # LOG_HANDLER TYPE 4: Aggregation
-                    # self.aggregators["TYPE 4"].aggregate()
-                    # else:
-                    # LOG_HANDLER TYPE 3: Aggregation
-                    # self.aggregators["TYPE 3"].aggregate()
-
                     missing_data_count += 1
 
             else:
-                # LOG_HANDLER TYPE 1: Aggregate element line
-                invalid_rows += 1
+                invalid_rows_count += 1
 
             line_number += 1
 
-        logger.info(f"Invalid rows = {invalid_rows}")
-
-        # NOT NEEDED:
-        # All reporting lines at the end
-        # if invalid_rows > 0:
-        # LOG_HANDLER TYPE 1: Aggregate report element line
-        #    self.logging_collection.warning.append(
-        #        f"Duplicates Type 1: Total of Empty samples with no result: {invalid_rows}"
-        #    )
-
-        # NOT NEEDED:
-        # if number_of_duplicates_inside_this_file > 0:
-        #    error = f"{number_of_duplicates_inside_this_file} number of duplicates (sample,location,result,barcode)"
-        #    self.logging_collection.warning.append(error)
-
-        # NOT NEEDED:
-        # if barcode_regex and missing_data_count > 0:
-        #    # LOG_HANDLER TYPE 4: Aggregation report element line
-        #    error = f"Duplicates Type 4: Total of Empty samples (no barcode or coordinate) with a result: {missing_data_count}"
-        #    # error = f"{missing_data_count} sample rows are missing a plate barcode and / or a coordinate"
-        #    self.logging_collection.add_error("TYPE 4", error)
-        #    logger.warning(error)
+        logger.info(f"Incorrect rows in this file = {invalid_rows_count + missing_data_count}")
 
         return augmented_data
 
@@ -621,20 +602,22 @@ class CentreFile:
         # check both the Root Sample ID and barcode field are present
         barcode_field = self.centre_config["barcode_field"]
         if not (row[FIELD_ROOT_SAMPLE_ID]):
-            # ignore row
+            # filter out row as sample id is missing
             self.logging_collection.add_error(
                 "TYPE 3", f"Root Sample ID missing, line: {line_number}"
             )
-            return False
-
-        if not (row[barcode_field]):
-            # ignore row
-            # TODO: aggregate count error
-            self.logging_collection.add_error("TYPE 4", f"RNA ID missing, line: {line_number}")
+            logger.warning(f"We found line: {line_number} missing sample id but is not blank")
             return False
 
         if not (row[FIELD_RESULT]):
+            # filter out row as result is missing
             self.logging_collection.add_error("TYPE 3", f"Result missing, line: {line_number}")
+            return False
+
+        if not (row[barcode_field]):
+            # filter out row as barcode is missing
+            self.logging_collection.add_error("TYPE 4", f"RNA ID missing, line: {line_number}")
+            return False
 
         return True
 

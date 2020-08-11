@@ -114,8 +114,16 @@ def test_row_valid_structure(config):
         {"Root Sample ID": "asdf", "Result": "asdf", "RNA ID": "ASDF_A01", "Date tested": "asdf"}, 5
     )
 
-    assert centre_file.row_valid_structure(
-        {"Root Sample ID": "asdf", "Result": "", "RNA ID": "ASDF_A01", "Date tested": ""}, 5
+    assert not (
+        centre_file.row_valid_structure(
+            {"Root Sample ID": "asdf", "Result": "", "RNA ID": "ASDF_A01", "Date tested": ""}, 5
+        )
+    )
+
+    assert not (
+        centre_file.row_valid_structure(
+            {"Root Sample ID": "asdf", "Result": "Positive", "RNA ID": "", "Date tested": ""}, 5
+        )
     )
 
 
@@ -158,7 +166,7 @@ def test_format_and_filter_rows(config):
                 "source": "Alderley",
                 "coordinate": "H09",
                 "line_number": 2,
-                "Result": None,
+                "Result": "Positive",
                 "file_name": "some file",
                 "file_name_date": None,
                 "created_at": timestamp,
@@ -169,7 +177,7 @@ def test_format_and_filter_rows(config):
 
         with StringIO() as fake_csv:
             fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-            fake_csv.write("1,RNA_0043_H09\n")
+            fake_csv.write("1,RNA_0043_H09,Positive\n")
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
@@ -192,7 +200,7 @@ def test_format_and_filter_rows(config):
 
         with StringIO() as fake_csv:
             fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-            fake_csv.write("1,RNA_0043_\n")
+            fake_csv.write("1,RNA_0043_,Positive\n")
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
@@ -223,7 +231,7 @@ def test_format_and_filter_rows_parsing_filename(config):
                 "file_name_date": datetime.datetime(2020, 5, 7, 13, 40),
                 "created_at": timestamp,
                 "updated_at": timestamp,
-                "Result": None,
+                "Result": "Positive",
                 "Lab ID": None,
             },
             {
@@ -237,15 +245,15 @@ def test_format_and_filter_rows_parsing_filename(config):
                 "file_name_date": datetime.datetime(2020, 5, 7, 13, 40),
                 "created_at": timestamp,
                 "updated_at": timestamp,
-                "Result": None,
+                "Result": "Negative",
                 "Lab ID": None,
             },
         ]
 
         with StringIO() as fake_csv:
             fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-            fake_csv.write("1,RNA_0043_H09\n")
-            fake_csv.write("2,RNA_0043_B08\n")
+            fake_csv.write("1,RNA_0043_H09,Positive\n")
+            fake_csv.write("2,RNA_0043_B08,Negative\n")
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
