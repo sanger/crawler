@@ -100,6 +100,20 @@ def add_timestamps_to_samples(db):
 
 
 
+def map_collection_name_to_timestamp(db):
+  collection_name_to_timestamp = {}
+  for collection_name in db.list_collection_names():
+    if is_sample_archive_collection(collection_name):
+      timestamp = extract_timestamp(collection_name)
+      collection_name_to_timestamp[collection_name] = timestamp
+
+  return collection_name_to_timestamp
+
+
+def is_sample_archive_collection(collection_name):
+  return ( bool(re.search(COLLECTION_NAME_FORMAT_1, collection_name)) or bool(re.search(COLLECTION_NAME_FORMAT_2, collection_name)) )
+
+
 def extract_timestamp(collection_name):
   m = re.match(COLLECTION_NAME_FORMAT_1, collection_name) # e.g. samples_200519_1510
 
@@ -113,21 +127,7 @@ def extract_timestamp(collection_name):
       timestamp_string = m.group(1)
       timestamp_datetime = datetime.datetime.strptime(timestamp_string, "%d%m%Y_%H%M")
     else:
-      return None # Exception?
+      # shouldn't get here, because we check against the regexes in map_collection_name_to_timestamp
+      return None
 
   return timestamp_datetime
-
-
-
-def map_collection_name_to_timestamp(db):
-  collection_name_to_timestamp = {}
-  for collection_name in db.list_collection_names():
-    if is_sample_archive_collection(collection_name):
-      timestamp = extract_timestamp(collection_name)
-      collection_name_to_timestamp[collection_name] = timestamp
-
-  return collection_name_to_timestamp
-
-
-def is_sample_archive_collection(collection_name):
-  return ( bool(re.search(COLLECTION_NAME_FORMAT_1, collection_name)) or bool(re.search(COLLECTION_NAME_FORMAT_2, collection_name)) )
