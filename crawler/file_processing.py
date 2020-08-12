@@ -54,8 +54,6 @@ class Centre:
     def __init__(self, config, centre_config):
         self.config = config
         self.centre_config = centre_config
-        # TODO: check if sorted is oldest first
-        self.centre_files = sorted(self.get_files_in_download_dir())
 
         # create backup directories for files
         os.makedirs(f"{self.centre_config['backups_folder']}/{ERRORS_DIR}", exist_ok=True)
@@ -108,6 +106,7 @@ class Centre:
         """
         # iterate through each file in the centre
 
+        self.centre_files = sorted(self.get_files_in_download_dir())
         for file_name in sorted(self.centre_files):
             logger.info(f"Checking file {file_name}")
 
