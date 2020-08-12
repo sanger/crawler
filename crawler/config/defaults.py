@@ -33,7 +33,7 @@ CENTRES = [
         "name": "Alderley",
         "prefix": "ALDP",
         "backups_folder": "backups/ALDP",
-        "sftp_file_regex": r"^AP_sanger_report_(\d{6}_\d{4})\.csv$",
+        "sftp_file_regex": r"^AP_sanger_report_(\d{6}_\d{4}).*\.csv$",
         "sftp_root_read": "project-heron_alderly-park",
     },
     {
@@ -42,8 +42,9 @@ CENTRES = [
         "name": "UK Biocentre",
         "prefix": "MILK",
         "backups_folder": "backups/MILK",
-        "sftp_file_regex": r"^MK_sanger_report_(\d{6}_\d{4})\.csv$",
+        "sftp_file_regex": r"^MK_sanger_report_(\d{6}_\d{4}).*\.csv$",
         "sftp_root_read": "project-heron/UK-Biocenter/Sanger Reports",
+        "file_names_to_ignore": ["MK_sanger_report_200715_2000_master.csv"],
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -51,8 +52,9 @@ CENTRES = [
         "name": "Queen Elizabeth University Hospital",
         "prefix": "QEUH",
         "backups_folder": "backups/QEUH",
-        "sftp_file_regex": r"^GLS_sanger_report_(\d{6}_\d{4})\.csv$",
+        "sftp_file_regex": r"^GLS_sanger_report_(\d{6}_\d{4}).*\.csv$",
         "sftp_root_read": "project-heron_glasgow",
+        "file_names_to_ignore": ["GLS_sanger_report_200713_0001_master.csv"],
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -60,8 +62,9 @@ CENTRES = [
         "name": "Cambridge-az",
         "prefix": "CAMC",
         "backups_folder": "backups/CAMC",
-        "sftp_file_regex": r"^CB_sanger_report_(\d{6}_\d{4})\.csv$",
+        "sftp_file_regex": r"^CB_sanger_report_(\d{6}_\d{4}).*\.csv$",
         "sftp_root_read": "project-heron_cambridge-az",
+        "file_names_to_ignore": ["CB_sanger_report_200714_0001_master.csv"],
     },
 ]
 

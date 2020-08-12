@@ -108,7 +108,7 @@ class Centre:
         """
         # iterate through each file in the centre
 
-        for file_name in self.centre_files:
+        for file_name in sorted(self.centre_files):
             logger.info(f"Checking file {file_name}")
 
             # create an instance of the file class to handle the file
@@ -119,15 +119,18 @@ class Centre:
 
             # Process depending on file state
             if centre_file.file_state == CentreFileState.FILE_IN_BLACKLIST:
+                logger.info("File in blacklist, skipping")
                 # next file
                 continue
             elif centre_file.file_state == CentreFileState.FILE_NOT_PROCESSED_YET:
                 # process it
                 centre_file.process_samples()
             elif centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_ERROR:
+                logger.info("File already processed as errored, skipping")
                 # next file
                 continue
             elif centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_SUCCESS:
+                logger.info("File already processed successfully, skipping")
                 # next file
                 continue
             else:
@@ -241,17 +244,22 @@ class CentreFile:
         regexp = re.compile(r"^([\d]{6}_[\d]{4})_(.*)_(\w*)$")
 
         checksum_for_file = self.checksum()
+        logger.debug(f"Checksum for file = {checksum_for_file}")
 
         backup_folder = f"{self.centre_config['backups_folder']}/{dir_path}"
         files_from_backup_folder = os.listdir(backup_folder)
-        for backup_filename in files_from_backup_folder:
-            matches = regexp.match(backup_filename)
+        for backup_copy_file in files_from_backup_folder:
+            matches = regexp.match(backup_copy_file)
             if matches:
                 backup_timestamp = matches.group(1)
                 backup_filename = matches.group(2)
                 backup_checksum = matches.group(3)
 
                 if checksum_for_file == backup_checksum:
+                    if backup_filename != self.file_name:
+                        logger.warning(
+                            f"Found identical file {backup_filename} in path {dir_path} which has same checksum but different filename"
+                        )
                     return True
         return False
 

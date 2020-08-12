@@ -6,6 +6,8 @@ on:
     branches:
       - develop
       - master
+    tags:
+      - uat-*  
     paths-ignore:
       - "README.md"
   pull_request:

@@ -89,6 +89,7 @@ def run(sftp: bool, keep_files: bool, settings_module: str = "") -> None:
 
                         centre_instance.process_files()
                     except Exception as e:
+                        logger.error('An exception occured')
                         logger.error(f"Error in centre {centre_instance.centre_config['name']}")
                         logger.exception(e)
                     finally:
