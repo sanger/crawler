@@ -73,6 +73,11 @@ Mypy is used as a type checker, to execute:
 
 To get a list of the positive samples which are on site:
 
+Go to the Lighthouse UI app and click 'Create report'
+
+To do it the old way:
+
+
 1. Install `mongoexport` from the `mongodb-database-tools` bundle:
 
         brew install mongodb/brew/mongodb-database-tools
