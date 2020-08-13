@@ -22,9 +22,9 @@ def generate_example_samples_fields_null(range):
     samples.append({
       "Root Sample ID" : "TLS0000000" + str(n),
       "RNA ID" : "TL-rna-00000001_A01",
-      "Result" : "Positive",
+      "Result" : None,
       "Date Tested" : "2020-05-10 14:01:00 UTC",
-      "Lab ID" : None,
+      "Lab ID" : "TLS",
       "source" : "Test Lab Somewhere"
     })
 
@@ -36,8 +36,8 @@ def generate_example_samples_fields_missing(range):
     samples.append({
       "Root Sample ID" : "TLS0000000" + str(n),
       "RNA ID" : "TL-rna-00000001_A01",
-      "Result" : "Positive",
       "Date Tested" : "2020-05-10 14:01:00 UTC",
+      "Lab ID" : "TLS",
       "source" : "Test Lab Somewhere"
     })
 

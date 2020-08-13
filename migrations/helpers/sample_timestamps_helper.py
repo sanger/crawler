@@ -19,7 +19,7 @@ def add_timestamps_to_samples(db):
     update_result_1 = db.samples.update_many(
       { },
       [
-        { '$set': { 'concat_id': { '$concat': [ "$Root Sample ID", " - ", "$RNA ID", " - ", "$Result", " - ", "$Lab ID" ] } } }
+        { '$set': { 'concat_id': { '$concat': [ "$Root Sample ID", " - ", "$RNA ID", " - ", "$Result" ] } } }
       ]
     )
     print(f'Time after adding field to samples collection: {datetime.datetime.now()}')
@@ -44,7 +44,7 @@ def add_timestamps_to_samples(db):
       update_result_2 = db[collection_name].update_many(
         { },
         [
-          { '$set': { 'concat_id': { '$concat': [ "$Root Sample ID", " - ", "$RNA ID", " - ", "$Result", " - ", "$Lab ID" ] } } }
+          { '$set': { 'concat_id': { '$concat': [ "$Root Sample ID", " - ", "$RNA ID", " - ", "$Result" ] } } }
         ]
       )
       print(f'Time after adding field to collection: {datetime.datetime.now()}')
