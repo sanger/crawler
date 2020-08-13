@@ -3,6 +3,8 @@ from crawler.constants import FIELD_RNA_ID
 # general details
 DIR_DOWNLOADED_DATA = "data/"
 
+ADD_LAB_ID = False
+
 # centre details
 # This information will also be persisted in the mongo database
 # Field information:
@@ -32,6 +34,7 @@ CENTRES = [
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
         "name": "Alderley",
         "prefix": "ALDP",
+        "lab_id_default": "AP",
         "backups_folder": "backups/ALDP",
         "sftp_file_regex": r"^AP_sanger_report_(\d{6}_\d{4}).*\.csv$",
         "sftp_root_read": "project-heron_alderly-park",
@@ -41,6 +44,7 @@ CENTRES = [
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
         "name": "UK Biocentre",
         "prefix": "MILK",
+        "lab_id_default": "MK",
         "backups_folder": "backups/MILK",
         "sftp_file_regex": r"^MK_sanger_report_(\d{6}_\d{4}).*\.csv$",
         "sftp_root_read": "project-heron/UK-Biocenter/Sanger Reports",
@@ -51,6 +55,7 @@ CENTRES = [
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
         "name": "Queen Elizabeth University Hospital",
         "prefix": "QEUH",
+        "lab_id_default": "GLS",
         "backups_folder": "backups/QEUH",
         "sftp_file_regex": r"^GLS_sanger_report_(\d{6}_\d{4}).*\.csv$",
         "sftp_root_read": "project-heron_glasgow",
@@ -61,6 +66,7 @@ CENTRES = [
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
         "name": "Cambridge-az",
         "prefix": "CAMC",
+        "lab_id_default": "CB",
         "backups_folder": "backups/CAMC",
         "sftp_file_regex": r"^CB_sanger_report_(\d{6}_\d{4}).*\.csv$",
         "sftp_root_read": "project-heron_cambridge-az",

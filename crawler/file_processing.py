@@ -461,6 +461,19 @@ class CentreFile:
 
         return []
 
+    def get_required_headers(self) -> [str]:
+        """Determines the required headers. Includes lab id if config flag is set.
+
+            Returns:
+                [str] - array of headers
+        """
+        if self.config.ADD_LAB_ID:
+            required = self.REQUIRED_FIELDS + [FIELD_LAB_ID]
+        else:
+            required = self.REQUIRED_FIELDS
+
+        return required
+
     def check_for_required_headers(self, csvreader: DictReader) -> bool:
         """Checks that the CSV file has the required headers.
 
@@ -471,11 +484,13 @@ class CentreFile:
 
         if csvreader.fieldnames:
             fieldnames = set(csvreader.fieldnames)
-            if not self.REQUIRED_FIELDS <= fieldnames:
+            required = self.get_required_headers()
+
+            if not required <= fieldnames:
                 # LOG_HANDLER TYPE 2: Fail file
                 self.logging_collection.add_error(
                     "TYPE 2",
-                    f"Wrong headers, {', '.join(list(self.REQUIRED_FIELDS - fieldnames))} missing in CSV file",
+                    f"Wrong headers, {', '.join(list(required - fieldnames))} missing in CSV file",
                 )
                 return False
         else:
@@ -520,10 +535,47 @@ class CentreFile:
 
     def get_row_signature(self, row):
         memo = []
-        for key in [FIELD_RESULT, FIELD_RNA_ID, FIELD_ROOT_SAMPLE_ID]:
+        for key in [FIELD_ROOT_SAMPLE_ID, FIELD_RNA_ID, FIELD_RESULT, FIELD_LAB_ID]:
             if key in row:
                 memo.append(row[key])
         return tuple(memo)
+
+    def filtered_row(self, row, line_number) -> Dict[str, str]:
+        """ Filter unneeded columns and add lab id if not present and config flag set.
+
+            Arguments:
+                row {Dict[str][str]} - sample row read from file
+
+            Returns:
+                Dict[str][str] - returns a modified version of the row
+        """
+        # add lab id default if required
+        modified_row : Dict[str, str] = {}
+        if self.config.ADD_LAB_ID:
+            if FIELD_LAB_ID in row:
+                if row[FIELD_LAB_ID] == "" or row[FIELD_LAB_ID] == None:
+                    modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
+                    logger.debug(f"Adding in missing Lab ID for row {line_number}")
+                    self.logging_collection.add_error(
+                        "TYPE 12",
+                        f"No Lab ID, line: {line_number}, root_sample_id: {row[FIELD_ROOT_SAMPLE_ID]}",
+                    )
+            else:
+                modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
+
+        # filter out any unexpected columns
+        for key in self.get_required_headers():
+            if key in row:
+                modified_row[key] = row[key]
+
+        unexpected_headers = list(row.keys() - modified_row.keys())
+        if len(unexpected_headers) > 0:
+            self.logging_collection.add_error(
+                "TYPE 13",
+                f"Unexpected headers, line: {line_number}, root_sample_id: {row[FIELD_ROOT_SAMPLE_ID]}, extra headers: {unexpected_headers}",
+            )
+
+        return modified_row
 
     def format_and_filter_rows(self, csvreader: DictReader) -> Any:
         """Adds extra fields to the imported data which are required for querying.
@@ -552,6 +604,7 @@ class CentreFile:
         for row in csvreader:
             # only process rows that contain something in the cells
             if self.row_valid_structure(row, line_number):
+                row = self.filtered_row(row, line_number)
                 row["source"] = self.centre_config["name"]
                 row[FIELD_PLATE_BARCODE] = None  # type: ignore
 

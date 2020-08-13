@@ -218,6 +218,28 @@ class AggregateType10(AggregateTypeBase):
 # Type 11 is blacklisted file, not logged
 
 
+class AggregateType12(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 12"
+        self.error_level = ErrorLevel.ERROR
+        self.message = (
+            f"ERROR: Sample rows that do not contain a Lab ID. ({self.type_str})"
+        )
+        self.max_errors = 5
+        self.short_display_description = "No Lab ID"
+
+class AggregateType13(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 13"
+        self.error_level = ErrorLevel.WARNING
+        self.message = (
+            f"ERROR: Sample rows that contain unexpected columns. ({self.type_str})"
+        )
+        self.max_errors = 5
+        self.short_display_description = "Extra column(s)"
+
 class LoggingCollection:
     def __init__(self):
         self.aggregator_types = {
@@ -230,6 +252,8 @@ class LoggingCollection:
             "TYPE 7": AggregateType7(),
             "TYPE 9": AggregateType9(),
             "TYPE 10": AggregateType10(),
+            "TYPE 12": AggregateType12(),
+            "TYPE 13": AggregateType13(),
         }
 
     def add_error(self, aggregate_error_type, message):
