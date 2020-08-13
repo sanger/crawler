@@ -107,7 +107,7 @@ class Centre:
         # iterate through each file in the centre
 
         self.centre_files = sorted(self.get_files_in_download_dir())
-        for file_name in sorted(self.centre_files):
+        for file_name in self.centre_files:
             logger.info(f"Checking file {file_name}")
 
             # create an instance of the file class to handle the file
