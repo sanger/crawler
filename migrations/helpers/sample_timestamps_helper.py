@@ -60,7 +60,7 @@ def add_timestamps_to_samples(db):
         concat_ids.append(sample['concat_id'])
 
       print(f'Time after querying field and building list: {datetime.datetime.now()}')
-      print(f'Total number of samples in collection: {db[collection_name].count()}')
+      print(f'Total number of samples in collection: {db[collection_name].count_documents({})}')
       print(f'Of which, number to process: {len(concat_ids)}')
 
 

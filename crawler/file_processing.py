@@ -461,16 +461,15 @@ class CentreFile:
 
         return []
 
-    def get_required_headers(self) -> [str]:
+    def get_required_headers(self) -> Set[str]:
         """Determines the required headers. Includes lab id if config flag is set.
 
             Returns:
                 [str] - array of headers
         """
-        if self.config.ADD_LAB_ID:
-            required = self.REQUIRED_FIELDS + [FIELD_LAB_ID]
-        else:
-            required = self.REQUIRED_FIELDS
+        required = set(self.REQUIRED_FIELDS)
+        if not(self.config.ADD_LAB_ID):
+            required.add(FIELD_LAB_ID)
 
         return required
 
@@ -540,6 +539,13 @@ class CentreFile:
                 memo.append(row[key])
         return tuple(memo)
 
+    def log_adding_default_lab_id(self, row, line_number):
+        logger.debug(f"Adding in missing Lab ID for row {line_number}")
+        self.logging_collection.add_error(
+            "TYPE 12",
+            f"No Lab ID, line: {line_number}, root_sample_id: {row[FIELD_ROOT_SAMPLE_ID]}",
+        )
+
     def filtered_row(self, row, line_number) -> Dict[str, str]:
         """ Filter unneeded columns and add lab id if not present and config flag set.
 
@@ -549,19 +555,19 @@ class CentreFile:
             Returns:
                 Dict[str][str] - returns a modified version of the row
         """
-        # add lab id default if required
         modified_row : Dict[str, str] = {}
         if self.config.ADD_LAB_ID:
+            # when we need to add the lab id if not present
             if FIELD_LAB_ID in row:
+                # if the lab id field is already present
                 if row[FIELD_LAB_ID] == "" or row[FIELD_LAB_ID] == None:
+                    # if no value we add the default value and log it was missing
                     modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
-                    logger.debug(f"Adding in missing Lab ID for row {line_number}")
-                    self.logging_collection.add_error(
-                        "TYPE 12",
-                        f"No Lab ID, line: {line_number}, root_sample_id: {row[FIELD_ROOT_SAMPLE_ID]}",
-                    )
+                    self.log_adding_default_lab_id(row, line_number)
             else:
+                # if the lab id field is not present we add the default and log it was missing
                 modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
+                self.log_adding_default_lab_id(row, line_number)
 
         # filter out any unexpected columns
         for key in self.get_required_headers():
@@ -692,7 +698,7 @@ class CentreFile:
         # AP_sanger_report_200527_0818.csv
         # MK_sanger_report_200418_0800.csv
         # GLS_sanger_report_200529_2030.csv
-        m = re.match(".*_([\d]{6}_[\d]{4})\.csv", self.file_name)
+        m = re.match(r".*_([\d]{6}_[\d]{4})\.csv", self.file_name)
 
         if not m:
             return None

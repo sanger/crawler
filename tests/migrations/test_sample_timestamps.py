@@ -55,8 +55,8 @@ def test_basic(mongo_database):
 
     add_timestamps_to_samples(db)
 
-    total_samples = db.samples.count()
-    samples_with_timestamp = db.samples.find( { CREATED_DATE_FIELD_NAME: { '$ne': None } } ).count()
+    total_samples = db.samples.count_documents({})
+    samples_with_timestamp = db.samples.count_documents( { CREATED_DATE_FIELD_NAME: { '$ne': None } } )
     for sample in db.samples.find(): print(f'DEBUG: sample: {sample}')
 
     assert total_samples == samples_with_timestamp
@@ -81,13 +81,13 @@ def test_fields_null(mongo_database):
 
     add_timestamps_to_samples(db)
 
-    samples_with_null_concat_id = db.samples.find( { 'concat_id': None } ).count()
-    assert samples_with_null_concat_id == db.samples.count()
+    samples_with_null_concat_id = db.samples.count_documents( { 'concat_id': None } )
+    assert samples_with_null_concat_id == db.samples.count_documents({})
 
-    samples_with_null_concat_id_2 = db.samples_200519_1510.find( { 'concat_id': None } ).count()
-    assert samples_with_null_concat_id_2 == db.samples_200519_1510.count()
+    samples_with_null_concat_id_2 = db.samples_200519_1510.count_documents( { 'concat_id': None } )
+    assert samples_with_null_concat_id_2 == db.samples_200519_1510.count_documents({})
 
-    samples_with_timestamp = db.samples.find( { CREATED_DATE_FIELD_NAME: { '$ne': None } } ).count()
+    samples_with_timestamp = db.samples.count_documents( { CREATED_DATE_FIELD_NAME: { '$ne': None } } )
     for sample in db.samples.find(): print(f'DEBUG: sample: {sample}')
 
     assert samples_with_timestamp == 0 # shouldn't find any matches to update if concat_ids are null
@@ -100,13 +100,13 @@ def test_fields_missing(mongo_database):
 
     add_timestamps_to_samples(db)
 
-    samples_with_null_concat_id = db.samples.find( { 'concat_id': None } ).count()
-    assert samples_with_null_concat_id == db.samples.count()
+    samples_with_null_concat_id = db.samples.count_documents( { 'concat_id': None } )
+    assert samples_with_null_concat_id == db.samples.count_documents({})
 
-    samples_with_null_concat_id_2 = db.samples_200519_1510.find( { 'concat_id': None } ).count()
-    assert samples_with_null_concat_id_2 == db.samples_200519_1510.count()
+    samples_with_null_concat_id_2 = db.samples_200519_1510.count_documents( { 'concat_id': None } )
+    assert samples_with_null_concat_id_2 == db.samples_200519_1510.count_documents({})
 
-    samples_with_timestamp = db.samples.find( { CREATED_DATE_FIELD_NAME: { '$ne': None } } ).count()
+    samples_with_timestamp = db.samples.count_documents( { CREATED_DATE_FIELD_NAME: { '$ne': None } } )
     for sample in db.samples.find(): print(f'DEBUG: sample: {sample}')
 
     assert samples_with_timestamp == 0 # shouldn't find any matches to update if concat_ids are null
