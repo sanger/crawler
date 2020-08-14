@@ -40,7 +40,7 @@ if __name__ == "__main__":
     if args.once:
         main.run(args.sftp, args.keep_files)
     else:
-        time_to_run = "1:00"
+        time_to_run = "01:00"
         print(f"Scheduled to run at {time_to_run}")
         schedule.every().day.at(time_to_run).do(
             main.run, sftp=args.sftp, keep_files=args.keep_files
