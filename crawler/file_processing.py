@@ -468,7 +468,7 @@ class CentreFile:
                 [str] - array of headers
         """
         required = set(self.REQUIRED_FIELDS)
-        if not(self.config.ADD_LAB_ID):
+        if not (self.config.ADD_LAB_ID):
             required.add(FIELD_LAB_ID)
 
         return required
@@ -555,7 +555,7 @@ class CentreFile:
             Returns:
                 Dict[str][str] - returns a modified version of the row
         """
-        modified_row : Dict[str, str] = {}
+        modified_row: Dict[str, str] = {}
         if self.config.ADD_LAB_ID:
             # when we need to add the lab id if not present
             if FIELD_LAB_ID in row:
@@ -564,6 +564,12 @@ class CentreFile:
                     # if no value we add the default value and log it was missing
                     modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
                     self.log_adding_default_lab_id(row, line_number)
+                else:
+                    if row[FIELD_LAB_ID] != self.centre_config["lab_id_default"]:
+                        logger.warning(
+                            f"Different lab id setting: {row[FIELD_LAB_ID]}!={self.centre_config['lab_id_default']}"
+                        )
+                    modified_row[FIELD_LAB_ID] = row[FIELD_LAB_ID]
             else:
                 # if the lab id field is not present we add the default and log it was missing
                 modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]

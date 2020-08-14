@@ -211,6 +211,7 @@ def test_format_and_filter_rows(config):
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
             assert centre_file.logging_collection.aggregator_types["TYPE 9"].count_errors == 1
 
+
 def test_filtered_row_with_extra_columns(config):
     # check have removed extra columns and created a warning error log
     centre = Centre(config, config.CENTRES[0])
@@ -220,21 +221,30 @@ def test_filtered_row_with_extra_columns(config):
         fake_csv_with_extra_columns.write(
             f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},{FIELD_LAB_ID},extra_col_1,extra_col_2,extra_col_3\n"
         )
-        fake_csv_with_extra_columns.write("1,RNA_0043,Positive,today,AP,extra_value_1,extra_value_2,extra_value_3\n")
+        fake_csv_with_extra_columns.write(
+            "1,RNA_0043,Positive,today,AP,extra_value_1,extra_value_2,extra_value_3\n"
+        )
         fake_csv_with_extra_columns.seek(0)
 
         csv_to_test_reader = DictReader(fake_csv_with_extra_columns)
 
-        expected_row = {'Root Sample ID': '1', 'RNA ID': 'RNA_0043', 'Result': 'Positive', 'Date Tested': 'today', 'Lab ID': 'AP'}
+        expected_row = {
+            "Root Sample ID": "1",
+            "RNA ID": "RNA_0043",
+            "Result": "Positive",
+            "Date Tested": "today",
+            "Lab ID": "AP",
+        }
 
         assert centre_file.filtered_row(next(csv_to_test_reader), 2) == expected_row
         assert centre_file.logging_collection.aggregator_types["TYPE 13"].count_errors == 1
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
+
 def test_filtered_row_with_blank_lab_id(config):
     # check when flag set in config it adds default lab id
     try:
-        config.ADD_LAB_ID=True
+        config.ADD_LAB_ID = True
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some_file.csv", centre)
 
@@ -247,13 +257,51 @@ def test_filtered_row_with_blank_lab_id(config):
 
             csv_to_test_reader = DictReader(fake_csv_without_lab_id)
 
-            expected_row = {'Root Sample ID': '1', 'RNA ID': 'RNA_0043', 'Result': 'Positive', 'Date Tested': 'today', 'Lab ID': 'AP'}
+            expected_row = {
+                "Root Sample ID": "1",
+                "RNA ID": "RNA_0043",
+                "Result": "Positive",
+                "Date Tested": "today",
+                "Lab ID": "AP",
+            }
 
             assert centre_file.filtered_row(next(csv_to_test_reader), 2) == expected_row
             assert centre_file.logging_collection.aggregator_types["TYPE 12"].count_errors == 1
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
     finally:
-        config.ADD_LAB_ID=False
+        config.ADD_LAB_ID = False
+
+
+def test_filtered_row_with_lab_id_present(config):
+    # check when flag set in config it adds default lab id
+    try:
+        config.ADD_LAB_ID = True
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some_file.csv", centre)
+
+        with StringIO() as fake_csv_without_lab_id:
+            fake_csv_without_lab_id.write(
+                f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},{FIELD_LAB_ID}\n"
+            )
+            fake_csv_without_lab_id.write("1,RNA_0043,Positive,today,RealLabID\n")
+            fake_csv_without_lab_id.seek(0)
+
+            csv_to_test_reader = DictReader(fake_csv_without_lab_id)
+
+            expected_row = {
+                "Root Sample ID": "1",
+                "RNA ID": "RNA_0043",
+                "Result": "Positive",
+                "Date Tested": "today",
+                "Lab ID": "RealLabID",
+            }
+
+            assert centre_file.filtered_row(next(csv_to_test_reader), 2) == expected_row
+            assert centre_file.logging_collection.aggregator_types["TYPE 12"].count_errors == 0
+            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+    finally:
+        config.ADD_LAB_ID = False
+
 
 def test_format_and_filter_rows_parsing_filename(config):
     timestamp = "some timestamp"
@@ -417,7 +465,7 @@ def test_check_for_required_headers(config):
 
     # file with missing Lab ID header and add lab id true
     try:
-        config.ADD_LAB_ID=True
+        config.ADD_LAB_ID = True
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some_file.csv", centre)
 
@@ -434,7 +482,7 @@ def test_check_for_required_headers(config):
             assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 0
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
     finally:
-        config.ADD_LAB_ID=False
+        config.ADD_LAB_ID = False
 
 
 def test_backup_good_file(config, tmpdir):
