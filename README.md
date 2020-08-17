@@ -56,6 +56,7 @@ The following runtime flags are available:
     -h, --help   show this help message and exit
     --scheduled  start scheduled execution, defaults to running once
     --sftp       use SFTP to download CSV files, defaults to using local files
+    --keep-files keeps centre csv files after runner has been executed
 
 ## Testing
 
@@ -72,6 +73,11 @@ Mypy is used as a type checker, to execute:
 ## Reporting
 
 To get a list of the positive samples which are on site:
+
+Go to the Lighthouse UI app and click 'Create report'
+
+To do it the old way:
+
 
 1. Install `mongoexport` from the `mongodb-database-tools` bundle:
 

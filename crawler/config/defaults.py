@@ -1,7 +1,9 @@
 from crawler.constants import FIELD_RNA_ID
 
 # general details
-DIR_DOWNLOADED_DATA = "data/"
+DIR_DOWNLOADED_DATA = "data/sftp_files/"
+
+ADD_LAB_ID = False
 
 # centre details
 # This information will also be persisted in the mongo database
@@ -30,63 +32,45 @@ CENTRES = [
     {
         "barcode_field": FIELD_RNA_ID,
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
-        "merge_required": True,
         "name": "Alderley",
         "prefix": "ALDP",
-        "merge_start_date": "200511",
-        "sftp_file_regex": r"^AP_sanger_report_(\d{6}_\d{4})\.csv$",
-        "sftp_master_file_regex": r"^AP_sanger_report_(\d{6}_\d{4})_master\.csv$",
+        "lab_id_default": "AP",
+        "backups_folder": "data/backups/ALDP",
+        "sftp_file_regex": r"^AP_sanger_report_(\d{6}_\d{4}).*\.csv$",
         "sftp_root_read": "project-heron_alderly-park",
-        "sftp_root_write": "/project-heron_alderly-park/psd-lims",
-        "file_names_to_ignore": [
-            "AP_sanger_report_200723_0001.csv",
-            "AP_sanger_report_200724_0001.csv",
-            "AP_sanger_report_200725_0001.csv",
-            "AP_sanger_report_200726_0001.csv",
-            "AP_sanger_report_200727_0001.csv",
-            "AP_sanger_report_200728_0001.csv",
-            "AP_sanger_report_200729_0001.csv",
-        ],
     },
     {
         "barcode_field": FIELD_RNA_ID,
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
-        "merge_required": True,
         "name": "UK Biocentre",
         "prefix": "MILK",
-        "sftp_file_regex": r"^MK_sanger_report_(\d{6}_\d{4})\.csv$",
-        "sftp_master_file_regex": r"^MK_sanger_report_(\d{6}_\d{4})_master\.csv$",
+        "lab_id_default": "MK",
+        "backups_folder": "data/backups/MILK",
+        "sftp_file_regex": r"^MK_sanger_report_(\d{6}_\d{4}).*\.csv$",
         "sftp_root_read": "project-heron/UK-Biocenter/Sanger Reports",
-        "sftp_root_write": "/project-heron/psd-lims",
-        "file_names_to_ignore": [
-            "MK_sanger_report_200610_0001.csv",
-            "MK_sanger_report_200614_0800.csv",
-            "MK_sanger_report_200618_0800.csv",
-        ],
+        "file_names_to_ignore": ["MK_sanger_report_200715_2000_master.csv"],
     },
     {
         "barcode_field": FIELD_RNA_ID,
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
-        "merge_required": True,
         "name": "Queen Elizabeth University Hospital",
         "prefix": "QEUH",
-        "sftp_file_regex": r"^GLS_sanger_report_(\d{6}_\d{4})\.csv$",
-        "sftp_master_file_regex": r"^GLS_sanger_report_(\d{6}_\d{4})_master\.csv$",
+        "lab_id_default": "GLS",
+        "backups_folder": "data/backups/QEUH",
+        "sftp_file_regex": r"^GLS_sanger_report_(\d{6}_\d{4}).*\.csv$",
         "sftp_root_read": "project-heron_glasgow",
-        "sftp_root_write": "/project-heron_glasgow/psd-lims",
-        "file_names_to_ignore": [],
+        "file_names_to_ignore": ["GLS_sanger_report_200713_0001_master.csv"],
     },
     {
         "barcode_field": FIELD_RNA_ID,
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
-        "merge_required": True,
         "name": "Cambridge-az",
         "prefix": "CAMC",
-        "sftp_file_regex": r"^CB_sanger_report_(\d{6}_\d{4})\.csv$",
-        "sftp_master_file_regex": r"^CB_sanger_report_(\d{6}_\d{4})_master\.csv$",
+        "lab_id_default": "CB",
+        "backups_folder": "data/backups/CAMC",
+        "sftp_file_regex": r"^CB_sanger_report_(\d{6}_\d{4}).*\.csv$",
         "sftp_root_read": "project-heron_cambridge-az",
-        "sftp_root_write": "/project-heron_cambridge-az/psd-lims",
-        "file_names_to_ignore": [],
+        "file_names_to_ignore": ["CB_sanger_report_200714_0001_master.csv"],
     },
 ]
 
