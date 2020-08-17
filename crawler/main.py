@@ -4,7 +4,6 @@ import time
 from typing import List
 
 import pymongo
-from pymongo.errors import BulkWriteError
 
 from crawler.constants import (
     COLLECTION_CENTRES,
@@ -18,30 +17,23 @@ from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
 )
 from crawler.db import (
-    CollectionError,
-    create_import_record,
     create_mongo_client,
     get_mongo_collection,
     get_mongo_db,
-    populate_collection,
-    safe_collection,
+    populate_centres_collection,
+    samples_collection_accessor,
 )
 from crawler.helpers import (
-    clean_up,
-    download_csv_files,
     get_config,
-    merge_daily_files,
-    parse_csv,
-    upload_file_to_sftp,
     current_time,
 )
+from crawler.file_processing import Centre
 
 logger = logging.getLogger(__name__)
 
 
-def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
+def run(sftp: bool, keep_files: bool, settings_module: str = "") -> None:
     try:
-        timestamp = timestamp or current_time()
         start = time.time()
         config, settings_module = get_config(settings_module)
 
@@ -62,16 +54,16 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
                 f"Creating index '{FIELD_CENTRE_NAME}' on '{centres_collection.full_name}'"
             )
             centres_collection.create_index(FIELD_CENTRE_NAME, unique=True)
-            populate_collection(centres_collection, centres, FIELD_CENTRE_NAME)
+            populate_centres_collection(centres_collection, centres, FIELD_CENTRE_NAME)
 
             imports_collection = get_mongo_collection(db, COLLECTION_IMPORTS)
 
-            with safe_collection(db, COLLECTION_SAMPLES, timestamp) as samples_collection:
+            with samples_collection_accessor(db, COLLECTION_SAMPLES) as samples_collection:
                 logger.debug(
                     f"Creating index '{FIELD_PLATE_BARCODE}' on '{samples_collection.full_name}'"
                 )
                 samples_collection.create_index(FIELD_PLATE_BARCODE)
-                logger.debug(f"Creating compund index on '{samples_collection.full_name}'")
+                logger.debug(f"Creating compound index on '{samples_collection.full_name}'")
                 # create compound index on 'Root Sample ID', 'RNA ID', 'Result', 'Lab ID' - some data
                 #   had the same plate tested at another time so ignore the data if it is exactly the
                 #   same
@@ -85,68 +77,23 @@ def run(sftp: bool, settings_module: str = "", timestamp: str = None) -> None:
                     unique=True,
                 )
 
-                errors: List[str] = []
-                docs_inserted: int = 0
-                latest_file_name: str = ""
-                critical_errors: int = 0
-
-                for centre in centres:
+                centres_instances = [Centre(config, centre_config) for centre_config in centres]
+                for centre_instance in centres_instances:
                     logger.info("*" * 80)
-                    logger.info(f"Processing {centre['name']}")
+                    logger.info(f"Processing {centre_instance.centre_config['name']}")
 
-                    errors.clear()
-                    docs_inserted = 0
-                    latest_file_name = ""
                     try:
                         if sftp:
-                            download_csv_files(config, centre)
+                            centre_instance.download_csv_files()
 
-                        if "merge_required" in centre.keys() and centre["merge_required"]:
-                            master_file_name = merge_daily_files(config, centre)
-
-                            # only upload to SFTP if config explicitly says so - this is to prevent
-                            #   accidental uploads from non-production envs
-                            if config.SFTP_UPLOAD:  # type: ignore
-                                upload_file_to_sftp(config, centre, master_file_name)
-
-                        latest_file_name, errors, docs_to_insert = parse_csv(config, centre)
-
-                        logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
-                        result = samples_collection.insert_many(docs_to_insert, ordered=False)
-
-                        docs_inserted = len(result.inserted_ids)
-                    except BulkWriteError as e:
-                        # This is happening when there are duplicates in the data and the index prevents
-                        #   the records from being written
-                        logger.warning(
-                            f"{e} - usually happens when duplicates are trying to be inserted"
-                        )
-                        docs_inserted = e.details["nInserted"]
-                        write_errors = e.details["writeErrors"]
-
-                        write_errors_codes = {
-                            write_error["code"] for write_error in write_errors
-                        }
-                        for code in write_errors_codes:
-                            errors_list = list(filter(lambda x: x["code"] == code, write_errors))
-                            num_errors = len(errors_list)
-                            errors.append(f"{num_errors} records with error code {code}. Example message: {errors_list[0]['errmsg']}")
+                        centre_instance.process_files()
                     except Exception as e:
-                        errors.append(f"Critical error: {e}")
-                        critical_errors += 1
+                        logger.error("An exception occured")
+                        logger.error(f"Error in centre {centre_instance.centre_config['name']}")
                         logger.exception(e)
                     finally:
-                        clean_up(config, centre)
-                        logger.info(f"{docs_inserted} documents inserted")
-                        # write status record
-                        _ = create_import_record(
-                            imports_collection, centre, docs_inserted, latest_file_name, errors,
-                        )
-
-                # All centres have processed, If we have any critical errors, raise a CollectionError exception
-                # to prevent the safe_collection from triggering the rename
-                if critical_errors > 0:
-                    raise CollectionError
+                        if not (keep_files):
+                            centre_instance.clean_up()
 
         logger.info(f"Import complete in {round(time.time() - start, 2)}s")
         logger.info("=" * 80)
