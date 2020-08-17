@@ -173,24 +173,15 @@ def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_f
     # Fetch the Test centre record
     test_centre_imports = imports_collection.find_one({"centre_name": "Test Centre"})
 
-    # We expect 4 errors for this file, type 5 (duplicates) and type 13 (extra columns) errors, 1 message and 1 aggregate count for each
-    assert len(test_centre_imports["errors"]) == 4
+    # We expect 2 errors for this file, type 5 (duplicates) errors, 1 message and 1 aggregate count
+    assert len(test_centre_imports["errors"]) == 2
 
     # We expect errors to contain messages for type 5 duplicates, an aggregate total and a message line
     assert (
-        "Total number of Extra column(s) errors (TYPE 13): 2"
+        "Total number of Duplicates within file errors (TYPE 5): 1"
         in test_centre_imports["errors"][0]
     )
     assert (
-        "Total number of Duplicates within file errors (TYPE 5): 1"
-        in test_centre_imports["errors"][1]
-    )
-    assert (
-        "ERROR: Sample rows that contain unexpected columns. (TYPE 13) (e.g. Unexpected headers, line: 2, root_sample_id: 16" +
-        ", extra headers: ['Viral Prep ID']) (e.g. Unexpected headers, line: 3, root_sample_id: 16, extra headers: ['Viral Prep ID'])"
-        in test_centre_imports["errors"][2]
-    )
-    assert (
         "WARNING: Duplicates detected within the file. (TYPE 5) (e.g. Duplicated, line: 3, root_sample_id: 16)"
-        in test_centre_imports["errors"][3]
+        in test_centre_imports["errors"][1]
     )

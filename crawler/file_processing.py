@@ -22,6 +22,8 @@ from crawler.constants import (
     FIELD_RESULT,
     FIELD_CREATED_AT,
     FIELD_UPDATED_AT,
+    FIELD_VIRAL_PREP_ID,
+    FIELD_RNA_PCR_ID,
 )
 from crawler.helpers import current_time, get_sftp_connection, LoggingCollection
 from crawler.constants import (
@@ -185,7 +187,9 @@ class CentreFileState(Enum):
 class CentreFile:
     REQUIRED_FIELDS = {
         FIELD_ROOT_SAMPLE_ID,
+        FIELD_VIRAL_PREP_ID,
         FIELD_RNA_ID,
+        FIELD_RNA_PCR_ID,
         FIELD_RESULT,
         FIELD_DATE_TESTED,
     }

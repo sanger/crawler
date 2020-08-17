@@ -28,6 +28,8 @@ from crawler.constants import (
     FIELD_RESULT,
     FIELD_DATE_TESTED,
     FIELD_LAB_ID,
+    FIELD_VIRAL_PREP_ID,
+    FIELD_RNA_PCR_ID,
 )
 from crawler.helpers import LoggingCollection
 from crawler.db import get_mongo_collection
@@ -73,14 +75,13 @@ def test_checksum_match(config, tmpdir):
         list_files = create_checksum_files_for(
             f"{config.CENTRES[0]['backups_folder']}/successes/",
             "AP_sanger_report_200503_2338.csv",
-            ["adfsadf", "0b3f0de9aa86ae013f5b013a4bb189ba"],
+            ["adfsadf", "5c11524df6fd623ae3d687d66152be28"],
             "200601_1414",
         )
 
         try:
             centre = Centre(config, config.CENTRES[0])
             centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
-
             assert centre_file.checksum_match("successes") == True
         finally:
             for tmpfile_for_list in list_files:
@@ -407,7 +408,6 @@ def test_check_for_required_headers(config):
 
     # empty file
     with StringIO() as fake_csv:
-
         csv_to_test_reader = DictReader(fake_csv)
         assert centre_file.check_for_required_headers(csv_to_test_reader) is False
         assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 1
@@ -434,10 +434,10 @@ def test_check_for_required_headers(config):
     # file with valid headers
     with StringIO() as fake_csv:
         fake_csv.write(
-            f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},"
-            f"{FIELD_LAB_ID}\n"
+            f"{FIELD_ROOT_SAMPLE_ID},{FIELD_VIRAL_PREP_ID},{FIELD_RNA_ID},{FIELD_RNA_PCR_ID},"
+            f"{FIELD_RESULT},{FIELD_DATE_TESTED},{FIELD_LAB_ID}\n"
         )
-        fake_csv.write("1,RNA_0043,Positive,today,MK\n")
+        fake_csv.write("1,0100000859NBC_B07,RNA_0043,CF06BAO5_B07,Positive,today,MK\n")
         fake_csv.seek(0)
 
         csv_to_test_reader = DictReader(fake_csv)
@@ -452,9 +452,10 @@ def test_check_for_required_headers(config):
 
     with StringIO() as fake_csv_without_lab_id:
         fake_csv_without_lab_id.write(
-            f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED}\n"
+            f"{FIELD_ROOT_SAMPLE_ID},{FIELD_VIRAL_PREP_ID},{FIELD_RNA_ID},{FIELD_RNA_PCR_ID},"
+            f"{FIELD_RESULT},{FIELD_DATE_TESTED}\n"
         )
-        fake_csv_without_lab_id.write("1,RNA_0043,Positive,today\n")
+        fake_csv_without_lab_id.write("1,0100000859NBC_B07,RNA_0043,CF06BAO5_B07,Positive,today\n")
         fake_csv_without_lab_id.seek(0)
 
         csv_to_test_reader = DictReader(fake_csv_without_lab_id)
@@ -471,9 +472,10 @@ def test_check_for_required_headers(config):
 
         with StringIO() as fake_csv_without_lab_id:
             fake_csv_without_lab_id.write(
-                f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED}\n"
+                f"{FIELD_ROOT_SAMPLE_ID},{FIELD_VIRAL_PREP_ID},{FIELD_RNA_ID},{FIELD_RNA_PCR_ID},"
+                f"{FIELD_RESULT},{FIELD_DATE_TESTED}\n"
             )
-            fake_csv_without_lab_id.write("1,RNA_0043,Positive,today\n")
+            fake_csv_without_lab_id.write("1,0100000859NBC_B07,RNA_0043,CF06BAO5_B07,Positive,today\n")
             fake_csv_without_lab_id.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv_without_lab_id)
