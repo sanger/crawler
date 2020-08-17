@@ -2,6 +2,7 @@
 COLLECTION_CENTRES = "centres"
 COLLECTION_IMPORTS = "imports"
 COLLECTION_SAMPLES = "samples"
+COLLECTION_SAMPLES_HISTORY = "samples_history"
 
 # field names
 FIELD_PLATE_BARCODE = "plate_barcode"
@@ -12,3 +13,10 @@ FIELD_LAB_ID = "Lab ID"
 FIELD_RESULT = "Result"
 FIELD_RNA_ID = "RNA ID"
 FIELD_ROOT_SAMPLE_ID = "Root Sample ID"
+FIELD_LINE_NUMBER = "line_number"
+FIELD_FILE_NAME = "file_name"
+FIELD_FILE_NAME_DATE = "file_name_date"
+FIELD_CREATED_AT = "created_at"
+FIELD_UPDATED_AT = "updated_at"
+FIELD_VIRAL_PREP_ID = "Viral Prep ID"
+FIELD_RNA_PCR_ID = "RNA-PCR ID"
