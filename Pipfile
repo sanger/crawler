@@ -15,7 +15,7 @@ pytest-freezegun = "*"
 black = "*"
 
 [packages]
-pymongo = "~=3.10"
+pymongo = "~=3.11"
 colorlog = "~=4.1"
 schedule = "~=0.6"
 pysftp = "~=0.2"
