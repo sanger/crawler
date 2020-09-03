@@ -12,6 +12,10 @@ from pymongo.results import InsertOneResult
 
 from contextlib import contextmanager
 
+import mysql.connector as mysql
+from mysql.connector import MySQLConnection
+from mysql.connector import Error
+
 logger = logging.getLogger(__name__)
 
 
@@ -142,3 +146,135 @@ def populate_centres_collection(
         _ = collection.find_one_and_update(
             {filter_field: document[filter_field]}, {"$set": document}, upsert=True
         )
+
+def create_mysql_connection(config: ModuleType, readonly = True) -> MySQLConnection:
+    """Create a MySQLConnection with the given config parameters.
+
+    Arguments:
+        config {ModuleType} -- application config specifying database details
+
+    Returns:
+        MySQLConnection -- a client used to interact with the database server
+    """
+    mlwh_db_host = config.MLWH_DB_HOST
+    mlwh_db_port = config.MLWH_DB_PORT
+    if readonly:
+        mlwh_db_username = config.MLWH_DB_RO_USER
+        mlwh_db_password = config.MLWH_DB_RO_PASSWORD
+    else:
+        mlwh_db_username = config.MLWH_DB_RW_USER
+        mlwh_db_password = config.MLWH_DB_RW_PASSWORD
+    mlwh_db_db = config.MLWH_DB_DBNAME
+
+    print(f"Attempting to connect to {mlwh_db_host} on port {mlwh_db_port}")
+    print(f"mlwh_db_username = {mlwh_db_username}")
+    print(f"mlwh_db_password = {mlwh_db_password}")
+
+    mysql_conn = None
+    try:
+        mysql_conn = mysql.connect(
+            host = mlwh_db_host,
+            port = mlwh_db_port,
+            username = mlwh_db_username,
+            password = mlwh_db_password,
+            database = mlwh_db_db,
+        )
+        if mysql_conn.is_connected():
+            logger.debug('Connected to MySQL database')
+
+    except Error as e:
+        logger.error(f"Error connecting to MySQL database: {e}")
+
+    finally:
+        if mysql_conn is not None and mysql_conn.is_connected():
+            return mysql_conn
+
+
+def run_mysql_many_insert_on_duplicate_query(mysql_conn: MySQLConnection, values: []) -> None:
+    if mysql_conn is None:
+        return
+
+    # TODO: values input needs to look like this:
+    # values = [
+    #     {
+            # 'mongodb_id': ?,
+            # 'root_sample_id': ?,
+            # 'cog_uk_id': ?,
+            # 'rna_id': ?,
+            # 'plate_barcode': ?,
+            # 'coordinate': ?,
+            # 'result': ?,
+            # 'date_tested_string': ?,
+            # 'date_tested': ?,
+            # 'source': ?,
+            # 'lab_id': ?,
+            # 'created_at_external': ?,
+            # 'updated_at_external': ?,
+    #     }
+    # ]
+
+    ## defining the Query
+    # TODO: this could go as a constant somewhere
+    sql_query = """
+    INSERT INTO lighthouse_sample (
+    mongodb_id,
+    root_sample_id,
+    cog_uk_id,
+    rna_id,
+    plate_barcode,
+    coordinate,
+    result,
+    date_tested_string,
+    date_tested,
+    source,
+    lab_id,
+    created_at_external,
+    updated_at_external
+    )
+    VALUES (
+    %(mongodb_id)s,
+    %(root_sample_id)s,
+    %(cog_uk_id)s,
+    %(rna_id)s,
+    %(plate_barcode)s,
+    %(coordinate)s,
+    %(result)s,
+    %(date_tested_string)s,
+    %(date_tested)s,
+    %(source)s,
+    %(lab_id)s,
+    %(created_at_external)s,
+    %(updated_at_external)s
+    )
+    ON DUPLICATE KEY UPDATE
+    plate_barcode=VALUES(plate_barcode),
+    coordinate=VALUES(coordinate),
+    date_tested_string=VALUES(date_tested_string),
+    date_tested=VALUES(date_tested),
+    source=VALUES(source),
+    lab_id=VALUES(lab_id),
+    created_at_external=VALUES(created_at_external),
+    updated_at_external=VALUES(updated_at_external);
+    """
+
+    # mongodb_id, root_sample_id, cog_uk_id, rna_id, plate_barcode, coordinate, result, date_tested_string, ate_tested, source, lab_id, created_at_external, updated_at_external
+
+    cursor = mysql_conn.cursor()
+
+    ## executing the query with values
+    cursor.executemany(sql_query, values)
+
+    ## to make final output we have to run the 'commit()' method of the database object
+    mysql_conn.commit()
+
+    ## 'fetchall()' method fetches all the rows from the last executed statement
+    # rows = cursor.fetchall()
+
+    # fetch number of rows inserted/affected
+    logger.debug(f"{cursor.rowcount} records inserted or updated in MLWH")
+
+    # close the cursor
+    cursor.close()
+
+    # close the connection
+    mysql_conn.close()

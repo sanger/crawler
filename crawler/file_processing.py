@@ -104,7 +104,7 @@ class Centre:
 
     def process_files(self) -> None:
         """Iterate through all the files for the centre, parsing any new ones into
-        the database.
+        the mongo database and then into the unified warehouse.
         """
         # iterate through each file in the centre
 
@@ -316,7 +316,10 @@ class CentreFile:
             logger.info(f"File {self.file_name} is valid")
 
         if len(docs_to_insert) > 0:
-            self.insert_samples_from_docs(docs_to_insert)
+            self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
+            # TODO: if critical error from mongo inserts, do we skip mlwh?
+            # TODO: is it a good idea to do this here, or create a separate method in main.py to select from mongo between 2 timestamps?
+            self.insert_samples_from_docs_into_mlwh(docs_to_insert)
 
         self.backup_file()
         self.create_import_record_for_file()
@@ -409,11 +412,11 @@ class CentreFile:
         except Exception as e:
             logger.critical(f"Unknown error with file {self.file_name}: {e}")
 
-    def insert_samples_from_docs(self, docs_to_insert) -> None:
-        """Insert sample records from the parsed file information.
+    def insert_samples_from_docs_into_mongo_db(self, docs_to_insert) -> None:
+        """Insert sample records into the mongo database from the parsed file information.
 
             Arguments:
-                docs_to_insert {List[Dict[str, str]]} -- list of sample information extracted from csv files
+                docs_to_insert {List[Dict[str, str]]} -- list of filtered sample information extracted from csv files
         """
         logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
@@ -442,6 +445,27 @@ class CentreFile:
         except Exception as e:
             logger.critical(f"Critical error in file {self.file_name}: {e}")
             logger.exception(e)
+
+    def insert_samples_from_docs_into_mlwh(self, docs_to_insert) -> None:
+        """Insert sample records into the MLWH database from the parsed file information.
+
+            Arguments:
+                docs_to_insert {List[Dict[str, str]]} -- list of filtered sample information extracted from csv files
+        """
+
+        # TODO: consider how to insert to MySQL from here in python, db configs for deployment project etc.
+
+        # TODO: coguk barcode blank at this point for inserts
+
+        # TODO: SQL like this, will insert or update if keys match:
+        # INSERT INTO table (a,b,c) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE a=VALUES(a), b=VALUES(b), c=VALUES(c);
+        # TODO: consider splitting into batches to avoid hitting MySQL maximum_packet_size limitation
+
+        # TODO: consider error handling, if any row in the batch insert fails, done in transaction so all fail.
+        # TODO: plus then how to re-run them? And how to run for legacy data?
+
+
+
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.

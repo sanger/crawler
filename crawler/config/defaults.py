@@ -81,6 +81,15 @@ MONGO_PASSWORD = ""
 MONGO_PORT = 27017
 MONGO_USERNAME = ""
 
+# MLWH database details
+MLWH_DB_DBNAME = "unified_warehouse_development"
+MLWH_DB_HOST = "127.0.0.1"
+MLWH_DB_PORT = 3306
+MLWH_DB_RO_USER = "root"
+MLWH_DB_RO_PASSWORD = ""
+MLWH_DB_RW_USER = "root"
+MLWH_DB_RW_PASSWORD = ""
+
 # SFTP details
 SFTP_UPLOAD = False  # upload files to SFTP server
 SFTP_HOST = "localhost"
