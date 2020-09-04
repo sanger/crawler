@@ -3,6 +3,8 @@ import csv
 from typing import Dict, List, Any, Tuple, Set
 from pymongo.errors import BulkWriteError
 from pymongo.database import Database
+from bson.objectid import ObjectId
+
 from enum import Enum
 from csv import DictReader, DictWriter
 import shutil
@@ -38,6 +40,8 @@ from crawler.db import (
     get_mongo_db,
     create_mongo_client,
     create_import_record,
+    create_mysql_connection,
+    run_mysql_many_insert_on_duplicate_query
 )
 
 from hashlib import md5
@@ -316,10 +320,10 @@ class CentreFile:
             logger.info(f"File {self.file_name} is valid")
 
         if len(docs_to_insert) > 0:
-            self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
+            mongo_ids = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
             # TODO: if critical error from mongo inserts, do we skip mlwh?
             # TODO: is it a good idea to do this here, or create a separate method in main.py to select from mongo between 2 timestamps?
-            self.insert_samples_from_docs_into_mlwh(docs_to_insert)
+            self.insert_samples_from_docs_into_mlwh(docs_to_insert, mongo_ids)
 
         self.backup_file()
         self.create_import_record_for_file()
@@ -412,7 +416,7 @@ class CentreFile:
         except Exception as e:
             logger.critical(f"Unknown error with file {self.file_name}: {e}")
 
-    def insert_samples_from_docs_into_mongo_db(self, docs_to_insert) -> None:
+    def insert_samples_from_docs_into_mongo_db(self, docs_to_insert) -> List[ObjectId]:
         """Insert sample records into the mongo database from the parsed file information.
 
             Arguments:
@@ -425,6 +429,10 @@ class CentreFile:
             # Inserts new version for samples
             result = samples_collection.insert_many(docs_to_insert, ordered=False)
             self.docs_inserted = len(result.inserted_ids)
+
+            # inserted_ids is in the same order as docs_to_insert, even if the query has ordered=False parameter
+            return result.inserted_ids
+
         # TODO could trap DuplicateKeyError specifically
         except BulkWriteError as e:
             # This is happening when there are duplicates in the data and the index prevents
@@ -446,11 +454,13 @@ class CentreFile:
             logger.critical(f"Critical error in file {self.file_name}: {e}")
             logger.exception(e)
 
-    def insert_samples_from_docs_into_mlwh(self, docs_to_insert) -> None:
-        """Insert sample records into the MLWH database from the parsed file information.
+    def insert_samples_from_docs_into_mlwh(self, docs_to_insert, mongo_ids) -> None:
+        """Insert sample records into the MLWH database from the parsed file information, including the corresponding mongodb _id
 
             Arguments:
                 docs_to_insert {List[Dict[str, str]]} -- list of filtered sample information extracted from csv files
+
+                mongo_ids {List[ObjectId]} -- list of mongodb ids in the same order as docs_to_insert, from the insert into the mongodb
         """
 
         # TODO: consider how to insert to MySQL from here in python, db configs for deployment project etc.
@@ -464,8 +474,44 @@ class CentreFile:
         # TODO: consider error handling, if any row in the batch insert fails, done in transaction so all fail.
         # TODO: plus then how to re-run them? And how to run for legacy data?
 
+        values = []
+        for i, doc in enumerate(docs_to_insert):
+            mongo_id = mongo_ids[i]
+            values.append(self.map_mongo_to_sql_columns(doc, mongo_id))
 
+        mysql_conn = create_mysql_connection(self.config)
 
+        run_mysql_many_insert_on_duplicate_query(mysql_conn, values)
+
+    def map_mongo_to_sql_columns(self, doc, mongo_id) -> Dict[str, Any]:
+        """Transform the record from using the mongodb field names into a form suitable for the MLWH
+           We are not setting created_at_external and updated_at_external fields here
+           because it would be slow to retrieve them from MongoDB
+           and they would be virtually the same as created_at and updated_at
+
+            Arguments:
+                doc {Dict[str, str]} -- filtered information about one sample, extracted from csv files
+
+                mongo_id {ObjectId} -- mongodb id from the insert of this sample into the mongodb
+        """
+        return {
+            'mongodb_id': str(mongo_id), # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
+            'root_sample_id': doc['Root Sample ID'],
+            'rna_id': doc['RNA ID'],
+            'plate_barcode': doc['plate_barcode'],
+            'coordinate': doc['coordinate'],
+            'result': doc['Result'],
+            'date_tested_string': doc['Date Tested'],
+            'date_tested': self.parse_date_tested(doc['Date Tested']),
+            'source': doc['source'],
+            'lab_id': doc['Lab ID'],
+            'created_at': datetime.datetime.now,
+            'updated_at': datetime.datetime.now
+        }
+
+    def parse_date_tested(self, date_string) -> datetime.datetime:
+        format = '%Y-%m-%d %H:%M:%S %Z'
+        return datetime.datetime.strptime(date_string, format)
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.

@@ -187,7 +187,7 @@ def create_mysql_connection(config: ModuleType, readonly = True) -> MySQLConnect
 
     finally:
         if mysql_conn is not None and mysql_conn.is_connected():
-            return mysql_conn
+            return mysql_conn # think this could just go in the 'try'?
 
 
 def run_mysql_many_insert_on_duplicate_query(mysql_conn: MySQLConnection, values: []) -> None:
