@@ -3,12 +3,14 @@ from datetime import datetime
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
+from mysql.connector.connection_cext import CMySQLConnection
 
 from crawler.db import (
     create_import_record,
     create_mongo_client,
     get_mongo_collection,
     get_mongo_db,
+    create_mysql_connection
 )
 from crawler.helpers import LoggingCollection
 
@@ -51,3 +53,9 @@ def test_create_import_record(freezer, mongo_database):
         assert import_doc["csv_file_used"] == "test"
         assert import_doc["number_of_records"] == len(docs)
         assert import_doc["errors"] == error_collection.get_messages_for_import()
+
+# Don't know if should have tests like below, as makes test suite dependent on local MLWH database.
+# Mock instead?
+# Put some tests that do require a connection in separate integration tests repo?
+def test_create_mysql_connection(config):
+    assert type(create_mysql_connection(config)) == CMySQLConnection
