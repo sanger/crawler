@@ -15,7 +15,7 @@ from contextlib import contextmanager
 import mysql.connector as mysql
 from mysql.connector import MySQLConnection
 from mysql.connector import Error
-from sql_queries import SQL_MLWH_MULTIPLE_INSERT
+from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 logger = logging.getLogger(__name__)
 
@@ -183,7 +183,7 @@ def create_mysql_connection(config: ModuleType, readonly = True) -> MySQLConnect
         if mysql_conn is not None:
             if mysql_conn.is_connected():
                 logger.debug('MySQL Connection Successful')
-            else
+            else:
                 logger.error('MySQL Connection Failed')
 
     except Error as e:
@@ -214,6 +214,7 @@ def run_mysql_many_insert_on_duplicate_query(mysql_conn: MySQLConnection, values
         else:
             ## to make final output we have to run the 'commit()' method of the database object
             mysql_conn.commit()
+
             ## 'fetchall()' method fetches all the rows from the last executed statement
             # rows = cursor.fetchall()
 
