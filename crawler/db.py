@@ -207,6 +207,7 @@ def run_mysql_many_insert_on_duplicate_query(mysql_conn: MySQLConnection, values
     try:
         try:
             ## executing the query with values
+            logger.debug(f"Attempting to insert or update {len(values)} rows in the MLWH")
             cursor.executemany(sql_query, values)
         except:
             mysql_conn.rollback()
@@ -215,11 +216,8 @@ def run_mysql_many_insert_on_duplicate_query(mysql_conn: MySQLConnection, values
             ## to make final output we have to run the 'commit()' method of the database object
             mysql_conn.commit()
 
-            ## 'fetchall()' method fetches all the rows from the last executed statement
-            # rows = cursor.fetchall()
-
-            # fetch number of rows inserted/affected
-            logger.debug(f"{cursor.rowcount} records inserted or updated in MLWH")
+            # fetch number of rows inserted/affected - unreliable, get 2 for a single update
+            # logger.debug(f"{cursor.rowcount} records affected in MLWH")
 
     finally:
         # close the cursor
