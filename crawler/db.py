@@ -15,6 +15,7 @@ from contextlib import contextmanager
 import mysql.connector as mysql
 from mysql.connector import MySQLConnection
 from mysql.connector import Error
+from sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 logger = logging.getLogger(__name__)
 
@@ -179,102 +180,49 @@ def create_mysql_connection(config: ModuleType, readonly = True) -> MySQLConnect
             password = mlwh_db_password,
             database = mlwh_db_db,
         )
-        if mysql_conn.is_connected():
-            logger.debug('Connected to MySQL database')
+        if mysql_conn is not None:
+            if mysql_conn.is_connected():
+                logger.debug('MySQL Connection Successful')
+            else
+                logger.error('MySQL Connection Failed')
 
     except Error as e:
-        logger.error(f"Error connecting to MySQL database: {e}")
+        logger.error(f"Exception on connecting to MySQL database: {e}")
 
-    finally:
-        if mysql_conn is not None and mysql_conn.is_connected():
-            return mysql_conn # think this could just go in the 'try'?
-
+    return mysql_conn
 
 def run_mysql_many_insert_on_duplicate_query(mysql_conn: MySQLConnection, values: []) -> None:
-    if mysql_conn is None:
-        return
+    """Writes the values from the samples into the MLWH.
 
-    # TODO: values input needs to look like this:
-    # values = [
-    #     {
-            # 'mongodb_id': ?,
-            # 'root_sample_id': ?,
-            # 'cog_uk_id': ?,
-            # 'rna_id': ?,
-            # 'plate_barcode': ?,
-            # 'coordinate': ?,
-            # 'result': ?,
-            # 'date_tested_string': ?,
-            # 'date_tested': ?,
-            # 'source': ?,
-            # 'lab_id': ?,
-            # 'created_at_external': ?,
-            # 'updated_at_external': ?,
-    #     }
-    # ]
-
-    ## defining the Query
-    # TODO: this could go as a constant somewhere
-    sql_query = """
-    INSERT INTO lighthouse_sample (
-    mongodb_id,
-    root_sample_id,
-    cog_uk_id,
-    rna_id,
-    plate_barcode,
-    coordinate,
-    result,
-    date_tested_string,
-    date_tested,
-    source,
-    lab_id,
-    created_at_external,
-    updated_at_external
-    )
-    VALUES (
-    %(mongodb_id)s,
-    %(root_sample_id)s,
-    %(cog_uk_id)s,
-    %(rna_id)s,
-    %(plate_barcode)s,
-    %(coordinate)s,
-    %(result)s,
-    %(date_tested_string)s,
-    %(date_tested)s,
-    %(source)s,
-    %(lab_id)s,
-    %(created_at_external)s,
-    %(updated_at_external)s
-    )
-    ON DUPLICATE KEY UPDATE
-    plate_barcode=VALUES(plate_barcode),
-    coordinate=VALUES(coordinate),
-    date_tested_string=VALUES(date_tested_string),
-    date_tested=VALUES(date_tested),
-    source=VALUES(source),
-    lab_id=VALUES(lab_id),
-    created_at_external=VALUES(created_at_external),
-    updated_at_external=VALUES(updated_at_external);
+    Arguments:
+        MySQLConnection -- a client used to interact with the database server
+        values {array} -- array of value hashes representing documents inserted into the Mongo DB
     """
 
-    # mongodb_id, root_sample_id, cog_uk_id, rna_id, plate_barcode, coordinate, result, date_tested_string, ate_tested, source, lab_id, created_at_external, updated_at_external
+    ## defining the Query
+    sql_query = SQL_MLWH_MULTIPLE_INSERT
 
+    ## fetch the cursor from the DB connection
     cursor = mysql_conn.cursor()
+    try:
+        try:
+            ## executing the query with values
+            cursor.executemany(sql_query, values)
+        except:
+            mysql_conn.rollback()
+            raise
+        else:
+            ## to make final output we have to run the 'commit()' method of the database object
+            mysql_conn.commit()
+            ## 'fetchall()' method fetches all the rows from the last executed statement
+            # rows = cursor.fetchall()
 
-    ## executing the query with values
-    cursor.executemany(sql_query, values)
+            # fetch number of rows inserted/affected
+            logger.debug(f"{cursor.rowcount} records inserted or updated in MLWH")
 
-    ## to make final output we have to run the 'commit()' method of the database object
-    mysql_conn.commit()
+    finally:
+        # close the cursor
+        cursor.close()
 
-    ## 'fetchall()' method fetches all the rows from the last executed statement
-    # rows = cursor.fetchall()
-
-    # fetch number of rows inserted/affected
-    logger.debug(f"{cursor.rowcount} records inserted or updated in MLWH")
-
-    # close the cursor
-    cursor.close()
-
-    # close the connection
-    mysql_conn.close()
+        # close the connection
+        mysql_conn.close()

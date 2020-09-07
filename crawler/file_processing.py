@@ -463,12 +463,10 @@ class CentreFile:
                 mongo_ids {List[ObjectId]} -- list of mongodb ids in the same order as docs_to_insert, from the insert into the mongodb
         """
 
-        # TODO: consider how to insert to MySQL from here in python, db configs for deployment project etc.
+        # TODO: remember db configs for deployment project etc.
 
         # TODO: coguk barcode blank at this point for inserts
 
-        # TODO: SQL like this, will insert or update if keys match:
-        # INSERT INTO table (a,b,c) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE a=VALUES(a), b=VALUES(b), c=VALUES(c);
         # TODO: consider splitting into batches to avoid hitting MySQL maximum_packet_size limitation
 
         # TODO: consider error handling, if any row in the batch insert fails, done in transaction so all fail.
@@ -481,7 +479,8 @@ class CentreFile:
 
         mysql_conn = create_mysql_connection(self.config)
 
-        run_mysql_many_insert_on_duplicate_query(mysql_conn, values)
+        if mysql_conn is not None and mysql_conn.isConnected():
+            run_mysql_many_insert_on_duplicate_query(mysql_conn, values)
 
     def map_mongo_to_sql_columns(self, doc, mongo_id) -> Dict[str, Any]:
         """Transform the record from using the mongodb field names into a form suitable for the MLWH
