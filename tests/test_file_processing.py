@@ -8,6 +8,7 @@ from unittest.mock import patch
 from csv import DictReader
 import pytest
 import datetime
+from bson.objectid import ObjectId
 
 from tempfile import mkstemp
 
@@ -16,7 +17,7 @@ from crawler.file_processing import (
     CentreFile,
     CentreFileState,
     SUCCESSES_DIR,
-    ERRORS_DIR,
+    ERRORS_DIR
 )
 from crawler.constants import (
     COLLECTION_CENTRES,
@@ -620,3 +621,34 @@ def test_process_files(mongo_database, config, testing_files_for_process, testin
     # # We record *all* our samples
     assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
 
+
+def test_parse_date_tested():
+    result = CentreFile.parse_date_tested(CentreFile, date_string='2020-11-02 13:04:23 UTC')
+    expected = datetime.datetime(2020, 11, 2, 13, 4, 23, tzinfo=datetime.timezone.utc)
+    assert result == expected
+
+def test_map_mongo_to_sql_columns():
+    doc_to_transform = {
+        'Root Sample ID': 'ABC00000004',
+        'RNA ID': 'TC-rna-00000029_H11',
+        'plate_barcode': 'TC-rna-00000029',
+        'coordinate': 'H11',
+        'Result': 'Negative',
+        'Date Tested': '2020-04-23 14:40:08 UTC',
+        'source': 'Test Centre',
+        'Lab ID': 'TC'
+    }
+    mongo_id = ObjectId('5f562d9931d9959b92544728')
+
+    result = CentreFile.map_mongo_to_sql_columns(CentreFile, doc_to_transform, mongo_id)
+
+    assert result['mongodb_id'] == '5f562d9931d9959b92544728'
+    assert result['root_sample_id'] == 'ABC00000004'
+    assert result['rna_id'] == 'TC-rna-00000029_H11'
+    assert result['plate_barcode'] == 'TC-rna-00000029'
+    assert result['coordinate'] == 'H11'
+    assert result['result'] == 'Negative'
+    assert result['date_tested_string'] == '2020-04-23 14:40:08 UTC'
+    assert result['date_tested'] == datetime.datetime(2020, 4, 23, 14, 40, 8, tzinfo=datetime.timezone.utc)
+    assert result['source'] == 'Test Centre'
+    assert result['lab_id'] == 'TC'
