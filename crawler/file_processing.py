@@ -463,14 +463,9 @@ class CentreFile:
                 mongo_ids {List[ObjectId]} -- list of mongodb ids in the same order as docs_to_insert, from the insert into the mongodb
         """
 
-        # TODO: remember db configs for deployment project etc.
-
-        # TODO: coguk barcode blank at this point for inserts
-
         # TODO: consider splitting into batches to avoid hitting MySQL maximum_packet_size limitation
 
-        # TODO: consider error handling, if any row in the batch insert fails, done in transaction so all fail.
-        # TODO: plus then how to re-run them? And how to run for legacy data?
+        # TODO: how to re-run failed inserts? And how to run for legacy data?
 
         values = []
         for i, doc in enumerate(docs_to_insert):
