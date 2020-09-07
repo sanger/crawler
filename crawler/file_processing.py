@@ -502,7 +502,7 @@ class CentreFile:
             'coordinate': doc['coordinate'],
             'result': doc['Result'],
             'date_tested_string': doc['Date Tested'],
-            'date_tested': self.parse_date_tested(doc['Date Tested']),
+            'date_tested': self.parse_date_tested(self, doc['Date Tested']),
             'source': doc['source'],
             'lab_id': doc['Lab ID'],
             'created_at': datetime.datetime.now,
