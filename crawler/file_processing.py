@@ -493,6 +493,8 @@ class CentreFile:
 
                 mongo_id {ObjectId} -- mongodb id from the insert of this sample into the mongodb
         """
+        # TODO: change these to use the constants e.g. FIELD_ROOT_SAMPLE_ID
+        # TODO: probably also put the MLWH field names in constants, so they are visible in the same place and so less likely to get overlooked if a new field is added
         return {
             'mongodb_id': str(mongo_id), # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
             'root_sample_id': doc['Root Sample ID'],

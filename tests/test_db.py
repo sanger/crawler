@@ -58,4 +58,4 @@ def test_create_import_record(freezer, mongo_database):
 # Mock instead?
 # Put some tests that do require a connection in separate integration tests repo?
 def test_create_mysql_connection(config):
-    assert type(create_mysql_connection(config)) == CMySQLConnection
+    assert type(create_mysql_connection(config)) == CMySQLConnection # TODO: decide whether to use python pure or with C extension
