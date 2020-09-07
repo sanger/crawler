@@ -511,7 +511,11 @@ class CentreFile:
 
     def parse_date_tested(self, date_string) -> datetime.datetime:
         format = '%Y-%m-%d %H:%M:%S %Z'
-        return datetime.datetime.strptime(date_string, format)
+        date_time = datetime.datetime.strptime(date_string, format)
+        if date_string.find('UTC') != -1:
+            # timezone doesn't get set despite the '%Z' in the format string, unless we do this
+            date_time = date_time.replace(tzinfo=datetime.timezone.utc)
+        return date_time
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.

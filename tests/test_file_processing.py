@@ -16,7 +16,7 @@ from crawler.file_processing import (
     CentreFile,
     CentreFileState,
     SUCCESSES_DIR,
-    ERRORS_DIR,
+    ERRORS_DIR
 )
 from crawler.constants import (
     COLLECTION_CENTRES,
@@ -620,3 +620,8 @@ def test_process_files(mongo_database, config, testing_files_for_process, testin
     # # We record *all* our samples
     assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
 
+
+def test_parse_date_tested():
+    result = CentreFile.parse_date_tested(CentreFile, date_string='2020-11-02 13:04:23 UTC')
+    expected = datetime.datetime(2020, 11, 2, 13, 4, 23, tzinfo=datetime.timezone.utc)
+    assert result == expected
