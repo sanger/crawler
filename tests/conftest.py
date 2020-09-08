@@ -9,6 +9,11 @@ from crawler.constants import (
     COLLECTION_SAMPLES,
     COLLECTION_CENTRES,
     COLLECTION_SAMPLES_HISTORY,
+    FIELD_COORDINATE,
+    FIELD_SOURCE,
+    FIELD_RESULT,
+    FIELD_PLATE_BARCODE,
+    FIELD_ROOT_SAMPLE_ID
 )
 
 from crawler.db import create_mongo_client, get_mongo_db

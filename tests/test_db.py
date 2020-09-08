@@ -1,16 +1,21 @@
 from datetime import datetime
+from unittest.mock import patch
+from unittest.mock import MagicMock
+import pytest
 
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from mysql.connector.connection_cext import CMySQLConnection
+import mysql.connector as mysql
 
 from crawler.db import (
     create_import_record,
     create_mongo_client,
     get_mongo_collection,
     get_mongo_db,
-    create_mysql_connection
+    create_mysql_connection,
+    run_mysql_many_insert_on_duplicate_query
 )
 from crawler.helpers import LoggingCollection
 
@@ -54,8 +59,56 @@ def test_create_import_record(freezer, mongo_database):
         assert import_doc["number_of_records"] == len(docs)
         assert import_doc["errors"] == error_collection.get_messages_for_import()
 
-# Don't know if should have tests like below, as makes test suite dependent on local MLWH database.
-# Mock instead?
-# Put some tests that do require a connection in separate integration tests repo?
-def test_create_mysql_connection(config):
-    assert type(create_mysql_connection(config)) == CMySQLConnection # TODO: decide whether to use python pure or with C extension
+def test_create_mysql_connection_none(config):
+    with patch('mysql.connector.connect', return_value = None):
+        assert create_mysql_connection(config) == None
+
+def test_create_mysql_connection_exception(config):
+    # For example, if the credentials in the config are wrong
+    with patch('mysql.connector.connect', side_effect = Exception('Boom!')):
+        with pytest.raises(Exception):
+            create_mysql_connection(config)
+
+def test_run_mysql_many_insert_on_duplicate_query_success(config):
+    conn = CMySQLConnection()
+
+    conn.cursor = MagicMock()
+    conn.commit = MagicMock()
+    conn.rollback = MagicMock()
+    conn.close = MagicMock()
+
+    cursor = conn.cursor.return_value
+    cursor.executemany = MagicMock()
+    cursor.close = MagicMock()
+
+    run_mysql_many_insert_on_duplicate_query(mysql_conn=conn, values=[])
+
+    # check transaction is committed
+    assert conn.commit.called == True
+
+    # check connection is closed
+    assert cursor.close.called == True
+    assert conn.close.called == True
+
+def test_run_mysql_many_insert_on_duplicate_query_execute_error(config):
+    conn = CMySQLConnection()
+
+    conn.cursor = MagicMock()
+    conn.commit = MagicMock()
+    conn.rollback = MagicMock()
+    conn.close = MagicMock()
+
+    cursor = conn.cursor.return_value
+    cursor.executemany = MagicMock(side_effect = Exception('Boom!'))
+    cursor.close = MagicMock()
+
+    with pytest.raises(Exception):
+        run_mysql_many_insert_on_duplicate_query(mysql_conn=conn, values=[])
+
+        # check transaction is rolled back, not committed
+        assert conn.commit.called == False
+        # assert conn.rollback.called == True
+
+        # check connection is closed
+        assert cursor.close.called == True
+        assert conn.close.called == True
