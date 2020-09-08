@@ -489,9 +489,22 @@ class CentreFile:
         mysql_conn = create_mysql_connection(self.config)
 
         if mysql_conn is not None and mysql_conn.isConnected():
-            # TODO: need to trap when this fails and error
-            run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
+            try:
+                run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
+
+                logger.debug(f"MLWH database inserts completed successfully for file {self.file_name}")
+            except Exception as e:
+                self.logging_collection.add_error(
+                    "TYPE 14",
+                    f"MLWH database inserts failed for file {self.file_name}",
+                )
+                logger.critical(f"Critical error in file {self.file_name}: {e}")
+                logger.exception(e)
         else:
+            self.logging_collection.add_error(
+                "TYPE 15",
+                f"MLWH database inserts failed, could not connect, for file {self.file_name}",
+            )
             logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
 
     def map_mongo_to_sql_columns(self, doc, mongo_id) -> Dict[str, Any]:

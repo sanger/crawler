@@ -240,6 +240,23 @@ class AggregateType13(AggregateTypeBase):
         self.max_errors = 5
         self.short_display_description = "Extra column(s)"
 
+class AggregateType14(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 14"
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = f"CRITICAL: Files where the MLWH database insert has failed. ({self.type_str})"
+        self.short_display_description = "Failed MLWH inserts"
+
+class AggregateType15(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 15"
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = f"CRITICAL: Files where the MLWH database connection could not be nade. ({self.type_str})"
+        self.short_display_description = "Failed MLWH connection"
+
+
 class LoggingCollection:
     def __init__(self):
         self.aggregator_types = {
@@ -254,6 +271,8 @@ class LoggingCollection:
             "TYPE 10": AggregateType10(),
             "TYPE 12": AggregateType12(),
             "TYPE 13": AggregateType13(),
+            "TYPE 14": AggregateType14(),
+            "TYPE 15": AggregateType15(),
         }
 
     def add_error(self, aggregate_error_type, message):
