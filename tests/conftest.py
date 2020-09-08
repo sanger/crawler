@@ -70,27 +70,27 @@ def testing_files_for_process(cleanup_backups):
 
 TESTING_SAMPLES: List[Dict[str, str]] = [
     {
-        "coordinate": "A01",
-        "source": "test1",
-        "Result": "Positive",
-        "plate_barcode": "123",
+        FIELD_COORDINATE: "A01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Positive",
+        FIELD_PLATE_BARCODE: "123",
         "released": True,
-        "Root Sample ID": "MCM001",
+        FIELD_ROOT_SAMPLE_ID: "MCM001",
     },
     {
-        "coordinate": "B01",
-        "source": "test1",
-        "Result": "Negative",
-        "plate_barcode": "123",
+        FIELD_COORDINATE: "B01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Negative",
+        FIELD_PLATE_BARCODE: "123",
         "released": False,
-        "Root Sample ID": "MCM002",
+        FIELD_ROOT_SAMPLE_ID: "MCM002",
     },
     {
-        "coordinate": "C01",
-        "source": "test1",
-        "Result": "Void",
-        "plate_barcode": "123",
-        "Root Sample ID": "MCM003",
+        FIELD_COORDINATE: "C01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Void",
+        FIELD_PLATE_BARCODE: "123",
+        FIELD_ROOT_SAMPLE_ID: "MCM003",
     },
 ]
 

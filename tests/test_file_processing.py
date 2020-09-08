@@ -31,6 +31,19 @@ from crawler.constants import (
     FIELD_LAB_ID,
     FIELD_VIRAL_PREP_ID,
     FIELD_RNA_PCR_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_COORDINATE,
+    FIELD_SOURCE,
+    MLWH_MONGODB_ID,
+    MLWH_ROOT_SAMPLE_ID,
+    MLWH_RNA_ID,
+    MLWH_PLATE_BARCODE,
+    MLWH_COORDINATE,
+    MLWH_RESULT,
+    MLWH_DATE_TESTED_STRING,
+    MLWH_DATE_TESTED,
+    MLWH_SOURCE,
+    MLWH_LAB_ID,
 )
 from crawler.helpers import LoggingCollection
 from crawler.db import get_mongo_collection
@@ -629,26 +642,26 @@ def test_parse_date_tested():
 
 def test_map_mongo_to_sql_columns():
     doc_to_transform = {
-        'Root Sample ID': 'ABC00000004',
-        'RNA ID': 'TC-rna-00000029_H11',
-        'plate_barcode': 'TC-rna-00000029',
-        'coordinate': 'H11',
-        'Result': 'Negative',
-        'Date Tested': '2020-04-23 14:40:08 UTC',
-        'source': 'Test Centre',
-        'Lab ID': 'TC'
+        FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+        FIELD_RNA_ID: 'TC-rna-00000029_H11',
+        FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+        FIELD_COORDINATE: 'H11',
+        FIELD_RESULT: 'Negative',
+        FIELD_DATE_TESTED: '2020-04-23 14:40:08 UTC',
+        FIELD_SOURCE: 'Test Centre',
+        FIELD_LAB_ID: 'TC'
     }
     mongo_id = ObjectId('5f562d9931d9959b92544728')
 
     result = CentreFile.map_mongo_to_sql_columns(CentreFile, doc_to_transform, mongo_id)
 
-    assert result['mongodb_id'] == '5f562d9931d9959b92544728'
-    assert result['root_sample_id'] == 'ABC00000004'
-    assert result['rna_id'] == 'TC-rna-00000029_H11'
-    assert result['plate_barcode'] == 'TC-rna-00000029'
-    assert result['coordinate'] == 'H11'
-    assert result['result'] == 'Negative'
-    assert result['date_tested_string'] == '2020-04-23 14:40:08 UTC'
-    assert result['date_tested'] == datetime.datetime(2020, 4, 23, 14, 40, 8, tzinfo=datetime.timezone.utc)
-    assert result['source'] == 'Test Centre'
-    assert result['lab_id'] == 'TC'
+    assert result[MLWH_MONGODB_ID] == '5f562d9931d9959b92544728'
+    assert result[MLWH_ROOT_SAMPLE_ID] == 'ABC00000004'
+    assert result[MLWH_RNA_ID] == 'TC-rna-00000029_H11'
+    assert result[MLWH_PLATE_BARCODE] == 'TC-rna-00000029'
+    assert result[MLWH_COORDINATE] == 'H11'
+    assert result[MLWH_RESULT] == 'Negative'
+    assert result[MLWH_DATE_TESTED_STRING] == '2020-04-23 14:40:08 UTC'
+    assert result[MLWH_DATE_TESTED] == datetime.datetime(2020, 4, 23, 14, 40, 8, tzinfo=datetime.timezone.utc)
+    assert result[MLWH_SOURCE] == 'Test Centre'
+    assert result[MLWH_LAB_ID] == 'TC'

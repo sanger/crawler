@@ -26,6 +26,19 @@ from crawler.constants import (
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
     FIELD_RNA_PCR_ID,
+    FIELD_SOURCE,
+    MLWH_MONGODB_ID,
+    MLWH_ROOT_SAMPLE_ID,
+    MLWH_RNA_ID,
+    MLWH_PLATE_BARCODE,
+    MLWH_COORDINATE,
+    MLWH_RESULT,
+    MLWH_DATE_TESTED_STRING,
+    MLWH_DATE_TESTED,
+    MLWH_SOURCE,
+    MLWH_LAB_ID,
+    MLWH_CREATED_AT,
+    MLWH_UPDATED_AT,
 )
 from crawler.helpers import current_time, get_sftp_connection, LoggingCollection
 from crawler.constants import (
@@ -494,18 +507,18 @@ class CentreFile:
         # TODO: change these to use the constants e.g. FIELD_ROOT_SAMPLE_ID
         # TODO: probably also put the MLWH field names in constants, so they are visible in the same place and so less likely to get overlooked if a new field is added
         return {
-            'mongodb_id': str(mongo_id), # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
-            'root_sample_id': doc['Root Sample ID'],
-            'rna_id': doc['RNA ID'],
-            'plate_barcode': doc['plate_barcode'],
-            'coordinate': doc['coordinate'],
-            'result': doc['Result'],
-            'date_tested_string': doc['Date Tested'],
-            'date_tested': self.parse_date_tested(self, doc['Date Tested']),
-            'source': doc['source'],
-            'lab_id': doc['Lab ID'],
-            'created_at': datetime.datetime.now,
-            'updated_at': datetime.datetime.now
+            MLWH_MONGODB_ID: str(mongo_id), # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
+            MLWH_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
+            MLWH_RNA_ID: doc[FIELD_RNA_ID],
+            MLWH_PLATE_BARCODE: doc[FIELD_PLATE_BARCODE],
+            MLWH_COORDINATE: doc[FIELD_COORDINATE],
+            MLWH_RESULT: doc[FIELD_RESULT],
+            MLWH_DATE_TESTED_STRING: doc[FIELD_DATE_TESTED],
+            MLWH_DATE_TESTED: self.parse_date_tested(self, doc[FIELD_DATE_TESTED]),
+            MLWH_SOURCE: doc[FIELD_SOURCE],
+            MLWH_LAB_ID: doc[FIELD_LAB_ID],
+            MLWH_CREATED_AT: datetime.datetime.now,
+            MLWH_UPDATED_AT: datetime.datetime.now
         }
 
     def parse_date_tested(self, date_string) -> datetime.datetime:
@@ -694,7 +707,7 @@ class CentreFile:
             # only process rows that contain something in the cells
             if self.row_valid_structure(row, line_number):
                 row = self.filtered_row(row, line_number)
-                row["source"] = self.centre_config["name"]
+                row[FIELD_SOURCE] = self.centre_config["name"]
                 row[FIELD_PLATE_BARCODE] = None  # type: ignore
 
                 if row[barcode_field] and barcode_regex:
