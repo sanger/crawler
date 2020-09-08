@@ -23,13 +23,14 @@ from crawler.db import (
     populate_centres_collection,
     samples_collection_accessor,
     create_mysql_connection,
-    run_mysql_many_insert_on_duplicate_query,
+    run_mysql_executemany_query,
 )
 from crawler.helpers import (
     get_config,
     current_time,
 )
 from crawler.file_processing import Centre
+from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 from datetime import date, datetime
 
@@ -129,7 +130,7 @@ def test_sql(settings_module: str = "") -> None:
         }
     ]
 
-    run_mysql_many_insert_on_duplicate_query(mysql_conn, values)
+    run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
 
 
 

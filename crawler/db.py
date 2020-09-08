@@ -191,17 +191,13 @@ def create_mysql_connection(config: ModuleType, readonly = True) -> MySQLConnect
 
     return mysql_conn
 
-def run_mysql_many_insert_on_duplicate_query(mysql_conn: MySQLConnection, values: List[Dict[str, str]]) -> None:
+def run_mysql_executemany_query(mysql_conn: MySQLConnection, sql_query: str, values: List[Dict[str, str]]) -> None:
     """Writes the values from the samples into the MLWH.
 +
     Arguments:
         mysql_conn {MySQLConnection} -- a client used to interact with the database server
         values {List[Dict[str, str]]} -- array of value hashes representing documents inserted into the Mongo DB
     """
-
-    ## defining the Query
-    sql_query = SQL_MLWH_MULTIPLE_INSERT
-
     ## fetch the cursor from the DB connection
     cursor = mysql_conn.cursor()
     try:

@@ -54,8 +54,9 @@ from crawler.db import (
     create_mongo_client,
     create_import_record,
     create_mysql_connection,
-    run_mysql_many_insert_on_duplicate_query,
+    run_mysql_executemany_query,
 )
+from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 from hashlib import md5
 
@@ -489,7 +490,7 @@ class CentreFile:
 
         if mysql_conn is not None and mysql_conn.isConnected():
             # TODO: need to trap when this fails and error
-            run_mysql_many_insert_on_duplicate_query(mysql_conn, values)
+            run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
         else:
             logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
 
