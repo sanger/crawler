@@ -192,46 +192,6 @@ def create_mysql_connection(config: ModuleType, readonly = True) -> CMySQLConnec
 
     return mysql_conn
 
-# def run_mysql_many_insert_on_duplicate_query(mysql_conn: CMySQLConnection, values: List[Dict[str, str]]) -> None:
-#     """Writes the values from the samples into the MLWH.
-
-#     Arguments:
-#         mysql_conn {CMySQLConnection} -- a client used to interact with the database server
-#         values {List[Dict[str, str]]} -- array of value hashes representing documents inserted into the Mongo DB
-#     """
-
-#     ## defining the Query
-#     sql_query = SQL_MLWH_MULTIPLE_INSERT
-
-#     ## fetch the cursor from the DB connection
-#     cursor = mysql_conn.cursor()
-#     try:
-#         try:
-#             ## executing the query with values
-#             logger.debug(f"Attempting to insert or update {len(values)} rows in the MLWH")
-#             cursor.executemany(sql_query, values)
-#         except:
-#             logger.debug(f"Database transaction failed. Rolling back...")
-#             mysql_conn.rollback()
-#             raise # add specific info
-#         else:
-#             logger.debug('Database transaction succeeded. Committing changes to database.')
-#             mysql_conn.commit()
-#             logger.debug('Changes have been committed to the database.')
-#             # fetch number of rows inserted/affected - not easy to interpret:
-#             # reports 1 per inserted row,
-#             # 2 per updated existing row,
-#             # and 0 per unchanged existing row
-#             logger.debug(f"{cursor.rowcount} rows affected in MLWH. (Note: each updated row increase the count by 2, instead of 1)")
-#     except:
-#         logger.debug('Database committing errored')
-#         # log a critical error
-#     finally:
-#         # close the cursor
-#         cursor.close()
-
-#         # close the connection
-#         mysql_conn.close()
 
 def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, values: List[Dict[str, str]]) -> None:
     """Writes the sample testing information into the MLWH.

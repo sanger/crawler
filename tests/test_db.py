@@ -105,9 +105,8 @@ def test_run_mysql_executemany_query_execute_error(config):
     with pytest.raises(Exception):
         run_mysql_executemany_query(mysql_conn=conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=[])
 
-        # check transaction is rolled back, not committed
+        # check transaction is not committed
         assert conn.commit.called == False
-        # assert conn.rollback.called == True
 
         # check connection is closed
         assert cursor.close.called == True
