@@ -15,10 +15,10 @@ from crawler.db import (
     get_mongo_collection,
     get_mongo_db,
     create_mysql_connection,
-    run_mysql_many_insert_on_duplicate_query
+    run_mysql_executemany_query,
 )
 from crawler.helpers import LoggingCollection
-
+from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 def test_create_mongo_client(config):
     assert type(create_mongo_client(config)) == MongoClient
@@ -69,7 +69,7 @@ def test_create_mysql_connection_exception(config):
         with pytest.raises(Exception):
             create_mysql_connection(config)
 
-def test_run_mysql_many_insert_on_duplicate_query_success(config):
+def test_run_mysql_executemany_query_success(config):
     conn = CMySQLConnection()
 
     conn.cursor = MagicMock()
@@ -81,7 +81,7 @@ def test_run_mysql_many_insert_on_duplicate_query_success(config):
     cursor.executemany = MagicMock()
     cursor.close = MagicMock()
 
-    run_mysql_many_insert_on_duplicate_query(mysql_conn=conn, values=[])
+    run_mysql_executemany_query(mysql_conn=conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=[])
 
     # check transaction is committed
     assert conn.commit.called == True
@@ -90,7 +90,7 @@ def test_run_mysql_many_insert_on_duplicate_query_success(config):
     assert cursor.close.called == True
     assert conn.close.called == True
 
-def test_run_mysql_many_insert_on_duplicate_query_execute_error(config):
+def test_run_mysql_executemany_query_execute_error(config):
     conn = CMySQLConnection()
 
     conn.cursor = MagicMock()
@@ -103,7 +103,7 @@ def test_run_mysql_many_insert_on_duplicate_query_execute_error(config):
     cursor.close = MagicMock()
 
     with pytest.raises(Exception):
-        run_mysql_many_insert_on_duplicate_query(mysql_conn=conn, values=[])
+        run_mysql_executemany_query(mysql_conn=conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=[])
 
         # check transaction is rolled back, not committed
         assert conn.commit.called == False
