@@ -191,12 +191,12 @@ def create_mysql_connection(config: ModuleType, readonly = True) -> MySQLConnect
 
     return mysql_conn
 
-def run_mysql_many_insert_on_duplicate_query(mysql_conn: MySQLConnection, values: []) -> None:
+def run_mysql_many_insert_on_duplicate_query(mysql_conn: MySQLConnection, values: List[Dict[str, str]]) -> None:
     """Writes the values from the samples into the MLWH.
-
++
     Arguments:
-        MySQLConnection -- a client used to interact with the database server
-        values {array} -- array of value hashes representing documents inserted into the Mongo DB
+        mysql_conn {MySQLConnection} -- a client used to interact with the database server
+        values {List[Dict[str, str]]} -- array of value hashes representing documents inserted into the Mongo DB
     """
 
     ## defining the Query
@@ -213,7 +213,7 @@ def run_mysql_many_insert_on_duplicate_query(mysql_conn: MySQLConnection, values
             mysql_conn.rollback()
             raise
         else:
-            ## to make final output we have to run the 'commit()' method of the database object
+            ## to make final output we have to run 'commit()' method
             mysql_conn.commit()
 
             # fetch number of rows inserted/affected - unreliable, get 2 for a single update

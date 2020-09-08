@@ -41,7 +41,7 @@ from crawler.db import (
     create_mongo_client,
     create_import_record,
     create_mysql_connection,
-    run_mysql_many_insert_on_duplicate_query
+    run_mysql_many_insert_on_duplicate_query,
 )
 
 from hashlib import md5
@@ -475,7 +475,10 @@ class CentreFile:
         mysql_conn = create_mysql_connection(self.config)
 
         if mysql_conn is not None and mysql_conn.isConnected():
+            # TODO: need to trap when this fails and error
             run_mysql_many_insert_on_duplicate_query(mysql_conn, values)
+        else:
+            logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
 
     def map_mongo_to_sql_columns(self, doc, mongo_id) -> Dict[str, Any]:
         """Transform the record from using the mongodb field names into a form suitable for the MLWH
