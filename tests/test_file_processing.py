@@ -651,6 +651,7 @@ def test_map_mongo_to_sql_columns(config):
     centre_file = CentreFile("some file", centre)
 
     doc_to_transform = {
+        '_id': ObjectId('5f562d9931d9959b92544728'),
         FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
         FIELD_RNA_ID: 'TC-rna-00000029_H11',
         FIELD_PLATE_BARCODE: 'TC-rna-00000029',
@@ -660,9 +661,8 @@ def test_map_mongo_to_sql_columns(config):
         FIELD_SOURCE: 'Test Centre',
         FIELD_LAB_ID: 'TC'
     }
-    mongo_id = ObjectId('5f562d9931d9959b92544728')
 
-    result = centre_file.map_mongo_to_sql_columns(doc_to_transform, mongo_id)
+    result = centre_file.map_mongo_to_sql_columns(doc_to_transform)
 
     assert result[MLWH_MONGODB_ID] == '5f562d9931d9959b92544728'
     assert result[MLWH_ROOT_SAMPLE_ID] == 'ABC00000004'

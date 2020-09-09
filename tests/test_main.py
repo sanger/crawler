@@ -113,14 +113,15 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
 
     # Run with a different config that does not blacklist one of the files
-    run(False, False, "crawler.config.integration_with_blacklist_change")
+    with patch('crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh'):
+        run(False, False, "crawler.config.integration_with_blacklist_change")
 
     # We expect an additional import entry
     assert imports_collection.count_documents({}) == 8
 
     # We expect the previously blacklisted file to now be processed
     (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
-    assert 1 == len(files), "Fail success TEST2"
+    assert 1 == len(files), f"Wrong number of success files. Expected: 1, actual: {len(files)}. Previously blacklisted file should have been processed."
 
     # We expect the previous blacklisted file to still be in the errors directory as well
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
