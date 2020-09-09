@@ -49,6 +49,35 @@ from crawler.helpers import LoggingCollection
 from crawler.db import get_mongo_collection
 
 
+# ----- tests for class Centre -----
+
+def test_get_download_dir(config):
+    for centre_config in config.CENTRES:
+        centre = Centre(config, centre_config)
+
+        assert centre.get_download_dir() == f"{config.DIR_DOWNLOADED_DATA}{centre['prefix']}/"
+
+def test_process_files(mongo_database, config, testing_files_for_process, testing_centres):
+    _, mongo_database = mongo_database
+    logger = logging.getLogger(__name__)
+
+    centre_config = config.CENTRES[0]
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+    centre.process_files()
+
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    samples_history_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES_HISTORY)
+
+    # # We record *all* our samples
+    assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
+
+
+
+# ----- tests for class CentreFile -----
+
+# tests for checksums
 def create_checksum_files_for(filepath, filename, checksums, timestamp):
     list_files = []
     for checksum in checksums:
@@ -58,7 +87,6 @@ def create_checksum_files_for(filepath, filename, checksums, timestamp):
         file.close()
         list_files.append(full_filename)
     return list_files
-
 
 def test_checksum_not_match(config, tmpdir):
     with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
@@ -80,7 +108,6 @@ def test_checksum_not_match(config, tmpdir):
             for tmpfile_for_list in list_files:
                 os.remove(tmpfile_for_list)
 
-
 def test_checksum_match(config, tmpdir):
     with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
 
@@ -101,7 +128,7 @@ def test_checksum_match(config, tmpdir):
             for tmpfile_for_list in list_files:
                 os.remove(tmpfile_for_list)
 
-
+# tests for validating row structure
 def test_row_invalid_structure(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
@@ -119,7 +146,6 @@ def test_row_invalid_structure(config):
     assert not centre_file.row_valid_structure(
         {"Root Sample ID": "", "Result": "", "RNA ID": "", "Date tested": ""}, 4
     ), "All are empty"
-
 
 def test_row_valid_structure(config):
     centre = Centre(config, config.CENTRES[0])
@@ -141,7 +167,7 @@ def test_row_valid_structure(config):
         )
     )
 
-
+# tests for extracting fields
 def test_extract_fields(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
@@ -167,7 +193,7 @@ def test_extract_fields(config):
         "H01",
     )
 
-
+# tests for formatting and filtering rows
 def test_format_and_filter_rows(config):
     timestamp = "some timestamp"
     centre = Centre(config, config.CENTRES[0])
@@ -226,7 +252,6 @@ def test_format_and_filter_rows(config):
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
             assert centre_file.logging_collection.aggregator_types["TYPE 9"].count_errors == 1
 
-
 def test_filtered_row_with_extra_columns(config):
     # check have removed extra columns and created a warning error log
     centre = Centre(config, config.CENTRES[0])
@@ -254,7 +279,6 @@ def test_filtered_row_with_extra_columns(config):
         assert centre_file.filtered_row(next(csv_to_test_reader), 2) == expected_row
         assert centre_file.logging_collection.aggregator_types["TYPE 13"].count_errors == 1
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
-
 
 def test_filtered_row_with_blank_lab_id(config):
     # check when flag set in config it adds default lab id
@@ -286,7 +310,6 @@ def test_filtered_row_with_blank_lab_id(config):
     finally:
         config.ADD_LAB_ID = False
 
-
 def test_filtered_row_with_lab_id_present(config):
     # check when flag set in config it adds default lab id
     try:
@@ -316,7 +339,6 @@ def test_filtered_row_with_lab_id_present(config):
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
     finally:
         config.ADD_LAB_ID = False
-
 
 def test_format_and_filter_rows_parsing_filename(config):
     timestamp = "some timestamp"
@@ -369,7 +391,6 @@ def test_format_and_filter_rows_parsing_filename(config):
             assert augmented_data == extra_fields_added
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
-
 def test_format_and_filter_rows_detects_duplicates(config):
     timestamp = "some timestamp"
     # with patch("crawler.file_processing.get_now_timestamp", return_value=timestamp):
@@ -408,14 +429,7 @@ def test_format_and_filter_rows_detects_duplicates(config):
             assert centre_file.logging_collection.aggregator_types["TYPE 5"].count_errors == 1
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
-
-def test_get_download_dir(config):
-    for centre_config in config.CENTRES:
-        centre = Centre(config, centre_config)
-
-        assert centre.get_download_dir() == f"{config.DIR_DOWNLOADED_DATA}{centre['prefix']}/"
-
-
+# tests for required headers
 def test_check_for_required_headers(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
@@ -500,7 +514,7 @@ def test_check_for_required_headers(config):
     finally:
         config.ADD_LAB_ID = False
 
-
+# tests for backing up files
 def test_backup_good_file(config, tmpdir):
     with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
         # create temporary success and errors folders for the files to end up in
@@ -526,7 +540,6 @@ def test_backup_good_file(config, tmpdir):
 
         filename_with_timestamp = os.path.basename(success_folder.listdir()[0])
         assert filename in filename_with_timestamp
-
 
 def test_backup_bad_file(config, tmpdir):
     with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
@@ -555,7 +568,7 @@ def test_backup_bad_file(config, tmpdir):
         filename_with_timestamp = os.path.basename(errors_folder.listdir()[0])
         assert filename in filename_with_timestamp
 
-
+# tests for parsing file name date
 def test_file_name_date_parses_right(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
@@ -568,13 +581,7 @@ def test_file_name_date_parses_right(config):
     centre_file = CentreFile("AP_sanger_report_200503_2338 (2).csv", centre)
     assert centre_file.file_name_date() == None
 
-
-def test_get_download_dir(config):
-    centre = Centre(config, config.CENTRES[0])
-
-    assert centre.get_download_dir() == "tests/files/ALDP/"
-
-
+# tests for setting file state
 def test_set_state_for_file_when_file_in_black_list(config, blacklist_for_centre, testing_centres):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
@@ -582,14 +589,12 @@ def test_set_state_for_file_when_file_in_black_list(config, blacklist_for_centre
 
     assert centre_file.file_state == CentreFileState.FILE_IN_BLACKLIST
 
-
 def test_set_state_for_file_when_never_seen_before(config, testing_centres):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
     centre_file.set_state_for_file()
 
     assert centre_file.file_state == CentreFileState.FILE_NOT_PROCESSED_YET
-
 
 def test_set_state_for_file_when_in_error_folder(config, tmpdir, testing_centres):
     with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
@@ -613,28 +618,10 @@ def test_set_state_for_file_when_in_error_folder(config, tmpdir, testing_centres
 
         assert centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_ERROR
 
-
 def test_set_state_for_file_when_in_success_folder(config):
     return False
 
-
-def test_process_files(mongo_database, config, testing_files_for_process, testing_centres):
-    _, mongo_database = mongo_database
-    logger = logging.getLogger(__name__)
-
-    centre_config = config.CENTRES[0]
-    centre_config["sftp_root_read"] = "tmp/files"
-    centre = Centre(config, centre_config)
-    centre.process_files()
-
-    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
-    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
-    samples_history_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES_HISTORY)
-
-    # # We record *all* our samples
-    assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
-
-
+# tests for parsing date tested
 def test_parse_date_tested(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
