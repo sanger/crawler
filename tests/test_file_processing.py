@@ -55,7 +55,7 @@ def test_get_download_dir(config):
     for centre_config in config.CENTRES:
         centre = Centre(config, centre_config)
 
-        assert centre.get_download_dir() == f"{config.DIR_DOWNLOADED_DATA}{centre['prefix']}/"
+        assert centre.get_download_dir() == f"{config.DIR_DOWNLOADED_DATA}{centre_config['prefix']}/"
 
 def test_process_files(mongo_database, config, testing_files_for_process, testing_centres):
     _, mongo_database = mongo_database
