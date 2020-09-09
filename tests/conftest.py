@@ -32,6 +32,7 @@ def config():
     return CONFIG
 
 
+# TODO: remove this and associated files - not used
 @pytest.fixture
 def centre_with_added_columns():
     return CONFIG.EXTRA_COLUMN_CENTRE
@@ -63,6 +64,7 @@ def testing_files_for_process(cleanup_backups):
     # to perform a clean up, and we don't want it cleaning up our
     # main copy of the data. We don't disable the clean up as:
     # 1) It also clears up the master files, which we'd otherwise need to handle
+    # TODO: remove reference to master files above - they don't exist anymore
     # 2) It means we keep the tested process closer to the actual one
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
     try:
