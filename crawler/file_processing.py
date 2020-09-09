@@ -526,7 +526,7 @@ class CentreFile:
             MLWH_COORDINATE: doc[FIELD_COORDINATE],
             MLWH_RESULT: doc[FIELD_RESULT],
             MLWH_DATE_TESTED_STRING: doc[FIELD_DATE_TESTED],
-            MLWH_DATE_TESTED: self.parse_date_tested(self, doc[FIELD_DATE_TESTED]),
+            MLWH_DATE_TESTED: self.parse_date_tested(doc[FIELD_DATE_TESTED]),
             MLWH_SOURCE: doc[FIELD_SOURCE],
             MLWH_LAB_ID: doc[FIELD_LAB_ID],
             MLWH_CREATED_AT: datetime.datetime.now,
@@ -535,7 +535,11 @@ class CentreFile:
 
     def parse_date_tested(self, date_string) -> datetime.datetime:
         format = '%Y-%m-%d %H:%M:%S %Z'
-        date_time = datetime.datetime.strptime(date_string, format)
+        try:
+            date_time = datetime.datetime.strptime(date_string, format)
+        except:
+            return None
+
         if date_string.find('UTC') != -1:
             # timezone doesn't get set despite the '%Z' in the format string, unless we do this
             date_time = date_time.replace(tzinfo=datetime.timezone.utc)

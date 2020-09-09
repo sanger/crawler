@@ -635,12 +635,34 @@ def test_process_files(mongo_database, config, testing_files_for_process, testin
     assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
 
 
-def test_parse_date_tested():
-    result = CentreFile.parse_date_tested(CentreFile, date_string='2020-11-02 13:04:23 UTC')
+def test_parse_date_tested(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some file", centre)
+
+    result = centre_file.parse_date_tested(date_string='2020-11-02 13:04:23 UTC')
     expected = datetime.datetime(2020, 11, 2, 13, 4, 23, tzinfo=datetime.timezone.utc)
     assert result == expected
 
-def test_map_mongo_to_sql_columns():
+def test_parse_date_tested_none(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some file", centre)
+
+    result = centre_file.parse_date_tested(date_string=None)
+    expected = None
+    assert result == expected
+
+def test_parse_date_tested_wrong_format(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some file", centre)
+
+    result = centre_file.parse_date_tested(date_string='2nd November 2020')
+    expected = None
+    assert result == expected
+
+def test_map_mongo_to_sql_columns(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some file", centre)
+
     doc_to_transform = {
         FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
         FIELD_RNA_ID: 'TC-rna-00000029_H11',
@@ -653,7 +675,7 @@ def test_map_mongo_to_sql_columns():
     }
     mongo_id = ObjectId('5f562d9931d9959b92544728')
 
-    result = CentreFile.map_mongo_to_sql_columns(CentreFile, doc_to_transform, mongo_id)
+    result = centre_file.map_mongo_to_sql_columns(doc_to_transform, mongo_id)
 
     assert result[MLWH_MONGODB_ID] == '5f562d9931d9959b92544728'
     assert result[MLWH_ROOT_SAMPLE_ID] == 'ABC00000004'
