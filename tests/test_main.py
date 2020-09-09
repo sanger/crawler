@@ -46,12 +46,14 @@ def test_run(mongo_database, testing_files_for_process):
 
     assert (
         samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
-    ), f"Wrong number of valid samples is not {NUMBER_VALID_SAMPLES}, {samples_collection.count_documents({})}"
+    ), f"Wrong number of samples inserted. Expected: {NUMBER_VALID_SAMPLES}, Actual: {samples_collection.count_documents({})}"
     assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
     assert samples_collection.count_documents({"RNA ID": "123_H09", "source": "UK Biocentre"}) == 1
 
     # We get one import per centre
-    assert imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED
+    assert (
+        imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED
+    ), f"Wrong number of imports inserted. Expected: {NUMBER_OF_FILES_PROCESSED}, Actual: {imports_collection.count_documents({})}"
 
     # check number of success files
     (_, _, files) = next(os.walk("tmp/backups/ALDP/successes"))
