@@ -106,31 +106,5 @@ def run(sftp: bool, keep_files: bool, settings_module: str = "") -> None:
         logger.exception(e)
 
 
-def test_sql(settings_module: str = "") -> None:
-    config, settings_module = get_config(settings_module)
-
-    mysql_conn = create_mysql_connection(config)
-
-    # TODO: values input needs to look like this:
-    values = [
-        {
-            'mongodb_id': '1234',
-            'root_sample_id': 'A1234',
-            'cog_uk_id': '',
-            'rna_id': 'RNA1234',
-            'plate_barcode': 'DN1234',
-            'coordinate': '',
-            'result': 'Positive',
-            'date_tested_string': '2020-04-23 14:40:08 UTC',
-            'date_tested': datetime.now(),
-            'source': 'Alderley',
-            'lab_id': 'ALD',
-            'created_at_external': datetime.now(),
-            'updated_at_external': datetime.now(),
-        }
-    ]
-
-    run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
-
 
 

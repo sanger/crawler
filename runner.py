@@ -38,8 +38,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.once:
-        # main.run(args.sftp, args.keep_files)
-        main.test_sql()
+        main.run(args.sftp, args.keep_files)
     else:
         time_to_run = "01:00"
         print(f"Scheduled to run at {time_to_run}")
