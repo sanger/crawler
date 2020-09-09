@@ -474,7 +474,7 @@ class CentreFile:
         except Exception as e:
             logger.critical(f"Critical error in file {self.file_name}: {e}")
             logger.exception(e)
-            # TODO: return something to say there was critical error
+            return []
 
     def insert_samples_from_docs_into_mlwh(self, docs_to_insert) -> None:
         """Insert sample records into the MLWH database from the parsed file information, including the corresponding mongodb _id
