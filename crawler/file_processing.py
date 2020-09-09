@@ -333,11 +333,13 @@ class CentreFile:
         else:
             logger.info(f"File {self.file_name} is valid")
 
+        mongo_ids_of_inserted = []
         if len(docs_to_insert) > 0:
-            mongo_ids = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
-            # TODO: if critical error from mongo inserts, do we skip mlwh?
-            # TODO: is it a good idea to do this here, or create a separate method in main.py to select from mongo between 2 timestamps?
-            self.insert_samples_from_docs_into_mlwh(docs_to_insert, mongo_ids)
+            mongo_ids_of_inserted = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
+        if len(mongo_ids_of_inserted) > 0:
+            # filter out docs which failed to insert into mongo - we don't want to create mlwh records for these
+            docs_to_insert_mlwh = list(filter(lambda x: x['_id'] in mongo_ids_of_inserted, docs_to_insert))
+            self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
         self.backup_file()
         self.create_import_record_for_file()
@@ -464,15 +466,22 @@ class CentreFile:
 
             self.docs_inserted = e.details["nInserted"]
             self.add_duplication_errors(e)
+
+            errored_ids = list(map(lambda x: x['op']['_id'], e.details["writeErrors"]))
+            inserted_ids = [ doc['_id'] for doc in docs_to_insert if doc['_id'] not in errored_ids ]
+
+            return inserted_ids
         except Exception as e:
             logger.critical(f"Critical error in file {self.file_name}: {e}")
             logger.exception(e)
+            # TODO: return something to say there was critical error
 
-    def insert_samples_from_docs_into_mlwh(self, docs_to_insert, mongo_ids) -> None:
+    def insert_samples_from_docs_into_mlwh(self, docs_to_insert) -> None:
         """Insert sample records into the MLWH database from the parsed file information, including the corresponding mongodb _id
 
             Arguments:
-                docs_to_insert {List[Dict[str, str]]} -- list of filtered sample information extracted from csv files
+                docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from csv files.
+                                                         Includes the mongodb id, as the list has already been inserted into mongodb
 
                 mongo_ids {List[ObjectId]} -- list of mongodb ids in the same order as docs_to_insert, from the insert into the mongodb
         """
@@ -482,9 +491,8 @@ class CentreFile:
         # TODO: how to re-run failed inserts? And how to run for legacy data?
 
         values = []
-        for i, doc in enumerate(docs_to_insert):
-            mongo_id = mongo_ids[i]
-            values.append(self.map_mongo_to_sql_columns(doc, mongo_id))
+        for doc in docs_to_insert:
+            values.append(self.map_mongo_to_sql_columns(doc))
 
         mysql_conn = create_mysql_connection(self.config)
 
@@ -507,19 +515,18 @@ class CentreFile:
             )
             logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
 
-    def map_mongo_to_sql_columns(self, doc, mongo_id) -> Dict[str, Any]:
+    def map_mongo_to_sql_columns(self, doc) -> Dict[str, Any]:
         """Transform the record from using the mongodb field names into a form suitable for the MLWH
            We are not setting created_at_external and updated_at_external fields here
            because it would be slow to retrieve them from MongoDB
            and they would be virtually the same as created_at and updated_at
 
             Arguments:
-                doc {Dict[str, str]} -- filtered information about one sample, extracted from csv files
-
-                mongo_id {ObjectId} -- mongodb id from the insert of this sample into the mongodb
+                doc {Dict[str, str]} -- Filtered information about one sample, extracted from csv files.
+                                        Includes the mongodb id, as the doc has already been inserted into mongodb
         """
         return {
-            MLWH_MONGODB_ID: str(mongo_id), # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
+            MLWH_MONGODB_ID: str(doc['_id']), # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
             MLWH_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
             MLWH_RNA_ID: doc[FIELD_RNA_ID],
             MLWH_PLATE_BARCODE: doc[FIELD_PLATE_BARCODE],
