@@ -21,18 +21,13 @@ from crawler.db import (
     get_mongo_collection,
     get_mongo_db,
     populate_centres_collection,
-    samples_collection_accessor,
-    create_mysql_connection,
-    run_mysql_executemany_query,
+    samples_collection_accessor
 )
 from crawler.helpers import (
     get_config,
     current_time,
 )
 from crawler.file_processing import Centre
-from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
-
-from datetime import date, datetime
 
 logger = logging.getLogger(__name__)
 

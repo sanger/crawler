@@ -253,7 +253,7 @@ class AggregateType15(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 15"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = f"CRITICAL: Files where the MLWH database connection could not be nade. ({self.type_str})"
+        self.message = f"CRITICAL: Files where the MLWH database connection could not be made. ({self.type_str})"
         self.short_display_description = "Failed MLWH connection"
 
 
