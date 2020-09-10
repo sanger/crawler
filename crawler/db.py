@@ -167,7 +167,7 @@ def create_mysql_connection(config: ModuleType, readonly = True) -> CMySQLConnec
         mlwh_db_password = config.MLWH_DB_RW_PASSWORD
     mlwh_db_db = config.MLWH_DB_DBNAME
 
-    print(f"Attempting to connect to {mlwh_db_host} on port {mlwh_db_port}")
+    logger.debug(f"Attempting to connect to {mlwh_db_host} on port {mlwh_db_port}")
 
     mysql_conn = None
     try:
@@ -178,8 +178,8 @@ def create_mysql_connection(config: ModuleType, readonly = True) -> CMySQLConnec
             password = mlwh_db_password,
             database = mlwh_db_db,
             # whether to use pure python or the C extension.
-            # This is the default, but specify it so more predictable
-            use_pure = False
+            # default is false, but specify it so more predictable
+            use_pure = False,
         )
         if mysql_conn is not None:
             if mysql_conn.is_connected():
