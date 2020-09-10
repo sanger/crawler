@@ -676,7 +676,7 @@ def test_parse_date_tested_none(config):
     centre_file = CentreFile("some file", centre)
 
     result = centre_file.parse_date_tested(date_string=None)
-    expected = None
+    expected = ''
     assert result == expected
 
 def test_parse_date_tested_wrong_format(config):
@@ -684,7 +684,7 @@ def test_parse_date_tested_wrong_format(config):
     centre_file = CentreFile("some file", centre)
 
     result = centre_file.parse_date_tested(date_string='2nd November 2020')
-    expected = None
+    expected = ''
     assert result == expected
 
 # tests for Mongo / MLWH mapping
