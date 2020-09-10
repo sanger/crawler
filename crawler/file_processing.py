@@ -492,15 +492,14 @@ class CentreFile:
 
         # TODO: consider splitting into batches to avoid hitting MySQL maximum_packet_size limitation
 
-        # TODO: how to re-run failed inserts? And how to run for legacy data?
-
+        # TODO: how to re-run failed inserts? And how to run for legacy data
         values = []
         for doc in docs_to_insert:
             values.append(self.map_mongo_to_sql_columns(doc))
 
         mysql_conn = create_mysql_connection(self.config)
 
-        if mysql_conn is not None and mysql_conn.isConnected():
+        if mysql_conn is not None and mysql_conn.is_connected():
             try:
                 run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
 
