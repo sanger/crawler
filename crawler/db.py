@@ -12,9 +12,9 @@ from pymongo.results import InsertOneResult
 
 from contextlib import contextmanager
 
-import mysql.connector as mysql
-from mysql.connector.connection_cext import CMySQLConnection
-from mysql.connector import Error
+import mysql.connector as mysql # type: ignore
+from mysql.connector.connection_cext import CMySQLConnection # type: ignore
+from mysql.connector import Error # type: ignore
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 logger = logging.getLogger(__name__)

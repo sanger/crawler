@@ -3,7 +3,7 @@ import csv
 from typing import Dict, List, Any, Tuple, Set
 from pymongo.errors import BulkWriteError
 from pymongo.database import Database
-from bson.objectid import ObjectId
+from bson.objectid import ObjectId # type: ignore
 
 from enum import Enum
 from csv import DictReader, DictWriter
