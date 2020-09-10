@@ -39,6 +39,7 @@ from crawler.constants import (
     MLWH_LAB_ID,
     MLWH_CREATED_AT,
     MLWH_UPDATED_AT,
+    MYSQL_DATETIME_FORMAT,
 )
 from crawler.helpers import current_time, get_sftp_connection, LoggingCollection
 from crawler.constants import (
@@ -60,7 +61,10 @@ from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 from hashlib import md5
 
-import datetime
+from datetime import (
+    datetime,
+    timezone,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -533,24 +537,26 @@ class CentreFile:
             MLWH_COORDINATE: doc[FIELD_COORDINATE],
             MLWH_RESULT: doc[FIELD_RESULT],
             MLWH_DATE_TESTED_STRING: doc[FIELD_DATE_TESTED],
-            MLWH_DATE_TESTED: self.parse_date_tested(doc[FIELD_DATE_TESTED]),
+            MLWH_DATE_TESTED: self.parse_date_tested(doc[FIELD_DATE_TESTED]), # convert to suitable string representation for MySQL insert
             MLWH_SOURCE: doc[FIELD_SOURCE],
             MLWH_LAB_ID: doc[FIELD_LAB_ID],
-            MLWH_CREATED_AT: datetime.datetime.now,
-            MLWH_UPDATED_AT: datetime.datetime.now
+            MLWH_CREATED_AT: datetime.strftime(datetime.now(timezone.utc), MYSQL_DATETIME_FORMAT), # convert to suitable string representation for MySQL insert
+            MLWH_UPDATED_AT: datetime.strftime(datetime.now(timezone.utc), MYSQL_DATETIME_FORMAT), # convert to suitable string representation for MySQL insert
         }
 
-    def parse_date_tested(self, date_string) -> datetime.datetime:
-        format = '%Y-%m-%d %H:%M:%S %Z'
+    def parse_date_tested(self, date_string) -> str:
         try:
-            date_time = datetime.datetime.strptime(date_string, format)
+            date_time = datetime.strptime(date_string, f"{MYSQL_DATETIME_FORMAT} %Z")
         except:
-            return None
+            return ''
 
         if date_string.find('UTC') != -1:
             # timezone doesn't get set despite the '%Z' in the format string, unless we do this
-            date_time = date_time.replace(tzinfo=datetime.timezone.utc)
-        return date_time
+            date_time = date_time.replace(tzinfo=timezone.utc)
+
+        date_time_str = datetime.strftime(date_time, MYSQL_DATETIME_FORMAT)
+
+        return date_time_str
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.
@@ -643,7 +649,7 @@ class CentreFile:
         return m.group(1), m.group(2)
 
     def get_now_timestamp(self):
-        return datetime.datetime.now()
+        return datetime.now()
 
     def get_row_signature(self, row):
         memo = []
@@ -824,4 +830,4 @@ class CentreFile:
 
         file_timestamp = m.group(1)
 
-        return datetime.datetime.strptime(file_timestamp, "%y%m%d_%H%M")
+        return datetime.strptime(file_timestamp, "%y%m%d_%H%M")

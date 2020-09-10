@@ -37,3 +37,6 @@ MLWH_SOURCE = "source"
 MLWH_LAB_ID = "lab_id"
 MLWH_CREATED_AT = "created_at"
 MLWH_UPDATED_AT = "updated_at"
+
+# mysql
+MYSQL_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'

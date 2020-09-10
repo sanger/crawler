@@ -7,7 +7,10 @@ from crawler.helpers import current_time
 from unittest.mock import patch
 from csv import DictReader
 import pytest
-import datetime
+from datetime import (
+    datetime,
+    timezone,
+)
 from bson.objectid import ObjectId
 
 from tempfile import mkstemp
@@ -44,6 +47,7 @@ from crawler.constants import (
     MLWH_DATE_TESTED,
     MLWH_SOURCE,
     MLWH_LAB_ID,
+    MYSQL_DATETIME_FORMAT,
 )
 from crawler.helpers import LoggingCollection
 from crawler.db import get_mongo_collection
@@ -356,7 +360,7 @@ def test_format_and_filter_rows_parsing_filename(config):
                 "coordinate": "H09",
                 "line_number": 2,
                 "file_name": "ASDF_200507_1340.csv",
-                "file_name_date": datetime.datetime(2020, 5, 7, 13, 40),
+                "file_name_date": datetime(2020, 5, 7, 13, 40),
                 "created_at": timestamp,
                 "updated_at": timestamp,
                 "Result": "Positive",
@@ -370,7 +374,7 @@ def test_format_and_filter_rows_parsing_filename(config):
                 "coordinate": "B08",
                 "line_number": 3,
                 "file_name": "ASDF_200507_1340.csv",
-                "file_name_date": datetime.datetime(2020, 5, 7, 13, 40),
+                "file_name_date": datetime(2020, 5, 7, 13, 40),
                 "created_at": timestamp,
                 "updated_at": timestamp,
                 "Result": "Negative",
@@ -407,7 +411,7 @@ def test_format_and_filter_rows_detects_duplicates(config):
                 "coordinate": "H09",
                 "line_number": 2,
                 "file_name": "ASDF_200507_1340.csv",
-                "file_name_date": datetime.datetime(2020, 5, 7, 13, 40),
+                "file_name_date": datetime(2020, 5, 7, 13, 40),
                 "created_at": timestamp,
                 "updated_at": timestamp,
                 "Result": "Positive",
@@ -664,7 +668,7 @@ def test_parse_date_tested(config):
     centre_file = CentreFile("some file", centre)
 
     result = centre_file.parse_date_tested(date_string='2020-11-02 13:04:23 UTC')
-    expected = datetime.datetime(2020, 11, 2, 13, 4, 23, tzinfo=datetime.timezone.utc)
+    expected = datetime.strftime(datetime(2020, 11, 2, 13, 4, 23, tzinfo=timezone.utc), MYSQL_DATETIME_FORMAT)
     assert result == expected
 
 def test_parse_date_tested_none(config):
@@ -709,6 +713,6 @@ def test_map_mongo_to_sql_columns(config):
     assert result[MLWH_COORDINATE] == 'H11'
     assert result[MLWH_RESULT] == 'Negative'
     assert result[MLWH_DATE_TESTED_STRING] == '2020-04-23 14:40:08 UTC'
-    assert result[MLWH_DATE_TESTED] == datetime.datetime(2020, 4, 23, 14, 40, 8, tzinfo=datetime.timezone.utc)
+    assert result[MLWH_DATE_TESTED] == datetime.strftime(datetime(2020, 4, 23, 14, 40, 8, tzinfo=timezone.utc), MYSQL_DATETIME_FORMAT)
     assert result[MLWH_SOURCE] == 'Test Centre'
     assert result[MLWH_LAB_ID] == 'TC'
