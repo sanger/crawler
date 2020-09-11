@@ -19,7 +19,6 @@ from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 logger = logging.getLogger(__name__)
 
-
 def create_mongo_client(config: ModuleType) -> MongoClient:
     """Create a MongoClient with the given config parameters.
 
@@ -148,7 +147,7 @@ def populate_centres_collection(
             {filter_field: document[filter_field]}, {"$set": document}, upsert=True
         )
 
-def create_mysql_connection(config: ModuleType, readonly = True) -> CMySQLConnection:
+def create_mysql_connection(config: ModuleType, readonly=True) -> CMySQLConnection:
     """Create a CMySQLConnection with the given config parameters.
 
     Arguments:
@@ -157,15 +156,16 @@ def create_mysql_connection(config: ModuleType, readonly = True) -> CMySQLConnec
     Returns:
         CMySQLConnection -- a client used to interact with the database server
     """
-    mlwh_db_host = config.MLWH_DB_HOST
-    mlwh_db_port = config.MLWH_DB_PORT
+    # import pdb; pdb.set_trace()
+    mlwh_db_host = config.MLWH_DB_HOST  # type: ignore
+    mlwh_db_port = config.MLWH_DB_PORT  # type: ignore
     if readonly:
-        mlwh_db_username = config.MLWH_DB_RO_USER
-        mlwh_db_password = config.MLWH_DB_RO_PASSWORD
+        mlwh_db_username = config.MLWH_DB_RO_USER  # type: ignore
+        mlwh_db_password = config.MLWH_DB_RO_PASSWORD  # type: ignore
     else:
-        mlwh_db_username = config.MLWH_DB_RW_USER
-        mlwh_db_password = config.MLWH_DB_RW_PASSWORD
-    mlwh_db_db = config.MLWH_DB_DBNAME
+        mlwh_db_username = config.MLWH_DB_RW_USER  # type: ignore
+        mlwh_db_password = config.MLWH_DB_RW_PASSWORD  # type: ignore
+    mlwh_db_db = config.MLWH_DB_DBNAME  # type: ignore
 
     logger.debug(f"Attempting to connect to {mlwh_db_host} on port {mlwh_db_port}")
 
