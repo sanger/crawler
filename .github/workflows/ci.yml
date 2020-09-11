@@ -34,7 +34,7 @@ jobs:
           - 3306:3306
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: mlwarehouse_test
+          MYSQL_DATABASE: unified_warehouse_test
     steps:
       - uses: actions/checkout@v2
       - name: Build the Docker image
