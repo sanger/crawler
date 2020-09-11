@@ -16,6 +16,8 @@ import mysql.connector as mysql # type: ignore
 from mysql.connector.connection_cext import CMySQLConnection # type: ignore
 from mysql.connector import Error # type: ignore
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
+import click
+from flask.cli import with_appcontext
 
 logger = logging.getLogger(__name__)
 
@@ -228,3 +230,45 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
         # close the connection
         logger.debug('Closing the MLWH database connection.')
         mysql_conn.close()
+
+
+@click.command("init-warehouse-db")
+@with_appcontext
+def init_warehouse_db_command():
+    """Drop and recreate required tables."""
+    click.echo("Initialising the MySQL warehouse database")
+
+    mysql_conn = create_mysql_connection(current_app.config, False)
+    mysql_cursor = mysql_conn.cursor()
+
+    # schema file defines sql for dropping and recreating the warehouse table
+    with current_app.open_resource("sql/schema.sql", mode="rt") as f:
+        template = current_app.jinja_env.from_string(f.read())
+
+    sql_script = template.render(database=current_app.config["MLWH_DB_DBNAME"])
+
+    for result in mysql_cursor.execute(sql_script, multi=True):
+        if result.with_rows:
+            result.fetchall()
+
+    if current_app.testing:
+        click.echo("Inserting test data")
+
+        (_, _, files) = next(os.walk(pathlib.Path(__file__).parent.joinpath("sql/test_data")))
+        for filename in files:
+            click.echo(f"Processing {filename}")
+
+            with current_app.open_resource(f"sql/test_data/{filename}", mode="rt") as f:
+                template = current_app.jinja_env.from_string(f.read())
+
+            sql_script = template.render(database=current_app.config["MLWH_DB_DBNAME"])
+
+            for result in mysql_cursor.execute(sql_script, multi=True):
+                if result.with_rows:
+                    result.fetchall()
+
+    mysql_conn.commit()
+    mysql_cursor.close()
+    mysql_conn.close()
+
+    click.echo("Done")
