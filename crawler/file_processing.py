@@ -497,7 +497,7 @@ class CentreFile:
         for doc in docs_to_insert:
             values.append(self.map_mongo_to_sql_columns(doc))
 
-        mysql_conn = create_mysql_connection(self.config)
+        mysql_conn = create_mysql_connection(self.config, False)
 
         if mysql_conn is not None and mysql_conn.is_connected():
             try:
