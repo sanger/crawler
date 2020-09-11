@@ -17,9 +17,15 @@ from mysql.connector.connection_cext import CMySQLConnection # type: ignore
 from mysql.connector import Error # type: ignore
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 import click
+from flask import current_app
 from flask.cli import with_appcontext
 
 logger = logging.getLogger(__name__)
+
+
+def init_app(app) -> None:
+    app.cli.add_command(init_warehouse_db_command)
+
 
 def create_mongo_client(config: ModuleType) -> MongoClient:
     """Create a MongoClient with the given config parameters.
