@@ -91,10 +91,6 @@ MLWH_DB_RO_PASSWORD = "root"
 MLWH_DB_RW_USER = "root"
 MLWH_DB_RW_PASSWORD = "root"
 
-# flask
-# FLASK_APP=crawler
-# FLASK_ENV=test
-
 # logging config
 LOGGING["loggers"]["crawler"]["level"] = "DEBUG"
 LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]
