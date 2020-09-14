@@ -161,8 +161,11 @@ def create_mysql_connection(config: ModuleType, readonly=True) -> CMySQLConnecti
     mlwh_db_host = config.MLWH_DB_HOST  # type: ignore
     mlwh_db_port = config.MLWH_DB_PORT  # type: ignore
     if readonly:
+        print('is readonly')
         mlwh_db_username = config.MLWH_DB_RO_USER  # type: ignore
         mlwh_db_password = config.MLWH_DB_RO_PASSWORD  # type: ignore
+        print(f'config.MLWH_DB_RO_PASSWORD: {config.MLWH_DB_RO_PASSWORD}')
+        print(f'mlwh_db_password: {mlwh_db_password}')
     else:
         mlwh_db_username = config.MLWH_DB_RW_USER  # type: ignore
         mlwh_db_password = config.MLWH_DB_RW_PASSWORD  # type: ignore
