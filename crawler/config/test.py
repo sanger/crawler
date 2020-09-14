@@ -1,6 +1,6 @@
 from crawler.constants import FIELD_RNA_ID
 
-from .defaults import *  # noqa: F403,F401
+from crawler.config.defaults import *  # noqa: F403,F401
 
 # settings here overwrite those in defaults.py
 
