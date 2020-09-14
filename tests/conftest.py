@@ -32,12 +32,6 @@ def config():
     return CONFIG
 
 
-# TODO: remove this and associated files - not used
-@pytest.fixture
-def centre_with_added_columns():
-    return CONFIG.EXTRA_COLUMN_CENTRE
-
-
 @pytest.fixture
 def mongo_client(config):
     with create_mongo_client(config) as client:

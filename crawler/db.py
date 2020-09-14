@@ -232,7 +232,7 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
         mysql_conn.close()
 
 
-# just for testing
+# Set up a basic MLWH db for testing
 def init_warehouse_db_command():
     """Drop and recreate required tables."""
     logger.debug("Initialising the test MySQL warehouse database")

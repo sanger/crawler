@@ -60,6 +60,13 @@ The following runtime flags are available:
 
 ## Testing
 
+The tests require a connection to the 'lighthouse_samples' table in the Multi-LIMS Warehouse.
+The credentials for connecting to the MLWH are configured in the 'defaults.py' file, or in the relevant environment file, for example 'test.py'.
+You can run the tests by connecting to the UAT instance of the MLWH, or an existing local copy you already have.
+Or, you can create a basic local one containing just the relevant table by running the following from the top level folder (this is what it does in the CI):
+
+    python setup_test_db.py
+
 To run the tests, execute:
 
     python -m pytest -vs
