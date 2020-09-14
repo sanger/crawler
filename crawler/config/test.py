@@ -1,6 +1,6 @@
 from crawler.constants import FIELD_RNA_ID
 
-from .defaults import *  # noqa: F403,F401
+from crawler.config.defaults import *  # noqa: F403,F401
 
 # settings here overwrite those in defaults.py
 
@@ -90,10 +90,6 @@ MLWH_DB_RO_USER = "root"
 MLWH_DB_RO_PASSWORD = ""
 MLWH_DB_RW_USER = "root"
 MLWH_DB_RW_PASSWORD = ""
-
-# flask
-FLASK_APP=crawler
-FLASK_ENV=test
 
 # logging config
 LOGGING["loggers"]["crawler"]["level"] = "DEBUG"
