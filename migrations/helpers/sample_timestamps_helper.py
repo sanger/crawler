@@ -9,6 +9,7 @@ BATCH_SIZE = 250000
 COLLECTION_NAME_FORMAT_1 = r'^samples_(20[\d]{4}_[\d]{4})$' # e.g. samples_200519_1510
 COLLECTION_NAME_FORMAT_2 = r'^samples_([\d]{4}2020_[\d]{4})$' # e.g. samples_21052020_1510
 
+
 def add_timestamps_to_samples(db):
   print(f'Time start: {datetime.datetime.now()}')
 
