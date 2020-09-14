@@ -99,7 +99,3 @@ def run(sftp: bool, keep_files: bool, settings_module: str = "") -> None:
         logger.info("=" * 80)
     except Exception as e:
         logger.exception(e)
-
-
-
-

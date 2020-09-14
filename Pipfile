@@ -8,7 +8,6 @@ flake8 = "*"
 mypy = "*"
 flake8-bugbear = "*"
 rope = "*"
-responses = "*"
 coverage = {extras = ["toml"],version = "*"}
 pytest = "*"
 pytest-cov = "*"
@@ -16,7 +15,6 @@ pytest-freezegun = "*"
 black = "*"
 
 [packages]
-flask = "~=1.1"
 pymongo = "~=3.10"
 mysql-connector-python = "*"
 colorlog = "~=4.1"
