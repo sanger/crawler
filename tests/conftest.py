@@ -3,7 +3,6 @@ import logging.config
 import shutil
 import tempfile
 import pytest
-import responses
 from unittest.mock import patch
 from typing import Dict, List, Any
 from crawler.constants import (
@@ -150,9 +149,3 @@ def blacklist_for_centre(config):
         yield config
     finally:
         config.CENTRES[0]["file_names_to_ignore"] = []
-
-
-@pytest.fixture
-def mocked_responses():
-    with responses.RequestsMock() as rsps:
-        yield rsps
