@@ -86,9 +86,9 @@ MLWH_DB_DBNAME = "unified_warehouse_test"
 MLWH_DB_HOST = "127.0.0.1"
 MLWH_DB_PORT = 3306
 MLWH_DB_RO_USER = "root"
-MLWH_DB_RO_PASSWORD = ""
+MLWH_DB_RO_PASSWORD = "root"
 MLWH_DB_RW_USER = "root"
-MLWH_DB_RW_PASSWORD = ""
+MLWH_DB_RW_PASSWORD = "root"
 
 # SFTP details
 SFTP_UPLOAD = False  # upload files to SFTP server

@@ -169,6 +169,8 @@ def create_mysql_connection(config: ModuleType, readonly=True) -> CMySQLConnecti
     mlwh_db_db = config.MLWH_DB_DBNAME  # type: ignore
 
     logger.debug(f"Attempting to connect to {mlwh_db_host} on port {mlwh_db_port}")
+    print(f"Attempting to connect to {mlwh_db_host} on port {mlwh_db_port}")
+    print(f"mlwh_db_username {mlwh_db_username} mlwh_db_password {mlwh_db_password} mlwh_db_db {mlwh_db_db}")
 
     mysql_conn = None
     try:
