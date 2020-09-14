@@ -42,10 +42,12 @@ jobs:
       - name: Run mypy against the image
         run: docker run --network host docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/} python -m mypy .
       - name: Create mysql test warehouse database and table
-        env:
-          FLASK_APP: crawler
-          SETTINGS_PATH: config/test.py
-        run: |
+        run: >-
+          docker run
+          --network host
+          --env FLASK_APP=crawler
+          --env SETTINGS_PATH=config/test.py
+          docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
           flask init-warehouse-db
       - name: Run tests against the image
         run: docker run --network host docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/} python -m pytest -vsx
