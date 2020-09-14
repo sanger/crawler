@@ -240,7 +240,9 @@ def init_warehouse_db_command():
     mysql_conn = create_mysql_connection(config, False)
     mysql_cursor = mysql_conn.cursor()
 
-    mysql_cursor.execute(SQL_TEST_MLWH_CREATE, multi=True)
+    for result in mysql_cursor.execute(SQL_TEST_MLWH_CREATE, multi=True):
+        if result.with_rows:
+            result.fetchall()
 
     mysql_conn.commit()
     mysql_cursor.close()
