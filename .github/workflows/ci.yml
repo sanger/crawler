@@ -41,6 +41,9 @@ jobs:
         run: docker build . --file Dockerfile --tag docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
       - name: Run mypy against the image
         run: docker run --network host docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/} python -m mypy .
+      - name: Try running a python script
+        run: >-
+          python setup_db.py
       - name: Create mysql test warehouse database and table
         run: >-
           docker run
