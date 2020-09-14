@@ -238,11 +238,6 @@ def init_warehouse_db_command():
     mysql_conn = create_mysql_connection(config, False)
     mysql_cursor = mysql_conn.cursor()
 
-    # schema file defines sql for dropping and recreating the warehouse table
-    # with current_app.open_resource("sql/schema.sql", mode="rt") as f:
-    #     template = current_app.jinja_env.from_string(f.read())
-
-    # sql_script = template.render(database=current_app.config["MLWH_DB_DBNAME"])
     sql_script = """
     CREATE DATABASE IF NOT EXISTS `unified_warehouse_test` /*!40100 DEFAULT CHARACTER SET latin1 */;
     DROP TABLE IF EXISTS `unified_warehouse_test`.`lighthouse_sample`;
@@ -273,22 +268,6 @@ def init_warehouse_db_command():
     for result in mysql_cursor.execute(sql_script, multi=True):
         if result.with_rows:
             result.fetchall()
-
-    # if current_app.testing:
-    # print("Inserting test data")
-
-    # (_, _, files) = next(os.walk(pathlib.Path(__file__).parent.joinpath("sql/test_data")))
-    # for filename in files:
-    #     print(f"Processing {filename}")
-
-    #     # with current_app.open_resource(f"sql/test_data/{filename}", mode="rt") as f:
-    #     #     template = current_app.jinja_env.from_string(f.read())
-
-    #     # sql_script = template.render(database=current_app.config["MLWH_DB_DBNAME"])
-
-    #     for result in mysql_cursor.execute(sql_script, multi=True):
-    #         if result.with_rows:
-    #             result.fetchall()
 
     mysql_conn.commit()
     mysql_cursor.close()
