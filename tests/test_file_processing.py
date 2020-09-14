@@ -49,7 +49,11 @@ from crawler.constants import (
     MLWH_LAB_ID,
     MYSQL_DATETIME_FORMAT,
 )
-from crawler.helpers import LoggingCollection
+from crawler.helpers import (
+    parse_date_tested,
+    map_mongo_to_sql_columns,
+    LoggingCollection,
+)
 from crawler.db import get_mongo_collection
 
 
@@ -662,31 +666,6 @@ def test_insert_samples_from_docs_into_mlwh(config):
         error_messages = centre_file.logging_collection.get_aggregate_messages()
         assert error_count == 0, f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
 
-# tests for parsing date tested
-def test_parse_date_tested(config):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
-
-    result = centre_file.parse_date_tested(date_string='2020-11-02 13:04:23 UTC')
-    expected = datetime.strftime(datetime(2020, 11, 2, 13, 4, 23, tzinfo=timezone.utc), MYSQL_DATETIME_FORMAT)
-    assert result == expected
-
-def test_parse_date_tested_none(config):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
-
-    result = centre_file.parse_date_tested(date_string=None)
-    expected = ''
-    assert result == expected
-
-def test_parse_date_tested_wrong_format(config):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
-
-    result = centre_file.parse_date_tested(date_string='2nd November 2020')
-    expected = ''
-    assert result == expected
-
 # tests for Mongo / MLWH mapping
 def test_map_mongo_to_sql_columns(config):
     centre = Centre(config, config.CENTRES[0])
@@ -704,7 +683,7 @@ def test_map_mongo_to_sql_columns(config):
         FIELD_LAB_ID: 'TC'
     }
 
-    result = centre_file.map_mongo_to_sql_columns(doc_to_transform)
+    result = map_mongo_to_sql_columns(doc_to_transform)
 
     assert result[MLWH_MONGODB_ID] == '5f562d9931d9959b92544728'
     assert result[MLWH_ROOT_SAMPLE_ID] == 'ABC00000004'

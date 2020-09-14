@@ -2,13 +2,45 @@ import logging
 import os
 import sys
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timezone,
+)
 from importlib import import_module
 from types import ModuleType
 from enum import Enum
-from typing import Tuple
+from typing import Dict, Any, Tuple
 
 import pysftp  # type: ignore
+
+from crawler.constants import (
+    FIELD_COORDINATE,
+    FIELD_DATE_TESTED,
+    FIELD_LAB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_LINE_NUMBER,
+    FIELD_FILE_NAME,
+    FIELD_FILE_NAME_DATE,
+    FIELD_CREATED_AT,
+    FIELD_UPDATED_AT,
+    FIELD_SOURCE,
+    MLWH_MONGODB_ID,
+    MLWH_ROOT_SAMPLE_ID,
+    MLWH_RNA_ID,
+    MLWH_PLATE_BARCODE,
+    MLWH_COORDINATE,
+    MLWH_RESULT,
+    MLWH_DATE_TESTED_STRING,
+    MLWH_DATE_TESTED,
+    MLWH_SOURCE,
+    MLWH_LAB_ID,
+    MLWH_CREATED_AT,
+    MLWH_UPDATED_AT,
+    MYSQL_DATETIME_FORMAT,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +109,62 @@ def get_config(settings_module: str) -> Tuple[ModuleType, str]:
     except KeyError as e:
         sys.exit(f"{e} required in environmental variables for config")
 
+def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
+    return {
+        MLWH_MONGODB_ID: str(doc['_id']), # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
+        MLWH_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
+        MLWH_RNA_ID: doc[FIELD_RNA_ID],
+        MLWH_PLATE_BARCODE: doc[FIELD_PLATE_BARCODE],
+        MLWH_COORDINATE: doc[FIELD_COORDINATE],
+        MLWH_RESULT: doc[FIELD_RESULT],
+        MLWH_DATE_TESTED_STRING: doc[FIELD_DATE_TESTED],
+        MLWH_DATE_TESTED: parse_date_tested(doc[FIELD_DATE_TESTED]), # convert to suitable string representation for MySQL insert
+        MLWH_SOURCE: doc[FIELD_SOURCE],
+        MLWH_LAB_ID: doc[FIELD_LAB_ID]
+    }
+
+def map_mongo_to_sql_columns(doc) -> Dict[str, Any]:
+    """Transform the record from using the mongodb field names into a form suitable for the MLWH
+       We are setting created_at and updated_at fields to current timestamp for inserts here,
+       because it would be too slow to retrieve them from MongoDB and they would be virtually the same
+       as we have only just written the mongo record
+
+        Arguments:
+            doc {Dict[str, str]} -- Filtered information about one sample, extracted from csv files.
+                                    Includes the mongodb id, as the doc has already been inserted into mongodb
+    """
+    value = map_mongo_to_sql_common(doc)
+    value[MLWH_CREATED_AT] = datetime.strftime(datetime.now(timezone.utc), MYSQL_DATETIME_FORMAT) # convert to suitable string representation for MySQL insert
+    value[MLWH_UPDATED_AT] = datetime.strftime(datetime.now(timezone.utc), MYSQL_DATETIME_FORMAT) # convert to suitable string representation for MySQL insert
+    return value
+
+def map_mongo_to_sql_columns_with_timestamps(doc) -> Dict[str, Any]:
+    """This version selects the timestamps from the doc records for when we have selected from mongodb.
+
+        Arguments:
+            doc {Dict[str, str]} -- Filtered information about one sample, extracted from mongodb.
+    """
+    value = map_mongo_to_sql_common(doc)
+    value[MLWH_CREATED_AT] = datetime.strftime(doc[FIELD_CREATED_AT], MYSQL_DATETIME_FORMAT) # convert to suitable string representation for MySQL insert
+    value[MLWH_UPDATED_AT] = datetime.strftime(doc[FIELD_UPDATED_AT], MYSQL_DATETIME_FORMAT) # convert to suitable string representation for MySQL insert
+    return value
+
+def parse_date_tested(date_string: str) -> str:
+    """
+
+    """
+    try:
+        date_time = datetime.strptime(date_string, f"{MYSQL_DATETIME_FORMAT} %Z")
+    except:
+        return ''
+
+    if date_string.find('UTC') != -1:
+        # timezone doesn't get set despite the '%Z' in the format string, unless we do this
+        date_time = date_time.replace(tzinfo=timezone.utc)
+
+    date_time_str = datetime.strftime(date_time, MYSQL_DATETIME_FORMAT)
+
+    return date_time_str
 
 class ErrorLevel(Enum):
     DEBUG = 1

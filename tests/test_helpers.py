@@ -9,8 +9,16 @@ from crawler.constants import (
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
+    MYSQL_DATETIME_FORMAT,
 )
-from crawler.helpers import get_config
+from crawler.helpers import (
+    parse_date_tested,
+    get_config,
+)
+from datetime import (
+    datetime,
+    timezone,
+)
 
 
 def test_get_config():
@@ -73,3 +81,19 @@ def test_logging_collection_with_multiple_errors():
         "Total number of No plate barcode errors (TYPE 4): 1",
     ]
     assert logging.get_aggregate_total_messages() == exptd_report_msgs
+
+# tests for parsing date tested
+def test_parse_date_tested(config):
+    result = parse_date_tested(date_string='2020-11-02 13:04:23 UTC')
+    expected = datetime.strftime(datetime(2020, 11, 2, 13, 4, 23, tzinfo=timezone.utc), MYSQL_DATETIME_FORMAT)
+    assert result == expected
+
+def test_parse_date_tested_none(config):
+    result = parse_date_tested(date_string=None)
+    expected = ''
+    assert result == expected
+
+def test_parse_date_tested_wrong_format(config):
+    result = parse_date_tested(date_string='2nd November 2020')
+    expected = ''
+    assert result == expected

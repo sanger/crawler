@@ -21,27 +21,20 @@ from crawler.constants import (
     FIELD_LINE_NUMBER,
     FIELD_FILE_NAME,
     FIELD_FILE_NAME_DATE,
-    FIELD_RESULT,
     FIELD_CREATED_AT,
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
     FIELD_RNA_PCR_ID,
     FIELD_SOURCE,
-    MLWH_MONGODB_ID,
-    MLWH_ROOT_SAMPLE_ID,
-    MLWH_RNA_ID,
-    MLWH_PLATE_BARCODE,
-    MLWH_COORDINATE,
-    MLWH_RESULT,
-    MLWH_DATE_TESTED_STRING,
-    MLWH_DATE_TESTED,
-    MLWH_SOURCE,
-    MLWH_LAB_ID,
-    MLWH_CREATED_AT,
-    MLWH_UPDATED_AT,
     MYSQL_DATETIME_FORMAT,
 )
-from crawler.helpers import current_time, get_sftp_connection, LoggingCollection
+from crawler.helpers import (
+    current_time,
+    get_sftp_connection,
+    LoggingCollection,
+    parse_date_tested,
+    map_mongo_to_sql_columns,
+)
 from crawler.constants import (
     COLLECTION_SAMPLES,
     COLLECTION_SAMPLES_HISTORY,
@@ -489,13 +482,9 @@ class CentreFile:
 
                 mongo_ids {List[ObjectId]} -- list of mongodb ids in the same order as docs_to_insert, from the insert into the mongodb
         """
-
-        # TODO: consider splitting into batches to avoid hitting MySQL maximum_packet_size limitation
-
-        # TODO: how to re-run failed inserts? And how to run for legacy data
         values = []
         for doc in docs_to_insert:
-            values.append(self.map_mongo_to_sql_columns(doc))
+            values.append(map_mongo_to_sql_columns(doc))
 
         mysql_conn = create_mysql_connection(self.config, False)
 
@@ -517,45 +506,6 @@ class CentreFile:
                 f"MLWH database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
-
-    def map_mongo_to_sql_columns(self, doc) -> Dict[str, Any]:
-        """Transform the record from using the mongodb field names into a form suitable for the MLWH
-           We are not setting created_at_external and updated_at_external fields here
-           because it would be slow to retrieve them from MongoDB
-           and they would be virtually the same as created_at and updated_at
-
-            Arguments:
-                doc {Dict[str, str]} -- Filtered information about one sample, extracted from csv files.
-                                        Includes the mongodb id, as the doc has already been inserted into mongodb
-        """
-        return {
-            MLWH_MONGODB_ID: str(doc['_id']), # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
-            MLWH_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
-            MLWH_RNA_ID: doc[FIELD_RNA_ID],
-            MLWH_PLATE_BARCODE: doc[FIELD_PLATE_BARCODE],
-            MLWH_COORDINATE: doc[FIELD_COORDINATE],
-            MLWH_RESULT: doc[FIELD_RESULT],
-            MLWH_DATE_TESTED_STRING: doc[FIELD_DATE_TESTED],
-            MLWH_DATE_TESTED: self.parse_date_tested(doc[FIELD_DATE_TESTED]), # convert to suitable string representation for MySQL insert
-            MLWH_SOURCE: doc[FIELD_SOURCE],
-            MLWH_LAB_ID: doc[FIELD_LAB_ID],
-            MLWH_CREATED_AT: datetime.strftime(datetime.now(timezone.utc), MYSQL_DATETIME_FORMAT), # convert to suitable string representation for MySQL insert
-            MLWH_UPDATED_AT: datetime.strftime(datetime.now(timezone.utc), MYSQL_DATETIME_FORMAT), # convert to suitable string representation for MySQL insert
-        }
-
-    def parse_date_tested(self, date_string) -> str:
-        try:
-            date_time = datetime.strptime(date_string, f"{MYSQL_DATETIME_FORMAT} %Z")
-        except:
-            return ''
-
-        if date_string.find('UTC') != -1:
-            # timezone doesn't get set despite the '%Z' in the format string, unless we do this
-            date_time = date_time.replace(tzinfo=timezone.utc)
-
-        date_time_str = datetime.strftime(date_time, MYSQL_DATETIME_FORMAT)
-
-        return date_time_str
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.
