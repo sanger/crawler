@@ -8,11 +8,6 @@ import pymongo
 from crawler.constants import (
     COLLECTION_SAMPLES,
     FIELD_CREATED_AT,
-    # FIELD_LAB_ID,
-    # FIELD_PLATE_BARCODE,
-    # FIELD_RESULT,
-    # FIELD_RNA_ID,
-    # FIELD_ROOT_SAMPLE_ID,
 )
 from crawler.db import (
     create_mongo_client,
@@ -22,14 +17,17 @@ from crawler.db import (
     run_mysql_executemany_query,
 )
 from crawler.helpers import (
-    map_mongo_to_sql_columns_with_timestamps,
-    # get_config,
-    # current_time,
+    get_config,
+    map_mongo_doc_to_sql_columns,
 )
+
+from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 logger = logging.getLogger(__name__)
 
-def run(settings_module: str = "", start_timestamp: str = "", end_timestamp) -> None:
+def run(settings_module: str = "", start_timestamp: str = "", end_timestamp: str = "") -> None:
+    config, settings_module = get_config(settings_module)
+
     start = time.time()
     logging.config.dictConfig(config.LOGGING)  # type: ignore
 
@@ -53,20 +51,21 @@ def run(settings_module: str = "", start_timestamp: str = "", end_timestamp) -> 
             )
             # select from mongo between timestamps (in a cursor)
             cursor = samples_collection.find(
-            {
-                FIELD_CREATED_AT:{
-                    $gte:start_timestamp,
-                    $lte:end_timestamp
+                {
+                    f"{FIELD_CREATED_AT}":{
+                        '$gte': f"{start_timestamp}",
+                        '$lte': f"{end_timestamp}"
+                    }
                 }
-            })
+            )
 
             while(cursor.hasNext()):
                 # if it runs out of documents in its local batch it will fetch more based on batchsize
-                document = cursor.next()
+                doc = cursor.next()
 
                 # build up values for mongo samples
                 # TODO: any limit to array size here? db is 2gb+
-                values.append(map_mongo_to_sql_columns_with_timestamps(doc))
+                mongo_values.append(map_mongo_doc_to_sql_columns(doc))
 
 
         logger.info(
@@ -76,7 +75,7 @@ def run(settings_module: str = "", start_timestamp: str = "", end_timestamp) -> 
         with create_mysql_connection(config, True) as mlwh_conn:
 
                 # execute sql query to insert/update timestamps into MLWH
-                run_mysql_executemany_query(mlwh_conn, sql_query, mongo_values)
+                run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_values)
 
 
     except Exception as e:
