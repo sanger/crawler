@@ -11,6 +11,7 @@ import shutil
 import logging, pathlib
 import re
 from crawler.constants import (
+    FIELD_MONGODB_ID,
     FIELD_COORDINATE,
     FIELD_DATE_TESTED,
     FIELD_LAB_ID,
@@ -33,7 +34,7 @@ from crawler.helpers import (
     get_sftp_connection,
     LoggingCollection,
     parse_date_tested,
-    map_mongo_to_sql_columns,
+    map_lh_doc_to_sql_columns,
 )
 from crawler.constants import (
     COLLECTION_SAMPLES,
@@ -335,7 +336,7 @@ class CentreFile:
             mongo_ids_of_inserted = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
         if len(mongo_ids_of_inserted) > 0:
             # filter out docs which failed to insert into mongo - we don't want to create mlwh records for these
-            docs_to_insert_mlwh = list(filter(lambda x: x['_id'] in mongo_ids_of_inserted, docs_to_insert))
+            docs_to_insert_mlwh = list(filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert))
             self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
         self.backup_file()
@@ -464,8 +465,8 @@ class CentreFile:
             self.docs_inserted = e.details["nInserted"]
             self.add_duplication_errors(e)
 
-            errored_ids = list(map(lambda x: x['op']['_id'], e.details["writeErrors"]))
-            inserted_ids = [ doc['_id'] for doc in docs_to_insert if doc['_id'] not in errored_ids ]
+            errored_ids = list(map(lambda x: x['op'][FIELD_MONGODB_ID], e.details["writeErrors"]))
+            inserted_ids = [ doc[FIELD_MONGODB_ID] for doc in docs_to_insert if doc[FIELD_MONGODB_ID] not in errored_ids ]
 
             return inserted_ids
         except Exception as e:
@@ -484,7 +485,7 @@ class CentreFile:
         """
         values = []
         for doc in docs_to_insert:
-            values.append(map_mongo_to_sql_columns(doc))
+            values.append(map_lh_doc_to_sql_columns(doc))
 
         mysql_conn = create_mysql_connection(self.config, False)
 

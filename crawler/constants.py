@@ -14,6 +14,7 @@ FIELD_DATE_TESTED = "Date Tested"
 FIELD_LAB_ID = "Lab ID"
 
 # other field names
+FIELD_MONGODB_ID = "_id"
 FIELD_PLATE_BARCODE = "plate_barcode"
 FIELD_CENTRE_NAME = "name"
 FIELD_COORDINATE = "coordinate"

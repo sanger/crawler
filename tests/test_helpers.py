@@ -4,22 +4,42 @@ from crawler.helpers import LoggingCollection
 from unittest.mock import patch
 
 from crawler.constants import (
+    FIELD_MONGODB_ID,
     FIELD_DATE_TESTED,
     FIELD_LAB_ID,
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_COORDINATE,
+    FIELD_SOURCE,
+    FIELD_CREATED_AT,
+    FIELD_UPDATED_AT,
+    MLWH_MONGODB_ID,
+    MLWH_ROOT_SAMPLE_ID,
+    MLWH_RNA_ID,
+    MLWH_PLATE_BARCODE,
+    MLWH_COORDINATE,
+    MLWH_RESULT,
+    MLWH_DATE_TESTED_STRING,
+    MLWH_DATE_TESTED,
+    MLWH_SOURCE,
+    MLWH_LAB_ID,
+    MLWH_CREATED_AT,
+    MLWH_UPDATED_AT,
     MYSQL_DATETIME_FORMAT,
 )
 from crawler.helpers import (
     parse_date_tested,
     get_config,
+    map_lh_doc_to_sql_columns,
+    map_mongo_doc_to_sql_columns,
 )
 from datetime import (
     datetime,
     timezone,
 )
-
+from bson.objectid import ObjectId
 
 def test_get_config():
     with pytest.raises(ModuleNotFoundError):
@@ -97,3 +117,62 @@ def test_parse_date_tested_wrong_format(config):
     result = parse_date_tested(date_string='2nd November 2020')
     expected = ''
     assert result == expected
+
+# tests for lighthouse doc to MLWH mapping
+def test_map_lh_doc_to_sql_columns(config):
+    doc_to_transform = {
+        FIELD_MONGODB_ID: ObjectId('5f562d9931d9959b92544728'),
+        FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+        FIELD_RNA_ID: 'TC-rna-00000029_H11',
+        FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+        FIELD_COORDINATE: 'H11',
+        FIELD_RESULT: 'Negative',
+        FIELD_DATE_TESTED: '2020-04-23 14:40:08 UTC',
+        FIELD_SOURCE: 'Test Centre',
+        FIELD_LAB_ID: 'TC'
+    }
+
+    result = map_lh_doc_to_sql_columns(doc_to_transform)
+
+    assert result[MLWH_MONGODB_ID] == '5f562d9931d9959b92544728'
+    assert result[MLWH_ROOT_SAMPLE_ID] == 'ABC00000004'
+    assert result[MLWH_RNA_ID] == 'TC-rna-00000029_H11'
+    assert result[MLWH_PLATE_BARCODE] == 'TC-rna-00000029'
+    assert result[MLWH_COORDINATE] == 'H11'
+    assert result[MLWH_RESULT] == 'Negative'
+    assert result[MLWH_DATE_TESTED_STRING] == '2020-04-23 14:40:08 UTC'
+    assert result[MLWH_DATE_TESTED] == datetime.strftime(datetime(2020, 4, 23, 14, 40, 8, tzinfo=timezone.utc), MYSQL_DATETIME_FORMAT)
+    assert result[MLWH_SOURCE] == 'Test Centre'
+    assert result[MLWH_LAB_ID] == 'TC'
+    assert result.get(MLWH_CREATED_AT) is not None
+    assert result.get(MLWH_UPDATED_AT) is not None
+
+def test_map_mongo_doc_to_sql_columns(config):
+    doc_to_transform = {
+        FIELD_MONGODB_ID: ObjectId('5f562d9931d9959b92544728'),
+        FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+        FIELD_RNA_ID: 'TC-rna-00000029_H11',
+        FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+        FIELD_COORDINATE: 'H11',
+        FIELD_RESULT: 'Negative',
+        FIELD_DATE_TESTED: '2020-04-23 14:40:08 UTC',
+        FIELD_SOURCE: 'Test Centre',
+        FIELD_LAB_ID: 'TC',
+        FIELD_CREATED_AT: '2020-04-27 05:20:00 UTC',
+        FIELD_UPDATED_AT: '2020-05-13 12:50:00 UTC',
+    }
+
+    result = map_mongo_doc_to_sql_columns(doc_to_transform)
+
+    assert result[MLWH_MONGODB_ID] == '5f562d9931d9959b92544728'
+    assert result[MLWH_ROOT_SAMPLE_ID] == 'ABC00000004'
+    assert result[MLWH_RNA_ID] == 'TC-rna-00000029_H11'
+    assert result[MLWH_PLATE_BARCODE] == 'TC-rna-00000029'
+    assert result[MLWH_COORDINATE] == 'H11'
+    assert result[MLWH_RESULT] == 'Negative'
+    assert result[MLWH_DATE_TESTED_STRING] == '2020-04-23 14:40:08 UTC'
+    assert result[MLWH_DATE_TESTED] == datetime.strftime(datetime(2020, 4, 23, 14, 40, 8, tzinfo=timezone.utc), MYSQL_DATETIME_FORMAT)
+    assert result[MLWH_SOURCE] == 'Test Centre'
+    assert result[MLWH_LAB_ID] == 'TC'
+    assert result[MLWH_CREATED_AT] == '2020-04-27 05:20:00'
+    assert result[MLWH_UPDATED_AT] == '2020-05-13 12:50:00'

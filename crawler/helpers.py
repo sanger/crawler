@@ -14,6 +14,7 @@ from typing import Dict, Any, Tuple
 import pysftp  # type: ignore
 
 from crawler.constants import (
+    FIELD_MONGODB_ID,
     FIELD_COORDINATE,
     FIELD_DATE_TESTED,
     FIELD_LAB_ID,
@@ -93,13 +94,13 @@ def get_sftp_connection(
 
 def get_config(settings_module: str) -> Tuple[ModuleType, str]:
     """Get the config for the app by importing a module named by an environmental variable. This
-    allows easy switching between environments and inheriting default config values.
+        allows easy switching between environments and inheriting default config values.
 
-    Arguments:
-        settings_module {str} -- the settings module to load
+        Arguments:
+            settings_module {str} -- the settings module to load
 
-    Returns:
-        Optional[ModuleType] -- the config module loaded and available to use via `config.<param>`
+        Returns:
+            Optional[ModuleType] -- the config module loaded and available to use via `config.<param>`
     """
     try:
         if not settings_module:
@@ -110,48 +111,73 @@ def get_config(settings_module: str) -> Tuple[ModuleType, str]:
         sys.exit(f"{e} required in environmental variables for config")
 
 def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
+    """Transform common document fields into MySQL fields for MLWH.
+
+        Arguments:
+            doc {Dict[str, str]} -- Filtered information about one sample, extracted from mongodb.
+
+        Returns:
+            Dict[str, str] -- Dictionary of MySQL versions of fields
+    """
     return {
-        MLWH_MONGODB_ID: str(doc['_id']), # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
+        MLWH_MONGODB_ID: str(doc[FIELD_MONGODB_ID]), # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
         MLWH_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
         MLWH_RNA_ID: doc[FIELD_RNA_ID],
         MLWH_PLATE_BARCODE: doc[FIELD_PLATE_BARCODE],
         MLWH_COORDINATE: doc[FIELD_COORDINATE],
         MLWH_RESULT: doc[FIELD_RESULT],
         MLWH_DATE_TESTED_STRING: doc[FIELD_DATE_TESTED],
-        MLWH_DATE_TESTED: parse_date_tested(doc[FIELD_DATE_TESTED]), # convert to suitable string representation for MySQL insert
         MLWH_SOURCE: doc[FIELD_SOURCE],
         MLWH_LAB_ID: doc[FIELD_LAB_ID]
     }
 
-def map_mongo_to_sql_columns(doc) -> Dict[str, Any]:
-    """Transform the record from using the mongodb field names into a form suitable for the MLWH
+def map_lh_doc_to_sql_columns(doc) -> Dict[str, Any]:
+    """Transform the document fields from the parsed lighthouse file into a form suitable for the MLWH.
        We are setting created_at and updated_at fields to current timestamp for inserts here,
        because it would be too slow to retrieve them from MongoDB and they would be virtually the same
-       as we have only just written the mongo record
+       as we have only just written the mongo record.
+       We also have the mongodb id, as this is after the mongo inserts and was retrieved.
 
         Arguments:
             doc {Dict[str, str]} -- Filtered information about one sample, extracted from csv files.
-                                    Includes the mongodb id, as the doc has already been inserted into mongodb
+
+        Returns:
+            Dict[str, str] -- Dictionary of MySQL versions of fields
     """
     value = map_mongo_to_sql_common(doc)
-    value[MLWH_CREATED_AT] = datetime.strftime(datetime.now(timezone.utc), MYSQL_DATETIME_FORMAT) # convert to suitable string representation for MySQL insert
-    value[MLWH_UPDATED_AT] = datetime.strftime(datetime.now(timezone.utc), MYSQL_DATETIME_FORMAT) # convert to suitable string representation for MySQL insert
+    value[MLWH_DATE_TESTED] = parse_date_tested(doc[FIELD_DATE_TESTED])
+    value[MLWH_CREATED_AT] = datetime.strftime(datetime.now(timezone.utc), MYSQL_DATETIME_FORMAT)
+    value[MLWH_UPDATED_AT] = datetime.strftime(datetime.now(timezone.utc), MYSQL_DATETIME_FORMAT)
+    print("Value converted from lh doc:")
+    print(value)
     return value
 
-def map_mongo_to_sql_columns_with_timestamps(doc) -> Dict[str, Any]:
-    """This version selects the timestamps from the doc records for when we have selected from mongodb.
+def map_mongo_doc_to_sql_columns(doc) -> Dict[str, Any]:
+    """Transform the document fields from the parsed samples collection.
 
         Arguments:
             doc {Dict[str, str]} -- Filtered information about one sample, extracted from mongodb.
+
+        Returns:
+            Dict[str, str] -- Dictionary of MySQL versions of fields
     """
     value = map_mongo_to_sql_common(doc)
-    value[MLWH_CREATED_AT] = datetime.strftime(doc[FIELD_CREATED_AT], MYSQL_DATETIME_FORMAT) # convert to suitable string representation for MySQL insert
-    value[MLWH_UPDATED_AT] = datetime.strftime(doc[FIELD_UPDATED_AT], MYSQL_DATETIME_FORMAT) # convert to suitable string representation for MySQL insert
+    # TODO: is this correct? looks like "2020-04-27 05:20:00 UTC"
+    value[MLWH_DATE_TESTED] = parse_date_tested(doc[FIELD_DATE_TESTED])
+    value[MLWH_CREATED_AT] = datetime.strftime(datetime.strptime(doc[FIELD_CREATED_AT], f"{MYSQL_DATETIME_FORMAT} %Z"), MYSQL_DATETIME_FORMAT)
+    value[MLWH_UPDATED_AT] = datetime.strftime(datetime.strptime(doc[FIELD_UPDATED_AT], f"{MYSQL_DATETIME_FORMAT} %Z"), MYSQL_DATETIME_FORMAT)
+    print("Value converted from mongodb doc:")
+    print(value)
     return value
 
 def parse_date_tested(date_string: str) -> str:
-    """
+    """Converts date tested to MySQL format string
 
+        Arguments:
+            date_string {str} -- The date string from the document
+
+        Returns:
+            str -- The MySQL formatted string
     """
     try:
         date_time = datetime.strptime(date_string, f"{MYSQL_DATETIME_FORMAT} %Z")

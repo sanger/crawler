@@ -51,7 +51,7 @@ from crawler.constants import (
 )
 from crawler.helpers import (
     parse_date_tested,
-    map_mongo_to_sql_columns,
+    map_lh_doc_to_sql_columns,
     LoggingCollection,
 )
 from crawler.db import get_mongo_collection
@@ -665,33 +665,3 @@ def test_insert_samples_from_docs_into_mlwh(config):
         error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
         error_messages = centre_file.logging_collection.get_aggregate_messages()
         assert error_count == 0, f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
-
-# tests for Mongo / MLWH mapping
-def test_map_mongo_to_sql_columns(config):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
-
-    doc_to_transform = {
-        '_id': ObjectId('5f562d9931d9959b92544728'),
-        FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
-        FIELD_RNA_ID: 'TC-rna-00000029_H11',
-        FIELD_PLATE_BARCODE: 'TC-rna-00000029',
-        FIELD_COORDINATE: 'H11',
-        FIELD_RESULT: 'Negative',
-        FIELD_DATE_TESTED: '2020-04-23 14:40:08 UTC',
-        FIELD_SOURCE: 'Test Centre',
-        FIELD_LAB_ID: 'TC'
-    }
-
-    result = map_mongo_to_sql_columns(doc_to_transform)
-
-    assert result[MLWH_MONGODB_ID] == '5f562d9931d9959b92544728'
-    assert result[MLWH_ROOT_SAMPLE_ID] == 'ABC00000004'
-    assert result[MLWH_RNA_ID] == 'TC-rna-00000029_H11'
-    assert result[MLWH_PLATE_BARCODE] == 'TC-rna-00000029'
-    assert result[MLWH_COORDINATE] == 'H11'
-    assert result[MLWH_RESULT] == 'Negative'
-    assert result[MLWH_DATE_TESTED_STRING] == '2020-04-23 14:40:08 UTC'
-    assert result[MLWH_DATE_TESTED] == datetime.strftime(datetime(2020, 4, 23, 14, 40, 8, tzinfo=timezone.utc), MYSQL_DATETIME_FORMAT)
-    assert result[MLWH_SOURCE] == 'Test Centre'
-    assert result[MLWH_LAB_ID] == 'TC'
