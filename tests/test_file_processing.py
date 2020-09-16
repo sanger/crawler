@@ -37,22 +37,6 @@ from crawler.constants import (
     FIELD_PLATE_BARCODE,
     FIELD_COORDINATE,
     FIELD_SOURCE,
-    MLWH_MONGODB_ID,
-    MLWH_ROOT_SAMPLE_ID,
-    MLWH_RNA_ID,
-    MLWH_PLATE_BARCODE,
-    MLWH_COORDINATE,
-    MLWH_RESULT,
-    MLWH_DATE_TESTED_STRING,
-    MLWH_DATE_TESTED,
-    MLWH_SOURCE,
-    MLWH_LAB_ID,
-    MYSQL_DATETIME_FORMAT,
-)
-from crawler.helpers import (
-    parse_date_tested,
-    map_lh_doc_to_sql_columns,
-    LoggingCollection,
 )
 from crawler.db import get_mongo_collection
 
