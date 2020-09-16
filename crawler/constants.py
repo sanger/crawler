@@ -26,6 +26,7 @@ FIELD_UPDATED_AT = "updated_at"
 FIELD_SOURCE = "source"
 
 # multi-lims warehouse field names
+MLWH_TABLE_NAME = "lighthouse_sample"
 MLWH_MONGODB_ID = "mongodb_id"
 MLWH_ROOT_SAMPLE_ID ="root_sample_id"
 MLWH_RNA_ID = "rna_id"
@@ -39,5 +40,6 @@ MLWH_LAB_ID = "lab_id"
 MLWH_CREATED_AT = "created_at"
 MLWH_UPDATED_AT = "updated_at"
 
-# mysql
-MYSQL_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+# datetime formats
+MONGO_DATETIME_FORMAT = "%y%m%d_%H%M"
+MYSQL_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
