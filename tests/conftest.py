@@ -18,7 +18,10 @@ from crawler.constants import (
 
 from crawler.db import create_mongo_client, get_mongo_db
 from crawler.helpers import get_config
-from crawler.db import get_mongo_collection
+from crawler.db import (
+    get_mongo_collection,
+    create_mysql_connection,
+)
 
 logger = logging.getLogger(__name__)
 CONFIG, _ = get_config("crawler.config.test")
@@ -50,6 +53,16 @@ def mongo_database(mongo_client):
     # sure what version of mongo is being used in production.
     finally:
         mongo_client.drop_database(db)
+
+
+@pytest.fixture
+def mlwh_connection(config):
+    mysql_conn = create_mysql_connection(config, readonly=False)
+    try:
+        yield config, mysql_conn
+    finally:
+        # close the connection
+        mysql_conn.close()
 
 
 @pytest.fixture
