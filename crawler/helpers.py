@@ -124,11 +124,11 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
         MLWH_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
         MLWH_RNA_ID: doc[FIELD_RNA_ID],
         MLWH_PLATE_BARCODE: doc[FIELD_PLATE_BARCODE],
-        MLWH_COORDINATE: doc[FIELD_COORDINATE],
-        MLWH_RESULT: doc[FIELD_RESULT],
-        MLWH_DATE_TESTED_STRING: doc[FIELD_DATE_TESTED],
-        MLWH_SOURCE: doc[FIELD_SOURCE],
-        MLWH_LAB_ID: doc[FIELD_LAB_ID]
+        MLWH_COORDINATE: doc.get(FIELD_COORDINATE, None),
+        MLWH_RESULT: doc.get(FIELD_RESULT, None),
+        MLWH_DATE_TESTED_STRING: doc.get(FIELD_DATE_TESTED, None),
+        MLWH_SOURCE: doc.get(FIELD_SOURCE, None),
+        MLWH_LAB_ID: doc.get(FIELD_LAB_ID, None),
     }
 
 def map_lh_doc_to_sql_columns(doc) -> Dict[str, Any]:
@@ -145,11 +145,10 @@ def map_lh_doc_to_sql_columns(doc) -> Dict[str, Any]:
             Dict[str, str] -- Dictionary of MySQL versions of fields
     """
     value = map_mongo_to_sql_common(doc)
-    value[MLWH_DATE_TESTED] = parse_date_tested(doc[FIELD_DATE_TESTED])
+    if doc.get(FIELD_DATE_TESTED, None) is not None:
+        value[MLWH_DATE_TESTED] = parse_date_tested(doc[FIELD_DATE_TESTED])
     value[MLWH_CREATED_AT] = datetime.strftime(datetime.now(timezone.utc), MYSQL_DATETIME_FORMAT)
     value[MLWH_UPDATED_AT] = datetime.strftime(datetime.now(timezone.utc), MYSQL_DATETIME_FORMAT)
-    print("Value converted from lh doc:")
-    print(value)
     return value
 
 def map_mongo_doc_to_sql_columns(doc) -> Dict[str, Any]:
@@ -162,12 +161,9 @@ def map_mongo_doc_to_sql_columns(doc) -> Dict[str, Any]:
             Dict[str, str] -- Dictionary of MySQL versions of fields
     """
     value = map_mongo_to_sql_common(doc)
-    # TODO: is this correct? looks like "2020-04-27 05:20:00 UTC"
-    value[MLWH_DATE_TESTED] = parse_date_tested(doc[FIELD_DATE_TESTED])
-    value[MLWH_CREATED_AT] = datetime.strftime(datetime.strptime(doc[FIELD_CREATED_AT], f"{MYSQL_DATETIME_FORMAT} %Z"), MYSQL_DATETIME_FORMAT)
-    value[MLWH_UPDATED_AT] = datetime.strftime(datetime.strptime(doc[FIELD_UPDATED_AT], f"{MYSQL_DATETIME_FORMAT} %Z"), MYSQL_DATETIME_FORMAT)
-    print("Value converted from mongodb doc:")
-    print(value)
+    value[MLWH_DATE_TESTED] = doc.get(FIELD_DATE_TESTED, None)
+    value[MLWH_CREATED_AT] = datetime.strftime(doc[FIELD_CREATED_AT], MYSQL_DATETIME_FORMAT)
+    value[MLWH_UPDATED_AT] = datetime.strftime(doc[FIELD_UPDATED_AT], MYSQL_DATETIME_FORMAT)
     return value
 
 def parse_date_tested(date_string: str) -> str:

@@ -155,11 +155,11 @@ def test_map_mongo_doc_to_sql_columns(config):
         FIELD_PLATE_BARCODE: 'TC-rna-00000029',
         FIELD_COORDINATE: 'H11',
         FIELD_RESULT: 'Negative',
-        FIELD_DATE_TESTED: '2020-04-23 14:40:08 UTC',
+        FIELD_DATE_TESTED: '2020-04-23 14:40:08',
         FIELD_SOURCE: 'Test Centre',
         FIELD_LAB_ID: 'TC',
-        FIELD_CREATED_AT: '2020-04-27 05:20:00 UTC',
-        FIELD_UPDATED_AT: '2020-05-13 12:50:00 UTC',
+        FIELD_CREATED_AT: datetime(2020, 4, 27, 5, 20, 0, tzinfo=timezone.utc),
+        FIELD_UPDATED_AT: datetime(2020, 5, 13, 12, 50, 0, tzinfo=timezone.utc),
     }
 
     result = map_mongo_doc_to_sql_columns(doc_to_transform)
@@ -170,8 +170,8 @@ def test_map_mongo_doc_to_sql_columns(config):
     assert result[MLWH_PLATE_BARCODE] == 'TC-rna-00000029'
     assert result[MLWH_COORDINATE] == 'H11'
     assert result[MLWH_RESULT] == 'Negative'
-    assert result[MLWH_DATE_TESTED_STRING] == '2020-04-23 14:40:08 UTC'
-    assert result[MLWH_DATE_TESTED] == datetime.strftime(datetime(2020, 4, 23, 14, 40, 8, tzinfo=timezone.utc), MYSQL_DATETIME_FORMAT)
+    assert result[MLWH_DATE_TESTED_STRING] == '2020-04-23 14:40:08'
+    assert result[MLWH_DATE_TESTED] == datetime.strftime(datetime(2020, 4, 23, 14, 40, 8), MYSQL_DATETIME_FORMAT)
     assert result[MLWH_SOURCE] == 'Test Centre'
     assert result[MLWH_LAB_ID] == 'TC'
     assert result[MLWH_CREATED_AT] == '2020-04-27 05:20:00'
