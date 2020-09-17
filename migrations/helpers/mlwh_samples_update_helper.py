@@ -43,8 +43,6 @@ def print_exception() -> None:
       traceback.print_tb(e[2], limit=10)
 
 def update_mlwh_with_legacy_samples(config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
-    print(f"DEBUG: In update method with start datetime {s_start_datetime} and end datetime {s_end_datetime}")
-
     if not valid_datetime_string(s_start_datetime):
         print('Aborting run: Start datetime is not in the expected datetime format')
         return
@@ -60,7 +58,7 @@ def update_mlwh_with_legacy_samples(config, s_start_datetime: str = "", s_end_da
         print("Aborting run: End datetime must be greater than start datetime")
         return
 
-    print(f"DEBUG: In update method with start datetime {start_datetime} and end datetime {end_datetime}")
+    print(f"Starting MLWH update process with start datetime {start_datetime} and end datetime {end_datetime}")
 
     try:
         mongo_docs_for_sql = []
