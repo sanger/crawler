@@ -20,7 +20,7 @@ def migration_sample_timestamps():
 
 def migration_update_mlwh_with_legacy_samples():
     if not len(sys.argv) == 4:
-        print("Please add both start and end datetime arguments for this migration (format yymmdd_hhmm e.g. 200115_1200), aborting")
+        print("Please add both start and end datetime range arguments for this migration (format YYMMDD_HHmm e.g. 200115_1200, inclusive), aborting")
         return
 
     s_start_datetime = sys.argv[2]
