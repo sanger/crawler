@@ -119,25 +119,22 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
         Returns:
             Dict[str, str] -- Dictionary of MySQL versions of fields
     """
-
-
-    if doc.get(FIELD_DATE_TESTED, None) is not None:
-        date_tested = parse_date_tested(doc[FIELD_DATE_TESTED])
-    else:
-        date_tested = None
-
-    return {
+    value = {
         MLWH_MONGODB_ID: str(doc[FIELD_MONGODB_ID]), # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
         MLWH_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
         MLWH_RNA_ID: doc[FIELD_RNA_ID],
         MLWH_PLATE_BARCODE: doc[FIELD_PLATE_BARCODE],
         MLWH_COORDINATE: doc.get(FIELD_COORDINATE, None),
         MLWH_RESULT: doc.get(FIELD_RESULT, None),
-        MLWH_DATE_TESTED: date_tested,
         MLWH_DATE_TESTED_STRING: doc.get(FIELD_DATE_TESTED, None),
         MLWH_SOURCE: doc.get(FIELD_SOURCE, None),
         MLWH_LAB_ID: doc.get(FIELD_LAB_ID, None),
     }
+
+    if doc.get(FIELD_DATE_TESTED, None) is not None:
+        value[MLWH_DATE_TESTED] = parse_date_tested(doc[FIELD_DATE_TESTED])
+
+    return value
 
 def map_lh_doc_to_sql_columns(doc) -> Dict[str, Any]:
     """Transform the document fields from the parsed lighthouse file into a form suitable for the MLWH.
