@@ -151,7 +151,7 @@ def test_when_no_rows_match_timestamp_range(mongo_database, mlwh_connection):
         cursor.execute(sql_query)
         records = cursor.fetchall()
 
-        # check there are the expected number of rows in the MLWH (4?)
+        # check there are the expected number of rows in the MLWH (0 fell within date range)
         assert cursor.rowcount == 0
 
     except Exception as e:
