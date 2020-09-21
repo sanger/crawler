@@ -75,7 +75,7 @@ def test_basic_usage(mongo_database, mlwh_connection):
 
     start_datetime = datetime(2020, 5, 10, 15, 10)
 
-    # generate and insert sample rows into the mobgo database
+    # generate and insert sample rows into the mongo database
     test_samples = generate_example_samples(range(0, 6), start_datetime)
     mongo_db.samples.insert_many(test_samples)
 
