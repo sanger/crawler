@@ -61,7 +61,7 @@ def test_basic_usage(mongo_database, mlwh_connection):
 
     start_datetime = datetime(2020, 5, 10, 15, 10)
 
-    # generate and insert sample rows into the mobgo database
+    # generate and insert sample rows into the mongo database
     test_samples = generate_example_samples(range(0, 6), start_datetime)
     mongo_db.samples.insert_many(test_samples)
 
@@ -138,7 +138,7 @@ def test_when_no_rows_match_timestamp_range(mongo_database, mlwh_connection):
         cursor.execute(sql_query)
         records = cursor.fetchall()
 
-        # check there are the expected number of rows in the MLWH (4?)
+        # check there are the expected number of rows in the MLWH (0 fell within date range)
         assert cursor.rowcount == 0
     except:
         pytest.fail("An exception occurred checking the mlwh table for rows inserted")
