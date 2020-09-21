@@ -17,10 +17,7 @@ from crawler.db import (
     create_mysql_connection,
     run_mysql_executemany_query,
 )
-from crawler.helpers import (
-    get_config,
-    map_mongo_doc_to_sql_columns,
-)
+from crawler.helpers import map_mongo_doc_to_sql_columns
 from datetime import datetime
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
@@ -44,21 +41,21 @@ def print_exception() -> None:
 
 def update_mlwh_with_legacy_samples(config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
     if not valid_datetime_string(s_start_datetime):
-        print('Aborting run: Start datetime is not in the expected datetime format')
+        print('Aborting run: Expected format of Start datetime is YYMMDD_HHmm')
         return
 
     if not valid_datetime_string(s_end_datetime):
-        print('Aborting run: End datetime is not in the expected datetime format')
+        print('Aborting run: Expected format of End datetime is YYMMDD_HHmm')
         return
 
     start_datetime = datetime.strptime(s_start_datetime, MONGO_DATETIME_FORMAT)
     end_datetime = datetime.strptime(s_end_datetime, MONGO_DATETIME_FORMAT)
 
     if start_datetime > end_datetime:
-        print("Aborting run: End datetime must be greater than start datetime")
+        print("Aborting run: End datetime must be greater than Start datetime")
         return
 
-    print(f"Starting MLWH update process with start datetime {start_datetime} and end datetime {end_datetime}")
+    print(f"Starting MLWH update process with Start datetime {start_datetime} and End datetime {end_datetime}")
 
     try:
         mongo_docs_for_sql = []

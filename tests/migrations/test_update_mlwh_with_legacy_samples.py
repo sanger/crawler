@@ -14,19 +14,12 @@ from crawler.constants import (
     FIELD_PLATE_BARCODE,
     FIELD_CREATED_AT,
     FIELD_UPDATED_AT,
+    MLWH_DB_DBNAME,
     MLWH_TABLE_NAME,
+    MLWH_CREATED_AT,
     MONGO_DATETIME_FORMAT,
 )
-import pytest
 from datetime import (datetime, timedelta)
-
-def print_exception(e: Exception) -> None:
-    print(f'An exception occurred, at {datetime.now()}')
-    e = sys.exc_info()
-    print(e[0]) # exception type
-    print(e[1]) # exception message
-    if e[2]: # traceback
-      traceback.print_tb(e[2], limit=10)
 
 def generate_example_samples(range, start_datetime):
     samples = []
@@ -42,23 +35,16 @@ def generate_example_samples(range, start_datetime):
             FIELD_CREATED_AT: start_datetime + timedelta(days=n),
             FIELD_UPDATED_AT: start_datetime + timedelta(days=n),
         })
-
-    print(samples)
     return samples
 
 def clear_mlwh_table(mysql_conn):
-    print("Clearing MLWH database table")
-
     cursor = mysql_conn.cursor()
     try:
-        cursor.execute(f"TRUNCATE TABLE unified_warehouse_test.{MLWH_TABLE_NAME}")
+        cursor.execute(f"TRUNCATE TABLE {MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
         mysql_conn.commit()
-        print('Table cleared')
-    except Exception as e:
-        print("An exception occurred clearing the table")
-        print_exception(e)
+    except:
+        pytest.fail("An exception occurred clearing the table")
     finally:
-        print('Closing the cursor.')
         cursor.close()
 
 def test_valid_datetime_string_invalid(config):
@@ -92,10 +78,13 @@ def test_basic_usage(mongo_database, mlwh_connection):
     s_end_datetime = datetime.strftime(start_datetime + timedelta(days=3), MONGO_DATETIME_FORMAT)
 
     # run the method to update the MLWH from the mongo database
-    update_mlwh_with_legacy_samples(config, s_start_datetime, s_end_datetime)
+    try:
+        update_mlwh_with_legacy_samples(config, s_start_datetime, s_end_datetime)
+    except:
+        pytest.fail('Exception running update method')
 
     # query for selecting rows from MLWH (it was emptied before so select * is fine for this)
-    sql_query = f"SELECT * FROM unified_warehouse_test.{MLWH_TABLE_NAME} ORDER BY {FIELD_CREATED_AT} ASC"
+    sql_query = f"SELECT * FROM {MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} ORDER BY {MLWH_CREATED_AT} ASC"
 
     try:
         # run the query and fetch the results
@@ -103,16 +92,14 @@ def test_basic_usage(mongo_database, mlwh_connection):
         cursor.execute(sql_query)
         records = cursor.fetchall()
 
-        # check there are the expected number of rows in the MLWH (4?)
+        # check there are the expected number of rows in the MLWH (4 of 6 are in the datetime range)
         assert cursor.rowcount == 4
 
         # check the plate barcodes are as expected
         assert records[0][5] == "DN10000000"
         assert records[3][5] == "DN10000003"
-
-    except Exception as e:
-        print("An exception occurred checking the mlwh table for rows inserted")
-        print_exception(e)
+    except:
+        pytest.fail("An exception occurred checking the mlwh table for rows inserted")
     finally:
         cursor.close()
         mysql_conn.close()
@@ -143,7 +130,7 @@ def test_when_no_rows_match_timestamp_range(mongo_database, mlwh_connection):
     update_mlwh_with_legacy_samples(config, s_start_datetime, s_end_datetime)
 
     # query for selecting rows from MLWH (it was emptied before so select * is fine for this)
-    sql_query = f"SELECT * FROM unified_warehouse_test.{MLWH_TABLE_NAME} ORDER BY {FIELD_CREATED_AT} ASC"
+    sql_query = f"SELECT * FROM {MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} ORDER BY {MLWH_CREATED_AT} ASC"
 
     try:
         # run the query and fetch the results
@@ -153,10 +140,8 @@ def test_when_no_rows_match_timestamp_range(mongo_database, mlwh_connection):
 
         # check there are the expected number of rows in the MLWH (4?)
         assert cursor.rowcount == 0
-
-    except Exception as e:
-        print("An exception occurred checking the mlwh table for rows inserted")
-        print_exception(e)
+    except:
+        pytest.fail("An exception occurred checking the mlwh table for rows inserted")
     finally:
         cursor.close()
         mysql_conn.close()
