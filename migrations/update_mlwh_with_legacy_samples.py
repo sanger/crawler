@@ -3,9 +3,8 @@ from crawler.helpers import (
 )
 from datetime import datetime
 from migrations.helpers import mlwh_samples_update_helper
-# import sys
 
-# Start and End datetime parameters must be in format YYYY MM DD HH mm
+# Start and End datetime parameters must be in format YYMMDD_HHmm e.g. 200515_0900
 def run(settings_module: str = "", s_start_datetime: str = "", s_end_datetime: str = "") -> None:
     config, settings_module = get_config(settings_module)
 
