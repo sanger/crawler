@@ -58,6 +58,21 @@ The following runtime flags are available:
     --sftp       use SFTP to download CSV files, defaults to using local files
     --keep-files keeps centre csv files after runner has been executed
 
+## Updating the MLWH lighthouse_sample table
+
+When the crawler process runs nightly it should be updating the MLWH lighthouse_sample table as it goes with records for all rows that are inserted into MongoDB.
+If that MLWH insert process fails you should see a critical exception for the file in Lighthouse-UI. This may be after records inserted correctly into MongoDB, and re-running the file will not re-attempt the MLWH inserts in that situation.
+There is a manual migration task that can be run to fix this discrepancy (update_mlwh_with_legacy_samples) that allows insertion of rows to the MLWH between two MongoDB created_at datetimes.
+NB. Both datetimes are inclusive: range includes those rows greater than or equal to start datetime, and less than or equal to end datetime.
+
+Usage (inside pipenv shell):
+
+    $ python run_migration.py update_mlwh_with_legacy_samples 200115_1200 200116_1600
+
+Where the time format is YYMMDD_HHmm. Both start and end timestamps nust be present.
+
+The process should not duplicate rows that are already present in MLWH, so you can be generous with your timestamp range.
+
 ## Testing
 
 The tests require a connection to the 'lighthouse_samples' table in the Multi-LIMS Warehouse.
@@ -90,21 +105,21 @@ To do it the old way:
 
         brew install mongodb/brew/mongodb-database-tools
 
-1. Enter the mongo shell from a terminal, substituting `<uri>` with a mongo uri that looks something
+2. Enter the mongo shell from a terminal, substituting `<uri>` with a mongo uri that looks something
 like `"mongodb://<user>:<password>@<host_address>/<database>"`:
 
         mongo "<uri>"
 
-1. Verify that "Positive" is the only keyword that defines positive samples by executing the
+3. Verify that "Positive" is the only keyword that defines positive samples by executing the
 following from a mongo shell:
 
         db.samples.distinct("Result")
 
-1. Create a view (if it does not already exist) of the distinct plate barcodes which allows you to export the data to a CSV file:
+4. Create a view (if it does not already exist) of the distinct plate barcodes which allows you to export the data to a CSV file:
 
         db.createView("ditinctPlateBarcode", "samples", [{ $match : { Result : "Positive" } } , { $group : { _id : "$plate_barcode" } }])
 
-1. Export positive samples to a CSV file and select the fields required in the CSV:
+5. Export positive samples to a CSV file and select the fields required in the CSV:
 
         mongoexport --uri="<uri>" \
         --collection=samples \
@@ -113,7 +128,7 @@ following from a mongo shell:
         --fields "source,plate_barcode,Root Sample ID,Result,Date Tested" \
         --query '{"Result":{ "$regularExpression": { "pattern": "^positive", "options": "i" }}}'
 
-1. Export the plate barcodes to a CSV file:
+6. Export the plate barcodes to a CSV file:
 
         mongoexport --uri="<uri>" \
         --collection=ditinctPlateBarcode \
@@ -121,7 +136,7 @@ following from a mongo shell:
         --type=csv \
         --fields "_id"
 
-1. Format the *plate_barcodes.csv* file by removing the first line (contains `_id`) and surrounding
+7. Format the *plate_barcodes.csv* file by removing the first line (contains `_id`) and surrounding
 each barcode with double quotation marks (`"`) and adding a comma (`,`) to the end of each line -
 except the last:
 
@@ -135,7 +150,7 @@ except the last:
 
         cat plate_barcodes.csv | sed -e 's/\(.*\)/\"\1\"/g' | sed -e '$ ! s/$/,/g' > plates_barcodes_quoted.txt
 
-1. Export a list (to CSV called *location_barcodes.csv*) of plate barcode to location barcode from
+8. Export a list (to CSV called *location_barcodes.csv*) of plate barcode to location barcode from
 the labwhere database using the following query:
 
     ```sql
@@ -150,18 +165,18 @@ the labwhere database using the following query:
         labwares.barcode IN (<plate barcode list from previous step>);
     ```
 
-1. Open the CSV file created above (*location_barcodes.csv*) in Excel and create a filter on the
+9. Open the CSV file created above (*location_barcodes.csv*) in Excel and create a filter on the
 two columns and sort the `labwares.barcode` column in ascending order - save the file as `.xlsx`.
-1. Open the *samples.csv* file created earlier and add a `VLOOKUP` formula to the first empty column
+10. Open the *samples.csv* file created earlier and add a `VLOOKUP` formula to the first empty column
 (name the column `location_barcode`) and drag down to copy the location barcode (`labwares.barcode`)
 from the *location_barcodes.csv*
 file:
 
         =VLOOKUP(B2,location_barcodes.xlsx!$A:$B,2,FALSE)
 
-1. Add a filter to the entire dataset in *samples.csv* and filter the `location_barcode` column to
+11. Add a filter to the entire dataset in *samples.csv* and filter the `location_barcode` column to
 exclude those not having a match in *location_barcodes.csv*
-1. Save *samples.csv* as *yyymmdd_hhmm_LH_onsite.xls*
+12. Save *samples.csv* as *yyymmdd_hhmm_LH_onsite.xls*
 
 ## Miscellaneous
 
