@@ -9,8 +9,8 @@ import logging
 config, settings_module = get_config('')
 
 logger = logging.getLogger(__name__)
-config.LOGGING["loggers"]["crawler"]["level"] = "DEBUG"
-config.LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]
+config.LOGGING["loggers"]["crawler"]["level"] = "DEBUG" # type: ignore
+config.LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"] # type: ignore
 logging.config.dictConfig(config.LOGGING)  # type: ignore
 
 ##
