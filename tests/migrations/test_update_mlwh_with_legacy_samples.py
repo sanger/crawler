@@ -1,5 +1,6 @@
 import sys
 import traceback
+import pytest
 from migrations.helpers.mlwh_samples_update_helper import (
     valid_datetime_string,
     update_mlwh_with_legacy_samples,
