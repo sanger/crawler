@@ -11,8 +11,8 @@ date_tested_string,
 date_tested,
 source,
 lab_id,
-created_at_external,
-updated_at_external
+created_at,
+updated_at
 )
 VALUES (
 %(mongodb_id)s,
@@ -35,8 +35,8 @@ date_tested_string=VALUES(date_tested_string),
 date_tested=VALUES(date_tested),
 source=VALUES(source),
 lab_id=VALUES(lab_id),
-created_at_external=VALUES(created_at),
-updated_at_external=VALUES(updated_at);
+created_at=VALUES(created_at),
+updated_at=VALUES(updated_at);
 """
 
 SQL_TEST_MLWH_CREATE = """
@@ -55,8 +55,6 @@ CREATE TABLE `unified_warehouse_test`.`lighthouse_sample` (
 `date_tested` datetime DEFAULT NULL COMMENT 'date_tested_string in date format',
 `source` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL COMMENT 'Lighthouse centre that the sample came from',
 `lab_id` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL COMMENT 'Id of the lab, within the Lighthouse centre',
-`created_at_external` datetime DEFAULT NULL COMMENT 'When the corresponding record was inserted into the MongoDB',
-`updated_at_external` datetime DEFAULT NULL COMMENT 'When the corresponding record was last updated in MongoDB',
 `created_at` datetime DEFAULT NULL COMMENT 'When this record was inserted',
 `updated_at` datetime DEFAULT NULL COMMENT 'When this record was last updated',
 PRIMARY KEY (`id`),
