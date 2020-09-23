@@ -123,9 +123,9 @@ def test_map_lh_doc_to_sql_columns(config):
     doc_to_transform = {
         FIELD_MONGODB_ID: ObjectId('5f562d9931d9959b92544728'),
         FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
-        FIELD_RNA_ID: 'TC-rna-00000029_H11',
+        FIELD_RNA_ID: 'TC-rna-00000029_H01',
         FIELD_PLATE_BARCODE: 'TC-rna-00000029',
-        FIELD_COORDINATE: 'H11',
+        FIELD_COORDINATE: 'H01',
         FIELD_RESULT: 'Negative',
         FIELD_DATE_TESTED: '2020-04-23 14:40:08 UTC',
         FIELD_SOURCE: 'Test Centre',
@@ -136,9 +136,9 @@ def test_map_lh_doc_to_sql_columns(config):
 
     assert result[MLWH_MONGODB_ID] == '5f562d9931d9959b92544728'
     assert result[MLWH_ROOT_SAMPLE_ID] == 'ABC00000004'
-    assert result[MLWH_RNA_ID] == 'TC-rna-00000029_H11'
+    assert result[MLWH_RNA_ID] == 'TC-rna-00000029_H01'
     assert result[MLWH_PLATE_BARCODE] == 'TC-rna-00000029'
-    assert result[MLWH_COORDINATE] == 'H11'
+    assert result[MLWH_COORDINATE] == 'H1'
     assert result[MLWH_RESULT] == 'Negative'
     assert result[MLWH_DATE_TESTED_STRING] == '2020-04-23 14:40:08 UTC'
     assert result[MLWH_DATE_TESTED] == datetime.strftime(datetime(2020, 4, 23, 14, 40, 8, tzinfo=timezone.utc), MYSQL_DATETIME_FORMAT)
@@ -151,9 +151,9 @@ def test_map_mongo_doc_to_sql_columns(config):
     doc_to_transform = {
         FIELD_MONGODB_ID: ObjectId('5f562d9931d9959b92544728'),
         FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
-        FIELD_RNA_ID: 'TC-rna-00000029_H11',
+        FIELD_RNA_ID: 'TC-rna-00000029_H01',
         FIELD_PLATE_BARCODE: 'TC-rna-00000029',
-        FIELD_COORDINATE: 'H11',
+        FIELD_COORDINATE: 'H01',
         FIELD_RESULT: 'Negative',
         FIELD_DATE_TESTED: '2020-04-23 14:40:08 UTC',
         FIELD_SOURCE: 'Test Centre',
@@ -166,9 +166,9 @@ def test_map_mongo_doc_to_sql_columns(config):
 
     assert result[MLWH_MONGODB_ID] == '5f562d9931d9959b92544728'
     assert result[MLWH_ROOT_SAMPLE_ID] == 'ABC00000004'
-    assert result[MLWH_RNA_ID] == 'TC-rna-00000029_H11'
+    assert result[MLWH_RNA_ID] == 'TC-rna-00000029_H01'
     assert result[MLWH_PLATE_BARCODE] == 'TC-rna-00000029'
-    assert result[MLWH_COORDINATE] == 'H11'
+    assert result[MLWH_COORDINATE] == 'H1'
     assert result[MLWH_RESULT] == 'Negative'
     assert result[MLWH_DATE_TESTED_STRING] == '2020-04-23 14:40:08 UTC'
     assert result[MLWH_DATE_TESTED] == datetime.strftime(datetime(2020, 4, 23, 14, 40, 8, tzinfo=timezone.utc), MYSQL_DATETIME_FORMAT)

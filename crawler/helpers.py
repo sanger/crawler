@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import re
 
 from datetime import (
     datetime,
@@ -124,7 +125,7 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
         MLWH_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
         MLWH_RNA_ID: doc[FIELD_RNA_ID],
         MLWH_PLATE_BARCODE: doc[FIELD_PLATE_BARCODE],
-        MLWH_COORDINATE: doc.get(FIELD_COORDINATE, None),
+        MLWH_COORDINATE: unpad_coordinate(doc.get(FIELD_COORDINATE, None)),
         MLWH_RESULT: doc.get(FIELD_RESULT, None),
         MLWH_DATE_TESTED_STRING: doc.get(FIELD_DATE_TESTED, None),
         MLWH_SOURCE: doc.get(FIELD_SOURCE, None),
@@ -135,6 +136,15 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
         value[MLWH_DATE_TESTED] = parse_date_tested(doc[FIELD_DATE_TESTED])
 
     return value
+
+# Stip any leading zeros from the coordinate
+# eg. A01 => A1
+def unpad_coordinate(coordinate):
+    return (
+        re.sub(r"0(\d+)$", r"\1", coordinate)
+        if (coordinate and isinstance(coordinate, str))
+        else coordinate
+    )
 
 def map_lh_doc_to_sql_columns(doc) -> Dict[str, Any]:
     """Transform the document fields from the parsed lighthouse file into a form suitable for the MLWH.
