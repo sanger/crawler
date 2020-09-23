@@ -83,9 +83,6 @@ def test_run_mysql_executemany_query_success(config):
 
     run_mysql_executemany_query(mysql_conn=conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=[])
 
-    # check transaction is committed
-    assert conn.commit.called == True
-
     # check connection is closed
     assert cursor.close.called == True
     assert conn.close.called == True
