@@ -137,7 +137,7 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
 
     return value
 
-# Stip any leading zeros from the coordinate
+# Strip any leading zeros from the coordinate
 # eg. A01 => A1
 def unpad_coordinate(coordinate):
     return (

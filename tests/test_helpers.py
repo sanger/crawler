@@ -34,6 +34,7 @@ from crawler.helpers import (
     get_config,
     map_lh_doc_to_sql_columns,
     map_mongo_doc_to_sql_columns,
+    unpad_coordinate
 )
 from datetime import (
     datetime,
@@ -117,6 +118,22 @@ def test_parse_date_tested_wrong_format(config):
     result = parse_date_tested(date_string='2nd November 2020')
     expected = ''
     assert result == expected
+
+# tests for unpad coordinate
+def test_unpad_coordinate_A01():
+    assert unpad_coordinate("A01") == "A1"
+
+
+def test_unpad_coordinate_A1():
+    assert unpad_coordinate("A1") == "A1"
+
+
+def test_unpad_coordinate_A10():
+    assert unpad_coordinate("A10") == "A10"
+
+
+def test_unpad_coordinate_B01010():
+    assert unpad_coordinate("B01010") == "B1010"
 
 # tests for lighthouse doc to MLWH mapping
 def test_map_lh_doc_to_sql_columns(config):
