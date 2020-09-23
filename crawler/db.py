@@ -220,9 +220,8 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
             logger.debug(f"{cursor.rowcount} rows affected in MLWH. (Note: each updated row increases the count by 2, instead of 1)")
             total_rows_affected += cursor.rowcount
             values_index += ROWS_PER_QUERY
-
-        logger.debug('Committing changes to MLWH database.')
-        mysql_conn.commit()
+            logger.debug('Committing changes to MLWH database.')
+            mysql_conn.commit()
 
         # number of rows affected using cursor.rowcount - not easy to interpret:
         # reports 1 per inserted row,
