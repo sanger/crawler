@@ -211,22 +211,24 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
         num_values = len(values)
         ROWS_PER_QUERY = 35000
         values_index = 0
+        total_rows_affected = 0
         logger.debug(f"Attempting to insert or update {num_values} rows in the MLWH database in batches of {ROWS_PER_QUERY}")
 
         while values_index < num_values:
             logger.debug(f"Inserting records between {values_index} and {values_index + ROWS_PER_QUERY}")
             cursor.executemany(sql_query, values[values_index:values_index + ROWS_PER_QUERY])
             logger.debug(f"{cursor.rowcount} rows affected in MLWH. (Note: each updated row increases the count by 2, instead of 1)")
+            total_rows_affected += cursor.rowcount
             values_index += ROWS_PER_QUERY
 
         logger.debug('Committing changes to MLWH database.')
         mysql_conn.commit()
 
-        # fetch number of rows inserted/affected - not easy to interpret:
+        # number of rows affected using cursor.rowcount - not easy to interpret:
         # reports 1 per inserted row,
         # 2 per updated existing row,
         # and 0 per unchanged existing row
-        logger.debug(f"{cursor.rowcount} rows affected in MLWH. (Note: each updated row increases the count by 2, instead of 1)")
+        logger.debug(f"A total of {total_rows_affected} rows were affected in MLWH. (Note: each updated row increases the count by 2, instead of 1)")
     except:
         logger.error('MLWH database executemany transaction failed')
         raise
