@@ -15,8 +15,7 @@ from contextlib import contextmanager
 import mysql.connector as mysql # type: ignore
 from mysql.connector.connection_cext import CMySQLConnection # type: ignore
 from mysql.connector import Error # type: ignore
-from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
-from crawler.sql_queries import SQL_TEST_MLWH_CREATE
+from crawler.sql_queries import (SQL_MLWH_MULTIPLE_INSERT, SQL_TEST_MLWH_CREATE)
 from crawler.helpers import get_config
 
 logger = logging.getLogger(__name__)
