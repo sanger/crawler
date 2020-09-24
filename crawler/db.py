@@ -157,7 +157,6 @@ def create_mysql_connection(config: ModuleType, readonly=True) -> CMySQLConnecti
     Returns:
         CMySQLConnection -- a client used to interact with the database server
     """
-    # import pdb; pdb.set_trace()
     mlwh_db_host = config.MLWH_DB_HOST  # type: ignore
     mlwh_db_port = config.MLWH_DB_PORT  # type: ignore
     if readonly:
