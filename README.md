@@ -69,7 +69,7 @@ Usage (inside pipenv shell):
 
     $ python run_migration.py update_mlwh_with_legacy_samples 200115_1200 200116_1600
 
-Where the time format is YYMMDD_HHmm. Both start and end timestamps nust be present.
+Where the time format is YYMMDD_HHmm. Both start and end timestamps must be present.
 
 The process should not duplicate rows that are already present in MLWH, so you can be generous with your timestamp range.
 
