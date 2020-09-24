@@ -3,6 +3,7 @@ import logging.config
 import shutil
 import os
 from crawler.helpers import current_time
+from unittest.mock import patch
 
 import pytest
 
@@ -31,7 +32,8 @@ from crawler.db import get_mongo_collection
 
 def test_run(mongo_database, testing_files_for_process):
     _, mongo_database = mongo_database
-    run(False, False, "crawler.config.integration")
+    with patch('crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh'):
+        run(False, False, "crawler.config.integration")
 
     # We expect to have three collections following import
     centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
@@ -46,23 +48,25 @@ def test_run(mongo_database, testing_files_for_process):
 
     assert (
         samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
-    ), f"Wrong number of valid samples is not {NUMBER_VALID_SAMPLES}, {samples_collection.count_documents({})}"
+    ), f"Wrong number of samples inserted. Expected: {NUMBER_VALID_SAMPLES}, Actual: {samples_collection.count_documents({})}"
     assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
     assert samples_collection.count_documents({"RNA ID": "123_H09", "source": "UK Biocentre"}) == 1
 
     # We get one import per centre
-    assert imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED
+    assert (
+        imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED
+    ), f"Wrong number of imports inserted. Expected: {NUMBER_OF_FILES_PROCESSED}, Actual: {imports_collection.count_documents({})}"
 
     # check number of success files
     (_, _, files) = next(os.walk("tmp/backups/ALDP/successes"))
-    assert 3 == len(files), "Wrong number of success files"
+    assert 3 == len(files), f"Wrong number of success files. Expected: 3, Actual: {len(files)}"
 
     (_, _, files) = next(os.walk("tmp/backups/ALDP/errors"))
-    assert 0 == len(files), "Wrong number of error files"
+    assert 0 == len(files), f"Wrong number of error files. Expected: 0, Actual: {len(files)}"
 
     # check the code cleaned up the temporary files
     (_, subfolders, files) = next(os.walk("tmp/files/"))
-    assert 0 == len(subfolders)
+    assert 0 == len(subfolders), f"Wrong number of subfolders. Expected: 0, Actual: {len(subfolders)}"
 
 
 def test_run_creates_right_files_backups(mongo_database, testing_files_for_process):
@@ -72,7 +76,8 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     # main copy of the data. We don't disable the clean up as:
     # 1) It also clears up any modified test files, which we'd otherwise need to handle
     # 2) It means we keep the tested process closer to the actual one
-    run(False, False, "crawler.config.integration")
+    with patch('crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh'):
+        run(False, False, "crawler.config.integration")
 
     # check number of success files after first run
     (_, _, files) = next(os.walk("tmp/backups/ALDP/successes"))
@@ -108,14 +113,15 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
 
     # Run with a different config that does not blacklist one of the files
-    run(False, False, "crawler.config.integration_with_blacklist_change")
+    with patch('crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh'):
+        run(False, False, "crawler.config.integration_with_blacklist_change")
 
     # We expect an additional import entry
     assert imports_collection.count_documents({}) == 8
 
     # We expect the previously blacklisted file to now be processed
     (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
-    assert 1 == len(files), "Fail success TEST2"
+    assert 1 == len(files), f"Wrong number of success files. Expected: 1, actual: {len(files)}. Previously blacklisted file should have been processed."
 
     # We expect the previous blacklisted file to still be in the errors directory as well
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
@@ -129,7 +135,8 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
 def test_error_run(mongo_database, testing_files_for_process):
     _, mongo_database = mongo_database
 
-    run(False, False, "crawler.config.integration")
+    with patch('crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh'):
+        run(False, False, "crawler.config.integration")
 
     # We expect to have three collections following import
     centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
@@ -164,7 +171,8 @@ def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_f
     # copy an additional file with duplicates
     _ = shutil.copytree("tests/files_with_duplicate_samples", "tmp/files", dirs_exist_ok=True)
 
-    run(False, False, "crawler.config.integration")
+    with patch('crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh'):
+        run(False, False, "crawler.config.integration")
 
     # Fetch the imports collection, expect it to contain the additional duplicate error file record
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)

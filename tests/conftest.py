@@ -9,11 +9,19 @@ from crawler.constants import (
     COLLECTION_SAMPLES,
     COLLECTION_CENTRES,
     COLLECTION_SAMPLES_HISTORY,
+    FIELD_COORDINATE,
+    FIELD_SOURCE,
+    FIELD_RESULT,
+    FIELD_PLATE_BARCODE,
+    FIELD_ROOT_SAMPLE_ID
 )
 
 from crawler.db import create_mongo_client, get_mongo_db
 from crawler.helpers import get_config
-from crawler.db import get_mongo_collection
+from crawler.db import (
+    get_mongo_collection,
+    create_mysql_connection,
+)
 
 logger = logging.getLogger(__name__)
 CONFIG, _ = get_config("crawler.config.test")
@@ -25,11 +33,6 @@ from copy import deepcopy
 @pytest.fixture
 def config():
     return CONFIG
-
-
-@pytest.fixture
-def centre_with_added_columns():
-    return CONFIG.EXTRA_COLUMN_CENTRE
 
 
 @pytest.fixture
@@ -53,11 +56,22 @@ def mongo_database(mongo_client):
 
 
 @pytest.fixture
+def mlwh_connection(config):
+    mysql_conn = create_mysql_connection(config, readonly=False)
+    try:
+        yield config, mysql_conn
+    finally:
+        # close the connection
+        mysql_conn.close()
+
+
+@pytest.fixture
 def testing_files_for_process(cleanup_backups):
     # Copy the test files to a new directory, as we expect run
     # to perform a clean up, and we don't want it cleaning up our
     # main copy of the data. We don't disable the clean up as:
     # 1) It also clears up the master files, which we'd otherwise need to handle
+    # TODO: remove reference to master files above - they don't exist anymore
     # 2) It means we keep the tested process closer to the actual one
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
     try:
@@ -70,27 +84,27 @@ def testing_files_for_process(cleanup_backups):
 
 TESTING_SAMPLES: List[Dict[str, str]] = [
     {
-        "coordinate": "A01",
-        "source": "test1",
-        "Result": "Positive",
-        "plate_barcode": "123",
+        FIELD_COORDINATE: "A01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Positive",
+        FIELD_PLATE_BARCODE: "123",
         "released": True,
-        "Root Sample ID": "MCM001",
+        FIELD_ROOT_SAMPLE_ID: "MCM001",
     },
     {
-        "coordinate": "B01",
-        "source": "test1",
-        "Result": "Negative",
-        "plate_barcode": "123",
+        FIELD_COORDINATE: "B01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Negative",
+        FIELD_PLATE_BARCODE: "123",
         "released": False,
-        "Root Sample ID": "MCM002",
+        FIELD_ROOT_SAMPLE_ID: "MCM002",
     },
     {
-        "coordinate": "C01",
-        "source": "test1",
-        "Result": "Void",
-        "plate_barcode": "123",
-        "Root Sample ID": "MCM003",
+        FIELD_COORDINATE: "C01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Void",
+        FIELD_PLATE_BARCODE: "123",
+        FIELD_ROOT_SAMPLE_ID: "MCM003",
     },
 ]
 

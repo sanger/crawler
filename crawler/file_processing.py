@@ -3,12 +3,15 @@ import csv
 from typing import Dict, List, Any, Tuple, Set
 from pymongo.errors import BulkWriteError
 from pymongo.database import Database
+from bson.objectid import ObjectId # type: ignore
+
 from enum import Enum
 from csv import DictReader, DictWriter
 import shutil
 import logging, pathlib
 import re
 from crawler.constants import (
+    FIELD_MONGODB_ID,
     FIELD_COORDINATE,
     FIELD_DATE_TESTED,
     FIELD_LAB_ID,
@@ -19,16 +22,20 @@ from crawler.constants import (
     FIELD_LINE_NUMBER,
     FIELD_FILE_NAME,
     FIELD_FILE_NAME_DATE,
-    FIELD_RESULT,
     FIELD_CREATED_AT,
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
     FIELD_RNA_PCR_ID,
+    FIELD_SOURCE
 )
-from crawler.helpers import current_time, get_sftp_connection, LoggingCollection
+from crawler.helpers import (
+    current_time,
+    get_sftp_connection,
+    LoggingCollection,
+    map_lh_doc_to_sql_columns,
+)
 from crawler.constants import (
     COLLECTION_SAMPLES,
-    COLLECTION_SAMPLES_HISTORY,
     COLLECTION_IMPORTS,
     COLLECTION_CENTRES,
 )
@@ -38,11 +45,14 @@ from crawler.db import (
     get_mongo_db,
     create_mongo_client,
     create_import_record,
+    create_mysql_connection,
+    run_mysql_executemany_query,
 )
+from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 from hashlib import md5
 
-import datetime
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +114,7 @@ class Centre:
 
     def process_files(self) -> None:
         """Iterate through all the files for the centre, parsing any new ones into
-        the database.
+        the mongo database and then into the unified warehouse.
         """
         # iterate through each file in the centre
 
@@ -315,8 +325,13 @@ class CentreFile:
         else:
             logger.info(f"File {self.file_name} is valid")
 
+        mongo_ids_of_inserted = []
         if len(docs_to_insert) > 0:
-            self.insert_samples_from_docs(docs_to_insert)
+            mongo_ids_of_inserted = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
+        if len(mongo_ids_of_inserted) > 0:
+            # filter out docs which failed to insert into mongo - we don't want to create mlwh records for these
+            docs_to_insert_mlwh = list(filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert))
+            self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
         self.backup_file()
         self.create_import_record_for_file()
@@ -409,11 +424,11 @@ class CentreFile:
         except Exception as e:
             logger.critical(f"Unknown error with file {self.file_name}: {e}")
 
-    def insert_samples_from_docs(self, docs_to_insert) -> None:
-        """Insert sample records from the parsed file information.
+    def insert_samples_from_docs_into_mongo_db(self, docs_to_insert) -> List[ObjectId]:
+        """Insert sample records into the mongo database from the parsed file information.
 
             Arguments:
-                docs_to_insert {List[Dict[str, str]]} -- list of sample information extracted from csv files
+                docs_to_insert {List[Dict[str, str]]} -- list of filtered sample information extracted from csv files
         """
         logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
@@ -422,6 +437,10 @@ class CentreFile:
             # Inserts new version for samples
             result = samples_collection.insert_many(docs_to_insert, ordered=False)
             self.docs_inserted = len(result.inserted_ids)
+
+            # inserted_ids is in the same order as docs_to_insert, even if the query has ordered=False parameter
+            return result.inserted_ids
+
         # TODO could trap DuplicateKeyError specifically
         except BulkWriteError as e:
             # This is happening when there are duplicates in the data and the index prevents
@@ -439,9 +458,49 @@ class CentreFile:
 
             self.docs_inserted = e.details["nInserted"]
             self.add_duplication_errors(e)
+
+            errored_ids = list(map(lambda x: x['op'][FIELD_MONGODB_ID], e.details["writeErrors"]))
+            inserted_ids = [ doc[FIELD_MONGODB_ID] for doc in docs_to_insert if doc[FIELD_MONGODB_ID] not in errored_ids ]
+
+            return inserted_ids
         except Exception as e:
             logger.critical(f"Critical error in file {self.file_name}: {e}")
             logger.exception(e)
+            return []
+
+    def insert_samples_from_docs_into_mlwh(self, docs_to_insert) -> None:
+        """Insert sample records into the MLWH database from the parsed file information, including the corresponding mongodb _id
+
+            Arguments:
+                docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from csv files.
+                                                         Includes the mongodb id, as the list has already been inserted into mongodb
+
+                mongo_ids {List[ObjectId]} -- list of mongodb ids in the same order as docs_to_insert, from the insert into the mongodb
+        """
+        values = []
+        for doc in docs_to_insert:
+            values.append(map_lh_doc_to_sql_columns(doc))
+
+        mysql_conn = create_mysql_connection(self.config, False)
+
+        if mysql_conn is not None and mysql_conn.is_connected():
+            try:
+                run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
+
+                logger.debug(f"MLWH database inserts completed successfully for file {self.file_name}")
+            except Exception as e:
+                self.logging_collection.add_error(
+                    "TYPE 14",
+                    f"MLWH database inserts failed for file {self.file_name}",
+                )
+                logger.critical(f"Critical error in file {self.file_name}: {e}")
+                logger.exception(e)
+        else:
+            self.logging_collection.add_error(
+                "TYPE 15",
+                f"MLWH database inserts failed, could not connect, for file {self.file_name}",
+            )
+            logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.
@@ -534,7 +593,7 @@ class CentreFile:
         return m.group(1), m.group(2)
 
     def get_now_timestamp(self):
-        return datetime.datetime.now()
+        return datetime.now()
 
     def get_row_signature(self, row):
         memo = []
@@ -621,7 +680,7 @@ class CentreFile:
             # only process rows that contain something in the cells
             if self.row_valid_structure(row, line_number):
                 row = self.filtered_row(row, line_number)
-                row["source"] = self.centre_config["name"]
+                row[FIELD_SOURCE] = self.centre_config["name"]
                 row[FIELD_PLATE_BARCODE] = None  # type: ignore
 
                 if row[barcode_field] and barcode_regex:
@@ -715,4 +774,4 @@ class CentreFile:
 
         file_timestamp = m.group(1)
 
-        return datetime.datetime.strptime(file_timestamp, "%y%m%d_%H%M")
+        return datetime.strptime(file_timestamp, "%y%m%d_%H%M")
