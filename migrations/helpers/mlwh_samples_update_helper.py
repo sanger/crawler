@@ -90,7 +90,7 @@ def update_mlwh_with_legacy_samples(config, s_start_datetime: str = "", s_end_da
         if number_docs_found > 0:
             print(f"Updating MLWH database for {len(mongo_docs_for_sql)} sample documents")
             # create connection to the MLWH database
-            with create_mysql_connection(config, True) as mlwh_conn:
+            with create_mysql_connection(config, False) as mlwh_conn:
 
                     # execute sql query to insert/update timestamps into MLWH
                     run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
