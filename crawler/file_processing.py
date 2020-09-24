@@ -26,19 +26,16 @@ from crawler.constants import (
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
     FIELD_RNA_PCR_ID,
-    FIELD_SOURCE,
-    MYSQL_DATETIME_FORMAT,
+    FIELD_SOURCE
 )
 from crawler.helpers import (
     current_time,
     get_sftp_connection,
     LoggingCollection,
-    parse_date_tested,
     map_lh_doc_to_sql_columns,
 )
 from crawler.constants import (
     COLLECTION_SAMPLES,
-    COLLECTION_SAMPLES_HISTORY,
     COLLECTION_IMPORTS,
     COLLECTION_CENTRES,
 )
@@ -55,10 +52,7 @@ from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 from hashlib import md5
 
-from datetime import (
-    datetime,
-    timezone,
-)
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
