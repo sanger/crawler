@@ -1,14 +1,48 @@
 import logging
 import os
 import sys
+import re
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timezone,
+)
 from importlib import import_module
 from types import ModuleType
 from enum import Enum
-from typing import Tuple
+from typing import Dict, Any, Tuple
 
 import pysftp  # type: ignore
+
+from crawler.constants import (
+    FIELD_MONGODB_ID,
+    FIELD_COORDINATE,
+    FIELD_DATE_TESTED,
+    FIELD_LAB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_LINE_NUMBER,
+    FIELD_FILE_NAME,
+    FIELD_FILE_NAME_DATE,
+    FIELD_CREATED_AT,
+    FIELD_UPDATED_AT,
+    FIELD_SOURCE,
+    MLWH_MONGODB_ID,
+    MLWH_ROOT_SAMPLE_ID,
+    MLWH_RNA_ID,
+    MLWH_PLATE_BARCODE,
+    MLWH_COORDINATE,
+    MLWH_RESULT,
+    MLWH_DATE_TESTED_STRING,
+    MLWH_DATE_TESTED,
+    MLWH_SOURCE,
+    MLWH_LAB_ID,
+    MLWH_CREATED_AT,
+    MLWH_UPDATED_AT,
+    MYSQL_DATETIME_FORMAT,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -61,13 +95,13 @@ def get_sftp_connection(
 
 def get_config(settings_module: str) -> Tuple[ModuleType, str]:
     """Get the config for the app by importing a module named by an environmental variable. This
-    allows easy switching between environments and inheriting default config values.
+        allows easy switching between environments and inheriting default config values.
 
-    Arguments:
-        settings_module {str} -- the settings module to load
+        Arguments:
+            settings_module {str} -- the settings module to load
 
-    Returns:
-        Optional[ModuleType] -- the config module loaded and available to use via `config.<param>`
+        Returns:
+            Optional[ModuleType] -- the config module loaded and available to use via `config.<param>`
     """
     try:
         if not settings_module:
@@ -77,6 +111,95 @@ def get_config(settings_module: str) -> Tuple[ModuleType, str]:
     except KeyError as e:
         sys.exit(f"{e} required in environmental variables for config")
 
+def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
+    """Transform common document fields into MySQL fields for MLWH.
+
+        Arguments:
+            doc {Dict[str, str]} -- Filtered information about one sample, extracted from mongodb.
+
+        Returns:
+            Dict[str, str] -- Dictionary of MySQL versions of fields
+    """
+    value = {
+        MLWH_MONGODB_ID: str(doc[FIELD_MONGODB_ID]), # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
+        MLWH_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
+        MLWH_RNA_ID: doc[FIELD_RNA_ID],
+        MLWH_PLATE_BARCODE: doc[FIELD_PLATE_BARCODE],
+        MLWH_COORDINATE: unpad_coordinate(doc.get(FIELD_COORDINATE, None)),
+        MLWH_RESULT: doc.get(FIELD_RESULT, None),
+        MLWH_DATE_TESTED_STRING: doc.get(FIELD_DATE_TESTED, None),
+        MLWH_SOURCE: doc.get(FIELD_SOURCE, None),
+        MLWH_LAB_ID: doc.get(FIELD_LAB_ID, None),
+    }
+
+    if doc.get(FIELD_DATE_TESTED, None) is not None:
+        value[MLWH_DATE_TESTED] = parse_date_tested(doc[FIELD_DATE_TESTED])
+
+    return value
+
+# Strip any leading zeros from the coordinate
+# eg. A01 => A1
+def unpad_coordinate(coordinate):
+    return (
+        re.sub(r"0(\d+)$", r"\1", coordinate)
+        if (coordinate and isinstance(coordinate, str))
+        else coordinate
+    )
+
+def map_lh_doc_to_sql_columns(doc) -> Dict[str, Any]:
+    """Transform the document fields from the parsed lighthouse file into a form suitable for the MLWH.
+       We are setting created_at and updated_at fields to current timestamp for inserts here,
+       because it would be too slow to retrieve them from MongoDB and they would be virtually the same
+       as we have only just written the mongo record.
+       We also have the mongodb id, as this is after the mongo inserts and was retrieved.
+
+        Arguments:
+            doc {Dict[str, str]} -- Filtered information about one sample, extracted from csv files.
+
+        Returns:
+            Dict[str, str] -- Dictionary of MySQL versions of fields
+    """
+    value = map_mongo_to_sql_common(doc)
+    dt = datetime.strftime(datetime.now(timezone.utc), MYSQL_DATETIME_FORMAT)
+    value[MLWH_CREATED_AT] = dt
+    value[MLWH_UPDATED_AT] = dt
+    return value
+
+def map_mongo_doc_to_sql_columns(doc) -> Dict[str, Any]:
+    """Transform the document fields from the parsed mongodb samples collection.
+
+        Arguments:
+            doc {Dict[str, str]} -- Filtered information about one sample, extracted from mongodb.
+
+        Returns:
+            Dict[str, str] -- Dictionary of MySQL versions of fields
+    """
+    value = map_mongo_to_sql_common(doc)
+    value[MLWH_CREATED_AT] = datetime.strftime(doc[FIELD_CREATED_AT], MYSQL_DATETIME_FORMAT)
+    value[MLWH_UPDATED_AT] = datetime.strftime(doc[FIELD_UPDATED_AT], MYSQL_DATETIME_FORMAT)
+    return value
+
+def parse_date_tested(date_string: str) -> str:
+    """Converts date tested to MySQL format string
+
+        Arguments:
+            date_string {str} -- The date string from the document
+
+        Returns:
+            str -- The MySQL formatted string
+    """
+    try:
+        date_time = datetime.strptime(date_string, f"{MYSQL_DATETIME_FORMAT} %Z")
+    except:
+        return ''
+
+    if date_string.find('UTC') != -1:
+        # timezone doesn't get set despite the '%Z' in the format string, unless we do this
+        date_time = date_time.replace(tzinfo=timezone.utc)
+
+    date_time_str = datetime.strftime(date_time, MYSQL_DATETIME_FORMAT)
+
+    return date_time_str
 
 class ErrorLevel(Enum):
     DEBUG = 1
@@ -240,6 +363,23 @@ class AggregateType13(AggregateTypeBase):
         self.max_errors = 5
         self.short_display_description = "Extra column(s)"
 
+class AggregateType14(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 14"
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = f"CRITICAL: Files where the MLWH database insert has failed. ({self.type_str})"
+        self.short_display_description = "Failed MLWH inserts"
+
+class AggregateType15(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 15"
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = f"CRITICAL: Files where the MLWH database connection could not be made. ({self.type_str})"
+        self.short_display_description = "Failed MLWH connection"
+
+
 class LoggingCollection:
     def __init__(self):
         self.aggregator_types = {
@@ -254,6 +394,8 @@ class LoggingCollection:
             "TYPE 10": AggregateType10(),
             "TYPE 12": AggregateType12(),
             "TYPE 13": AggregateType13(),
+            "TYPE 14": AggregateType14(),
+            "TYPE 15": AggregateType15(),
         }
 
     def add_error(self, aggregate_error_type, message):

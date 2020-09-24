@@ -1,6 +1,6 @@
 from crawler.constants import FIELD_RNA_ID
 
-from .defaults import *  # noqa: F403,F401
+from crawler.config.defaults import *  # noqa: F403,F401
 
 # settings here overwrite those in defaults.py
 
@@ -55,22 +55,6 @@ CENTRES = [
     },
 ]
 
-# Keep separate from the main tests to avoid continual need
-# to update the numbers in 'test_main'.
-EXTRA_COLUMN_CENTRE = {
-    "barcode_field": FIELD_RNA_ID,
-    "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
-    "merge_required": True,
-    "name": "Test Centre",
-    "prefix": "MALF",
-    "backups_folder": "tmp/backups/MALF",
-    "sftp_file_regex": r"^MALF_sanger_report_(\d{6}_\d{4})\.csv$",
-    "sftp_master_file_regex": r"^MALF_sanger_report_(\d{6}_\d{4})_master\.csv$",
-    "sftp_root_read": "tests/extra_column_files",
-    "sftp_root_write": "tests/extra_column_files/write",
-    "file_names_to_ignore": [],
-}
-
 # SFTP details
 SFTP_UPLOAD = False
 SFTP_HOST = "127.0.0.1"
@@ -81,6 +65,15 @@ SFTP_USER = "foo"
 # MongoDB details
 MONGO_HOST = "127.0.0.1"
 MONGO_DB = "crawlerTestDB"
+
+# MLWH database details
+MLWH_DB_DBNAME = "unified_warehouse_test"
+MLWH_DB_HOST = "127.0.0.1"
+MLWH_DB_PORT = 3306
+MLWH_DB_RO_USER = "root"
+MLWH_DB_RO_PASSWORD = "root"
+MLWH_DB_RW_USER = "root"
+MLWH_DB_RW_PASSWORD = "root"
 
 # logging config
 LOGGING["loggers"]["crawler"]["level"] = "DEBUG"

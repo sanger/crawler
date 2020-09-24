@@ -21,7 +21,7 @@ from crawler.db import (
     get_mongo_collection,
     get_mongo_db,
     populate_centres_collection,
-    samples_collection_accessor,
+    samples_collection_accessor
 )
 from crawler.helpers import (
     get_config,

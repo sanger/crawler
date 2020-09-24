@@ -12,8 +12,13 @@ from pymongo.results import InsertOneResult
 
 from contextlib import contextmanager
 
-logger = logging.getLogger(__name__)
+import mysql.connector as mysql # type: ignore
+from mysql.connector.connection_cext import CMySQLConnection # type: ignore
+from mysql.connector import Error # type: ignore
+from crawler.sql_queries import (SQL_MLWH_MULTIPLE_INSERT, SQL_TEST_MLWH_CREATE)
+from crawler.helpers import get_config
 
+logger = logging.getLogger(__name__)
 
 def create_mongo_client(config: ModuleType) -> MongoClient:
     """Create a MongoClient with the given config parameters.
@@ -142,3 +147,112 @@ def populate_centres_collection(
         _ = collection.find_one_and_update(
             {filter_field: document[filter_field]}, {"$set": document}, upsert=True
         )
+
+def create_mysql_connection(config: ModuleType, readonly=True) -> CMySQLConnection:
+    """Create a CMySQLConnection with the given config parameters.
+
+    Arguments:
+        config {ModuleType} -- application config specifying database details
+
+    Returns:
+        CMySQLConnection -- a client used to interact with the database server
+    """
+    mlwh_db_host = config.MLWH_DB_HOST  # type: ignore
+    mlwh_db_port = config.MLWH_DB_PORT  # type: ignore
+    if readonly:
+        mlwh_db_username = config.MLWH_DB_RO_USER  # type: ignore
+        mlwh_db_password = config.MLWH_DB_RO_PASSWORD  # type: ignore
+    else:
+        mlwh_db_username = config.MLWH_DB_RW_USER  # type: ignore
+        mlwh_db_password = config.MLWH_DB_RW_PASSWORD  # type: ignore
+    mlwh_db_db = config.MLWH_DB_DBNAME  # type: ignore
+
+    logger.debug(f"Attempting to connect to {mlwh_db_host} on port {mlwh_db_port}")
+
+    mysql_conn = None
+    try:
+        mysql_conn = mysql.connect(
+            host = mlwh_db_host,
+            port = mlwh_db_port,
+            username = mlwh_db_username,
+            password = mlwh_db_password,
+            database = mlwh_db_db,
+            # whether to use pure python or the C extension.
+            # default is false, but specify it so more predictable
+            use_pure = False,
+        )
+        if mysql_conn is not None:
+            if mysql_conn.is_connected():
+                logger.debug('MySQL Connection Successful')
+            else:
+                logger.error('MySQL Connection Failed')
+
+    except Error as e:
+        logger.error(f"Exception on connecting to MySQL database: {e}")
+
+    return mysql_conn
+
+
+def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, values: List[Dict[str, str]]) -> None:
+    """Writes the sample testing information into the MLWH.
+
+    Arguments:
+        mysql_conn {CMySQLConnection} -- a client used to interact with the database server
+        sql_query {str} -- the SQL query to run (see sql_queries.py)
+        values {List[Dict[str, str]]} -- array of value hashes representing documents inserted into the Mongo DB
+    """
+    ## fetch the cursor from the DB connection
+    cursor = mysql_conn.cursor()
+
+    try:
+        ## executing the query with values
+        num_values = len(values)
+        ROWS_PER_QUERY = 35000
+        values_index = 0
+        total_rows_affected = 0
+        logger.debug(f"Attempting to insert or update {num_values} rows in the MLWH database in batches of {ROWS_PER_QUERY}")
+
+        while values_index < num_values:
+            logger.debug(f"Inserting records between {values_index} and {values_index + ROWS_PER_QUERY}")
+            cursor.executemany(sql_query, values[values_index:values_index + ROWS_PER_QUERY])
+            logger.debug(f"{cursor.rowcount} rows affected in MLWH. (Note: each updated row increases the count by 2, instead of 1)")
+            total_rows_affected += cursor.rowcount
+            values_index += ROWS_PER_QUERY
+            logger.debug('Committing changes to MLWH database.')
+            mysql_conn.commit()
+
+        # number of rows affected using cursor.rowcount - not easy to interpret:
+        # reports 1 per inserted row,
+        # 2 per updated existing row,
+        # and 0 per unchanged existing row
+        logger.debug(f"A total of {total_rows_affected} rows were affected in MLWH. (Note: each updated row increases the count by 2, instead of 1)")
+    except:
+        logger.error('MLWH database executemany transaction failed')
+        raise
+    finally:
+        # close the cursor
+        logger.debug('Closing the cursor.')
+        cursor.close()
+
+        # close the connection
+        logger.debug('Closing the MLWH database connection.')
+        mysql_conn.close()
+
+
+# Set up a basic MLWH db for testing
+def init_warehouse_db_command():
+    """Drop and recreate required tables."""
+    logger.debug("Initialising the test MySQL warehouse database")
+    config, _settings_module = get_config('crawler.config.development')
+    mysql_conn = create_mysql_connection(config, False)
+    mysql_cursor = mysql_conn.cursor()
+
+    for result in mysql_cursor.execute(SQL_TEST_MLWH_CREATE, multi=True):
+        if result.with_rows:
+            result.fetchall()
+
+    mysql_conn.commit()
+    mysql_cursor.close()
+    mysql_conn.close()
+
+    logger.debug("Done")
