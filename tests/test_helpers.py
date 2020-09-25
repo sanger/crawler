@@ -106,18 +106,15 @@ def test_logging_collection_with_multiple_errors():
 # tests for parsing date tested
 def test_parse_date_tested(config):
     result = parse_date_tested(date_string='2020-11-02 13:04:23 UTC')
-    expected = datetime.strftime(datetime(2020, 11, 2, 13, 4, 23, tzinfo=timezone.utc), MYSQL_DATETIME_FORMAT)
-    assert result == expected
+    assert result == datetime(2020, 11, 2, 13, 4, 23)
 
 def test_parse_date_tested_none(config):
     result = parse_date_tested(date_string=None)
-    expected = ''
-    assert result == expected
+    assert result == None
 
 def test_parse_date_tested_wrong_format(config):
     result = parse_date_tested(date_string='2nd November 2020')
-    expected = ''
-    assert result == expected
+    assert result == None
 
 # tests for unpad coordinate
 def test_unpad_coordinate_A01():
@@ -158,7 +155,7 @@ def test_map_lh_doc_to_sql_columns(config):
     assert result[MLWH_COORDINATE] == 'H1'
     assert result[MLWH_RESULT] == 'Negative'
     assert result[MLWH_DATE_TESTED_STRING] == '2020-04-23 14:40:08 UTC'
-    assert result[MLWH_DATE_TESTED] == datetime.strftime(datetime(2020, 4, 23, 14, 40, 8, tzinfo=timezone.utc), MYSQL_DATETIME_FORMAT)
+    assert result[MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 40, 8)
     assert result[MLWH_SOURCE] == 'Test Centre'
     assert result[MLWH_LAB_ID] == 'TC'
     assert result.get(MLWH_CREATED_AT) is not None
@@ -188,8 +185,8 @@ def test_map_mongo_doc_to_sql_columns(config):
     assert result[MLWH_COORDINATE] == 'H1'
     assert result[MLWH_RESULT] == 'Negative'
     assert result[MLWH_DATE_TESTED_STRING] == '2020-04-23 14:40:08 UTC'
-    assert result[MLWH_DATE_TESTED] == datetime.strftime(datetime(2020, 4, 23, 14, 40, 8, tzinfo=timezone.utc), MYSQL_DATETIME_FORMAT)
+    assert result[MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 40, 8)
     assert result[MLWH_SOURCE] == 'Test Centre'
     assert result[MLWH_LAB_ID] == 'TC'
-    assert result[MLWH_CREATED_AT] == '2020-04-27 05:20:00'
-    assert result[MLWH_UPDATED_AT] == '2020-05-13 12:50:00'
+    assert result[MLWH_CREATED_AT] == datetime(2020, 4, 27, 5, 20, 0, tzinfo=timezone.utc)
+    assert result[MLWH_UPDATED_AT] == datetime(2020, 5, 13, 12, 50, 0, tzinfo=timezone.utc)

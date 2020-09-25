@@ -37,15 +37,7 @@ def generate_example_samples(range, start_datetime):
         })
     return samples
 
-def clear_mlwh_table(config, mysql_conn):
-    cursor = mysql_conn.cursor()
-    try:
-        cursor.execute(f"TRUNCATE TABLE {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
-        mysql_conn.commit()
-    except:
-        pytest.fail("An exception occurred clearing the table")
-    finally:
-        cursor.close()
+
 
 def test_valid_datetime_string_invalid(config):
     assert(valid_datetime_string("") == False)
@@ -68,12 +60,6 @@ def test_basic_usage(mongo_database, mlwh_connection):
     total_samples = mongo_db.samples.count_documents({})
     assert total_samples == 6
 
-    # connect to the MySQL MLWH database
-    _, mysql_conn = mlwh_connection
-
-    # clear any existing rows in the lighthouse sample table
-    clear_mlwh_table(config, mysql_conn)
-
     s_start_datetime = datetime.strftime(start_datetime, MONGO_DATETIME_FORMAT)
     s_end_datetime = datetime.strftime(start_datetime + timedelta(days=3), MONGO_DATETIME_FORMAT)
 
@@ -88,7 +74,7 @@ def test_basic_usage(mongo_database, mlwh_connection):
 
     try:
         # run the query and fetch the results
-        cursor = mysql_conn.cursor()
+        cursor = mlwh_connection.cursor()
         cursor.execute(sql_query)
         records = cursor.fetchall()
 
@@ -102,7 +88,7 @@ def test_basic_usage(mongo_database, mlwh_connection):
         pytest.fail("An exception occurred checking the mlwh table for rows inserted")
     finally:
         cursor.close()
-        mysql_conn.close()
+        mlwh_connection.close()
 
 def test_when_no_rows_match_timestamp_range(mongo_database, mlwh_connection):
     config, mongo_db = mongo_database
@@ -116,12 +102,6 @@ def test_when_no_rows_match_timestamp_range(mongo_database, mlwh_connection):
     total_samples = mongo_db.samples.count_documents({})
     assert total_samples == 6
 
-    # connect to the MySQL MLWH database
-    _, mysql_conn = mlwh_connection
-
-    # clear any existing rows in the lighthouse sample table
-    clear_mlwh_table(config, mysql_conn)
-
     # use timestamps such that no rows qualify
     s_start_datetime = datetime.strftime(start_datetime + timedelta(days=6), MONGO_DATETIME_FORMAT)
     s_end_datetime = datetime.strftime(start_datetime + timedelta(days=8), MONGO_DATETIME_FORMAT)
@@ -134,7 +114,7 @@ def test_when_no_rows_match_timestamp_range(mongo_database, mlwh_connection):
 
     try:
         # run the query and fetch the results
-        cursor = mysql_conn.cursor()
+        cursor = mlwh_connection.cursor()
         cursor.execute(sql_query)
         records = cursor.fetchall()
 
@@ -144,4 +124,4 @@ def test_when_no_rows_match_timestamp_range(mongo_database, mlwh_connection):
         pytest.fail("An exception occurred checking the mlwh table for rows inserted")
     finally:
         cursor.close()
-        mysql_conn.close()
+        mlwh_connection.close()
