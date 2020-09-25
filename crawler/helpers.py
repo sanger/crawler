@@ -128,12 +128,17 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
         MLWH_COORDINATE: unpad_coordinate(doc.get(FIELD_COORDINATE, None)),
         MLWH_RESULT: doc.get(FIELD_RESULT, None),
         MLWH_DATE_TESTED_STRING: doc.get(FIELD_DATE_TESTED, None),
+        MLWH_DATE_TESTED: None,
         MLWH_SOURCE: doc.get(FIELD_SOURCE, None),
         MLWH_LAB_ID: doc.get(FIELD_LAB_ID, None),
     }
 
     if doc.get(FIELD_DATE_TESTED, None) is not None:
-        value[MLWH_DATE_TESTED] = parse_date_tested(doc[FIELD_DATE_TESTED])
+        date_parsed = parse_date_tested(doc[FIELD_DATE_TESTED])
+        if date_parsed != '':
+            value[MLWH_DATE_TESTED] = date_parsed
+        else:
+            value[MLWH_DATE_TESTED] = None
 
     return value
 

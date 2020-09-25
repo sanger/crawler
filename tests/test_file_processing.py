@@ -37,6 +37,20 @@ from crawler.constants import (
     FIELD_PLATE_BARCODE,
     FIELD_COORDINATE,
     FIELD_SOURCE,
+    MLWH_TABLE_NAME,
+    MLWH_TABLE_NAME,
+    MLWH_MONGODB_ID,
+    MLWH_ROOT_SAMPLE_ID,
+    MLWH_RNA_ID,
+    MLWH_PLATE_BARCODE,
+    MLWH_COORDINATE,
+    MLWH_RESULT,
+    MLWH_DATE_TESTED_STRING,
+    MLWH_DATE_TESTED,
+    MLWH_SOURCE,
+    MLWH_LAB_ID,
+    MLWH_CREATED_AT,
+    MLWH_UPDATED_AT
 )
 from crawler.db import get_mongo_collection
 
@@ -614,7 +628,7 @@ def test_set_state_for_file_when_in_success_folder(config):
     return False
 
 # tests for inserting docs into mlwh
-def test_insert_samples_from_docs_into_mlwh(config):
+def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
     with patch('crawler.db.create_mysql_connection', return_value = 'not none'):
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
@@ -649,3 +663,82 @@ def test_insert_samples_from_docs_into_mlwh(config):
         error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
         error_messages = centre_file.logging_collection.get_aggregate_messages()
         assert error_count == 0, f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
+
+        cursor = mlwh_connection.cursor(dictionary=True)
+        cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
+        rows = cursor.fetchall()
+        cursor.close()
+
+        assert rows[0][MLWH_MONGODB_ID] == '5f562d9931d9959b92544728'
+        assert rows[0][MLWH_ROOT_SAMPLE_ID] == 'ABC00000004'
+        assert rows[0][MLWH_RNA_ID] == 'TC-rna-00000029_H11'
+        assert rows[0][MLWH_PLATE_BARCODE] == 'TC-rna-00000029'
+        assert rows[0][MLWH_COORDINATE] == 'H11'
+        assert rows[0][MLWH_RESULT] == 'Negative'
+        assert rows[0][MLWH_DATE_TESTED_STRING] == '2020-04-23 14:40:00 UTC'
+        assert rows[0][MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 40, 0)
+        assert rows[0][MLWH_SOURCE] == 'Test Centre'
+        assert rows[0][MLWH_LAB_ID] == 'TC'
+
+def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_connection):
+    with patch('crawler.db.create_mysql_connection', return_value = 'not none'):
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+
+        docs = [
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+                FIELD_RNA_ID: 'TC-rna-00000029_H11',
+                FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_COORDINATE: 'H11',
+                FIELD_RESULT: 'Negative',
+                FIELD_SOURCE: 'Test Centre',
+                FIELD_LAB_ID: 'TC'
+            }
+        ]
+
+        centre_file.insert_samples_from_docs_into_mlwh(docs)
+
+        error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
+        error_messages = centre_file.logging_collection.get_aggregate_messages()
+        assert error_count == 0, f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
+
+        cursor = mlwh_connection.cursor(dictionary=True)
+        cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
+        rows = cursor.fetchall()
+        cursor.close()
+
+        assert rows[0]['date_tested'] == None
+
+def test_insert_samples_from_docs_into_mlwh_date_tested_blank(config, mlwh_connection):
+    with patch('crawler.db.create_mysql_connection', return_value = 'not none'):
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+
+        docs = [
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+                FIELD_RNA_ID: 'TC-rna-00000029_H11',
+                FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_COORDINATE: 'H11',
+                FIELD_RESULT: 'Negative',
+                FIELD_DATE_TESTED: '',
+                FIELD_SOURCE: 'Test Centre',
+                FIELD_LAB_ID: 'TC'
+            }
+        ]
+
+        centre_file.insert_samples_from_docs_into_mlwh(docs)
+
+        error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
+        error_messages = centre_file.logging_collection.get_aggregate_messages()
+        assert error_count == 0, f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
+
+        cursor = mlwh_connection.cursor(dictionary=True)
+        cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
+        rows = cursor.fetchall()
+        cursor.close()
+
+        assert rows[0]['date_tested'] == None
