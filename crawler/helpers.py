@@ -120,7 +120,7 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
         Returns:
             Dict[str, str] -- Dictionary of MySQL versions of fields
     """
-    value = {
+    return {
         MLWH_MONGODB_ID: str(doc[FIELD_MONGODB_ID]), # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
         MLWH_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
         MLWH_RNA_ID: doc[FIELD_RNA_ID],
@@ -128,19 +128,10 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
         MLWH_COORDINATE: unpad_coordinate(doc.get(FIELD_COORDINATE, None)),
         MLWH_RESULT: doc.get(FIELD_RESULT, None),
         MLWH_DATE_TESTED_STRING: doc.get(FIELD_DATE_TESTED, None),
-        MLWH_DATE_TESTED: None,
+        MLWH_DATE_TESTED: parse_date_tested(doc.get(FIELD_DATE_TESTED, None)),
         MLWH_SOURCE: doc.get(FIELD_SOURCE, None),
         MLWH_LAB_ID: doc.get(FIELD_LAB_ID, None),
     }
-
-    if doc.get(FIELD_DATE_TESTED, None) is not None:
-        date_parsed = parse_date_tested(doc[FIELD_DATE_TESTED])
-        if date_parsed != '':
-            value[MLWH_DATE_TESTED] = date_parsed
-        else:
-            value[MLWH_DATE_TESTED] = None
-
-    return value
 
 # Strip any leading zeros from the coordinate
 # eg. A01 => A1
@@ -165,7 +156,7 @@ def map_lh_doc_to_sql_columns(doc) -> Dict[str, Any]:
             Dict[str, str] -- Dictionary of MySQL versions of fields
     """
     value = map_mongo_to_sql_common(doc)
-    dt = datetime.strftime(datetime.now(timezone.utc), MYSQL_DATETIME_FORMAT)
+    dt = datetime.now(timezone.utc)
     value[MLWH_CREATED_AT] = dt
     value[MLWH_UPDATED_AT] = dt
     return value
@@ -180,11 +171,11 @@ def map_mongo_doc_to_sql_columns(doc) -> Dict[str, Any]:
             Dict[str, str] -- Dictionary of MySQL versions of fields
     """
     value = map_mongo_to_sql_common(doc)
-    value[MLWH_CREATED_AT] = datetime.strftime(doc[FIELD_CREATED_AT], MYSQL_DATETIME_FORMAT)
-    value[MLWH_UPDATED_AT] = datetime.strftime(doc[FIELD_UPDATED_AT], MYSQL_DATETIME_FORMAT)
+    value[MLWH_CREATED_AT] = doc[FIELD_CREATED_AT]
+    value[MLWH_UPDATED_AT] = doc[FIELD_UPDATED_AT]
     return value
 
-def parse_date_tested(date_string: str) -> str:
+def parse_date_tested(date_string: str) -> datetime:
     """Converts date tested to MySQL format string
 
         Arguments:
@@ -195,16 +186,9 @@ def parse_date_tested(date_string: str) -> str:
     """
     try:
         date_time = datetime.strptime(date_string, f"{MYSQL_DATETIME_FORMAT} %Z")
+        return date_time
     except:
-        return ''
-
-    if date_string.find('UTC') != -1:
-        # timezone doesn't get set despite the '%Z' in the format string, unless we do this
-        date_time = date_time.replace(tzinfo=timezone.utc)
-
-    date_time_str = datetime.strftime(date_time, MYSQL_DATETIME_FORMAT)
-
-    return date_time_str
+        return None
 
 class ErrorLevel(Enum):
     DEBUG = 1

@@ -37,6 +37,8 @@ from crawler.constants import (
     FIELD_PLATE_BARCODE,
     FIELD_COORDINATE,
     FIELD_SOURCE,
+    FIELD_CREATED_AT,
+    FIELD_UPDATED_AT,
     MLWH_TABLE_NAME,
     MLWH_TABLE_NAME,
     MLWH_MONGODB_ID,
@@ -679,6 +681,8 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
         assert rows[0][MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 40, 0)
         assert rows[0][MLWH_SOURCE] == 'Test Centre'
         assert rows[0][MLWH_LAB_ID] == 'TC'
+        assert rows[0][MLWH_CREATED_AT] is not None
+        assert rows[0][MLWH_UPDATED_AT] is not None
 
 def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_connection):
     with patch('crawler.db.create_mysql_connection', return_value = 'not none'):
@@ -709,7 +713,7 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_con
         rows = cursor.fetchall()
         cursor.close()
 
-        assert rows[0]['date_tested'] == None
+        assert rows[0][MLWH_DATE_TESTED] == None
 
 def test_insert_samples_from_docs_into_mlwh_date_tested_blank(config, mlwh_connection):
     with patch('crawler.db.create_mysql_connection', return_value = 'not none'):
@@ -741,4 +745,4 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_blank(config, mlwh_conne
         rows = cursor.fetchall()
         cursor.close()
 
-        assert rows[0]['date_tested'] == None
+        assert rows[0][MLWH_DATE_TESTED] == None
