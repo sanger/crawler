@@ -13,7 +13,8 @@ from crawler.constants import (
     FIELD_SOURCE,
     FIELD_RESULT,
     FIELD_PLATE_BARCODE,
-    FIELD_ROOT_SAMPLE_ID
+    FIELD_ROOT_SAMPLE_ID,
+    MLWH_TABLE_NAME
 )
 
 from crawler.db import create_mongo_client, get_mongo_db
@@ -59,11 +60,19 @@ def mongo_database(mongo_client):
 def mlwh_connection(config):
     mysql_conn = create_mysql_connection(config, readonly=False)
     try:
-        yield config, mysql_conn
+        cursor = mysql_conn.cursor()
+        # clear any existing rows in the lighthouse sample table
+        try:
+            cursor.execute(f"TRUNCATE TABLE {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
+            mysql_conn.commit()
+        except:
+            pytest.fail("An exception occurred clearing the table")
+        finally:
+            cursor.close()
+        yield mysql_conn
     finally:
         # close the connection
         mysql_conn.close()
-
 
 @pytest.fixture
 def testing_files_for_process(cleanup_backups):
