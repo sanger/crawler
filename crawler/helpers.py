@@ -175,7 +175,7 @@ def map_mongo_doc_to_sql_columns(doc) -> Dict[str, Any]:
     value[MLWH_UPDATED_AT] = doc[FIELD_UPDATED_AT]
     return value
 
-def parse_date_tested(date_string: str) -> datetime:
+def parse_date_tested(date_string: str) -> Any:
     """Converts date tested to MySQL format string
 
         Arguments:
