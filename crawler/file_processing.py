@@ -561,10 +561,11 @@ class CentreFile:
         return []
 
     def get_required_headers(self) -> Set[str]:
-        """Determines the required headers. Includes lab id if config flag is set.
+        """Returns the list of required headers.
+           Includes Lab ID if config flag is set.
 
             Returns:
-                [str] - array of headers
+                {set} - the set of header names
         """
         required = set(self.REQUIRED_FIELDS)
         if not (self.config.ADD_LAB_ID):
@@ -573,10 +574,10 @@ class CentreFile:
         return required
 
     def get_channel_headers(self) -> Set[str]:
-        """Rreturns the list of optional headers.
+        """Returns the list of optional headers.
 
             Returns:
-                [str] - array of headers
+                {set} - the set of header names
         """
         return set(self.CHANNEL_FIELDS)
 
@@ -682,17 +683,17 @@ class CentreFile:
                 modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
                 self.log_adding_default_lab_id(row, line_number)
 
-        # filter out any unexpected columns
-        # get values for required headers
+        # next check the row for values for each of the required headers and copy them across
         for key in self.get_required_headers():
             if key in row:
                 modified_row[key] = row[key]
 
-        # get values for optional channel headers
+        # and check the row for values for any of the optional CT channel headers and copy them across
         for key in self.get_channel_headers():
             if key in row:
                 modified_row[key] = row[key]
 
+        # now check if we still have any columns left in the file row that we don't recognise
         unexpected_headers = list(row.keys() - modified_row.keys())
         if len(unexpected_headers) > 0:
             self.logging_collection.add_error(
@@ -745,7 +746,6 @@ class CentreFile:
 
         return verified_rows
 
-
     def parse_and_format_row(self, row, line_number, seen_rows) -> Any:
         """Parses a single row and runs validations on content.
 
@@ -773,19 +773,16 @@ class CentreFile:
                 modified_row, line_number, barcode_field, barcode_regex
             )
 
-        # if we failed to extract the plate barcode row is invalid
         if not modified_row[FIELD_PLATE_BARCODE]:
             return None
 
-        # check if the result value matches to expected
+        #  perform various validations on row values
         if not self.row_result_value_valid(modified_row, line_number):
             return None
 
-        # check if the ct channel target values match to expected (if present)
         if not self.row_channel_target_values_valid(modified_row, line_number):
             return None
 
-        # check if the ct channel result values match to expected (if present)
         if not self.row_channel_result_values_valid(modified_row, line_number):
             return None
 
@@ -818,7 +815,7 @@ class CentreFile:
         modified_row[FIELD_CREATED_AT] = import_timestamp
         modified_row[FIELD_UPDATED_AT] = import_timestamp
 
-        # store row signature to allow checking for duplicates in follwing rows
+        # store row signature to allow checking for duplicates in following rows
         seen_rows.add(row_signature)
 
         return modified_row
@@ -842,6 +839,27 @@ class CentreFile:
 
         return True
 
+    def is_row_channel_target_valid(self, row, line_number, fieldname) -> bool:
+        """Is the channel target valid.
+
+        Arguments:
+            row {Row} - row object from the csvreader
+            line_number {integer} - line number within the file
+            fieldname {str} - the name of the target column
+
+        Returns:
+            bool - whether the value is valid
+        """
+        if fieldname in row and row[fieldname]:
+            if not row[fieldname] in ALLOWED_CH_TARGET_VALUES:
+                self.logging_collection.add_error(
+                    "TYPE 17",
+                    f"{fieldname} invalid, line: {line_number}, result: {row[fieldname]}",
+                )
+                return False
+
+        return True
+
     def row_channel_target_values_valid(self, row, line_number) -> bool:
         """Validation to check if the row channel target value is one of the expected values.
 
@@ -852,35 +870,37 @@ class CentreFile:
         Returns:
             bool - whether the value is valid
         """
-        if FIELD_CH1_TARGET in row and row[FIELD_CH1_TARGET]:
-            if not row[FIELD_CH1_TARGET] in ALLOWED_CH_TARGET_VALUES:
-                self.logging_collection.add_error(
-                    "TYPE 17",
-                    f"CH1-Target invalid, line: {line_number}, result: {row[FIELD_CH1_TARGET]}",
-                )
-                return False
+        if not self.is_row_channel_target_valid(row, line_number, FIELD_CH1_TARGET):
+            return False
 
-        if FIELD_CH2_TARGET in row and row[FIELD_CH2_TARGET]:
-            if not row[FIELD_CH2_TARGET] in ALLOWED_CH_TARGET_VALUES:
-                self.logging_collection.add_error(
-                    "TYPE 17",
-                    f"CH2-Target invalid, line: {line_number}, result: {row[FIELD_CH2_TARGET]}",
-                )
-                return False
+        if not self.is_row_channel_target_valid(row, line_number, FIELD_CH2_TARGET):
+            return False
 
-        if FIELD_CH3_TARGET in row and row[FIELD_CH3_TARGET]:
-            if not row[FIELD_CH3_TARGET] in ALLOWED_CH_TARGET_VALUES:
-                self.logging_collection.add_error(
-                    "TYPE 17",
-                    f"CH3-Target invalid, line: {line_number}, result: {row[FIELD_CH3_TARGET]}",
-                )
-                return False
+        if not self.is_row_channel_target_valid(row, line_number, FIELD_CH3_TARGET):
+            return False
 
-        if FIELD_CH4_TARGET in row and row[FIELD_CH4_TARGET]:
-            if not row[FIELD_CH4_TARGET] in ALLOWED_CH_TARGET_VALUES:
+        if not self.is_row_channel_target_valid(row, line_number, FIELD_CH4_TARGET):
+            return False
+
+        return True
+
+
+    def is_row_channel_result_valid(self, row, line_number, fieldname):
+        """Is the channel result valid.
+
+        Arguments:
+            row {Row} - row object from the csvreader
+            line_number {integer} - line number within the file
+            fieldname {str} - the name of the result column
+
+        Returns:
+            bool - whether the result value is valid
+        """
+        if fieldname in row and row[fieldname]:
+            if not row[fieldname] in ALLOWED_CH_RESULT_VALUES:
                 self.logging_collection.add_error(
-                    "TYPE 17",
-                    f"CH4-Target invalid, line: {line_number}, result: {row[FIELD_CH4_TARGET]}",
+                    "TYPE 18",
+                    f"{fieldname} invalid, line: {line_number}, result: {row[fieldname]}",
                 )
                 return False
 
@@ -896,37 +916,17 @@ class CentreFile:
         Returns:
             bool - whether the values are valid
         """
-        if FIELD_CH1_RESULT in row and row[FIELD_CH1_RESULT]:
-            if not row[FIELD_CH1_RESULT] in ALLOWED_CH_RESULT_VALUES:
-                self.logging_collection.add_error(
-                    "TYPE 18",
-                    f"CH1-Result invalid, line: {line_number}, result: {row[FIELD_CH1_RESULT]}",
-                )
-                return False
+        if not self.is_row_channel_result_valid(row, line_number, FIELD_CH1_RESULT):
+            return False
 
-        if FIELD_CH2_RESULT in row and row[FIELD_CH2_RESULT]:
-            if not row[FIELD_CH2_RESULT] in ALLOWED_CH_RESULT_VALUES:
-                self.logging_collection.add_error(
-                    "TYPE 18",
-                    f"CH2-Result invalid, line: {line_number}, result: {row[FIELD_CH2_RESULT]}",
-                )
-                return False
+        if not self.is_row_channel_result_valid(row, line_number, FIELD_CH2_RESULT):
+            return False
 
-        if FIELD_CH3_RESULT in row and row[FIELD_CH3_RESULT]:
-            if not row[FIELD_CH3_RESULT] in ALLOWED_CH_RESULT_VALUES:
-                self.logging_collection.add_error(
-                    "TYPE 18",
-                    f"CH3-Result invalid, line: {line_number}, result: {row[FIELD_CH3_RESULT]}",
-                )
-                return False
+        if not self.is_row_channel_result_valid(row, line_number, FIELD_CH3_RESULT):
+            return False
 
-        if FIELD_CH4_RESULT in row and row[FIELD_CH4_RESULT]:
-            if not row[FIELD_CH4_RESULT] in ALLOWED_CH_RESULT_VALUES:
-                self.logging_collection.add_error(
-                    "TYPE 18",
-                    f"CH4-Result invalid, line: {line_number}, result: {row[FIELD_CH4_RESULT]}",
-                )
-                return False
+        if not self.is_row_channel_result_valid(row, line_number, FIELD_CH4_RESULT):
+            return False
 
         return True
 
@@ -952,6 +952,27 @@ class CentreFile:
 
         return False
 
+    def is_row_channel_cq_valid(self, row, line_number, fieldname) -> bool:
+        """Is the channel cq valid.
+
+        Arguments:
+            row {Row} - row object from the csvreader
+            line_number {integer} - line number within the file
+            fieldname {str} - the name of the cq column
+
+        Returns:
+            bool - whether the cq value is valid
+        """
+        if fieldname in row and row[fieldname]:
+            if not self.is_number(row[fieldname]):
+                self.logging_collection.add_error(
+                    "TYPE 19",
+                    f"{fieldname} invalid, line: {line_number}, result: {row[fieldname]}",
+                )
+                return False
+
+        return True
+
     def row_channel_cq_values_valid(self, row, line_number) -> bool:
         """Validation to check if the row channel cq values are numbers.
 
@@ -962,37 +983,17 @@ class CentreFile:
         Returns:
             bool - whether the values are valid
         """
-        if FIELD_CH1_CQ in row and row[FIELD_CH1_CQ]:
-            if not self.is_number(row[FIELD_CH1_CQ]):
-                self.logging_collection.add_error(
-                    "TYPE 19",
-                    f"CH1-Cq invalid, line: {line_number}, result: {row[FIELD_CH1_CQ]}",
-                )
-                return False
+        if not self.is_row_channel_cq_valid(row, line_number, FIELD_CH1_CQ):
+            return False
 
-        if FIELD_CH2_CQ in row and row[FIELD_CH2_CQ]:
-            if not self.is_number(row[FIELD_CH2_CQ]):
-                self.logging_collection.add_error(
-                    "TYPE 19",
-                    f"CH2-Cq invalid, line: {line_number}, result: {row[FIELD_CH2_CQ]}",
-                )
-                return False
+        if not self.is_row_channel_cq_valid(row, line_number, FIELD_CH2_CQ):
+            return False
 
-        if FIELD_CH3_CQ in row and row[FIELD_CH3_CQ]:
-            if not self.is_number(row[FIELD_CH3_CQ]):
-                self.logging_collection.add_error(
-                    "TYPE 19",
-                    f"CH3-Cq invalid, line: {line_number}, result: {row[FIELD_CH3_CQ]}",
-                )
-                return False
+        if not self.is_row_channel_cq_valid(row, line_number, FIELD_CH3_CQ):
+            return False
 
-        if FIELD_CH4_CQ in row and row[FIELD_CH4_CQ]:
-            if not self.is_number(row[FIELD_CH4_CQ]):
-                self.logging_collection.add_error(
-                    "TYPE 19",
-                    f"CH4-Cq invalid, line: {line_number}, result: {row[FIELD_CH4_CQ]}",
-                )
-                return False
+        if not self.is_row_channel_cq_valid(row, line_number, FIELD_CH4_CQ):
+            return False
 
         return True
 
@@ -1000,56 +1001,57 @@ class CentreFile:
         """Validation to check if a number lies within the expected range.
 
         Arguments:
-            range_min {str} - string representation of the minimum range number
-            range_max {str} - string representation of the maximum range number
+            range_min {Decimal} - minimum range number
+            range_max {Decimal} - maximum range number
             num {str} - string representation of the number to be tested
 
         Returns:
             bool - whether the value lies within range
         """
-        return Decimal(range_min) <= Decimal(num) <= Decimal(range_max)
+        return range_min <= Decimal(num) <= range_max
+
+    def is_row_channel_cq_in_range(self, row, line_number, fieldname) -> bool:
+        """Is the channel cq within the specified range.
+
+        Arguments:
+            row {Row} - row object from the csvreader
+            line_number {integer} - line number within the file
+            fieldname {str} - the name of the cq column
+
+        Returns:
+            bool - whether the cq value is valid
+        """
+        if fieldname in row and row[fieldname]:
+            if not self.is_within_cq_range(MIN_CQ_VALUE, MAX_CQ_VALUE, row[fieldname]):
+                self.logging_collection.add_error(
+                    "TYPE 20",
+                    f"{fieldname} not in range ({MIN_CQ_VALUE}, {MAX_CQ_VALUE}), line: {line_number}, result: {row[fieldname]}",
+                )
+                return False
+
+        return True
 
     def row_channel_cq_values_within_range(self, row, line_number) -> bool:
-        """Validation to check if the row channel cq values are numbers.
+        """Validation to check if the row channel cq values are within range.
 
         Arguments:
             row {Row} - row object from the csvreader
             line_number {integer} - line number within the file
 
         Returns:
-            bool - whether the values are valid
+            bool - whether the cq values are within range
         """
-        if FIELD_CH1_CQ in row and row[FIELD_CH1_CQ]:
-            if not self.is_within_cq_range(MIN_CQ_VALUE, MAX_CQ_VALUE, row[FIELD_CH1_CQ]):
-                self.logging_collection.add_error(
-                    "TYPE 20",
-                    f"CH1-Cq not in range ({MIN_CQ_VALUE}, {MAX_CQ_VALUE}), line: {line_number}, result: {row[FIELD_CH1_CQ]}",
-                )
-                return False
+        if not self.is_row_channel_cq_in_range(row, line_number, FIELD_CH1_CQ):
+            return False
 
-        if FIELD_CH2_CQ in row and row[FIELD_CH2_CQ]:
-            if not self.is_within_cq_range(MIN_CQ_VALUE, MAX_CQ_VALUE, row[FIELD_CH2_CQ]):
-                self.logging_collection.add_error(
-                    "TYPE 20",
-                    f"CH2-Cq not in range ({MIN_CQ_VALUE}, {MAX_CQ_VALUE}), line: {line_number}, result: {row[FIELD_CH2_CQ]}",
-                )
-                return False
+        if not self.is_row_channel_cq_in_range(row, line_number, FIELD_CH2_CQ):
+            return False
 
-        if FIELD_CH3_CQ in row and row[FIELD_CH3_CQ]:
-            if not self.is_within_cq_range(MIN_CQ_VALUE, MAX_CQ_VALUE, row[FIELD_CH3_CQ]):
-                self.logging_collection.add_error(
-                    "TYPE 20",
-                    f"CH3-Cq not in range ({MIN_CQ_VALUE}, {MAX_CQ_VALUE}), line: {line_number}, result: {row[FIELD_CH3_CQ]}",
-                )
-                return False
+        if not self.is_row_channel_cq_in_range(row, line_number, FIELD_CH3_CQ):
+            return False
 
-        if FIELD_CH4_CQ in row and row[FIELD_CH4_CQ]:
-            if not self.is_within_cq_range(MIN_CQ_VALUE, MAX_CQ_VALUE, row[FIELD_CH4_CQ]):
-                self.logging_collection.add_error(
-                    "TYPE 20",
-                    f"CH4-Cq not in range ({MIN_CQ_VALUE}, {MAX_CQ_VALUE}), line: {line_number}, result: {row[FIELD_CH4_CQ]}",
-                )
-                return False
+        if not self.is_row_channel_cq_in_range(row, line_number, FIELD_CH4_CQ):
+            return False
 
         return True
 

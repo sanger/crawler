@@ -696,12 +696,12 @@ def test_is_within_cq_range(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
 
-    assert centre_file.is_within_cq_range('0.0', '100.0', '0.0') is True
-    assert centre_file.is_within_cq_range('0.0', '100.0', '100.0') is True
-    assert centre_file.is_within_cq_range('0.0', '100.0', '27.019291283') is True
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), '0.0') is True
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), '100.0') is True
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), '27.019291283') is True
 
-    assert centre_file.is_within_cq_range('0.0', '100.0', '-0.00000001') is False
-    assert centre_file.is_within_cq_range('0.0', '100.0', '100.00000001') is False
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), '-0.00000001') is False
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), '100.00000001') is False
 
 # test for where the channel cq values are not within range
 def test_where_ct_channel_cq_value_is_not_within_range(config):

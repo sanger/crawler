@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 # mongo collections
 COLLECTION_CENTRES = "centres"
 COLLECTION_IMPORTS = "imports"
@@ -69,7 +71,6 @@ MONGO_DATETIME_FORMAT = "%y%m%d_%H%M"
 MYSQL_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # allowed Result field values
-# TODO: confirm! 'Detected', 'Not detected'?
 ALLOWED_RESULT_VALUES = ('Positive', 'Negative', 'limit of detection', 'Void')
 
 # allowed CT channel CHn-Target field values (or can be null)
@@ -79,6 +80,5 @@ ALLOWED_CH_TARGET_VALUES = ('ORF1ab', 'N gene', 'S gene', 'MS2')
 ALLOWED_CH_RESULT_VALUES = ('Positive', 'Negative', 'Inconclusive', 'Void')
 
 # range of allowed cq values (0 .. 100, set as strings for conversion to decimals in code)
-MIN_CQ_VALUE = '0.0'
-MAX_CQ_VALUE = '100.0'
-
+MIN_CQ_VALUE = Decimal('0.0')
+MAX_CQ_VALUE = Decimal('100.0')
