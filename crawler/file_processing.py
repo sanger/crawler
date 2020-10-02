@@ -628,12 +628,13 @@ class CentreFile:
         if not m:
             sample_id = None
             if FIELD_ROOT_SAMPLE_ID in row:
-                sample_id = row[FIELD_ROOT_SAMPLE_ID]
+                sample_id = row.get(FIELD_ROOT_SAMPLE_ID)
+
             self.logging_collection.add_error(
                 "TYPE 9",
-                f"Wrong reg. exp. {barcode_field}, line:{line_number}, root_sample_id: {sample_id}, value: {row[barcode_field]}",
+                f"Wrong reg. exp. {barcode_field}, line:{line_number}, root_sample_id: {sample_id}, value: {row.get(barcode_field)}",
             )
-            return "", ""
+            return '', ''
 
         return m.group(1), m.group(2)
 
@@ -651,7 +652,7 @@ class CentreFile:
         logger.debug(f"Adding in missing Lab ID for row {line_number}")
         self.logging_collection.add_error(
             "TYPE 12",
-            f"No Lab ID, line: {line_number}, root_sample_id: {row[FIELD_ROOT_SAMPLE_ID]}",
+            f"No Lab ID, line: {line_number}, root_sample_id: {row.get(FIELD_ROOT_SAMPLE_ID)}",
         )
 
     def filtered_row(self, row, line_number) -> Dict[str, str]:
@@ -668,16 +669,16 @@ class CentreFile:
             # when we need to add the lab id if not present
             if FIELD_LAB_ID in row:
                 # if the lab id field is already present
-                if row[FIELD_LAB_ID] == "" or row[FIELD_LAB_ID] == None:
+                if not row.get(FIELD_LAB_ID):
                     # if no value we add the default value and log it was missing
                     modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
                     self.log_adding_default_lab_id(row, line_number)
                 else:
-                    if row[FIELD_LAB_ID] != self.centre_config["lab_id_default"]:
+                    if row.get(FIELD_LAB_ID) != self.centre_config["lab_id_default"]:
                         logger.warning(
                             f"Different lab id setting: {row[FIELD_LAB_ID]}!={self.centre_config['lab_id_default']}"
                         )
-                    modified_row[FIELD_LAB_ID] = row[FIELD_LAB_ID]
+                    modified_row[FIELD_LAB_ID] = row.get(FIELD_LAB_ID)
             else:
                 # if the lab id field is not present we add the default and log it was missing
                 modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
@@ -698,7 +699,7 @@ class CentreFile:
         if len(unexpected_headers) > 0:
             self.logging_collection.add_error(
                 "TYPE 13",
-                f"Unexpected headers, line: {line_number}, root_sample_id: {row[FIELD_ROOT_SAMPLE_ID]}, extra headers: {unexpected_headers}",
+                f"Unexpected headers, line: {line_number}, root_sample_id: {row.get(FIELD_ROOT_SAMPLE_ID)}, extra headers: {unexpected_headers}",
             )
 
         return modified_row
@@ -768,12 +769,12 @@ class CentreFile:
 
         # extract the barcode and well coordinate
         modified_row[FIELD_PLATE_BARCODE] = None  # type: ignore
-        if modified_row[barcode_field] and barcode_regex:
+        if modified_row.get(barcode_field) and barcode_regex:
             modified_row[FIELD_PLATE_BARCODE], modified_row[FIELD_COORDINATE] = self.extract_plate_barcode_and_coordinate(
                 modified_row, line_number, barcode_field, barcode_regex
             )
 
-        if not modified_row[FIELD_PLATE_BARCODE]:
+        if not modified_row.get(FIELD_PLATE_BARCODE):
             return None
 
         #  perform various validations on row values
@@ -830,10 +831,10 @@ class CentreFile:
         Returns:
             bool - whether the value is valid
         """
-        if not row[FIELD_RESULT] in ALLOWED_RESULT_VALUES:
+        if not row.get(FIELD_RESULT) in ALLOWED_RESULT_VALUES:
             self.logging_collection.add_error(
                 "TYPE 16",
-                f"Result invalid, line: {line_number}, result: {row[FIELD_RESULT]}",
+                f"Result invalid, line: {line_number}, result: {row.get(FIELD_RESULT)}",
             )
             return False
 
@@ -850,7 +851,7 @@ class CentreFile:
         Returns:
             bool - whether the value is valid
         """
-        if fieldname in row and row[fieldname]:
+        if row.get(fieldname):
             if not row[fieldname] in ALLOWED_CH_TARGET_VALUES:
                 self.logging_collection.add_error(
                     "TYPE 17",
@@ -896,11 +897,11 @@ class CentreFile:
         Returns:
             bool - whether the result value is valid
         """
-        if fieldname in row and row[fieldname]:
-            if not row[fieldname] in ALLOWED_CH_RESULT_VALUES:
+        if row.get(fieldname):
+            if not row.get(fieldname) in ALLOWED_CH_RESULT_VALUES:
                 self.logging_collection.add_error(
                     "TYPE 18",
-                    f"{fieldname} invalid, line: {line_number}, result: {row[fieldname]}",
+                    f"{fieldname} invalid, line: {line_number}, result: {row.get(fieldname)}",
                 )
                 return False
 
@@ -963,11 +964,11 @@ class CentreFile:
         Returns:
             bool - whether the cq value is valid
         """
-        if fieldname in row and row[fieldname]:
-            if not self.is_number(row[fieldname]):
+        if row.get(fieldname):
+            if not self.is_number(row.get(fieldname)):
                 self.logging_collection.add_error(
                     "TYPE 19",
-                    f"{fieldname} invalid, line: {line_number}, result: {row[fieldname]}",
+                    f"{fieldname} invalid, line: {line_number}, result: {row.get(fieldname)}",
                 )
                 return False
 
@@ -1021,11 +1022,11 @@ class CentreFile:
         Returns:
             bool - whether the cq value is valid
         """
-        if fieldname in row and row[fieldname]:
-            if not self.is_within_cq_range(MIN_CQ_VALUE, MAX_CQ_VALUE, row[fieldname]):
+        if row.get(fieldname):
+            if not self.is_within_cq_range(MIN_CQ_VALUE, MAX_CQ_VALUE, row.get(fieldname)):
                 self.logging_collection.add_error(
                     "TYPE 20",
-                    f"{fieldname} not in range ({MIN_CQ_VALUE}, {MAX_CQ_VALUE}), line: {line_number}, result: {row[fieldname]}",
+                    f"{fieldname} not in range ({MIN_CQ_VALUE}, {MAX_CQ_VALUE}), line: {line_number}, result: {row.get(fieldname)}",
                 )
                 return False
 
@@ -1067,31 +1068,31 @@ class CentreFile:
             bool - whether the channel results complement the main results
         """
         # if the result is not positive we do not need to check any further
-        if row[FIELD_RESULT] != 'Positive':
+        if row.get(FIELD_RESULT) != 'Positive':
             return True
 
         ch_results_present = 0
         ch_results_positive = 0
 
         # look for positive channel results
-        if FIELD_CH1_RESULT in row and row[FIELD_CH1_RESULT]:
+        if row.get(FIELD_CH1_RESULT):
             ch_results_present += 1
-            if row[FIELD_CH1_RESULT] == 'Positive':
+            if row.get(FIELD_CH1_RESULT) == 'Positive':
                 ch_results_positive += 1
 
-        if FIELD_CH2_RESULT in row and row[FIELD_CH2_RESULT]:
+        if row.get(FIELD_CH2_RESULT):
             ch_results_present += 1
-            if row[FIELD_CH2_RESULT] == 'Positive':
+            if row.get(FIELD_CH2_RESULT) == 'Positive':
                 ch_results_positive += 1
 
-        if FIELD_CH3_RESULT in row and row[FIELD_CH3_RESULT]:
+        if row.get(FIELD_CH3_RESULT):
             ch_results_present += 1
-            if row[FIELD_CH3_RESULT] == 'Positive':
+            if row.get(FIELD_CH3_RESULT) == 'Positive':
                 ch_results_positive += 1
 
-        if FIELD_CH4_RESULT in row and row[FIELD_CH4_RESULT]:
+        if row.get(FIELD_CH4_RESULT):
             ch_results_present += 1
-            if row[FIELD_CH4_RESULT] == 'Positive':
+            if row.get(FIELD_CH4_RESULT) == 'Positive':
                 ch_results_positive += 1
 
         # if there are no channel results present in the row we do not need to check further
@@ -1126,7 +1127,7 @@ class CentreFile:
 
         # check both the Root Sample ID and barcode field are present
         barcode_field = self.centre_config["barcode_field"]
-        if not (row[FIELD_ROOT_SAMPLE_ID]):
+        if not row.get(FIELD_ROOT_SAMPLE_ID):
             # filter out row as sample id is missing
             self.logging_collection.add_error(
                 "TYPE 3", f"Root Sample ID missing, line: {line_number}"
@@ -1134,12 +1135,12 @@ class CentreFile:
             logger.warning(f"We found line: {line_number} missing sample id but is not blank")
             return False
 
-        if not (row[FIELD_RESULT]):
+        if not row.get(FIELD_RESULT):
             # filter out row as result is missing
             self.logging_collection.add_error("TYPE 3", f"Result missing, line: {line_number}")
             return False
 
-        if not (row[barcode_field]):
+        if not row.get(barcode_field):
             # filter out row as barcode is missing
             self.logging_collection.add_error("TYPE 4", f"RNA ID missing, line: {line_number}")
             return False
