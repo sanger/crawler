@@ -579,10 +579,19 @@ def test_where_result_has_unexpected_value(config):
             fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
 
             # where row has valid value - should pass
-            fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
+            fake_csv.write("1,RNA_0043_H06,Positive,Val\n")
+
+            # where row has valid value - should pass
+            fake_csv.write("2,RNA_0043_H07,Negative,Val\n")
+
+            # where row has valid value - should pass
+            fake_csv.write("3,RNA_0043_H08,limit of detection,Val\n")
+
+            # where row has valid value - should pass
+            fake_csv.write("4,RNA_0043_H09,Void,Val\n")
 
             # where row has invalid value - should error
-            fake_csv.write("2,RNA_0043_H10,NotAValidResult,Val\n")
+            fake_csv.write("5,RNA_0043_H10,NotAValidResult,Val\n")
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
