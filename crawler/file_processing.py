@@ -691,7 +691,7 @@ class CentreFile:
 
         # and check the row for values for any of the optional CT channel headers and copy them across
         for key in self.get_channel_headers():
-            if key in row:
+            if row.get(key):
                 modified_row[key] = row[key]
 
         # now check if we still have any columns left in the file row that we don't recognise
