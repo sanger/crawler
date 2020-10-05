@@ -26,7 +26,24 @@ from crawler.constants import (
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
     FIELD_RNA_PCR_ID,
-    FIELD_SOURCE
+    FIELD_SOURCE,
+    FIELD_CH1_TARGET,
+    FIELD_CH1_RESULT,
+    FIELD_CH1_CQ,
+    FIELD_CH2_TARGET,
+    FIELD_CH2_RESULT,
+    FIELD_CH2_CQ,
+    FIELD_CH3_TARGET,
+    FIELD_CH3_RESULT,
+    FIELD_CH3_CQ,
+    FIELD_CH4_TARGET,
+    FIELD_CH4_RESULT,
+    FIELD_CH4_CQ,
+    ALLOWED_RESULT_VALUES,
+    ALLOWED_CH_TARGET_VALUES,
+    ALLOWED_CH_RESULT_VALUES,
+    MIN_CQ_VALUE,
+    MAX_CQ_VALUE,
 )
 from crawler.helpers import (
     current_time,
@@ -49,10 +66,9 @@ from crawler.db import (
     run_mysql_executemany_query,
 )
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
-
 from hashlib import md5
-
 from datetime import datetime
+from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
@@ -195,6 +211,7 @@ class CentreFileState(Enum):
 
 
 class CentreFile:
+    # These headers are required in ALL files from ALL lighthouses
     REQUIRED_FIELDS = {
         FIELD_ROOT_SAMPLE_ID,
         FIELD_VIRAL_PREP_ID,
@@ -202,6 +219,22 @@ class CentreFile:
         FIELD_RNA_PCR_ID,
         FIELD_RESULT,
         FIELD_DATE_TESTED,
+    }
+
+    # These headers are optional, and may not be present in all files from all lighthouses
+    CHANNEL_FIELDS = {
+        FIELD_CH1_TARGET,
+        FIELD_CH1_RESULT,
+        FIELD_CH1_CQ,
+        FIELD_CH2_TARGET,
+        FIELD_CH2_RESULT,
+        FIELD_CH2_CQ,
+        FIELD_CH3_TARGET,
+        FIELD_CH3_RESULT,
+        FIELD_CH3_CQ,
+        FIELD_CH4_TARGET,
+        FIELD_CH4_RESULT,
+        FIELD_CH4_CQ,
     }
 
     def __init__(self, file_name, centre):
@@ -328,6 +361,7 @@ class CentreFile:
         mongo_ids_of_inserted = []
         if len(docs_to_insert) > 0:
             mongo_ids_of_inserted = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
+
         if len(mongo_ids_of_inserted) > 0:
             # filter out docs which failed to insert into mongo - we don't want to create mlwh records for these
             docs_to_insert_mlwh = list(filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert))
@@ -515,8 +549,10 @@ class CentreFile:
         with open(csvfile_path, newline="") as csvfile:
             csvreader = DictReader(csvfile)
             try:
+                # first check the required file headers are present
                 if self.check_for_required_headers(csvreader):
-                    documents = self.format_and_filter_rows(csvreader)
+                    # then parse the rows in the file
+                    documents = self.parse_and_format_file_rows(csvreader)
 
                     return documents
             except csv.Error as e:
@@ -525,16 +561,25 @@ class CentreFile:
         return []
 
     def get_required_headers(self) -> Set[str]:
-        """Determines the required headers. Includes lab id if config flag is set.
+        """Returns the list of required headers.
+           Includes Lab ID if config flag is set.
 
             Returns:
-                [str] - array of headers
+                {set} - the set of header names
         """
         required = set(self.REQUIRED_FIELDS)
         if not (self.config.ADD_LAB_ID):
             required.add(FIELD_LAB_ID)
 
         return required
+
+    def get_channel_headers(self) -> Set[str]:
+        """Returns the list of optional headers.
+
+            Returns:
+                {set} - the set of header names
+        """
+        return set(self.CHANNEL_FIELDS)
 
     def check_for_required_headers(self, csvreader: DictReader) -> bool:
         """Checks that the CSV file has the required headers.
@@ -561,7 +606,7 @@ class CentreFile:
 
         return True
 
-    def extract_fields(
+    def extract_plate_barcode_and_coordinate(
         self, row: Dict[str, str], line_number, barcode_field: str, regex: str
     ) -> Tuple[str, str]:
         """Extracts fields from a row of data (from the CSV file). Currently extracting the barcode and
@@ -583,12 +628,13 @@ class CentreFile:
         if not m:
             sample_id = None
             if FIELD_ROOT_SAMPLE_ID in row:
-                sample_id = row[FIELD_ROOT_SAMPLE_ID]
+                sample_id = row.get(FIELD_ROOT_SAMPLE_ID)
+
             self.logging_collection.add_error(
                 "TYPE 9",
-                f"Wrong reg. exp. {barcode_field}, line:{line_number}, root_sample_id: {sample_id}, value: {row[barcode_field]}",
+                f"Wrong reg. exp. {barcode_field}, line:{line_number}, root_sample_id: {sample_id}, value: {row.get(barcode_field)}",
             )
-            return "", ""
+            return '', ''
 
         return m.group(1), m.group(2)
 
@@ -606,7 +652,7 @@ class CentreFile:
         logger.debug(f"Adding in missing Lab ID for row {line_number}")
         self.logging_collection.add_error(
             "TYPE 12",
-            f"No Lab ID, line: {line_number}, root_sample_id: {row[FIELD_ROOT_SAMPLE_ID]}",
+            f"No Lab ID, line: {line_number}, root_sample_id: {row.get(FIELD_ROOT_SAMPLE_ID)}",
         )
 
     def filtered_row(self, row, line_number) -> Dict[str, str]:
@@ -623,37 +669,47 @@ class CentreFile:
             # when we need to add the lab id if not present
             if FIELD_LAB_ID in row:
                 # if the lab id field is already present
-                if row[FIELD_LAB_ID] == "" or row[FIELD_LAB_ID] == None:
+                if not row.get(FIELD_LAB_ID):
                     # if no value we add the default value and log it was missing
                     modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
                     self.log_adding_default_lab_id(row, line_number)
                 else:
-                    if row[FIELD_LAB_ID] != self.centre_config["lab_id_default"]:
+                    if row.get(FIELD_LAB_ID) != self.centre_config["lab_id_default"]:
                         logger.warning(
                             f"Different lab id setting: {row[FIELD_LAB_ID]}!={self.centre_config['lab_id_default']}"
                         )
-                    modified_row[FIELD_LAB_ID] = row[FIELD_LAB_ID]
+                    modified_row[FIELD_LAB_ID] = row.get(FIELD_LAB_ID)
             else:
                 # if the lab id field is not present we add the default and log it was missing
                 modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
                 self.log_adding_default_lab_id(row, line_number)
 
-        # filter out any unexpected columns
+        # next check the row for values for each of the required headers and copy them across
         for key in self.get_required_headers():
             if key in row:
                 modified_row[key] = row[key]
 
+        # and check the row for values for any of the optional CT channel headers and copy them across
+        for key in self.get_channel_headers():
+            if key in row:
+                modified_row[key] = row[key]
+
+        # now check if we still have any columns left in the file row that we don't recognise
         unexpected_headers = list(row.keys() - modified_row.keys())
         if len(unexpected_headers) > 0:
             self.logging_collection.add_error(
                 "TYPE 13",
-                f"Unexpected headers, line: {line_number}, root_sample_id: {row[FIELD_ROOT_SAMPLE_ID]}, extra headers: {unexpected_headers}",
+                f"Unexpected headers, line: {line_number}, root_sample_id: {row.get(FIELD_ROOT_SAMPLE_ID)}, extra headers: {unexpected_headers}",
             )
 
         return modified_row
 
-    def format_and_filter_rows(self, csvreader: DictReader) -> Any:
-        """Adds extra fields to the imported data which are required for querying.
+    def parse_and_format_file_rows(self, csvreader: DictReader) -> Any:
+        """Attempts to parse and format the file rows
+           Adds additional derived and calculated fields to the imported rows that will aid querying later.
+           Filters out blank rows, duplicated rows, and rows with values failing various rules on content.
+           Creates error records for rows that do not pass checks, that will get written to the import logs
+           for display in the Lighthouse-UI imports screen.
 
         Arguments:
             csvreader {DictReader} -- CSV file reader to iterate over
@@ -663,60 +719,395 @@ class CentreFile:
         """
         logger.debug("Adding extra fields")
 
-        augmented_data = []
+        verified_rows = []
 
         # Detect duplications and filters them out
         seen_rows: Set[tuple] = set()
-        missing_data_count = 0
+        failed_validation_count = 0
         invalid_rows_count = 0
         line_number = 2
-
-        import_timestamp = self.get_now_timestamp()
-
-        barcode_regex = self.centre_config["barcode_regex"]
-        barcode_field = self.centre_config["barcode_field"]
 
         for row in csvreader:
             # only process rows that contain something in the cells
             if self.row_valid_structure(row, line_number):
-                row = self.filtered_row(row, line_number)
-                row[FIELD_SOURCE] = self.centre_config["name"]
-                row[FIELD_PLATE_BARCODE] = None  # type: ignore
-
-                if row[barcode_field] and barcode_regex:
-                    row[FIELD_PLATE_BARCODE], row[FIELD_COORDINATE] = self.extract_fields(
-                        row, line_number, barcode_field, barcode_regex
-                    )
-
-                if row[FIELD_PLATE_BARCODE]:
-                    row[FIELD_LINE_NUMBER] = line_number  # type: ignore
-                    row[FIELD_FILE_NAME] = self.file_name
-                    row[FIELD_FILE_NAME_DATE] = self.file_name_date()
-                    row[FIELD_CREATED_AT] = import_timestamp
-                    row[FIELD_UPDATED_AT] = import_timestamp
-
-                    row_signature = self.get_row_signature(row)
-
-                    if row_signature in seen_rows:
-                        logger.debug(f"Skipping {row_signature}: duplicate")
-                        self.logging_collection.add_error(
-                            "TYPE 5",
-                            f"Duplicated, line: {line_number}, root_sample_id: {row[FIELD_ROOT_SAMPLE_ID]}",
-                        )
-                        continue
-                    seen_rows.add(row_signature)
-                    augmented_data.append(row)
+                row = self.parse_and_format_row(row, line_number, seen_rows)
+                if row is not None:
+                    verified_rows.append(row)
                 else:
-                    missing_data_count += 1
-
+                    # this counter catches rows where field validation failed
+                    failed_validation_count += 1
             else:
+                # this counter catches blank rows and rows with empty fields
                 invalid_rows_count += 1
 
             line_number += 1
 
-        logger.info(f"Incorrect rows in this file = {invalid_rows_count + missing_data_count}")
+        logger.info(f"Rows with invalid structure in this file = {invalid_rows_count}")
+        logger.info(f"Rows that failed validation in this file = {failed_validation_count}")
 
-        return augmented_data
+        return verified_rows
+
+    def parse_and_format_row(self, row, line_number, seen_rows) -> Any:
+        """Parses a single row and runs validations on content.
+
+        Arguments:
+            row {Row} - row object from the csvreader
+            line_number {integer} - line number within the file
+            seen_rows {tuple} - row signature of key values, used to exclude duplicates
+
+        Returns:
+            modified_row {Dict[str, str]} - modified filtered and formatted version of the row
+        """
+        # first extract any recognised columns
+        modified_row = self.filtered_row(row, line_number)
+
+        # add the centre name as source
+        modified_row[FIELD_SOURCE] = self.centre_config["name"]
+
+        barcode_regex = self.centre_config["barcode_regex"]
+        barcode_field = self.centre_config["barcode_field"]
+
+        # extract the barcode and well coordinate
+        modified_row[FIELD_PLATE_BARCODE] = None  # type: ignore
+        if modified_row.get(barcode_field) and barcode_regex:
+            modified_row[FIELD_PLATE_BARCODE], modified_row[FIELD_COORDINATE] = self.extract_plate_barcode_and_coordinate(
+                modified_row, line_number, barcode_field, barcode_regex
+            )
+
+        if not modified_row.get(FIELD_PLATE_BARCODE):
+            return None
+
+        #  perform various validations on row values
+        if not self.row_result_value_valid(modified_row, line_number):
+            return None
+
+        if not self.row_channel_target_values_valid(modified_row, line_number):
+            return None
+
+        if not self.row_channel_result_values_valid(modified_row, line_number):
+            return None
+
+        if not self.row_channel_cq_values_valid(modified_row, line_number):
+            return None
+
+        if not self.row_channel_cq_values_within_range(modified_row, line_number):
+            return None
+
+        if not self.row_positive_result_matches_channel_results(modified_row, line_number):
+            return None
+
+        # check if this row has already been seen in this file
+        row_signature = self.get_row_signature(modified_row)
+
+        if row_signature in seen_rows:
+            logger.debug(f"Skipping {row_signature}: duplicate")
+            self.logging_collection.add_error(
+                "TYPE 5",
+                f"Duplicated, line: {line_number}, root_sample_id: {modified_row[FIELD_ROOT_SAMPLE_ID]}",
+            )
+            return None
+
+        # add file details and import timestamp
+        import_timestamp = self.get_now_timestamp()
+
+        modified_row[FIELD_LINE_NUMBER] = line_number  # type: ignore
+        modified_row[FIELD_FILE_NAME] = self.file_name
+        modified_row[FIELD_FILE_NAME_DATE] = self.file_name_date()
+        modified_row[FIELD_CREATED_AT] = import_timestamp
+        modified_row[FIELD_UPDATED_AT] = import_timestamp
+
+        # store row signature to allow checking for duplicates in following rows
+        seen_rows.add(row_signature)
+
+        return modified_row
+
+    def row_result_value_valid(self, row, line_number) -> bool:
+        """Validation to check if the row Result value is one of the expected values.
+
+        Arguments:
+            row {Row} - row object from the csvreader
+            line_number {integer} - line number within the file
+
+        Returns:
+            bool - whether the value is valid
+        """
+        if not row.get(FIELD_RESULT) in ALLOWED_RESULT_VALUES:
+            self.logging_collection.add_error(
+                "TYPE 16",
+                f"Result invalid, line: {line_number}, result: {row.get(FIELD_RESULT)}",
+            )
+            return False
+
+        return True
+
+    def is_row_channel_target_valid(self, row, line_number, fieldname) -> bool:
+        """Is the channel target valid.
+
+        Arguments:
+            row {Row} - row object from the csvreader
+            line_number {integer} - line number within the file
+            fieldname {str} - the name of the target column
+
+        Returns:
+            bool - whether the value is valid
+        """
+        if row.get(fieldname):
+            if not row[fieldname] in ALLOWED_CH_TARGET_VALUES:
+                self.logging_collection.add_error(
+                    "TYPE 17",
+                    f"{fieldname} invalid, line: {line_number}, result: {row[fieldname]}",
+                )
+                return False
+
+        return True
+
+    def row_channel_target_values_valid(self, row, line_number) -> bool:
+        """Validation to check if the row channel target value is one of the expected values.
+
+        Arguments:
+            row {Row} - row object from the csvreader
+            line_number {integer} - line number within the file
+
+        Returns:
+            bool - whether the value is valid
+        """
+        if not self.is_row_channel_target_valid(row, line_number, FIELD_CH1_TARGET):
+            return False
+
+        if not self.is_row_channel_target_valid(row, line_number, FIELD_CH2_TARGET):
+            return False
+
+        if not self.is_row_channel_target_valid(row, line_number, FIELD_CH3_TARGET):
+            return False
+
+        if not self.is_row_channel_target_valid(row, line_number, FIELD_CH4_TARGET):
+            return False
+
+        return True
+
+
+    def is_row_channel_result_valid(self, row, line_number, fieldname):
+        """Is the channel result valid.
+
+        Arguments:
+            row {Row} - row object from the csvreader
+            line_number {integer} - line number within the file
+            fieldname {str} - the name of the result column
+
+        Returns:
+            bool - whether the result value is valid
+        """
+        if row.get(fieldname):
+            if not row.get(fieldname) in ALLOWED_CH_RESULT_VALUES:
+                self.logging_collection.add_error(
+                    "TYPE 18",
+                    f"{fieldname} invalid, line: {line_number}, result: {row.get(fieldname)}",
+                )
+                return False
+
+        return True
+
+    def row_channel_result_values_valid(self, row, line_number) -> bool:
+        """Validation to check if the row channel result values match one of the expected values.
+
+        Arguments:
+            row {Row} - row object from the csvreader
+            line_number {integer} - line number within the file
+
+        Returns:
+            bool - whether the values are valid
+        """
+        if not self.is_row_channel_result_valid(row, line_number, FIELD_CH1_RESULT):
+            return False
+
+        if not self.is_row_channel_result_valid(row, line_number, FIELD_CH2_RESULT):
+            return False
+
+        if not self.is_row_channel_result_valid(row, line_number, FIELD_CH3_RESULT):
+            return False
+
+        if not self.is_row_channel_result_valid(row, line_number, FIELD_CH4_RESULT):
+            return False
+
+        return True
+
+
+    def is_number(self, item):
+        """Validation to check if an object is a numeric value.
+
+        Arguments:
+            item {Any} - object to be checked (expecting string number value)
+
+        Returns:
+            bool - whether the item is a number
+        """
+        if isinstance(item, str):
+            # regex matching for signed or unsigned ints and decimals
+            int_pattern = re.compile("^[-]?[0-9]*$")
+            decimal_pattern = re.compile("^[-]?[0-9]*.[0-9]*$")
+
+            if decimal_pattern.match(item) or int_pattern.match(item):
+                return True
+            else:
+                return False
+
+        return False
+
+    def is_row_channel_cq_valid(self, row, line_number, fieldname) -> bool:
+        """Is the channel cq valid.
+
+        Arguments:
+            row {Row} - row object from the csvreader
+            line_number {integer} - line number within the file
+            fieldname {str} - the name of the cq column
+
+        Returns:
+            bool - whether the cq value is valid
+        """
+        if row.get(fieldname):
+            if not self.is_number(row.get(fieldname)):
+                self.logging_collection.add_error(
+                    "TYPE 19",
+                    f"{fieldname} invalid, line: {line_number}, result: {row.get(fieldname)}",
+                )
+                return False
+
+        return True
+
+    def row_channel_cq_values_valid(self, row, line_number) -> bool:
+        """Validation to check if the row channel cq values are numbers.
+
+        Arguments:
+            row {Row} - row object from the csvreader
+            line_number {integer} - line number within the file
+
+        Returns:
+            bool - whether the values are valid
+        """
+        if not self.is_row_channel_cq_valid(row, line_number, FIELD_CH1_CQ):
+            return False
+
+        if not self.is_row_channel_cq_valid(row, line_number, FIELD_CH2_CQ):
+            return False
+
+        if not self.is_row_channel_cq_valid(row, line_number, FIELD_CH3_CQ):
+            return False
+
+        if not self.is_row_channel_cq_valid(row, line_number, FIELD_CH4_CQ):
+            return False
+
+        return True
+
+    def is_within_cq_range(self, range_min, range_max, num) -> bool:
+        """Validation to check if a number lies within the expected range.
+
+        Arguments:
+            range_min {Decimal} - minimum range number
+            range_max {Decimal} - maximum range number
+            num {str} - string representation of the number to be tested
+
+        Returns:
+            bool - whether the value lies within range
+        """
+        return range_min <= Decimal(num) <= range_max
+
+    def is_row_channel_cq_in_range(self, row, line_number, fieldname) -> bool:
+        """Is the channel cq within the specified range.
+
+        Arguments:
+            row {Row} - row object from the csvreader
+            line_number {integer} - line number within the file
+            fieldname {str} - the name of the cq column
+
+        Returns:
+            bool - whether the cq value is valid
+        """
+        if row.get(fieldname):
+            if not self.is_within_cq_range(MIN_CQ_VALUE, MAX_CQ_VALUE, row.get(fieldname)):
+                self.logging_collection.add_error(
+                    "TYPE 20",
+                    f"{fieldname} not in range ({MIN_CQ_VALUE}, {MAX_CQ_VALUE}), line: {line_number}, result: {row.get(fieldname)}",
+                )
+                return False
+
+        return True
+
+    def row_channel_cq_values_within_range(self, row, line_number) -> bool:
+        """Validation to check if the row channel cq values are within range.
+
+        Arguments:
+            row {Row} - row object from the csvreader
+            line_number {integer} - line number within the file
+
+        Returns:
+            bool - whether the cq values are within range
+        """
+        if not self.is_row_channel_cq_in_range(row, line_number, FIELD_CH1_CQ):
+            return False
+
+        if not self.is_row_channel_cq_in_range(row, line_number, FIELD_CH2_CQ):
+            return False
+
+        if not self.is_row_channel_cq_in_range(row, line_number, FIELD_CH3_CQ):
+            return False
+
+        if not self.is_row_channel_cq_in_range(row, line_number, FIELD_CH4_CQ):
+            return False
+
+        return True
+
+    def row_positive_result_matches_channel_results(self, row, line_number) -> bool:
+        """Validation to check that when the result is positive, and channel results are present,
+           then at least one of the channel results is also positive.
+
+        Arguments:
+            row {Row} - row object from the csvreader
+            line_number {integer} - line number within the file
+
+        Returns:
+            bool - whether the channel results complement the main results
+        """
+        # if the result is not positive we do not need to check any further
+        if row.get(FIELD_RESULT) != 'Positive':
+            return True
+
+        ch_results_present = 0
+        ch_results_positive = 0
+
+        # look for positive channel results
+        if row.get(FIELD_CH1_RESULT):
+            ch_results_present += 1
+            if row.get(FIELD_CH1_RESULT) == 'Positive':
+                ch_results_positive += 1
+
+        if row.get(FIELD_CH2_RESULT):
+            ch_results_present += 1
+            if row.get(FIELD_CH2_RESULT) == 'Positive':
+                ch_results_positive += 1
+
+        if row.get(FIELD_CH3_RESULT):
+            ch_results_present += 1
+            if row.get(FIELD_CH3_RESULT) == 'Positive':
+                ch_results_positive += 1
+
+        if row.get(FIELD_CH4_RESULT):
+            ch_results_present += 1
+            if row.get(FIELD_CH4_RESULT) == 'Positive':
+                ch_results_positive += 1
+
+        # if there are no channel results present in the row we do not need to check further
+        if ch_results_present == 0:
+            return True
+
+        # if there are no positives amongst the channel results the row is invalid
+        if ch_results_positive == 0:
+            self.logging_collection.add_error(
+                "TYPE 21",
+                f"Positive Result does not match to CT Channel Results (none are positive), line: {line_number}",
+            )
+            return False
+
+        return True
 
     def row_valid_structure(self, row, line_number) -> bool:
         """Checks whether the row has the expected structure.
@@ -736,7 +1127,7 @@ class CentreFile:
 
         # check both the Root Sample ID and barcode field are present
         barcode_field = self.centre_config["barcode_field"]
-        if not (row[FIELD_ROOT_SAMPLE_ID]):
+        if not row.get(FIELD_ROOT_SAMPLE_ID):
             # filter out row as sample id is missing
             self.logging_collection.add_error(
                 "TYPE 3", f"Root Sample ID missing, line: {line_number}"
@@ -744,12 +1135,12 @@ class CentreFile:
             logger.warning(f"We found line: {line_number} missing sample id but is not blank")
             return False
 
-        if not (row[FIELD_RESULT]):
+        if not row.get(FIELD_RESULT):
             # filter out row as result is missing
             self.logging_collection.add_error("TYPE 3", f"Result missing, line: {line_number}")
             return False
 
-        if not (row[barcode_field]):
+        if not row.get(barcode_field):
             # filter out row as barcode is missing
             self.logging_collection.add_error("TYPE 4", f"RNA ID missing, line: {line_number}")
             return False
