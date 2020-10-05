@@ -761,8 +761,7 @@ class CentreFile:
         # ---- create new row dict with just the recognised columns ----
         modified_row = self.filtered_row(row, line_number)
 
-        # ---- check if this row has already been seen in this file ----
-        # based on FIELD_ROOT_SAMPLE_ID, FIELD_RNA_ID, FIELD_RESULT, FIELD_LAB_ID
+        # ---- check if this row has already been seen in this file, based on key fields ----
         row_signature = self.get_row_signature(modified_row)
 
         if row_signature in seen_rows:
