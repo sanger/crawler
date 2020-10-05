@@ -772,6 +772,10 @@ class CentreFile:
             )
             return None
 
+        # ---- convert data types ----
+        if not self.convert_and_validate_cq_values(modified_row, line_number):
+            return None
+
         # ---- perform various validations on row values ----
         if not self.row_result_value_valid(modified_row, line_number):
             return None
@@ -780,9 +784,6 @@ class CentreFile:
             return None
 
         if not self.row_channel_result_values_valid(modified_row, line_number):
-            return None
-
-        if not self.row_channel_cq_values_valid(modified_row, line_number):
             return None
 
         if not self.row_channel_cq_values_within_range(modified_row, line_number):
@@ -820,6 +821,29 @@ class CentreFile:
         seen_rows.add(row_signature)
 
         return modified_row
+
+    def convert_and_validate_cq_values(self, row, line_number) -> bool:
+        for fieldname in [FIELD_CH1_CQ, FIELD_CH2_CQ, FIELD_CH3_CQ, FIELD_CH4_CQ]:
+            if not self.convert_and_validate_cq_value(row, fieldname, line_number):
+              return False
+
+        return True
+
+    def convert_and_validate_cq_value(self, row, fieldname, line_number) -> bool:
+        if not row.get(fieldname):
+            return True
+
+        try:
+            row[FIELD_CH1_CQ] = Decimal(row[fieldname])
+        except:
+            self.logging_collection.add_error(
+                "TYPE 19",
+                f"{fieldname} invalid, line: {line_number}, value: {row.get(fieldname)}",
+            )
+            return False
+
+        return True
+
 
     def row_result_value_valid(self, row, line_number) -> bool:
         """Validation to check if the row Result value is one of the expected values.
@@ -931,80 +955,18 @@ class CentreFile:
 
         return True
 
-
-    def is_decimal_number(self, input) -> bool:
-        """Validation to check if an object is a numeric value.
-
-        Arguments:
-            input {str} - object to be checked (expecting string number value)
-
-        Returns:
-            bool - whether the item is a number
-        """
-        try:
-            Decimal(input)
-        except:
-            return False
-
-        return True
-
-    def is_row_channel_cq_valid(self, row, line_number, fieldname) -> bool:
-        """Is the channel cq valid.
-
-        Arguments:
-            row {Row} - row object from the csvreader
-            line_number {integer} - line number within the file
-            fieldname {str} - the name of the cq column
-
-        Returns:
-            bool - whether the cq value is valid
-        """
-        if row.get(fieldname):
-            if not self.is_decimal_number(row.get(fieldname)):
-                self.logging_collection.add_error(
-                    "TYPE 19",
-                    f"{fieldname} invalid, line: {line_number}, result: {row.get(fieldname)}",
-                )
-                return False
-
-        return True
-
-    def row_channel_cq_values_valid(self, row, line_number) -> bool:
-        """Validation to check if the row channel cq values are numbers.
-
-        Arguments:
-            row {Row} - row object from the csvreader
-            line_number {integer} - line number within the file
-
-        Returns:
-            bool - whether the values are valid
-        """
-        if not self.is_row_channel_cq_valid(row, line_number, FIELD_CH1_CQ):
-            return False
-
-        if not self.is_row_channel_cq_valid(row, line_number, FIELD_CH2_CQ):
-            return False
-
-        if not self.is_row_channel_cq_valid(row, line_number, FIELD_CH3_CQ):
-            return False
-
-        if not self.is_row_channel_cq_valid(row, line_number, FIELD_CH4_CQ):
-            return False
-
-        return True
-
     def is_within_cq_range(self, range_min, range_max, num) -> bool:
         """Validation to check if a number lies within the expected range.
 
         Arguments:
             range_min {Decimal} - minimum range number
             range_max {Decimal} - maximum range number
-            num {str} - string representation of the number to be tested
+            num {Decimal} - the number to be tested
 
         Returns:
             bool - whether the value lies within range
         """
-        return range_min <= Decimal(num) <= range_max
+        return range_min <= num <= range_max
 
     def is_row_channel_cq_in_range(self, row, line_number, fieldname) -> bool:
         """Is the channel cq within the specified range.
