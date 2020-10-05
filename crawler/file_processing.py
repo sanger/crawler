@@ -728,7 +728,7 @@ class CentreFile:
         line_number = 2
 
         for row in csvreader:
-            # only process rows that contain something in the cells
+            # only process rows that have at least a minimum level of data
             if self.row_required_fields_present(row, line_number):
                 row = self.parse_and_format_row(row, line_number, seen_rows)
                 if row is not None:
@@ -758,26 +758,22 @@ class CentreFile:
         Returns:
             modified_row {Dict[str, str]} - modified filtered and formatted version of the row
         """
-        # first extract any recognised columns
+        # ---- create new row dict with just the recognised columns ----
         modified_row = self.filtered_row(row, line_number)
 
-        # add the centre name as source
-        modified_row[FIELD_SOURCE] = self.centre_config["name"]
+        # ---- check if this row has already been seen in this file ----
+        # based on FIELD_ROOT_SAMPLE_ID, FIELD_RNA_ID, FIELD_RESULT, FIELD_LAB_ID
+        row_signature = self.get_row_signature(modified_row)
 
-        barcode_regex = self.centre_config["barcode_regex"]
-        barcode_field = self.centre_config["barcode_field"]
-
-        # extract the barcode and well coordinate
-        modified_row[FIELD_PLATE_BARCODE] = None  # type: ignore
-        if modified_row.get(barcode_field) and barcode_regex:
-            modified_row[FIELD_PLATE_BARCODE], modified_row[FIELD_COORDINATE] = self.extract_plate_barcode_and_coordinate(
-                modified_row, line_number, barcode_field, barcode_regex
+        if row_signature in seen_rows:
+            logger.debug(f"Skipping {row_signature}: duplicate")
+            self.logging_collection.add_error(
+                "TYPE 5",
+                f"Duplicated, line: {line_number}, root_sample_id: {modified_row[FIELD_ROOT_SAMPLE_ID]}",
             )
-
-        if not modified_row.get(FIELD_PLATE_BARCODE):
             return None
 
-        #  perform various validations on row values
+        # ---- perform various validations on row values ----
         if not self.row_result_value_valid(modified_row, line_number):
             return None
 
@@ -796,15 +792,20 @@ class CentreFile:
         if not self.row_positive_result_matches_channel_results(modified_row, line_number):
             return None
 
-        # check if this row has already been seen in this file
-        row_signature = self.get_row_signature(modified_row)
+        # ---- add a few additional, computed or derived fields ----
+        # add the centre name as source
+        modified_row[FIELD_SOURCE] = self.centre_config["name"]
 
-        if row_signature in seen_rows:
-            logger.debug(f"Skipping {row_signature}: duplicate")
-            self.logging_collection.add_error(
-                "TYPE 5",
-                f"Duplicated, line: {line_number}, root_sample_id: {modified_row[FIELD_ROOT_SAMPLE_ID]}",
+        # extract the barcode and well coordinate
+        barcode_regex = self.centre_config["barcode_regex"]
+        barcode_field = self.centre_config["barcode_field"]
+
+        modified_row[FIELD_PLATE_BARCODE] = None  # type: ignore
+        if modified_row.get(barcode_field) and barcode_regex:
+            modified_row[FIELD_PLATE_BARCODE], modified_row[FIELD_COORDINATE] = self.extract_plate_barcode_and_coordinate(
+                modified_row, line_number, barcode_field, barcode_regex
             )
+        if not modified_row.get(FIELD_PLATE_BARCODE):
             return None
 
         # add file details and import timestamp
@@ -816,7 +817,7 @@ class CentreFile:
         modified_row[FIELD_CREATED_AT] = import_timestamp
         modified_row[FIELD_UPDATED_AT] = import_timestamp
 
-        # store row signature to allow checking for duplicates in following rows
+        # ---- store row signature to allow checking for duplicates in following rows ----
         seen_rows.add(row_signature)
 
         return modified_row
