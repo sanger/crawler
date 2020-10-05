@@ -729,7 +729,7 @@ class CentreFile:
 
         for row in csvreader:
             # only process rows that contain something in the cells
-            if self.row_valid_structure(row, line_number):
+            if self.row_required_fields_present(row, line_number):
                 row = self.parse_and_format_row(row, line_number, seen_rows)
                 if row is not None:
                     verified_rows.append(row)
@@ -1104,7 +1104,7 @@ class CentreFile:
 
         return True
 
-    def row_valid_structure(self, row, line_number) -> bool:
+    def row_required_fields_present(self, row, line_number) -> bool:
         """Checks whether the row has the expected structure.
             Checks for blank rows and if we have the sample id and plate barcode.boolean
 
@@ -1120,10 +1120,8 @@ class CentreFile:
             self.logging_collection.add_error("TYPE 1", f"Empty line, line: {line_number}")
             return False
 
-        # check both the Root Sample ID and barcode field are present
-        barcode_field = self.centre_config["barcode_field"]
         if not row.get(FIELD_ROOT_SAMPLE_ID):
-            # filter out row as sample id is missing
+            # filter out row as Root Sample ID is missing
             self.logging_collection.add_error(
                 "TYPE 3", f"Root Sample ID missing, line: {line_number}"
             )
@@ -1135,6 +1133,7 @@ class CentreFile:
             self.logging_collection.add_error("TYPE 3", f"Result missing, line: {line_number}")
             return False
 
+        barcode_field = self.centre_config["barcode_field"]
         if not row.get(barcode_field):
             # filter out row as barcode is missing
             self.logging_collection.add_error("TYPE 4", f"RNA ID missing, line: {line_number}")
