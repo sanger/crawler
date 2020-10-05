@@ -932,26 +932,21 @@ class CentreFile:
         return True
 
 
-    def is_number(self, item):
+    def is_decimal_number(self, input) -> bool:
         """Validation to check if an object is a numeric value.
 
         Arguments:
-            item {Any} - object to be checked (expecting string number value)
+            input {str} - object to be checked (expecting string number value)
 
         Returns:
             bool - whether the item is a number
         """
-        if isinstance(item, str):
-            # regex matching for signed or unsigned ints and decimals
-            int_pattern = re.compile("^[-]?[0-9]*$")
-            decimal_pattern = re.compile("^[-]?[0-9]*.[0-9]*$")
+        try:
+            Decimal(input)
+        except:
+            return False
 
-            if decimal_pattern.match(item) or int_pattern.match(item):
-                return True
-            else:
-                return False
-
-        return False
+        return True
 
     def is_row_channel_cq_valid(self, row, line_number, fieldname) -> bool:
         """Is the channel cq valid.
@@ -965,7 +960,7 @@ class CentreFile:
             bool - whether the cq value is valid
         """
         if row.get(fieldname):
-            if not self.is_number(row.get(fieldname)):
+            if not self.is_decimal_number(row.get(fieldname)):
                 self.logging_collection.add_error(
                     "TYPE 19",
                     f"{fieldname} invalid, line: {line_number}, result: {row.get(fieldname)}",

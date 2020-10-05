@@ -655,22 +655,23 @@ def test_where_ct_channel_result_has_unexpected_value(config):
             assert centre_file.logging_collection.aggregator_types["TYPE 18"].count_errors == 1
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
-# test is_number method
-def test_is_number(config):
+# test is_decimal_number method
+def test_is_decimal_number(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
 
-    assert centre_file.is_number('12.12728') is True
-    assert centre_file.is_number('5.1211') is True
-    assert centre_file.is_number('51231') is True
-    assert centre_file.is_number('-17.1262') is True
-    assert centre_file.is_number('-27314') is True
-    assert centre_file.is_number('0') is True
+    assert centre_file.is_decimal_number('12.12728') is True
+    assert centre_file.is_decimal_number('5.1211') is True
+    assert centre_file.is_decimal_number('51231') is True
+    assert centre_file.is_decimal_number('-17.1262') is True
+    assert centre_file.is_decimal_number('-27314') is True
+    assert centre_file.is_decimal_number('0') is True
+    assert centre_file.is_decimal_number(' 123.12') is True
+    assert centre_file.is_decimal_number('123.12 ') is True
 
-    assert centre_file.is_number('stuff') is False
-    assert centre_file.is_number('123.12312.2') is False
-    assert centre_file.is_number(' 123.12') is False
-    assert centre_file.is_number('123.12 ') is False
+    assert centre_file.is_decimal_number('') is False
+    assert centre_file.is_decimal_number('stuff') is False
+    assert centre_file.is_decimal_number('123.12312.2') is False
 
 # test for where the channel cq values are not numeric
 def test_where_ct_channel_cq_value_is_not_numeric(config):
