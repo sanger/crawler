@@ -618,7 +618,7 @@ def test_where_ct_channel_target_has_unexpected_value(config):
             fake_csv.write("2,RNA_0043_H10,Positive,Val,\n")
 
             # where row has invalid value - should error
-            fake_csv.write("2,RNA_0043_H10,Positive,Val,NotATarget\n")
+            fake_csv.write("2,RNA_0043_H11,Positive,Val,NotATarget\n")
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
@@ -645,7 +645,7 @@ def test_where_ct_channel_result_has_unexpected_value(config):
             fake_csv.write("2,RNA_0043_H10,Negative,Val,NotAResult\n")
 
             # row with empty value - should pass
-            fake_csv.write("2,RNA_0043_H10,Negative,Val,\n")
+            fake_csv.write("2,RNA_0043_H11,Negative,Val,\n")
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
