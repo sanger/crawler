@@ -13,6 +13,7 @@ from datetime import (
     timezone,
 )
 from bson.objectid import ObjectId
+from decimal import Decimal
 
 from tempfile import mkstemp
 
@@ -163,7 +164,7 @@ def test_checksum_match(config, tmpdir):
                 os.remove(tmpfile_for_list)
 
 # tests for validating row structure
-def test_row_invalid_structure(config):
+def test_row_required_fields_present_fail(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
 
@@ -655,24 +656,6 @@ def test_where_ct_channel_result_has_unexpected_value(config):
             assert centre_file.logging_collection.aggregator_types["TYPE 18"].count_errors == 1
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
-# test is_decimal_number method
-def test_is_decimal_number(config):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some_file.csv", centre)
-
-    assert centre_file.is_decimal_number('12.12728') is True
-    assert centre_file.is_decimal_number('5.1211') is True
-    assert centre_file.is_decimal_number('51231') is True
-    assert centre_file.is_decimal_number('-17.1262') is True
-    assert centre_file.is_decimal_number('-27314') is True
-    assert centre_file.is_decimal_number('0') is True
-    assert centre_file.is_decimal_number(' 123.12') is True
-    assert centre_file.is_decimal_number('123.12 ') is True
-
-    assert centre_file.is_decimal_number('') is False
-    assert centre_file.is_decimal_number('stuff') is False
-    assert centre_file.is_decimal_number('123.12312.2') is False
-
 # test for where the channel cq values are not numeric
 def test_where_ct_channel_cq_value_is_not_numeric(config):
     centre = Centre(config, config.CENTRES[0])
@@ -705,12 +688,12 @@ def test_is_within_cq_range(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
 
-    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), '0.0') is True
-    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), '100.0') is True
-    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), '27.019291283') is True
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('0.0')) is True
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('100.0')) is True
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('27.019291283')) is True
 
-    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), '-0.00000001') is False
-    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), '100.00000001') is False
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('-0.00000001')) is False
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('100.00000001')) is False
 
 # test for where the channel cq values are not within range
 def test_where_ct_channel_cq_value_is_not_within_range(config):
@@ -994,16 +977,16 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
                 FIELD_LAB_ID: 'TC',
                 FIELD_CH1_TARGET: 'ORF1ab',
                 FIELD_CH1_RESULT: 'Positive',
-                FIELD_CH1_CQ: '21.28726211',
+                FIELD_CH1_CQ: Decimal('21.28726211'),
                 FIELD_CH2_TARGET: 'N gene',
                 FIELD_CH2_RESULT: 'Positive',
-                FIELD_CH2_CQ: '18.12736661',
+                FIELD_CH2_CQ: Decimal('18.12736661'),
                 FIELD_CH3_TARGET: 'S gene',
                 FIELD_CH3_RESULT: 'Positive',
-                FIELD_CH3_CQ: '22.63616273',
+                FIELD_CH3_CQ: Decimal('22.63616273'),
                 FIELD_CH4_TARGET: 'MS2',
                 FIELD_CH4_RESULT: 'Positive',
-                FIELD_CH4_CQ: '26.25125612',
+                FIELD_CH4_CQ: Decimal('26.25125612'),
             }
         ]
 
