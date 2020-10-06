@@ -168,35 +168,35 @@ def test_row_invalid_structure(config):
     centre_file = CentreFile("some file", centre)
 
     # Not maching regexp
-    assert not centre_file.row_valid_structure(
+    assert not centre_file.row_required_fields_present(
         {"Root Sample ID": "asdf", "Result": "Positive", "RNA ID": "", "Date tested": "adsf"}, 6
     ), "No RNA id"
 
-    assert not centre_file.row_valid_structure(
+    assert not centre_file.row_required_fields_present(
         {"Root Sample ID": "asdf", "Result": "", "RNA ID": "", "Date Tested": "date"}, 1
     ), "Not barcode"
 
     # All required but all empty
-    assert not centre_file.row_valid_structure(
+    assert not centre_file.row_required_fields_present(
         {"Root Sample ID": "", "Result": "", "RNA ID": "", "Date tested": ""}, 4
     ), "All are empty"
 
-def test_row_valid_structure(config):
+def test_row_required_fields_present(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
 
-    assert centre_file.row_valid_structure(
+    assert centre_file.row_required_fields_present(
         {"Root Sample ID": "asdf", "Result": "asdf", "RNA ID": "ASDF_A01", "Date tested": "asdf"}, 5
     )
 
     assert not (
-        centre_file.row_valid_structure(
+        centre_file.row_required_fields_present(
             {"Root Sample ID": "asdf", "Result": "", "RNA ID": "ASDF_A01", "Date tested": ""}, 5
         )
     )
 
     assert not (
-        centre_file.row_valid_structure(
+        centre_file.row_required_fields_present(
             {"Root Sample ID": "asdf", "Result": "Positive", "RNA ID": "", "Date tested": ""}, 5
         )
     )
