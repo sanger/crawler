@@ -11,7 +11,7 @@ from importlib import import_module
 from types import ModuleType
 from enum import Enum
 from typing import Dict, Any, Tuple
-from bson.decimal128 import Decimal128
+from bson.decimal128 import Decimal128 # type: ignore
 import pysftp  # type: ignore
 
 from crawler.constants import (

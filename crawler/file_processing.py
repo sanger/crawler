@@ -69,7 +69,7 @@ from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from hashlib import md5
 from datetime import datetime
 from decimal import Decimal
-from bson.decimal128 import Decimal128
+from bson.decimal128 import Decimal128 # type: ignore
 
 logger = logging.getLogger(__name__)
 

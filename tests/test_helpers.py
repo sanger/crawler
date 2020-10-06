@@ -3,7 +3,7 @@ import pytest
 from crawler.helpers import LoggingCollection
 from unittest.mock import patch
 from decimal import Decimal
-from bson.decimal128 import Decimal128
+from bson.decimal128 import Decimal128 # type: ignore
 from crawler.constants import (
     FIELD_MONGODB_ID,
     FIELD_DATE_TESTED,

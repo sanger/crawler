@@ -13,7 +13,7 @@ from datetime import (
 )
 from bson.objectid import ObjectId
 from decimal import Decimal
-from bson.decimal128 import Decimal128
+from bson.decimal128 import Decimal128 # type: ignore
 from tempfile import mkstemp
 from crawler.file_processing import (
     Centre,
