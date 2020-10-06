@@ -7,16 +7,14 @@ from crawler.helpers import current_time
 from unittest.mock import patch
 from csv import DictReader
 import pytest
-from pytest import approx
 from datetime import (
     datetime,
     timezone,
 )
 from bson.objectid import ObjectId
 from decimal import Decimal
-
+from bson.decimal128 import Decimal128
 from tempfile import mkstemp
-
 from crawler.file_processing import (
     Centre,
     CentreFile,
@@ -81,7 +79,6 @@ from crawler.constants import (
     MLWH_UPDATED_AT
 )
 from crawler.db import get_mongo_collection
-from decimal import Decimal
 
 
 # ----- tests for class Centre -----
@@ -667,10 +664,10 @@ def test_changes_ct_channel_cq_value_data_type(config):
             csv_to_test_reader = DictReader(fake_csv)
 
             augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
-            assert type(augmented_data[0][FIELD_CH1_CQ]) == Decimal
-            assert type(augmented_data[0][FIELD_CH2_CQ]) == Decimal
-            assert type(augmented_data[0][FIELD_CH3_CQ]) == Decimal
-            assert type(augmented_data[0][FIELD_CH4_CQ]) == Decimal
+            assert type(augmented_data[0][FIELD_CH1_CQ]) == Decimal128
+            assert type(augmented_data[0][FIELD_CH2_CQ]) == Decimal128
+            assert type(augmented_data[0][FIELD_CH3_CQ]) == Decimal128
+            assert type(augmented_data[0][FIELD_CH4_CQ]) == Decimal128
 
 def test_where_ct_channel_cq_value_is_not_numeric(config):
     centre = Centre(config, config.CENTRES[0])
@@ -702,12 +699,12 @@ def test_is_within_cq_range(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
 
-    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('0.0')) is True
-    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('100.0')) is True
-    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('27.019291283')) is True
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal128('0.0')) is True
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal128('100.0')) is True
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal128('27.019291283')) is True
 
-    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('-0.00000001')) is False
-    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('100.00000001')) is False
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal128('-0.00000001')) is False
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal128('100.00000001')) is False
 
 def test_where_ct_channel_cq_value_is_not_within_range(config):
     centre = Centre(config, config.CENTRES[0])
@@ -986,16 +983,16 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
                 FIELD_LAB_ID: 'TC',
                 FIELD_CH1_TARGET: 'ORF1ab',
                 FIELD_CH1_RESULT: 'Positive',
-                FIELD_CH1_CQ: Decimal('21.28726211'),
+                FIELD_CH1_CQ: Decimal128('21.28726211'),
                 FIELD_CH2_TARGET: 'N gene',
                 FIELD_CH2_RESULT: 'Positive',
-                FIELD_CH2_CQ: Decimal('18.12736661'),
+                FIELD_CH2_CQ: Decimal128('18.12736661'),
                 FIELD_CH3_TARGET: 'S gene',
                 FIELD_CH3_RESULT: 'Positive',
-                FIELD_CH3_CQ: Decimal('22.63616273'),
+                FIELD_CH3_CQ: Decimal128('22.63616273'),
                 FIELD_CH4_TARGET: 'MS2',
                 FIELD_CH4_RESULT: 'Positive',
-                FIELD_CH4_CQ: Decimal('26.25125612'),
+                FIELD_CH4_CQ: Decimal128('26.25125612'),
             }
         ]
 
@@ -1047,16 +1044,16 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
         assert rows[1][MLWH_LAB_ID] == 'TC'
         assert rows[1][MLWH_CH1_TARGET] == 'ORF1ab'
         assert rows[1][MLWH_CH1_RESULT] == 'Positive'
-        assert rows[1][MLWH_CH1_CQ] == approx(Decimal('21.28726211'))
+        assert rows[1][MLWH_CH1_CQ] == Decimal('21.28726211')
         assert rows[1][MLWH_CH2_TARGET] == 'N gene'
         assert rows[1][MLWH_CH2_RESULT] == 'Positive'
-        assert rows[1][MLWH_CH2_CQ] == approx(Decimal('18.12736661'))
+        assert rows[1][MLWH_CH2_CQ] == Decimal('18.12736661')
         assert rows[1][MLWH_CH3_TARGET] == 'S gene'
         assert rows[1][MLWH_CH3_RESULT] == 'Positive'
-        assert rows[1][MLWH_CH3_CQ] == approx(Decimal('22.63616273'))
+        assert rows[1][MLWH_CH3_CQ] == Decimal('22.63616273')
         assert rows[1][MLWH_CH4_TARGET] == 'MS2'
         assert rows[1][MLWH_CH4_RESULT] == 'Positive'
-        assert rows[1][MLWH_CH4_CQ] == approx(Decimal('26.25125612'))
+        assert rows[1][MLWH_CH4_CQ] == Decimal('26.25125612')
         assert rows[1][MLWH_CREATED_AT] is not None
         assert rows[1][MLWH_UPDATED_AT] is not None
 

@@ -2,7 +2,8 @@ import os
 import pytest
 from crawler.helpers import LoggingCollection
 from unittest.mock import patch
-
+from decimal import Decimal
+from bson.decimal128 import Decimal128
 from crawler.constants import (
     FIELD_MONGODB_ID,
     FIELD_DATE_TESTED,
@@ -31,6 +32,7 @@ from crawler.constants import (
 )
 from crawler.helpers import (
     parse_date_tested,
+    parse_decimal128,
     get_config,
     map_lh_doc_to_sql_columns,
     map_mongo_doc_to_sql_columns,
@@ -115,6 +117,19 @@ def test_parse_date_tested_none(config):
 def test_parse_date_tested_wrong_format(config):
     result = parse_date_tested(date_string='2nd November 2020')
     assert result == None
+
+# tests for parsing Decimal128
+def test_parse_decimal128(config):
+    result = parse_decimal128(None)
+    assert result == None
+
+def test_parse_decimal128(config):
+    result = parse_decimal128('')
+    assert result == None
+
+def test_parse_decimal128(config):
+    result = parse_decimal128(Decimal128('23.26273818'))
+    assert result == Decimal('23.26273818')
 
 # tests for unpad coordinate
 def test_unpad_coordinate_A01():
