@@ -69,6 +69,7 @@ from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from hashlib import md5
 from datetime import datetime
 from decimal import Decimal
+from bson.decimal128 import Decimal128 # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -834,7 +835,8 @@ class CentreFile:
             return True
 
         try:
-            row[fieldname] = Decimal(row[fieldname])
+            # pymongo requires Decimal128 format for numbers rather than normal Decimal
+            row[fieldname] = Decimal128(row[fieldname])
         except:
             self.logging_collection.add_error(
                 "TYPE 19",
@@ -961,12 +963,13 @@ class CentreFile:
         Arguments:
             range_min {Decimal} - minimum range number
             range_max {Decimal} - maximum range number
-            num {Decimal} - the number to be tested
+            num {Decimal128} - the number to be tested
 
         Returns:
             bool - whether the value lies within range
         """
-        return range_min <= num <= range_max
+        # cannot compare Decimal128 to Decimal or to other Decimal128s
+        return range_min <= num.to_decimal() <= range_max
 
     def is_row_channel_cq_in_range(self, row, line_number, fieldname) -> bool:
         """Is the channel cq within the specified range.

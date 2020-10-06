@@ -11,7 +11,7 @@ from importlib import import_module
 from types import ModuleType
 from enum import Enum
 from typing import Dict, Any, Tuple
-
+from bson.decimal128 import Decimal128 # type: ignore
 import pysftp  # type: ignore
 
 from crawler.constants import (
@@ -157,16 +157,16 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
         MLWH_LAB_ID: doc.get(FIELD_LAB_ID, None),
         MLWH_CH1_TARGET: doc.get(FIELD_CH1_TARGET, None),
         MLWH_CH1_RESULT: doc.get(FIELD_CH1_RESULT, None),
-        MLWH_CH1_CQ: doc.get(FIELD_CH1_CQ, None),
+        MLWH_CH1_CQ: parse_decimal128(doc.get(FIELD_CH1_CQ, None)),
         MLWH_CH2_TARGET: doc.get(FIELD_CH2_TARGET, None),
         MLWH_CH2_RESULT: doc.get(FIELD_CH2_RESULT, None),
-        MLWH_CH2_CQ: doc.get(FIELD_CH2_CQ, None),
+        MLWH_CH2_CQ: parse_decimal128(doc.get(FIELD_CH2_CQ, None)),
         MLWH_CH3_TARGET: doc.get(FIELD_CH3_TARGET, None),
         MLWH_CH3_RESULT: doc.get(FIELD_CH3_RESULT, None),
-        MLWH_CH3_CQ: doc.get(FIELD_CH3_CQ, None),
+        MLWH_CH3_CQ: parse_decimal128(doc.get(FIELD_CH3_CQ, None)),
         MLWH_CH4_TARGET: doc.get(FIELD_CH4_TARGET, None),
         MLWH_CH4_RESULT: doc.get(FIELD_CH4_RESULT, None),
-        MLWH_CH4_CQ: doc.get(FIELD_CH4_CQ, None),
+        MLWH_CH4_CQ: parse_decimal128(doc.get(FIELD_CH4_CQ, None)),
     }
 
 # Strip any leading zeros from the coordinate
@@ -223,6 +223,21 @@ def parse_date_tested(date_string: str) -> Any:
     try:
         date_time = datetime.strptime(date_string, f"{MYSQL_DATETIME_FORMAT} %Z")
         return date_time
+    except:
+        return None
+
+def parse_decimal128(value: Decimal128) -> Any:
+    """Converts Decimal128 to MySQL compatible Decimal format
+
+        Arguments:
+            value {Decimal128} -- The number from the document or None
+
+        Returns:
+            Decimal -- converted number
+    """
+    try:
+        dec = value.to_decimal()
+        return dec
     except:
         return None
 
