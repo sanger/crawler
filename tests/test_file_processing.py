@@ -569,7 +569,6 @@ def test_parse_and_format_file_rows_detects_duplicates(config):
             assert centre_file.logging_collection.aggregator_types["TYPE 5"].count_errors == 1
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
-# test for where row result value does not match expected
 def test_where_result_has_unexpected_value(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
@@ -602,7 +601,6 @@ def test_where_result_has_unexpected_value(config):
             assert centre_file.logging_collection.aggregator_types["TYPE 16"].count_errors == 1
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
-# test for where the channel target value does not match expected
 def test_where_ct_channel_target_has_unexpected_value(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
@@ -630,7 +628,6 @@ def test_where_ct_channel_target_has_unexpected_value(config):
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
 
-# test for where the channel result value does not match expected
 def test_where_ct_channel_result_has_unexpected_value(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
@@ -675,7 +672,6 @@ def test_changes_ct_channel_cq_value_data_type(config):
             assert type(augmented_data[0][FIELD_CH3_CQ]) == Decimal
             assert type(augmented_data[0][FIELD_CH4_CQ]) == Decimal
 
-# test for where the channel cq values are not numeric
 def test_where_ct_channel_cq_value_is_not_numeric(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
@@ -702,7 +698,6 @@ def test_where_ct_channel_cq_value_is_not_numeric(config):
             assert centre_file.logging_collection.aggregator_types["TYPE 19"].count_errors == 1
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
-# test for the cq value is in range method
 def test_is_within_cq_range(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
@@ -714,7 +709,6 @@ def test_is_within_cq_range(config):
     assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('-0.00000001')) is False
     assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('100.00000001')) is False
 
-# test for where the channel cq values are not within range
 def test_where_ct_channel_cq_value_is_not_within_range(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
@@ -744,7 +738,6 @@ def test_where_ct_channel_cq_value_is_not_within_range(config):
             assert centre_file.logging_collection.aggregator_types["TYPE 20"].count_errors == 2
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 2
 
-# test for when a psotive result does not match the channel result values
 def test_where_positive_result_does_not_align_with_ct_channel_results(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
@@ -774,7 +767,6 @@ def test_where_positive_result_does_not_align_with_ct_channel_results(config):
             assert centre_file.logging_collection.aggregator_types["TYPE 21"].count_errors == 1
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
-# tests for required headers
 def test_check_for_required_headers(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
@@ -859,7 +851,6 @@ def test_check_for_required_headers(config):
     finally:
         config.ADD_LAB_ID = False
 
-# tests for backing up files
 def test_backup_good_file(config, tmpdir):
     with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
         # create temporary success and errors folders for the files to end up in
@@ -926,7 +917,6 @@ def test_file_name_date_parses_right(config):
     centre_file = CentreFile("AP_sanger_report_200503_2338 (2).csv", centre)
     assert centre_file.file_name_date() == None
 
-# tests for setting file state
 def test_set_state_for_file_when_file_in_black_list(config, blacklist_for_centre, testing_centres):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
@@ -966,7 +956,7 @@ def test_set_state_for_file_when_in_error_folder(config, tmpdir, testing_centres
 def test_set_state_for_file_when_in_success_folder(config):
     return False
 
-# tests for inserting docs into  using rows with and without ct columns
+# tests for inserting docs into mlwh using rows with and without ct columns
 def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
     with patch('crawler.db.create_mysql_connection', return_value = 'not none'):
         centre = Centre(config, config.CENTRES[0])
