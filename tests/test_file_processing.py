@@ -13,6 +13,7 @@ from datetime import (
     timezone,
 )
 from bson.objectid import ObjectId
+from decimal import Decimal
 
 from tempfile import mkstemp
 
@@ -163,40 +164,40 @@ def test_checksum_match(config, tmpdir):
                 os.remove(tmpfile_for_list)
 
 # tests for validating row structure
-def test_row_invalid_structure(config):
+def test_row_required_fields_present_fail(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
 
     # Not maching regexp
-    assert not centre_file.row_valid_structure(
+    assert not centre_file.row_required_fields_present(
         {"Root Sample ID": "asdf", "Result": "Positive", "RNA ID": "", "Date tested": "adsf"}, 6
     ), "No RNA id"
 
-    assert not centre_file.row_valid_structure(
+    assert not centre_file.row_required_fields_present(
         {"Root Sample ID": "asdf", "Result": "", "RNA ID": "", "Date Tested": "date"}, 1
     ), "Not barcode"
 
     # All required but all empty
-    assert not centre_file.row_valid_structure(
+    assert not centre_file.row_required_fields_present(
         {"Root Sample ID": "", "Result": "", "RNA ID": "", "Date tested": ""}, 4
     ), "All are empty"
 
-def test_row_valid_structure(config):
+def test_row_required_fields_present(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
 
-    assert centre_file.row_valid_structure(
+    assert centre_file.row_required_fields_present(
         {"Root Sample ID": "asdf", "Result": "asdf", "RNA ID": "ASDF_A01", "Date tested": "asdf"}, 5
     )
 
     assert not (
-        centre_file.row_valid_structure(
+        centre_file.row_required_fields_present(
             {"Root Sample ID": "asdf", "Result": "", "RNA ID": "ASDF_A01", "Date tested": ""}, 5
         )
     )
 
     assert not (
-        centre_file.row_valid_structure(
+        centre_file.row_required_fields_present(
             {"Root Sample ID": "asdf", "Result": "Positive", "RNA ID": "", "Date tested": ""}, 5
         )
     )
@@ -568,7 +569,6 @@ def test_parse_and_format_file_rows_detects_duplicates(config):
             assert centre_file.logging_collection.aggregator_types["TYPE 5"].count_errors == 1
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
-# test for where row result value does not match expected
 def test_where_result_has_unexpected_value(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
@@ -601,7 +601,6 @@ def test_where_result_has_unexpected_value(config):
             assert centre_file.logging_collection.aggregator_types["TYPE 16"].count_errors == 1
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
-# test for where the channel target value does not match expected
 def test_where_ct_channel_target_has_unexpected_value(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
@@ -617,7 +616,7 @@ def test_where_ct_channel_target_has_unexpected_value(config):
             fake_csv.write("2,RNA_0043_H10,Positive,Val,\n")
 
             # where row has invalid value - should error
-            fake_csv.write("2,RNA_0043_H10,Positive,Val,NotATarget\n")
+            fake_csv.write("2,RNA_0043_H11,Positive,Val,NotATarget\n")
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
@@ -629,7 +628,6 @@ def test_where_ct_channel_target_has_unexpected_value(config):
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
 
-# test for where the channel result value does not match expected
 def test_where_ct_channel_result_has_unexpected_value(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
@@ -644,7 +642,7 @@ def test_where_ct_channel_result_has_unexpected_value(config):
             fake_csv.write("2,RNA_0043_H10,Negative,Val,NotAResult\n")
 
             # row with empty value - should pass
-            fake_csv.write("2,RNA_0043_H10,Negative,Val,\n")
+            fake_csv.write("2,RNA_0043_H11,Negative,Val,\n")
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
@@ -655,25 +653,25 @@ def test_where_ct_channel_result_has_unexpected_value(config):
             assert centre_file.logging_collection.aggregator_types["TYPE 18"].count_errors == 1
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
-# test is_decimal_number method
-def test_is_decimal_number(config):
+def test_changes_ct_channel_cq_value_data_type(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
 
-    assert centre_file.is_decimal_number('12.12728') is True
-    assert centre_file.is_decimal_number('5.1211') is True
-    assert centre_file.is_decimal_number('51231') is True
-    assert centre_file.is_decimal_number('-17.1262') is True
-    assert centre_file.is_decimal_number('-27314') is True
-    assert centre_file.is_decimal_number('0') is True
-    assert centre_file.is_decimal_number(' 123.12') is True
-    assert centre_file.is_decimal_number('123.12 ') is True
+    with patch.object(centre_file, "get_now_timestamp", return_value="some timestamp"):
+        with StringIO() as fake_csv:
+            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Cq,CH2-Cq,CH3-Cq,CH4-Cq\n")
 
-    assert centre_file.is_decimal_number('') is False
-    assert centre_file.is_decimal_number('stuff') is False
-    assert centre_file.is_decimal_number('123.12312.2') is False
+            fake_csv.write("1,RNA_0043_H09,Positive,Val,24.012833772,25.012833772,26.012833772,27.012833772\n")
+            fake_csv.seek(0)
 
-# test for where the channel cq values are not numeric
+            csv_to_test_reader = DictReader(fake_csv)
+
+            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+            assert type(augmented_data[0][FIELD_CH1_CQ]) == Decimal
+            assert type(augmented_data[0][FIELD_CH2_CQ]) == Decimal
+            assert type(augmented_data[0][FIELD_CH3_CQ]) == Decimal
+            assert type(augmented_data[0][FIELD_CH4_CQ]) == Decimal
+
 def test_where_ct_channel_cq_value_is_not_numeric(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
@@ -700,19 +698,17 @@ def test_where_ct_channel_cq_value_is_not_numeric(config):
             assert centre_file.logging_collection.aggregator_types["TYPE 19"].count_errors == 1
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
-# test for the cq value is in range method
 def test_is_within_cq_range(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
 
-    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), '0.0') is True
-    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), '100.0') is True
-    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), '27.019291283') is True
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('0.0')) is True
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('100.0')) is True
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('27.019291283')) is True
 
-    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), '-0.00000001') is False
-    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), '100.00000001') is False
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('-0.00000001')) is False
+    assert centre_file.is_within_cq_range(Decimal('0.0'), Decimal('100.0'), Decimal('100.00000001')) is False
 
-# test for where the channel cq values are not within range
 def test_where_ct_channel_cq_value_is_not_within_range(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
@@ -742,7 +738,6 @@ def test_where_ct_channel_cq_value_is_not_within_range(config):
             assert centre_file.logging_collection.aggregator_types["TYPE 20"].count_errors == 2
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 2
 
-# test for when a psotive result does not match the channel result values
 def test_where_positive_result_does_not_align_with_ct_channel_results(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
@@ -772,7 +767,6 @@ def test_where_positive_result_does_not_align_with_ct_channel_results(config):
             assert centre_file.logging_collection.aggregator_types["TYPE 21"].count_errors == 1
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
-# tests for required headers
 def test_check_for_required_headers(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
@@ -857,7 +851,6 @@ def test_check_for_required_headers(config):
     finally:
         config.ADD_LAB_ID = False
 
-# tests for backing up files
 def test_backup_good_file(config, tmpdir):
     with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
         # create temporary success and errors folders for the files to end up in
@@ -924,7 +917,6 @@ def test_file_name_date_parses_right(config):
     centre_file = CentreFile("AP_sanger_report_200503_2338 (2).csv", centre)
     assert centre_file.file_name_date() == None
 
-# tests for setting file state
 def test_set_state_for_file_when_file_in_black_list(config, blacklist_for_centre, testing_centres):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
@@ -964,7 +956,7 @@ def test_set_state_for_file_when_in_error_folder(config, tmpdir, testing_centres
 def test_set_state_for_file_when_in_success_folder(config):
     return False
 
-# tests for inserting docs into  using rows with and without ct columns
+# tests for inserting docs into mlwh using rows with and without ct columns
 def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
     with patch('crawler.db.create_mysql_connection', return_value = 'not none'):
         centre = Centre(config, config.CENTRES[0])
@@ -994,16 +986,16 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
                 FIELD_LAB_ID: 'TC',
                 FIELD_CH1_TARGET: 'ORF1ab',
                 FIELD_CH1_RESULT: 'Positive',
-                FIELD_CH1_CQ: '21.28726211',
+                FIELD_CH1_CQ: Decimal('21.28726211'),
                 FIELD_CH2_TARGET: 'N gene',
                 FIELD_CH2_RESULT: 'Positive',
-                FIELD_CH2_CQ: '18.12736661',
+                FIELD_CH2_CQ: Decimal('18.12736661'),
                 FIELD_CH3_TARGET: 'S gene',
                 FIELD_CH3_RESULT: 'Positive',
-                FIELD_CH3_CQ: '22.63616273',
+                FIELD_CH3_CQ: Decimal('22.63616273'),
                 FIELD_CH4_TARGET: 'MS2',
                 FIELD_CH4_RESULT: 'Positive',
-                FIELD_CH4_CQ: '26.25125612',
+                FIELD_CH4_CQ: Decimal('26.25125612'),
             }
         ]
 
