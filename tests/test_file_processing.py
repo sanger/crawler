@@ -313,10 +313,10 @@ def test_filtered_row_with_extra_unrecognised_columns(config):
 
     with StringIO() as fake_csv_with_extra_columns:
         fake_csv_with_extra_columns.write(
-            f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},{FIELD_LAB_ID},extra_col_1,extra_col_2,extra_col_3\n"
+            f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},{FIELD_LAB_ID},{FIELD_CH1_TARGET},{FIELD_CH1_RESULT},{FIELD_CH1_CQ},extra_col_1,extra_col_2,extra_col_3\n"
         )
         fake_csv_with_extra_columns.write(
-            "1,RNA_0043,Positive,today,AP,extra_value_1,extra_value_2,extra_value_3\n"
+            "1,RNA_0043,Positive,today,AP,ORF1ab,Positive,23.12345678,extra_value_1,extra_value_2,extra_value_3\n"
         )
         fake_csv_with_extra_columns.seek(0)
 
@@ -328,6 +328,9 @@ def test_filtered_row_with_extra_unrecognised_columns(config):
             "Result": "Positive",
             "Date Tested": "today",
             "Lab ID": "AP",
+            "CH1-Target":"ORF1ab",
+            "CH1-Result":"Positive",
+            "CH1-Cq":"23.12345678",
         }
 
         assert centre_file.filtered_row(next(csv_to_test_reader), 2) == expected_row

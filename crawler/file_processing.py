@@ -685,18 +685,24 @@ class CentreFile:
                 modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
                 self.log_adding_default_lab_id(row, line_number)
 
+        seen_headers = []
+
         # next check the row for values for each of the required headers and copy them across
         for key in self.get_required_headers():
             if key in row:
+                seen_headers.append(key)
                 modified_row[key] = row[key]
 
         # and check the row for values for any of the optional CT channel headers and copy them across
         for key in self.get_channel_headers():
-            if row.get(key):
-                modified_row[key] = row[key]
+            if key in row:
+                seen_headers.append(key)
+
+                if row[key]:
+                    modified_row[key] = row[key]
 
         # now check if we still have any columns left in the file row that we don't recognise
-        unexpected_headers = list(row.keys() - modified_row.keys())
+        unexpected_headers = list(row.keys() - seen_headers)
         if len(unexpected_headers) > 0:
             self.logging_collection.add_error(
                 "TYPE 13",
