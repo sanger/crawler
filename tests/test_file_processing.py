@@ -656,6 +656,25 @@ def test_where_ct_channel_result_has_unexpected_value(config):
             assert centre_file.logging_collection.aggregator_types["TYPE 18"].count_errors == 1
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
+def test_changes_ct_channel_cq_value_data_type(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some_file.csv", centre)
+
+    with patch.object(centre_file, "get_now_timestamp", return_value="some timestamp"):
+        with StringIO() as fake_csv:
+            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Cq,CH2-Cq,CH3-Cq,CH4-Cq\n")
+
+            fake_csv.write("1,RNA_0043_H09,Positive,Val,24.012833772,25.012833772,26.012833772,27.012833772\n")
+            fake_csv.seek(0)
+
+            csv_to_test_reader = DictReader(fake_csv)
+
+            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+            assert type(augmented_data[0][FIELD_CH1_CQ]) == Decimal
+            assert type(augmented_data[0][FIELD_CH2_CQ]) == Decimal
+            assert type(augmented_data[0][FIELD_CH3_CQ]) == Decimal
+            assert type(augmented_data[0][FIELD_CH4_CQ]) == Decimal
+
 # test for where the channel cq values are not numeric
 def test_where_ct_channel_cq_value_is_not_numeric(config):
     centre = Centre(config, config.CENTRES[0])

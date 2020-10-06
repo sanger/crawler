@@ -834,7 +834,7 @@ class CentreFile:
             return True
 
         try:
-            row[FIELD_CH1_CQ] = Decimal(row[fieldname])
+            row[fieldname] = Decimal(row[fieldname])
         except:
             self.logging_collection.add_error(
                 "TYPE 19",
