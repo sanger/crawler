@@ -691,7 +691,7 @@ class CentreFile:
 
         # and check the row for values for any of the optional CT channel headers and copy them across
         for key in self.get_channel_headers():
-            if key in row:
+            if row.get(key):
                 modified_row[key] = row[key]
 
         # now check if we still have any columns left in the file row that we don't recognise
@@ -728,8 +728,8 @@ class CentreFile:
         line_number = 2
 
         for row in csvreader:
-            # only process rows that contain something in the cells
-            if self.row_valid_structure(row, line_number):
+            # only process rows that have at least a minimum level of data
+            if self.row_required_fields_present(row, line_number):
                 row = self.parse_and_format_row(row, line_number, seen_rows)
                 if row is not None:
                     verified_rows.append(row)
@@ -758,26 +758,25 @@ class CentreFile:
         Returns:
             modified_row {Dict[str, str]} - modified filtered and formatted version of the row
         """
-        # first extract any recognised columns
+        # ---- create new row dict with just the recognised columns ----
         modified_row = self.filtered_row(row, line_number)
 
-        # add the centre name as source
-        modified_row[FIELD_SOURCE] = self.centre_config["name"]
+        # ---- check if this row has already been seen in this file, based on key fields ----
+        row_signature = self.get_row_signature(modified_row)
 
-        barcode_regex = self.centre_config["barcode_regex"]
-        barcode_field = self.centre_config["barcode_field"]
-
-        # extract the barcode and well coordinate
-        modified_row[FIELD_PLATE_BARCODE] = None  # type: ignore
-        if modified_row.get(barcode_field) and barcode_regex:
-            modified_row[FIELD_PLATE_BARCODE], modified_row[FIELD_COORDINATE] = self.extract_plate_barcode_and_coordinate(
-                modified_row, line_number, barcode_field, barcode_regex
+        if row_signature in seen_rows:
+            logger.debug(f"Skipping {row_signature}: duplicate")
+            self.logging_collection.add_error(
+                "TYPE 5",
+                f"Duplicated, line: {line_number}, root_sample_id: {modified_row[FIELD_ROOT_SAMPLE_ID]}",
             )
-
-        if not modified_row.get(FIELD_PLATE_BARCODE):
             return None
 
-        #  perform various validations on row values
+        # ---- convert data types ----
+        if not self.convert_and_validate_cq_values(modified_row, line_number):
+            return None
+
+        # ---- perform various validations on row values ----
         if not self.row_result_value_valid(modified_row, line_number):
             return None
 
@@ -787,24 +786,26 @@ class CentreFile:
         if not self.row_channel_result_values_valid(modified_row, line_number):
             return None
 
-        if not self.row_channel_cq_values_valid(modified_row, line_number):
-            return None
-
         if not self.row_channel_cq_values_within_range(modified_row, line_number):
             return None
 
         if not self.row_positive_result_matches_channel_results(modified_row, line_number):
             return None
 
-        # check if this row has already been seen in this file
-        row_signature = self.get_row_signature(modified_row)
+        # ---- add a few additional, computed or derived fields ----
+        # add the centre name as source
+        modified_row[FIELD_SOURCE] = self.centre_config["name"]
 
-        if row_signature in seen_rows:
-            logger.debug(f"Skipping {row_signature}: duplicate")
-            self.logging_collection.add_error(
-                "TYPE 5",
-                f"Duplicated, line: {line_number}, root_sample_id: {modified_row[FIELD_ROOT_SAMPLE_ID]}",
+        # extract the barcode and well coordinate
+        barcode_regex = self.centre_config["barcode_regex"]
+        barcode_field = self.centre_config["barcode_field"]
+
+        modified_row[FIELD_PLATE_BARCODE] = None  # type: ignore
+        if modified_row.get(barcode_field) and barcode_regex:
+            modified_row[FIELD_PLATE_BARCODE], modified_row[FIELD_COORDINATE] = self.extract_plate_barcode_and_coordinate(
+                modified_row, line_number, barcode_field, barcode_regex
             )
+        if not modified_row.get(FIELD_PLATE_BARCODE):
             return None
 
         # add file details and import timestamp
@@ -816,10 +817,33 @@ class CentreFile:
         modified_row[FIELD_CREATED_AT] = import_timestamp
         modified_row[FIELD_UPDATED_AT] = import_timestamp
 
-        # store row signature to allow checking for duplicates in following rows
+        # ---- store row signature to allow checking for duplicates in following rows ----
         seen_rows.add(row_signature)
 
         return modified_row
+
+    def convert_and_validate_cq_values(self, row, line_number) -> bool:
+        for fieldname in [FIELD_CH1_CQ, FIELD_CH2_CQ, FIELD_CH3_CQ, FIELD_CH4_CQ]:
+            if not self.convert_and_validate_cq_value(row, fieldname, line_number):
+              return False
+
+        return True
+
+    def convert_and_validate_cq_value(self, row, fieldname, line_number) -> bool:
+        if not row.get(fieldname):
+            return True
+
+        try:
+            row[fieldname] = Decimal(row[fieldname])
+        except:
+            self.logging_collection.add_error(
+                "TYPE 19",
+                f"{fieldname} invalid, line: {line_number}, value: {row.get(fieldname)}",
+            )
+            return False
+
+        return True
+
 
     def row_result_value_valid(self, row, line_number) -> bool:
         """Validation to check if the row Result value is one of the expected values.
@@ -931,85 +955,18 @@ class CentreFile:
 
         return True
 
-
-    def is_number(self, item):
-        """Validation to check if an object is a numeric value.
-
-        Arguments:
-            item {Any} - object to be checked (expecting string number value)
-
-        Returns:
-            bool - whether the item is a number
-        """
-        if isinstance(item, str):
-            # regex matching for signed or unsigned ints and decimals
-            int_pattern = re.compile("^[-]?[0-9]*$")
-            decimal_pattern = re.compile("^[-]?[0-9]*.[0-9]*$")
-
-            if decimal_pattern.match(item) or int_pattern.match(item):
-                return True
-            else:
-                return False
-
-        return False
-
-    def is_row_channel_cq_valid(self, row, line_number, fieldname) -> bool:
-        """Is the channel cq valid.
-
-        Arguments:
-            row {Row} - row object from the csvreader
-            line_number {integer} - line number within the file
-            fieldname {str} - the name of the cq column
-
-        Returns:
-            bool - whether the cq value is valid
-        """
-        if row.get(fieldname):
-            if not self.is_number(row.get(fieldname)):
-                self.logging_collection.add_error(
-                    "TYPE 19",
-                    f"{fieldname} invalid, line: {line_number}, result: {row.get(fieldname)}",
-                )
-                return False
-
-        return True
-
-    def row_channel_cq_values_valid(self, row, line_number) -> bool:
-        """Validation to check if the row channel cq values are numbers.
-
-        Arguments:
-            row {Row} - row object from the csvreader
-            line_number {integer} - line number within the file
-
-        Returns:
-            bool - whether the values are valid
-        """
-        if not self.is_row_channel_cq_valid(row, line_number, FIELD_CH1_CQ):
-            return False
-
-        if not self.is_row_channel_cq_valid(row, line_number, FIELD_CH2_CQ):
-            return False
-
-        if not self.is_row_channel_cq_valid(row, line_number, FIELD_CH3_CQ):
-            return False
-
-        if not self.is_row_channel_cq_valid(row, line_number, FIELD_CH4_CQ):
-            return False
-
-        return True
-
     def is_within_cq_range(self, range_min, range_max, num) -> bool:
         """Validation to check if a number lies within the expected range.
 
         Arguments:
             range_min {Decimal} - minimum range number
             range_max {Decimal} - maximum range number
-            num {str} - string representation of the number to be tested
+            num {Decimal} - the number to be tested
 
         Returns:
             bool - whether the value lies within range
         """
-        return range_min <= Decimal(num) <= range_max
+        return range_min <= num <= range_max
 
     def is_row_channel_cq_in_range(self, row, line_number, fieldname) -> bool:
         """Is the channel cq within the specified range.
@@ -1109,7 +1066,7 @@ class CentreFile:
 
         return True
 
-    def row_valid_structure(self, row, line_number) -> bool:
+    def row_required_fields_present(self, row, line_number) -> bool:
         """Checks whether the row has the expected structure.
             Checks for blank rows and if we have the sample id and plate barcode.boolean
 
@@ -1125,10 +1082,8 @@ class CentreFile:
             self.logging_collection.add_error("TYPE 1", f"Empty line, line: {line_number}")
             return False
 
-        # check both the Root Sample ID and barcode field are present
-        barcode_field = self.centre_config["barcode_field"]
         if not row.get(FIELD_ROOT_SAMPLE_ID):
-            # filter out row as sample id is missing
+            # filter out row as Root Sample ID is missing
             self.logging_collection.add_error(
                 "TYPE 3", f"Root Sample ID missing, line: {line_number}"
             )
@@ -1140,6 +1095,7 @@ class CentreFile:
             self.logging_collection.add_error("TYPE 3", f"Result missing, line: {line_number}")
             return False
 
+        barcode_field = self.centre_config["barcode_field"]
         if not row.get(barcode_field):
             # filter out row as barcode is missing
             self.logging_collection.add_error("TYPE 4", f"RNA ID missing, line: {line_number}")
