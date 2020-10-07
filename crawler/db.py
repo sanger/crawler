@@ -207,7 +207,10 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
     try:
         ## executing the query with values
         num_values = len(values)
-        ROWS_PER_QUERY = 35000
+
+        # BN. If ROWS_PER_QUERY value is too high, you may get '2006 (HY000): MySQL server has gone away' error
+        # indicating you've exceeded the max_allowed_packet size for MySQL
+        ROWS_PER_QUERY = 25000
         values_index = 0
         total_rows_affected = 0
         logger.debug(f"Attempting to insert or update {num_values} rows in the MLWH database in batches of {ROWS_PER_QUERY}")
