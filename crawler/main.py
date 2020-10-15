@@ -59,10 +59,19 @@ def run(sftp: bool, keep_files: bool, settings_module: str = "") -> None:
             imports_collection = get_mongo_collection(db, COLLECTION_IMPORTS)
 
             with samples_collection_accessor(db, COLLECTION_SAMPLES) as samples_collection:
+                # Index on plate barcode to make it easier to select based on plate barcode
                 logger.debug(
                     f"Creating index '{FIELD_PLATE_BARCODE}' on '{samples_collection.full_name}'"
                 )
                 samples_collection.create_index(FIELD_PLATE_BARCODE)
+
+                # Index on result column to make it easier to select the positives
+                logger.debug(
+                    f"Creating index '{FIELD_RESULT}' on '{samples_collection.full_name}'"
+                )
+                samples_collection.create_index(FIELD_RESULT)
+
+                # Index on unique combination of columns
                 logger.debug(f"Creating compound index on '{samples_collection.full_name}'")
                 # create compound index on 'Root Sample ID', 'RNA ID', 'Result', 'Lab ID' - some data
                 #   had the same plate tested at another time so ignore the data if it is exactly the

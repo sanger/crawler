@@ -11,18 +11,30 @@ from importlib import import_module
 from types import ModuleType
 from enum import Enum
 from typing import Dict, Any, Tuple
-
+from bson.decimal128 import Decimal128 # type: ignore
 import pysftp  # type: ignore
 
 from crawler.constants import (
     FIELD_MONGODB_ID,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_PLATE_BARCODE,
     FIELD_COORDINATE,
+    FIELD_RNA_ID,
+    FIELD_RESULT,
     FIELD_DATE_TESTED,
     FIELD_LAB_ID,
-    FIELD_PLATE_BARCODE,
-    FIELD_RESULT,
-    FIELD_RNA_ID,
-    FIELD_ROOT_SAMPLE_ID,
+    FIELD_CH1_TARGET,
+    FIELD_CH1_RESULT,
+    FIELD_CH1_CQ,
+    FIELD_CH2_TARGET,
+    FIELD_CH2_RESULT,
+    FIELD_CH2_CQ,
+    FIELD_CH3_TARGET,
+    FIELD_CH3_RESULT,
+    FIELD_CH3_CQ,
+    FIELD_CH4_TARGET,
+    FIELD_CH4_RESULT,
+    FIELD_CH4_CQ,
     FIELD_LINE_NUMBER,
     FIELD_FILE_NAME,
     FIELD_FILE_NAME_DATE,
@@ -35,10 +47,22 @@ from crawler.constants import (
     MLWH_PLATE_BARCODE,
     MLWH_COORDINATE,
     MLWH_RESULT,
-    MLWH_DATE_TESTED_STRING,
     MLWH_DATE_TESTED,
+    MLWH_DATE_TESTED_STRING,
     MLWH_SOURCE,
     MLWH_LAB_ID,
+    MLWH_CH1_TARGET,
+    MLWH_CH1_RESULT,
+    MLWH_CH1_CQ,
+    MLWH_CH2_TARGET,
+    MLWH_CH2_RESULT,
+    MLWH_CH2_CQ,
+    MLWH_CH3_TARGET,
+    MLWH_CH3_RESULT,
+    MLWH_CH3_CQ,
+    MLWH_CH4_TARGET,
+    MLWH_CH4_RESULT,
+    MLWH_CH4_CQ,
     MLWH_CREATED_AT,
     MLWH_UPDATED_AT,
     MYSQL_DATETIME_FORMAT,
@@ -131,6 +155,18 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
         MLWH_DATE_TESTED: parse_date_tested(doc.get(FIELD_DATE_TESTED, None)),
         MLWH_SOURCE: doc.get(FIELD_SOURCE, None),
         MLWH_LAB_ID: doc.get(FIELD_LAB_ID, None),
+        MLWH_CH1_TARGET: doc.get(FIELD_CH1_TARGET, None),
+        MLWH_CH1_RESULT: doc.get(FIELD_CH1_RESULT, None),
+        MLWH_CH1_CQ: parse_decimal128(doc.get(FIELD_CH1_CQ, None)),
+        MLWH_CH2_TARGET: doc.get(FIELD_CH2_TARGET, None),
+        MLWH_CH2_RESULT: doc.get(FIELD_CH2_RESULT, None),
+        MLWH_CH2_CQ: parse_decimal128(doc.get(FIELD_CH2_CQ, None)),
+        MLWH_CH3_TARGET: doc.get(FIELD_CH3_TARGET, None),
+        MLWH_CH3_RESULT: doc.get(FIELD_CH3_RESULT, None),
+        MLWH_CH3_CQ: parse_decimal128(doc.get(FIELD_CH3_CQ, None)),
+        MLWH_CH4_TARGET: doc.get(FIELD_CH4_TARGET, None),
+        MLWH_CH4_RESULT: doc.get(FIELD_CH4_RESULT, None),
+        MLWH_CH4_CQ: parse_decimal128(doc.get(FIELD_CH4_CQ, None)),
     }
 
 # Strip any leading zeros from the coordinate
@@ -187,6 +223,21 @@ def parse_date_tested(date_string: str) -> Any:
     try:
         date_time = datetime.strptime(date_string, f"{MYSQL_DATETIME_FORMAT} %Z")
         return date_time
+    except:
+        return None
+
+def parse_decimal128(value: Decimal128) -> Any:
+    """Converts Decimal128 to MySQL compatible Decimal format
+
+        Arguments:
+            value {Decimal128} -- The number from the document or None
+
+        Returns:
+            Decimal -- converted number
+    """
+    try:
+        dec = value.to_decimal()
+        return dec
     except:
         return None
 
@@ -368,7 +419,73 @@ class AggregateType15(AggregateTypeBase):
         self.message = f"CRITICAL: Files where the MLWH database connection could not be made. ({self.type_str})"
         self.short_display_description = "Failed MLWH connection"
 
+class AggregateType16(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 16"
+        self.error_level = ErrorLevel.ERROR
+        self.message = (
+            f"ERROR: Sample rows that have an invalid Result value. ({self.type_str})"
+        )
+        self.max_errors = 5
+        self.short_display_description = "Invalid Result value"
 
+class AggregateType17(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 17"
+        self.error_level = ErrorLevel.ERROR
+        self.message = (
+            f"ERROR: Sample rows that have an invalid CT channel Target value. ({self.type_str})"
+        )
+        self.max_errors = 5
+        self.short_display_description = "Invalid CHn-Target value"
+
+class AggregateType18(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 18"
+        self.error_level = ErrorLevel.ERROR
+        self.message = (
+            f"ERROR: Sample rows that have an invalid CT channel Result value. ({self.type_str})"
+        )
+        self.max_errors = 5
+        self.short_display_description = "Invalid CHn-Result value"
+
+class AggregateType19(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 19"
+        self.error_level = ErrorLevel.ERROR
+        self.message = (
+            f"ERROR: Sample rows that have an invalid CT channel Cq value. ({self.type_str})"
+        )
+        self.max_errors = 5
+        self.short_display_description = "Invalid CHn-Cq value"
+
+class AggregateType20(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 20"
+        self.error_level = ErrorLevel.ERROR
+        self.message = (
+            f"ERROR: Sample rows that have a CHn-Cq value out of range (0..100). ({self.type_str})"
+        )
+        self.max_errors = 5
+        self.short_display_description = "Out of range CHn-Cq value"
+
+class AggregateType21(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 21"
+        self.error_level = ErrorLevel.ERROR
+        self.message = (
+            f"ERROR: Sample rows where a Positive Result value does not align with CT channel Results. ({self.type_str})"
+        )
+        self.max_errors = 5
+        self.short_display_description = "Result not aligned with CHn-Results"
+
+# Class to handle logging of errors of the various types per file
 class LoggingCollection:
     def __init__(self):
         self.aggregator_types = {
@@ -385,6 +502,12 @@ class LoggingCollection:
             "TYPE 13": AggregateType13(),
             "TYPE 14": AggregateType14(),
             "TYPE 15": AggregateType15(),
+            "TYPE 16": AggregateType16(),
+            "TYPE 17": AggregateType17(),
+            "TYPE 18": AggregateType18(),
+            "TYPE 19": AggregateType19(),
+            "TYPE 20": AggregateType20(),
+            "TYPE 21": AggregateType21(),
         }
 
     def add_error(self, aggregate_error_type, message):
