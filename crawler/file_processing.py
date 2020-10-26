@@ -70,6 +70,7 @@ from hashlib import md5
 from datetime import datetime
 from decimal import Decimal
 from bson.decimal128 import Decimal128 # type: ignore
+from more_itertools import groupby_transform
 
 logger = logging.getLogger(__name__)
 
@@ -367,6 +368,11 @@ class CentreFile:
             # filter out docs which failed to insert into mongo - we don't want to create mlwh records for these
             docs_to_insert_mlwh = list(filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert))
             self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
+
+            for plate_barcode, wells in groupby_transform(docs_to_insert_mlwh, lambda x:x[FIELD_PLATE_BARCODE]):
+              print(plate_barcode, len(list(wells)))
+              # add plate - plate_barcode
+              # add wells - list(wells)
 
         self.backup_file()
         self.create_import_record_for_file()
