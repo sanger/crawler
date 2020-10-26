@@ -18,6 +18,10 @@ from mysql.connector import Error # type: ignore
 from crawler.sql_queries import (SQL_MLWH_MULTIPLE_INSERT, SQL_TEST_MLWH_CREATE)
 from crawler.helpers import get_config
 
+import pyodbc
+# from pyodbc import Connection
+# from pyodbc import Cursor
+
 logger = logging.getLogger(__name__)
 
 def create_mongo_client(config: ModuleType) -> MongoClient:
@@ -259,3 +263,43 @@ def init_warehouse_db_command():
     mysql_conn.close()
 
     logger.debug("Done")
+
+
+def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> pyodbc.Connection:
+    """Create a SQL Server connection to DART with the given config parameters.
+
+    Arguments:
+        config {ModuleType} -- application config specifying database details
+
+    Returns:
+        pyodbc.Connection -- connection object used to interact with the sql server database
+    """
+    dart_db_host = config.DART_DB_HOST  # type: ignore
+    dart_db_port = config.DART_DB_PORT  # type: ignore
+    if readonly:
+        dart_db_username = config.DART_DB_RO_USER  # type: ignore
+        dart_db_password = config.DART_DB_RO_PASSWORD  # type: ignore
+    else:
+        dart_db_username = config.DART_DB_RW_USER  # type: ignore
+        dart_db_password = config.DART_DB_RW_PASSWORD  # type: ignore
+    dart_db_db = config.DART_DB_DBNAME  # type: ignore
+    dart_db_driver = config.DART_DB_DRIVER  # type: ignore
+
+    connection_string = 'DRIVER='+dart_db_driver+';SERVER='+dart_db_host+';PORT='+dart_db_port+';DATABASE='+dart_db_db+';UID='+dart_db_username+';PWD=' + dart_db_password
+
+    logger.debug(f"Attempting to connect to {dart_db_host} on port {dart_db_port}")
+
+    sql_server_conn = None
+    try:
+        sql_server_conn = pyodbc.connect(connection_string)
+
+        if sql_server_conn is not None:
+            if sql_server_conn.is_connected():
+                logger.debug('DART Connection Successful')
+            else:
+                logger.error('DART Connection Failed')
+
+    except Error as e:
+        logger.error(f"Exception on connecting to DART database: {e}")
+
+    return sql_server_conn
