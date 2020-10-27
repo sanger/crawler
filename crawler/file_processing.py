@@ -361,6 +361,8 @@ class CentreFile:
         else:
             logger.info(f"File {self.file_name} is valid")
 
+        # TODO: create docs_to_insert_with_true_positives_marked
+
         mongo_ids_of_inserted = []
         if len(docs_to_insert) > 0:
             mongo_ids_of_inserted = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
@@ -368,8 +370,13 @@ class CentreFile:
         if len(mongo_ids_of_inserted) > 0:
             # filter out docs which failed to insert into mongo - we don't want to create mlwh records for these
             docs_to_insert_mlwh = list(filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert))
+
+            # TODO: generate COG UK Ids for true positves in the file (will need to be inserted into MLWH)
+
             self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
             self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
+
+            # TODO: insert to DART
 
         self.backup_file()
         self.create_import_record_for_file()
