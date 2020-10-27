@@ -64,6 +64,7 @@ from crawler.db import (
     create_import_record,
     create_mysql_connection,
     run_mysql_executemany_query,
+    create_dart_sql_server_conn,
 )
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from hashlib import md5
@@ -368,11 +369,7 @@ class CentreFile:
             # filter out docs which failed to insert into mongo - we don't want to create mlwh records for these
             docs_to_insert_mlwh = list(filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert))
             self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
-
-            for plate_barcode, wells in groupby_transform(docs_to_insert_mlwh, lambda x:x[FIELD_PLATE_BARCODE]):
-              print(plate_barcode, len(list(wells)))
-              # add plate - plate_barcode
-              # add wells - list(wells)
+            self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
 
         self.backup_file()
         self.create_import_record_for_file()
@@ -542,6 +539,20 @@ class CentreFile:
                 f"MLWH database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
+
+    def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert) -> None:
+        """Insert plates and wells into the DART database from the parsed file information
+
+            Arguments:
+                docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from csv files.
+        """
+        sql_server_connection = create_dart_sql_server_conn(self.config, False)
+
+        for plate_barcode, wells in groupby_transform(docs_to_insert_mlwh, lambda x:x[FIELD_PLATE_BARCODE]):
+            print(plate_barcode, len(list(wells)))
+            # add plate - plate_barcode
+            # add wells - list(wells)
+
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.
