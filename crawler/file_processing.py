@@ -550,11 +550,11 @@ class CentreFile:
         sql_server_connection = create_dart_sql_server_conn(self.config, False)
         cursor = sql_server_connection.cursor()
 
-        for plate_barcode, wells in groupby_transform(docs_to_insert_mlwh, lambda x: x[FIELD_PLATE_BARCODE]):
-            cursor.execute(f"EXEC dbo.plDART_PlateCreate '{plate_barcode}' 'BCFlat96' 96")
+        for plate_barcode, wells in groupby_transform(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]):
+            cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, 'BCFlat96', 96))
             cursor.commit()
             # for well in wells:
-                # execute and commit well transactions
+            #     execute and commit well transactions
 
         sql_server_connection.close()
 
