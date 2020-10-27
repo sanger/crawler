@@ -373,10 +373,8 @@ class CentreFile:
 
             # TODO: generate COG UK Ids for true positves in the file (will need to be inserted into MLWH)
 
-            self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
+            # self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
             self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
-
-            # TODO: insert to DART
 
         self.backup_file()
         self.create_import_record_for_file()
@@ -553,17 +551,45 @@ class CentreFile:
             Arguments:
                 docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from csv files.
         """
-        # TODO logging, refactoring into appropriate modules/methods and wrapping in a try-catch workflow
+        # TODO refactoring into appropriate modules/methods?
         sql_server_connection = create_dart_sql_server_conn(self.config, False)
-        cursor = sql_server_connection.cursor()
 
-        for plate_barcode, wells in groupby_transform(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]):
-            cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, 'BCFlat96', 96))
-            cursor.commit()
-            # for well in wells:
-            #     execute and commit well transactions
+        if sql_server_connection is not None:
+            try:
+                cursor = sql_server_connection.cursor()
 
-        sql_server_connection.close()
+                for plate_barcode, wells in groupby_transform(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]):
+                    try:
+                        cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, 'BCFlat96', 96))
+                        for well in wells:
+                            # TODO get the correct well index
+                            cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, <property_name>, <property_value>, <well_index>))
+                            # TODO add more well properties as required
+                        cursor.commit()
+                    except Exception as e:
+                        self.logging_collection.add_error(
+                            "TYPE XX", # TODO define type of error
+                            f"DART database inserts failed for plate {plate_barcode} in file {self.file_name}",
+                        )
+                        logger.exception(e)
+                        cursor.rollback() # rollback statements executed since previous commit/rollback
+
+                logger.debug(f"DART database inserts completed successfully for file {self.file_name}")
+            except Exception as e:
+              self.logging_collection.add_error(
+                    "TYPE XX", # TODO define type of error
+                    f"DART database inserts failed for file {self.file_name}",
+                )
+                logger.critical(f"Critical error in file {self.file_name}: {e}")
+                logger.exception(e)
+            finally:
+                sql_server_connection.close()
+        else:
+            self.logging_collection.add_error(
+                "TYPE XX", # TODO define type of error
+                f"DART database inserts failed, could not connect, for file {self.file_name}",
+            )
+            logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.
