@@ -587,7 +587,7 @@ class CentreFile:
 
                 logger.debug(f"DART database inserts completed successfully for file {self.file_name}")
             except Exception as e:
-              self.logging_collection.add_error(
+                self.logging_collection.add_error(
                     "TYPE XX", # TODO define type of error
                     f"DART database inserts failed for file {self.file_name}",
                 )
