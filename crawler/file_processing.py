@@ -546,13 +546,17 @@ class CentreFile:
             Arguments:
                 docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from csv files.
         """
+        # TODO logging, refactoring into appropriate modules/methods and wrapping in a try-catch workflow
         sql_server_connection = create_dart_sql_server_conn(self.config, False)
+        cursor = sql_server_connection.cursor()
 
-        for plate_barcode, wells in groupby_transform(docs_to_insert_mlwh, lambda x:x[FIELD_PLATE_BARCODE]):
-            print(plate_barcode, len(list(wells)))
-            # add plate - plate_barcode
-            # add wells - list(wells)
+        for plate_barcode, wells in groupby_transform(docs_to_insert_mlwh, lambda x: x[FIELD_PLATE_BARCODE]):
+            cursor.execute(f"EXEC dbo.plDART_PlateCreate '{plate_barcode}' 'BCFlat96' 96")
+            cursor.commit()
+            # for well in wells:
+                # execute and commit well transactions
 
+        sql_server_connection.close()
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.
