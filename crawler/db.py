@@ -294,10 +294,9 @@ def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> pyodbc.Con
         sql_server_conn = pyodbc.connect(connection_string)
 
         if sql_server_conn is not None:
-            if sql_server_conn.is_connected():
-                logger.debug('DART Connection Successful')
-            else:
-                logger.error('DART Connection Failed')
+            logger.debug('DART Connection Successful')
+        else:
+            logger.error('DART Connection Failed')
 
     except Error as e:
         logger.error(f"Exception on connecting to DART database: {e}")
