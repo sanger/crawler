@@ -64,12 +64,14 @@ from crawler.db import (
     create_import_record,
     create_mysql_connection,
     run_mysql_executemany_query,
+    create_dart_sql_server_conn,
 )
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from hashlib import md5
 from datetime import datetime
 from decimal import Decimal
 from bson.decimal128 import Decimal128 # type: ignore
+from more_itertools import groupby_transform
 
 logger = logging.getLogger(__name__)
 
@@ -372,6 +374,7 @@ class CentreFile:
             # TODO: generate COG UK Ids for true positves in the file (will need to be inserted into MLWH)
 
             self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
+            self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
 
             # TODO: insert to DART
 
@@ -543,6 +546,24 @@ class CentreFile:
                 f"MLWH database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
+
+    def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert) -> None:
+        """Insert plates and wells into the DART database from the parsed file information
+
+            Arguments:
+                docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from csv files.
+        """
+        # TODO logging, refactoring into appropriate modules/methods and wrapping in a try-catch workflow
+        sql_server_connection = create_dart_sql_server_conn(self.config, False)
+        cursor = sql_server_connection.cursor()
+
+        for plate_barcode, wells in groupby_transform(docs_to_insert_mlwh, lambda x: x[FIELD_PLATE_BARCODE]):
+            cursor.execute(f"EXEC dbo.plDART_PlateCreate '{plate_barcode}' 'BCFlat96' 96")
+            cursor.commit()
+            # for well in wells:
+                # execute and commit well transactions
+
+        sql_server_connection.close()
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.
