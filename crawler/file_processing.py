@@ -558,13 +558,24 @@ class CentreFile:
             try:
                 cursor = sql_server_connection.cursor()
 
-                for plate_barcode, wells in groupby_transform(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]):
+                for plate_barcode, samples in groupby_transform(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]):
                     try:
                         cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, 'BCFlat96', 96))
-                        # for well in wells:
+                        # properties on plate: picked?
+                        # for sample in samples:
                         #     # TODO get the correct well index
-                        #     cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, <property_name>, <property_value>, <well_index>))
-                        #     # TODO add more well properties as required
+                        #     # A01 == 1, A02 == 2, B01 == 13 etc.
+                        #     well_index = 0 # calculate from coordinate
+                        #     cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'Root Sample ID', sample[FIELD_ROOT_SAMPLE_ID], <well_index>))
+                        #     cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'coordinate', sample[FIELD_COORDINATE], <well_index>))
+                        #     cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'picked', 'False', <well_index>))
+                        #     cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'true_positive_version', '0', <well_index>))
+                        #     # Root Sample ID
+                        #     # RNA ID --- non-essential
+                        #     # plate_barcode --- non-essential: can be obtained through labware
+                        #     # coordinate
+                        #     # picked --- always 'False'
+                        #     # true_positive_version --- some sort of unique identifier, e.g. 1.3: version number of library/module
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(
