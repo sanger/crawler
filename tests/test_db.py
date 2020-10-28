@@ -15,6 +15,7 @@ from crawler.db import (
     get_mongo_db,
     create_mysql_connection,
     run_mysql_executemany_query,
+    create_dart_sql_server_conn,
 )
 from crawler.helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
@@ -110,3 +111,24 @@ def test_run_mysql_executemany_query_execute_error(config):
         # check connection is closed
         assert cursor.close.called == True
         assert conn.close.called == True
+
+def test_create_dart_sql_server_conn_readonly(config):
+    with patch('pyodbc.connect') as mock_connect:
+        conn_string = 'DRIVER={Driver};SERVER=DART-TEST;PORT=1200;DATABASE=dart_test;UID=ro-user;PWD=ro-password'
+        create_dart_sql_server_conn(config)
+        mock_connect.assert_called_with(conn_string)
+
+def test_create_dart_sql_server_conn_readwrite(config):
+    with patch('pyodbc.connect') as mock_connect:
+        conn_string = 'DRIVER={Driver};SERVER=DART-TEST;PORT=1200;DATABASE=dart_test;UID=rw-user;PWD=rw-password'
+        create_dart_sql_server_conn(config, readonly=False)
+        mock_connect.assert_called_with(conn_string)
+
+def test_create_dart_sql_server_conn_none(config):
+    with patch('pyodbc.connect', return_value = None):
+        assert create_dart_sql_server_conn(config) == None
+
+def test_create_dart_sql_server_conn_expection(config):
+    with patch('pyodbc.connect', side_effect = Exception('Boom!')):
+        with pytest.raises(Exception):
+            create_dart_sql_server_conn(config)
