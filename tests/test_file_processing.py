@@ -1122,3 +1122,28 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_blank(config, mlwh_conne
         cursor.close()
 
         assert rows[0][MLWH_DATE_TESTED] == None
+
+def test_calculate_dart_well_index(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some file", centre)
+
+    sample = None
+    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for no sample"
+
+    sample = {}
+    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample without a coordinate"
+
+    sample = { FIELD_COORDINATE: '01A' }
+    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with invalid coordinate"
+
+    sample = { FIELD_COORDINATE: 'A00' }
+    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with coordinate column out of range"
+
+    sample = { FIELD_COORDINATE: 'Q01' }
+    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with coordinate row out of range"
+
+    sample = { FIELD_COORDINATE: 'B7' }
+    assert centre_file.calculate_dart_well_index(sample) == 19, "Expected well index of 19"
+
+    sample = { FIELD_COORDINATE: 'F03' }
+    assert centre_file.calculate_dart_well_index(sample) == 63, "Expected well index of 63"

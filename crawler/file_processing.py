@@ -72,6 +72,7 @@ from datetime import datetime
 from decimal import Decimal
 from bson.decimal128 import Decimal128 # type: ignore
 from more_itertools import groupby_transform
+import string
 
 logger = logging.getLogger(__name__)
 
@@ -1205,18 +1206,21 @@ class CentreFile:
         Returns:
             int -- the well index
         """
+        if not sample or FIELD_COORDINATE not in sample.keys():
+            return None
+            
         regex = r"^([A-Z])(\d{1,2})$"
         m = re.match(regex, sample[FIELD_COORDINATE])
 
-        well_index = None
-        if m:
-            # assumes a 96-well plate with A1 - H12 wells
-            multiplier = string.ascii_lowercase.index(m.group(1).lower())
-            col_idx = int(m.group)
-            tmp_well_index = (multiplier * 12) + col_idx
-            if 1 <= tmp_well_index <= 96:
-                well_index = tmp_well_index
+        # assumes a 96-well plate with A1 - H12 wells
+        if m is not None:
+            col_idx = int(m.group(2))
+            if 1 <= col_idx <= 12:
+                multiplier = string.ascii_lowercase.index(m.group(1).lower())
+                well_index = (multiplier * 12) + col_idx
+                if 1 <= well_index <= 96:
+                    return well_index
 
-        return well_index
+        return None
 
 
