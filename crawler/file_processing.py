@@ -1197,3 +1197,25 @@ class CentreFile:
         file_timestamp = m.group(1)
 
         return datetime.strptime(file_timestamp, "%y%m%d_%H%M")
+
+    def calculate_dart_well_index(self, sample: Dict[str, str]) -> int:
+        """Determines a well index from a sample/document to insert. Otherwise returns None.
+
+        Returns:
+            int -- the well index
+        """
+        regex = r"^([A-Z])(\d{1,2})$"
+        m = re.match(regex, sample[FIELD_COORDINATE])
+
+        well_index = None
+        if m:
+            # assumes a 96-well plate with A1 - H12 wells
+            multiplier = string.ascii_lowercase.index(m.group(1).lower())
+            col_idx = int(m.group)
+            tmp_well_index = (multiplier * 12) + col_idx
+            if 1 <= tmp_well_index <= 96:
+                well_index = tmp_well_index
+
+        return well_index
+
+
