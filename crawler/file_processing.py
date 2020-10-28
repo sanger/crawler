@@ -579,16 +579,17 @@ class CentreFile:
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(
-                            "TYPE XX", # TODO define type of error
+                            "TYPE 22",
                             f"DART database inserts failed for plate {plate_barcode} in file {self.file_name}",
                         )
+                        logger.critical(f"Critical error inserting plate {plate_barcode} in file {self.file_name}: {e}")
                         logger.exception(e)
                         cursor.rollback() # rollback statements executed since previous commit/rollback
 
                 logger.debug(f"DART database inserts completed successfully for file {self.file_name}")
             except Exception as e:
                 self.logging_collection.add_error(
-                    "TYPE XX", # TODO define type of error
+                    "TYPE 23",
                     f"DART database inserts failed for file {self.file_name}",
                 )
                 logger.critical(f"Critical error in file {self.file_name}: {e}")
