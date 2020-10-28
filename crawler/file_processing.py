@@ -562,21 +562,22 @@ class CentreFile:
                     try:
                         cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, 'BCFlat96', 96))
                         # properties on plate: picked?
-                        # for sample in samples:
-                        #     # TODO get the correct well index
-                        #     # A01 == 1, A02 == 2, B01 == 13 etc.
-                        #     well_index = 0 # calculate from coordinate
-                        #     cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'Root Sample ID', sample[FIELD_ROOT_SAMPLE_ID], <well_index>))
-                        #     cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'coordinate', sample[FIELD_COORDINATE], <well_index>))
-                        #     cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'picked', 'False', <well_index>))
-                        #     cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'true_positive_version', '0', <well_index>))
-                        #     # Root Sample ID
-                        #     # RNA ID --- non-essential
-                        #     # plate_barcode --- non-essential: can be obtained through labware
-                        #     # coordinate
-                        #     # picked --- always 'False'
-                        #     # true_positive_version --- some sort of unique identifier, e.g. 1.3: version number of library/module
-                        cursor.commit()
+                        for sample in samples:
+                            well_index = calculate_dart_well_index(sample)
+                            if well_index is not None:
+                                cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'Root Sample ID', sample[FIELD_ROOT_SAMPLE_ID], well_index))
+                                cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'coordinate', sample[FIELD_COORDINATE], well_index))
+                                cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'picked', 'False', well_index))
+                                # cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'true_positive_version', '0', well_index)) # some sort of unique identifier, e.g. 1.3: version number of library/module
+                                # RNA ID --- non-essential
+                                # plate_barcode --- non-essential: can be obtained through labware
+                                cursor.commit()
+                              else:
+                                  self.logging_collection.add_error(
+                                      "TYPE 25",
+                                      f"Unable to determine DART well index of sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode} in file {self.file_name}",
+                                  ) 
+                                  logger.critical(f"Critical error inserting well properties of sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode} in file {self.file_name}")
                     except Exception as e:
                         self.logging_collection.add_error(
                             "TYPE 22",
