@@ -598,7 +598,7 @@ class CentreFile:
                 sql_server_connection.close()
         else:
             self.logging_collection.add_error(
-                "TYPE XX", # TODO define type of error
+                "TYPE 24",
                 f"DART database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
