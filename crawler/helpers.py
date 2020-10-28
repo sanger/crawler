@@ -509,6 +509,14 @@ class AggregateType24(AggregateTypeBase):
         self.message = f"CRITICAL: Files where the DART database connection could not be made. ({self.type_str})"
         self.short_display_description = "Failed DART connection"
 
+class AggregateType25(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = 'TYPE 25'
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = f"CRITICAL: Files where the DART database inserts have failed for some well properties. ({self.type_str})"
+        self.short_display_description = "Failed DART well property inserts"
+
 # Class to handle logging of errors of the various types per file
 class LoggingCollection:
     def __init__(self):
@@ -535,6 +543,7 @@ class LoggingCollection:
             "TYPE 22": AggregateType22(),
             "TYPE 23": AggregateType23(),
             "TYPE 24": AggregateType24(),
+            "TYPE 25": AggregateType25(),
         }
 
     def add_error(self, aggregate_error_type, message):
