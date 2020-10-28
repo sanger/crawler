@@ -572,12 +572,12 @@ class CentreFile:
                                 # RNA ID --- non-essential
                                 # plate_barcode --- non-essential: can be obtained through labware
                                 cursor.commit()
-                              else:
-                                  self.logging_collection.add_error(
-                                      "TYPE 25",
-                                      f"Unable to determine DART well index of sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode} in file {self.file_name}",
-                                  ) 
-                                  logger.critical(f"Critical error inserting well properties of sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode} in file {self.file_name}")
+                            else:
+                                self.logging_collection.add_error(
+                                    "TYPE 25",
+                                    f"Unable to determine DART well index of sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode} in file {self.file_name}",
+                                ) 
+                                logger.critical(f"Critical error inserting well properties of sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode} in file {self.file_name}")
                     except Exception as e:
                         self.logging_collection.add_error(
                             "TYPE 22",
