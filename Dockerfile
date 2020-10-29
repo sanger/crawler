@@ -19,7 +19,7 @@ RUN ACCEPT_EULA=Y apt-get -y install msodbcsql17
 RUN ACCEPT_EULA=Y apt-get -y install mssql-tools
 RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
 RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
-RUN source ~/.bashrc
+# RUN source ~/.bashrc
 # optional: for unixODBC development headers
 RUN apt-get -y install unixodbc-dev
 # optional: kerberos library for debian-slim distributions
