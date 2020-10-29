@@ -374,7 +374,7 @@ class CentreFile:
 
             # TODO: generate COG UK Ids for true positves in the file (will need to be inserted into MLWH)
 
-            # self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
+            self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
             self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
 
         self.backup_file()
