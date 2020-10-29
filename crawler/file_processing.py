@@ -572,13 +572,13 @@ class CentreFile:
                                 # cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'true_positive_version', '0', well_index)) # some sort of unique identifier, e.g. 1.3: version number of library/module
                                 # RNA ID --- non-essential
                                 # plate_barcode --- non-essential: can be obtained through labware
-                                cursor.commit()
                             else:
                                 self.logging_collection.add_error(
                                     "TYPE 25",
                                     f"Unable to determine DART well index of sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode} in file {self.file_name}",
                                 ) 
                                 logger.critical(f"Critical error inserting well properties of sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode} in file {self.file_name}")
+                        cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(
                             "TYPE 22",
