@@ -1147,3 +1147,12 @@ def test_calculate_dart_well_index(config):
 
     sample = { FIELD_COORDINATE: 'F03' }
     assert centre_file.calculate_dart_well_index(sample) == 63, "Expected well index of 63"
+
+# tests for inserting docs into DART
+def test_insert_plates_and_wells_from_docs_into_dart_none_connection(config):
+    with patch('crawler.file_processing.create_dart_sql_server_conn', return_value = None):
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+        centre_file.insert_plates_and_wells_from_docs_into_dart([])
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+        assert centre_file.logging_collection.aggregator_types["TYPE 24"].count_errors == 1
