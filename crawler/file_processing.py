@@ -564,7 +564,7 @@ class CentreFile:
                         cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, 'BCFlat96', 96))
                         # properties on plate: picked?
                         for sample in samples:
-                            well_index = calculate_dart_well_index(sample)
+                            well_index = self.calculate_dart_well_index(sample)
                             if well_index is not None:
                                 cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'Root Sample ID', sample[FIELD_ROOT_SAMPLE_ID], well_index))
                                 cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'coordinate', sample[FIELD_COORDINATE], well_index))
