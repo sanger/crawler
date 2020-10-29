@@ -552,7 +552,6 @@ class CentreFile:
             Arguments:
                 docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from csv files.
         """
-        # TODO refactoring into appropriate modules/methods?
         sql_server_connection = create_dart_sql_server_conn(self.config, False)
 
         if sql_server_connection is not None:
@@ -566,9 +565,9 @@ class CentreFile:
                         for sample in samples:
                             well_index = self.calculate_dart_well_index(sample)
                             if well_index is not None:
-                                cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'Root Sample ID', sample[FIELD_ROOT_SAMPLE_ID], well_index))
-                                cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'coordinate', sample[FIELD_COORDINATE], well_index))
-                                cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'picked', 'False', well_index))
+                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'Root Sample ID', sample[FIELD_ROOT_SAMPLE_ID], well_index))
+                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'coordinate', sample[FIELD_COORDINATE], well_index))
+                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'picked', 'False', well_index))
                                 # cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'true_positive_version', '0', well_index)) # some sort of unique identifier, e.g. 1.3: version number of library/module
                                 # RNA ID --- non-essential
                                 # plate_barcode --- non-essential: can be obtained through labware
