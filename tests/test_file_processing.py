@@ -4,7 +4,10 @@ import shutil
 import os
 from io import StringIO
 from crawler.helpers import current_time
-from unittest.mock import patch
+from unittest.mock import (
+  patch,
+  MagicMock,
+)
 from csv import DictReader
 import pytest
 from datetime import (
@@ -1156,3 +1159,38 @@ def test_insert_plates_and_wells_from_docs_into_dart_none_connection(config):
         centre_file.insert_plates_and_wells_from_docs_into_dart([])
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
         assert centre_file.logging_collection.aggregator_types["TYPE 24"].count_errors == 1
+
+def test_insert_plates_and_wells_from_docs_into_dart_failed_cursor(config):
+    with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
+        mock_conn().cursor = MagicMock(side_effect = Exception('Boom!'))
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+        centre_file.insert_plates_and_wells_from_docs_into_dart([])
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+        assert centre_file.logging_collection.aggregator_types["TYPE 23"].count_errors == 1
+        mock_conn().close.assert_called_once()
+
+def test_insert_plates_and_wells_from_docs_into_dart_failed_cursor_execute(config):
+    with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
+        mock_conn().cursor().execute = MagicMock(side_effect = Exception('Boom!'))
+        docs_to_insert = [
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+                FIELD_RNA_ID: 'TC-rna-00000029_H11',
+                FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_COORDINATE: 'H11',
+                FIELD_RESULT: 'Negative',
+                FIELD_SOURCE: 'Test Centre',
+                FIELD_LAB_ID: 'TC'
+            }
+        ]
+
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+        centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+        assert centre_file.logging_collection.aggregator_types["TYPE 22"].count_errors == 1
+        mock_conn().cursor().rollback.assert_called_once()
+        mock_conn().close.assert_called_once()
