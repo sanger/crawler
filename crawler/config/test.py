@@ -75,16 +75,6 @@ MLWH_DB_RO_PASSWORD = "root"
 MLWH_DB_RW_USER = "root"
 MLWH_DB_RW_PASSWORD = "root"
 
-# DART database details
-DART_DB_DBNAME = "dart_test"
-DART_DB_HOST = "DART-TEST"
-DART_DB_PORT = 1200
-DART_DB_RO_USER = "ro-user"
-DART_DB_RO_PASSWORD = "ro-password"
-DART_DB_RW_USER = "rw-user"
-DART_DB_RW_PASSWORD = "rw-password"
-DART_DB_DRIVER = "{Driver}"
-
 # logging config
 LOGGING["loggers"]["crawler"]["level"] = "DEBUG"
 LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]

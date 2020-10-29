@@ -114,13 +114,13 @@ def test_run_mysql_executemany_query_execute_error(config):
 
 def test_create_dart_sql_server_conn_readonly(config):
     with patch('pyodbc.connect') as mock_connect:
-        conn_string = 'DRIVER={Driver};SERVER=DART-TEST;PORT=1200;DATABASE=dart_test;UID=ro-user;PWD=ro-password'
+        conn_string = f'DRIVER={config.DART_DB_DRIVER};SERVER={config.DART_DB_HOST};PORT={config.DART_DB_PORT};DATABASE={config.DART_DB_DBNAME};UID={config.DART_DB_RO_USER};PWD={config.DART_DB_RO_PASSWORD}'
         create_dart_sql_server_conn(config)
         mock_connect.assert_called_with(conn_string)
 
 def test_create_dart_sql_server_conn_readwrite(config):
     with patch('pyodbc.connect') as mock_connect:
-        conn_string = 'DRIVER={Driver};SERVER=DART-TEST;PORT=1200;DATABASE=dart_test;UID=rw-user;PWD=rw-password'
+        conn_string = f'DRIVER={config.DART_DB_DRIVER};SERVER={config.DART_DB_HOST};PORT={config.DART_DB_PORT};DATABASE={config.DART_DB_DBNAME};UID={config.DART_DB_RW_USER};PWD={config.DART_DB_RW_PASSWORD}'
         create_dart_sql_server_conn(config, readonly=False)
         mock_connect.assert_called_with(conn_string)
 
