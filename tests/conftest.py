@@ -77,6 +77,11 @@ def mlwh_connection(config):
         mysql_conn.close()
 
 @pytest.fixture
+def pyodbc_conn(config):
+    with patch('pyodbc.connect') as mock_connect:
+        yield mock_connect
+
+@pytest.fixture
 def testing_files_for_process(cleanup_backups):
     # Copy the test files to a new directory, as we expect run
     # to perform a clean up, and we don't want it cleaning up our

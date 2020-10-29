@@ -92,7 +92,7 @@ def test_get_download_dir(config):
 
         assert centre.get_download_dir() == f"{config.DIR_DOWNLOADED_DATA}{centre_config['prefix']}/"
 
-def test_process_files(mongo_database, config, testing_files_for_process, testing_centres):
+def test_process_files(mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn):
     _, mongo_database = mongo_database
     logger = logging.getLogger(__name__)
 

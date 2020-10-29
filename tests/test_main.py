@@ -30,7 +30,7 @@ from crawler.db import get_mongo_collection
 # tests.
 
 
-def test_run(mongo_database, testing_files_for_process):
+def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
     _, mongo_database = mongo_database
     with patch('crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh'):
         run(False, False, "crawler.config.integration")
@@ -69,7 +69,7 @@ def test_run(mongo_database, testing_files_for_process):
     assert 0 == len(subfolders), f"Wrong number of subfolders. Expected: 0, Actual: {len(subfolders)}"
 
 
-def test_run_creates_right_files_backups(mongo_database, testing_files_for_process):
+def test_run_creates_right_files_backups(mongo_database, testing_files_for_process, pyodbc_conn):
     _, mongo_database = mongo_database
     # First copy the test files to a new directory, as we expect run
     # to perform a clean up, and we don't want it cleaning up our
@@ -132,7 +132,7 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     assert 0 == len(subfolders)
 
 
-def test_error_run(mongo_database, testing_files_for_process):
+def test_error_run(mongo_database, testing_files_for_process, pyodbc_conn):
     _, mongo_database = mongo_database
 
     with patch('crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh'):
@@ -165,7 +165,7 @@ def test_error_run(mongo_database, testing_files_for_process):
     assert imports_collection.count_documents({}) == 8
 
 
-def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_for_process):
+def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_for_process, pyodbc_conn):
     _, mongo_database = mongo_database
 
     # copy an additional file with duplicates
