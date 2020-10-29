@@ -1181,8 +1181,6 @@ def test_insert_plates_and_wells_from_docs_into_dart_failed_cursor_execute(confi
                 FIELD_PLATE_BARCODE: 'TC-rna-00000029',
                 FIELD_COORDINATE: 'H11',
                 FIELD_RESULT: 'Negative',
-                FIELD_SOURCE: 'Test Centre',
-                FIELD_LAB_ID: 'TC'
             }
         ]
 
@@ -1193,4 +1191,109 @@ def test_insert_plates_and_wells_from_docs_into_dart_failed_cursor_execute(confi
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
         assert centre_file.logging_collection.aggregator_types["TYPE 22"].count_errors == 1
         mock_conn().cursor().rollback.assert_called_once()
+        mock_conn().cursor().commit.assert_not_called()
+        mock_conn().close.assert_called_once()
+
+def test_insert_plates_and_wells_from_docs_into_dart_none_well_index(config):
+    with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
+        docs_to_insert = [
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+                FIELD_RNA_ID: 'TC-rna-00000029_H11',
+                FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_COORDINATE: 'H11',
+                FIELD_RESULT: 'Negative',
+            }
+        ]
+
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+        centre_file.calculate_dart_well_index = MagicMock(return_value = None)
+        centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+        assert centre_file.logging_collection.aggregator_types["TYPE 25"].count_errors == 1
+        mock_conn().cursor().rollback.assert_not_called()
+        mock_conn().cursor().commit.assert_called_once()
+        mock_conn().close.assert_called_once()
+
+def test_insert_plates_and_wells_from_docs_into_dart_multiple_plates(config):
+    with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
+        docs_to_insert = [
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+                FIELD_RNA_ID: 'TC-rna-00000029_A01',
+                FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_COORDINATE: 'A01',
+                FIELD_RESULT: 'Negative',
+                'well_index': 1
+            },
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000006',
+                FIELD_RNA_ID: 'TC-rna-00000024_B01',
+                FIELD_PLATE_BARCODE: 'TC-rna-00000024',
+                FIELD_COORDINATE: 'B01',
+                FIELD_RESULT: 'Positive',
+                'well_index': 13
+            }
+        ]
+
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+        centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+        assert mock_conn().cursor().execute.call_count == 8
+        for doc in docs_to_insert:
+            plate_barcode = doc[FIELD_PLATE_BARCODE]
+            well_index = doc['well_index']
+            mock_conn().cursor().execute.assert_any_call('{CALL dbo.plDART_PlateCreate (?,?,?)}', (plate_barcode, 'BCFlat96', 96))
+            mock_conn().cursor().execute.assert_any_call("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'Root Sample ID', doc[FIELD_ROOT_SAMPLE_ID], well_index))
+            mock_conn().cursor().execute.assert_any_call("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'coordinate', doc[FIELD_COORDINATE], well_index))
+            mock_conn().cursor().execute.assert_any_call("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'picked', 'False', well_index))
+        mock_conn().cursor().rollback.assert_not_called()
+        assert mock_conn().cursor().commit.call_count == 2
+        mock_conn().close.assert_called_once()
+
+def test_insert_plates_and_wells_from_docs_into_dart_single_plate_multiple_wells(config):
+    with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
+        plate_barcode = 'TC-rna-00000029'
+        docs_to_insert = [
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+                FIELD_RNA_ID: f'{plate_barcode}_A01',
+                FIELD_PLATE_BARCODE: plate_barcode,
+                FIELD_COORDINATE: 'A01',
+                FIELD_RESULT: 'Negative',
+                'well_index': 1
+            },
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000006',
+                FIELD_RNA_ID: f'{plate_barcode}_A02',
+                FIELD_PLATE_BARCODE: plate_barcode,
+                FIELD_COORDINATE: 'A02',
+                FIELD_RESULT: 'Positive',
+                'well_index': 2
+            }
+        ]
+
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+        centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+        assert mock_conn().cursor().execute.call_count == 7
+        mock_conn().cursor().execute.assert_any_call('{CALL dbo.plDART_PlateCreate (?,?,?)}', (plate_barcode, 'BCFlat96', 96))
+        for doc in docs_to_insert:
+            well_index = doc['well_index']
+            mock_conn().cursor().execute.assert_any_call("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'Root Sample ID', doc[FIELD_ROOT_SAMPLE_ID], well_index))
+            mock_conn().cursor().execute.assert_any_call("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'coordinate', doc[FIELD_COORDINATE], well_index))
+            mock_conn().cursor().execute.assert_any_call("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'picked', 'False', well_index))
+        mock_conn().cursor().rollback.assert_not_called()
+        assert mock_conn().cursor().commit.call_count == 1
         mock_conn().close.assert_called_once()
