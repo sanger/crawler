@@ -1,8 +1,19 @@
+import re
+from crawler.constants import (
+    FIELD_RESULT,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_CH1_CQ,
+    FIELD_CH2_CQ,
+    FIELD_CH3_CQ,
+)
+
 class TruePositiveIdentifier:
     # record/reference all versions and definitions here
     versions = [
-      '0' # used during initial development
+      '1', # initial implementation, as per GPL-669
     ]
+    result_regex = re.compile('^positive', re.IGNORECASE)
+    root_sample_id_regex = re.compile('^CBIQA_')
 
     def current_version(self) -> str:
         """Returns the current version of the identifier.
@@ -21,4 +32,20 @@ class TruePositiveIdentifier:
             Returns:
                 {bool} -- whether the sample is a true positive
         """
-        return True
+
+        if self.result_regex.match(doc_to_insert[FIELD_RESULT]) == None:
+            return False
+        
+        if self.root_sample_id_regex.match(doc_to_insert[FIELD_ROOT_SAMPLE_ID]) is not None:
+            return False
+
+        ch1_cq = doc_to_insert[FIELD_CH1_CQ]
+        ch2_cq = doc_to_insert[FIELD_CH2_CQ]
+        ch3_cq = doc_to_insert[FIELD_CH3_CQ]
+        if ch1_cq == None and ch2_cq == None and ch3_cq == None:
+            return True
+        elif ch1_cq <= 30 or ch2_cq <= 30 or ch3_cq <= 30:
+            return True
+        else:
+            return False
+        
