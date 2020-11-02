@@ -561,16 +561,14 @@ class CentreFile:
                 for plate_barcode, samples in groupby_transform(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]):
                     try:
                         cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, 'BCFlat96', 96))
-                        # properties on plate: picked?
+                        # properties on plate: state?
                         for sample in samples:
                             well_index = self.calculate_dart_well_index(sample)
                             if well_index is not None:
-                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'Root Sample ID', sample[FIELD_ROOT_SAMPLE_ID], well_index))
+                                # TODO only populate well properties if "true positive"
+                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'source_plate_barcode', plate_barcode, well_index))
                                 cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'coordinate', sample[FIELD_COORDINATE], well_index))
-                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'picked', 'False', well_index))
-                                # cursor.execute("{CALL dbo.Plate_UpdateWell (?,?,?,?)}", (plate_barcode, 'true_positive_version', '0', well_index)) # some sort of unique identifier, e.g. 1.3: version number of library/module
-                                # RNA ID --- non-essential
-                                # plate_barcode --- non-essential: can be obtained through labware
+                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', '', well_index))
                             else:
                                 self.logging_collection.add_error(
                                     "TYPE 25",
