@@ -375,6 +375,8 @@ class CentreFile:
             # TODO: generate COG UK Ids for true positves in the file (will need to be inserted into MLWH)
 
             self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
+
+            # Should we instead be processing all docs_to_insert, with the stored procedures handling which well to update?
             self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
 
         self.backup_file()
@@ -566,9 +568,10 @@ class CentreFile:
                             well_index = self.calculate_dart_well_index(sample)
                             if well_index is not None:
                                 # TODO only populate well properties if "true positive"
-                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'source_plate_barcode', plate_barcode, well_index))
-                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'coordinate', sample[FIELD_COORDINATE], well_index))
                                 cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', '', well_index))
+                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', sample[FIELD_ROOT_SAMPLE_ID], well_index))
+                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', sample[FIELD_RNA_ID], well_index))
+                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', sample[FIELD_LAB_ID], well_index))
                             else:
                                 self.logging_collection.add_error(
                                     "TYPE 25",

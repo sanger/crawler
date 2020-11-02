@@ -1227,6 +1227,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_plates(config):
                 FIELD_RNA_ID: 'TC-rna-00000029_A01',
                 FIELD_PLATE_BARCODE: 'TC-rna-00000029',
                 FIELD_COORDINATE: 'A01',
+                FIELD_LAB_ID: 'AP',
                 FIELD_RESULT: 'Negative',
                 'well_index': 1
             },
@@ -1236,6 +1237,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_plates(config):
                 FIELD_RNA_ID: 'TC-rna-00000024_B01',
                 FIELD_PLATE_BARCODE: 'TC-rna-00000024',
                 FIELD_COORDINATE: 'B01',
+                FIELD_LAB_ID: 'AP',
                 FIELD_RESULT: 'Positive',
                 'well_index': 13
             }
@@ -1246,14 +1248,15 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_plates(config):
         centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
-        assert mock_conn().cursor().execute.call_count == 8
+        assert mock_conn().cursor().execute.call_count == 10
         for doc in docs_to_insert:
             plate_barcode = doc[FIELD_PLATE_BARCODE]
             well_index = doc['well_index']
             mock_conn().cursor().execute.assert_any_call('{CALL dbo.plDART_PlateCreate (?,?,?)}', (plate_barcode, 'BCFlat96', 96))
-            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'source_plate_barcode', plate_barcode, well_index))
-            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'coordinate', doc[FIELD_COORDINATE], well_index))
             mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', '', well_index))
+            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', doc[FIELD_ROOT_SAMPLE_ID], well_index))
+            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', doc[FIELD_RNA_ID], well_index))
+            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', doc[FIELD_LAB_ID], well_index))
         mock_conn().cursor().rollback.assert_not_called()
         assert mock_conn().cursor().commit.call_count == 2
         mock_conn().close.assert_called_once()
@@ -1268,6 +1271,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_plate_multiple_wells
                 FIELD_RNA_ID: f'{plate_barcode}_A01',
                 FIELD_PLATE_BARCODE: plate_barcode,
                 FIELD_COORDINATE: 'A01',
+                FIELD_LAB_ID: 'AP',
                 FIELD_RESULT: 'Negative',
                 'well_index': 1
             },
@@ -1277,6 +1281,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_plate_multiple_wells
                 FIELD_RNA_ID: f'{plate_barcode}_A02',
                 FIELD_PLATE_BARCODE: plate_barcode,
                 FIELD_COORDINATE: 'A02',
+                FIELD_LAB_ID: 'AP',
                 FIELD_RESULT: 'Positive',
                 'well_index': 2
             }
@@ -1287,13 +1292,14 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_plate_multiple_wells
         centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
-        assert mock_conn().cursor().execute.call_count == 7
+        assert mock_conn().cursor().execute.call_count == 9
         mock_conn().cursor().execute.assert_any_call('{CALL dbo.plDART_PlateCreate (?,?,?)}', (plate_barcode, 'BCFlat96', 96))
         for doc in docs_to_insert:
             well_index = doc['well_index']
-            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'source_plate_barcode', plate_barcode, well_index))
-            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'coordinate', doc[FIELD_COORDINATE], well_index))
             mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', '', well_index))
+            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', doc[FIELD_ROOT_SAMPLE_ID], well_index))
+            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', doc[FIELD_RNA_ID], well_index))
+            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', doc[FIELD_LAB_ID], well_index))
         mock_conn().cursor().rollback.assert_not_called()
         assert mock_conn().cursor().commit.call_count == 1
         mock_conn().close.assert_called_once()
