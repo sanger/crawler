@@ -1,5 +1,6 @@
 import re
 from crawler.constants import (
+    POSITIVE_RESULT_VALUE,
     FIELD_RESULT,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_CH1_CQ,
@@ -12,7 +13,7 @@ class TruePositiveIdentifier:
     versions = [
       '1', # initial implementation, as per GPL-669
     ]
-    result_regex = re.compile('^positive', re.IGNORECASE)
+    result_regex = re.compile(F'^{POSITIVE_RESULT_VALUE}', re.IGNORECASE)
     root_sample_id_regex = re.compile('^CBIQA_')
 
     def current_version(self) -> str:

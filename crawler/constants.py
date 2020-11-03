@@ -70,14 +70,17 @@ MLWH_UPDATED_AT = "updated_at"
 MONGO_DATETIME_FORMAT = "%y%m%d_%H%M"
 MYSQL_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
+# positive Result value
+POSITIVE_RESULT_VALUE = 'Positive'
+
 # allowed Result field values
-ALLOWED_RESULT_VALUES = ('Positive', 'Negative', 'limit of detection', 'Void')
+ALLOWED_RESULT_VALUES = (POSITIVE_RESULT_VALUE, 'Negative', 'limit of detection', 'Void')
 
 # allowed CT channel CHn-Target field values (or can be null)
 ALLOWED_CH_TARGET_VALUES = ('ORF1ab', 'N gene', 'S gene', 'MS2')
 
 # allowed CT channel CHn-Result field values (or can be null)
-ALLOWED_CH_RESULT_VALUES = ('Positive', 'Negative', 'Inconclusive', 'Void')
+ALLOWED_CH_RESULT_VALUES = (POSITIVE_RESULT_VALUE, 'Negative', 'Inconclusive', 'Void')
 
 # range of allowed cq values (0 .. 100, set as strings for conversion to decimals in code)
 MIN_CQ_VALUE = Decimal('0.0')

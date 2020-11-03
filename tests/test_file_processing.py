@@ -79,7 +79,8 @@ from crawler.constants import (
     MLWH_CH4_RESULT,
     MLWH_CH4_CQ,
     MLWH_CREATED_AT,
-    MLWH_UPDATED_AT
+    MLWH_UPDATED_AT,
+    POSITIVE_RESULT_VALUE,
 )
 from crawler.db import get_mongo_collection
 
@@ -983,21 +984,21 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
                 FIELD_RNA_ID: 'TC-rna-00000029_H12',
                 FIELD_PLATE_BARCODE: 'TC-rna-00000029',
                 FIELD_COORDINATE: 'H12',
-                FIELD_RESULT: 'Positive',
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
                 FIELD_DATE_TESTED: '2020-04-23 14:41:00 UTC',
                 FIELD_SOURCE: 'Test Centre',
                 FIELD_LAB_ID: 'TC',
                 FIELD_CH1_TARGET: 'ORF1ab',
-                FIELD_CH1_RESULT: 'Positive',
+                FIELD_CH1_RESULT: POSITIVE_RESULT_VALUE,
                 FIELD_CH1_CQ: Decimal128('21.28726211'),
                 FIELD_CH2_TARGET: 'N gene',
-                FIELD_CH2_RESULT: 'Positive',
+                FIELD_CH2_RESULT: POSITIVE_RESULT_VALUE,
                 FIELD_CH2_CQ: Decimal128('18.12736661'),
                 FIELD_CH3_TARGET: 'S gene',
-                FIELD_CH3_RESULT: 'Positive',
+                FIELD_CH3_RESULT: POSITIVE_RESULT_VALUE,
                 FIELD_CH3_CQ: Decimal128('22.63616273'),
                 FIELD_CH4_TARGET: 'MS2',
-                FIELD_CH4_RESULT: 'Positive',
+                FIELD_CH4_RESULT: POSITIVE_RESULT_VALUE,
                 FIELD_CH4_CQ: Decimal128('26.25125612'),
             }
         ]
@@ -1043,22 +1044,22 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
         assert rows[1][MLWH_RNA_ID] == 'TC-rna-00000029_H12'
         assert rows[1][MLWH_PLATE_BARCODE] == 'TC-rna-00000029'
         assert rows[1][MLWH_COORDINATE] == 'H12'
-        assert rows[1][MLWH_RESULT] == 'Positive'
+        assert rows[1][MLWH_RESULT] == POSITIVE_RESULT_VALUE
         assert rows[1][MLWH_DATE_TESTED_STRING] == '2020-04-23 14:41:00 UTC'
         assert rows[1][MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 41, 0)
         assert rows[1][MLWH_SOURCE] == 'Test Centre'
         assert rows[1][MLWH_LAB_ID] == 'TC'
         assert rows[1][MLWH_CH1_TARGET] == 'ORF1ab'
-        assert rows[1][MLWH_CH1_RESULT] == 'Positive'
+        assert rows[1][MLWH_CH1_RESULT] == POSITIVE_RESULT_VALUE
         assert rows[1][MLWH_CH1_CQ] == Decimal('21.28726211')
         assert rows[1][MLWH_CH2_TARGET] == 'N gene'
-        assert rows[1][MLWH_CH2_RESULT] == 'Positive'
+        assert rows[1][MLWH_CH2_RESULT] == POSITIVE_RESULT_VALUE
         assert rows[1][MLWH_CH2_CQ] == Decimal('18.12736661')
         assert rows[1][MLWH_CH3_TARGET] == 'S gene'
-        assert rows[1][MLWH_CH3_RESULT] == 'Positive'
+        assert rows[1][MLWH_CH3_RESULT] == POSITIVE_RESULT_VALUE
         assert rows[1][MLWH_CH3_CQ] == Decimal('22.63616273')
         assert rows[1][MLWH_CH4_TARGET] == 'MS2'
-        assert rows[1][MLWH_CH4_RESULT] == 'Positive'
+        assert rows[1][MLWH_CH4_RESULT] == POSITIVE_RESULT_VALUE
         assert rows[1][MLWH_CH4_CQ] == Decimal('26.25125612')
         assert rows[1][MLWH_CREATED_AT] is not None
         assert rows[1][MLWH_UPDATED_AT] is not None
@@ -1238,7 +1239,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_plates(config):
                 FIELD_PLATE_BARCODE: 'TC-rna-00000024',
                 FIELD_COORDINATE: 'B01',
                 FIELD_LAB_ID: 'AP',
-                FIELD_RESULT: 'Positive',
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
                 'well_index': 13
             }
         ]
@@ -1282,7 +1283,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_plate_multiple_wells
                 FIELD_PLATE_BARCODE: plate_barcode,
                 FIELD_COORDINATE: 'A02',
                 FIELD_LAB_ID: 'AP',
-                FIELD_RESULT: 'Positive',
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
                 'well_index': 2
             }
         ]

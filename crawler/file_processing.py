@@ -39,6 +39,7 @@ from crawler.constants import (
     FIELD_CH4_TARGET,
     FIELD_CH4_RESULT,
     FIELD_CH4_CQ,
+    POSITIVE_RESULT_VALUE,
     ALLOWED_RESULT_VALUES,
     ALLOWED_CH_TARGET_VALUES,
     ALLOWED_CH_RESULT_VALUES,
@@ -1102,7 +1103,7 @@ class CentreFile:
             bool - whether the channel results complement the main results
         """
         # if the result is not positive we do not need to check any further
-        if row.get(FIELD_RESULT) != 'Positive':
+        if row.get(FIELD_RESULT) != POSITIVE_RESULT_VALUE:
             return True
 
         ch_results_present = 0
@@ -1111,22 +1112,22 @@ class CentreFile:
         # look for positive channel results
         if row.get(FIELD_CH1_RESULT):
             ch_results_present += 1
-            if row.get(FIELD_CH1_RESULT) == 'Positive':
+            if row.get(FIELD_CH1_RESULT) == POSITIVE_RESULT_VALUE:
                 ch_results_positive += 1
 
         if row.get(FIELD_CH2_RESULT):
             ch_results_present += 1
-            if row.get(FIELD_CH2_RESULT) == 'Positive':
+            if row.get(FIELD_CH2_RESULT) == POSITIVE_RESULT_VALUE:
                 ch_results_positive += 1
 
         if row.get(FIELD_CH3_RESULT):
             ch_results_present += 1
-            if row.get(FIELD_CH3_RESULT) == 'Positive':
+            if row.get(FIELD_CH3_RESULT) == POSITIVE_RESULT_VALUE:
                 ch_results_positive += 1
 
         if row.get(FIELD_CH4_RESULT):
             ch_results_present += 1
-            if row.get(FIELD_CH4_RESULT) == 'Positive':
+            if row.get(FIELD_CH4_RESULT) == POSITIVE_RESULT_VALUE:
                 ch_results_positive += 1
 
         # if there are no channel results present in the row we do not need to check further
