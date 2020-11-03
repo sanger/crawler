@@ -11,7 +11,7 @@ from crawler.constants import (
 class TruePositiveIdentifier:
     # record/reference all versions and definitions here
     versions = [
-      '1', # initial implementation, as per GPL-669
+      'v1', # initial implementation, as per GPL-669
     ]
     result_regex = re.compile(F'^{POSITIVE_RESULT_VALUE}', re.IGNORECASE)
     root_sample_id_regex = re.compile('^CBIQA_')
