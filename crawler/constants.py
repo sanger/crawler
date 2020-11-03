@@ -39,6 +39,11 @@ FIELD_CREATED_AT = "created_at"
 FIELD_UPDATED_AT = "updated_at"
 FIELD_SOURCE = "source"
 
+# filtered-positive field names
+FIELD_FILTERED_POSITIVE_TIMESTAMP = "filtered_positive_timestamp"
+FIELD_FILTERED_POSITIVE_VERSION = "filtered_positive_version"
+FIELD_FILTERED_POSITIVE = "filtered_positive"
+
 # multi-lims warehouse field names
 MLWH_TABLE_NAME = "lighthouse_sample"
 MLWH_MONGODB_ID = "mongodb_id"
