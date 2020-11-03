@@ -1,4 +1,5 @@
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
+from bson.decimal128 import Decimal128
 from crawler.constants import (
     POSITIVE_RESULT_VALUE,
     FIELD_RESULT,
@@ -16,9 +17,9 @@ def positive_sample():
     return {
         FIELD_RESULT: POSITIVE_RESULT_VALUE,
         FIELD_ROOT_SAMPLE_ID: 'MCM001',
-        FIELD_CH1_CQ: 20,
-        FIELD_CH2_CQ: 24,
-        FIELD_CH3_CQ: 30,
+        FIELD_CH1_CQ: Decimal128('20'),
+        FIELD_CH2_CQ: Decimal128('24'),
+        FIELD_CH3_CQ: Decimal128('30'),
     }
 
 # ----- tests for current_version() -----
@@ -39,18 +40,18 @@ def test_is_positive_returns_true_matching_criteria():
 
     # 3x one of FIELD_CHX_CQ <= 30
     sample = positive_sample()
-    sample[FIELD_CH2_CQ] = 31
-    sample[FIELD_CH3_CQ] = 31
+    sample[FIELD_CH2_CQ] = Decimal128('31')
+    sample[FIELD_CH3_CQ] = Decimal128('31')
     assert identifier.is_positive(sample) == True
 
     sample = positive_sample()
-    sample[FIELD_CH1_CQ] = 31
-    sample[FIELD_CH3_CQ] = 31
+    sample[FIELD_CH1_CQ] = Decimal128('31')
+    sample[FIELD_CH3_CQ] = Decimal128('31')
     assert identifier.is_positive(sample) == True
 
     sample = positive_sample()
-    sample[FIELD_CH1_CQ] = 31
-    sample[FIELD_CH2_CQ] = 31
+    sample[FIELD_CH1_CQ] = Decimal128('31')
+    sample[FIELD_CH2_CQ] = Decimal128('31')
     assert identifier.is_positive(sample) == True
 
     # all FIELD_CHX_CQ None
@@ -83,9 +84,9 @@ def test_is_positive_returns_false_control_sample():
 
 def test_is_positive_returns_false_all_chx_cq_greater_than_30():
     sample = positive_sample()
-    sample[FIELD_CH1_CQ] = 31
-    sample[FIELD_CH2_CQ] = 31
-    sample[FIELD_CH3_CQ] = 33
+    sample[FIELD_CH1_CQ] = Decimal128('31')
+    sample[FIELD_CH2_CQ] = Decimal128('31')
+    sample[FIELD_CH3_CQ] = Decimal128('33')
     assert identifier.is_positive(sample) == False
 
 

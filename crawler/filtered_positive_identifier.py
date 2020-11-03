@@ -1,4 +1,6 @@
 import re
+import decimal
+from bson.decimal128 import create_decimal128_context
 from crawler.constants import (
     POSITIVE_RESULT_VALUE,
     FIELD_RESULT,
@@ -15,6 +17,8 @@ class FilteredPositiveIdentifier:
     ]
     result_regex = re.compile(F'^{POSITIVE_RESULT_VALUE}', re.IGNORECASE)
     root_sample_id_regex = re.compile('^CBIQA_')
+    ct_value_limit = decimal.Decimal(30)
+    d128_context = create_decimal128_context()
 
     def current_version(self) -> str:
         """Returns the current version of the identifier.
@@ -44,8 +48,9 @@ class FilteredPositiveIdentifier:
         ch3_cq = doc_to_insert.get(FIELD_CH3_CQ)
         if ch1_cq == None and ch2_cq == None and ch3_cq == None:
             return True
-        elif ch1_cq <= 30 or ch2_cq <= 30 or ch3_cq <= 30:
-            return True
-        else:
-            return False
         
+        with decimal.localcontext(self.d128_context):
+            if ch1_cq.to_decimal() <= self.ct_value_limit or ch2_cq.to_decimal() <= self.ct_value_limit or ch3_cq.to_decimal() <= self.ct_value_limit:
+                return True
+            else:
+                return False
