@@ -14,11 +14,11 @@ identifier = FilteredPositiveIdentifier()
 
 def positive_sample():
     return {
-      FIELD_RESULT: POSITIVE_RESULT_VALUE,
-      FIELD_ROOT_SAMPLE_ID: 'MCM001',
-      FIELD_CH1_CQ: 20,
-      FIELD_CH2_CQ: 24,
-      FIELD_CH3_CQ: 30,
+        FIELD_RESULT: POSITIVE_RESULT_VALUE,
+        FIELD_ROOT_SAMPLE_ID: 'MCM001',
+        FIELD_CH1_CQ: 20,
+        FIELD_CH2_CQ: 24,
+        FIELD_CH3_CQ: 30,
     }
 
 # ----- tests for current_version() -----
@@ -58,6 +58,13 @@ def test_is_positive_returns_true_matching_criteria():
     sample[FIELD_CH1_CQ] = None
     sample[FIELD_CH2_CQ] = None
     sample[FIELD_CH3_CQ] = None
+    assert identifier.is_positive(sample) == True
+
+    # no FIELD_CHX_CQ fields
+    sample = {
+        FIELD_RESULT: POSITIVE_RESULT_VALUE,
+        FIELD_ROOT_SAMPLE_ID: 'MCM001'
+    }
     assert identifier.is_positive(sample) == True
 
 def test_is_positive_returns_false_result_not_postive():

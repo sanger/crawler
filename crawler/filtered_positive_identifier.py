@@ -33,16 +33,15 @@ class FilteredPositiveIdentifier:
             Returns:
                 {bool} -- whether the sample is a filtered positive
         """
-
         if self.result_regex.match(doc_to_insert[FIELD_RESULT]) == None:
             return False
         
         if self.root_sample_id_regex.match(doc_to_insert[FIELD_ROOT_SAMPLE_ID]) is not None:
             return False
 
-        ch1_cq = doc_to_insert[FIELD_CH1_CQ]
-        ch2_cq = doc_to_insert[FIELD_CH2_CQ]
-        ch3_cq = doc_to_insert[FIELD_CH3_CQ]
+        ch1_cq = doc_to_insert.get(FIELD_CH1_CQ)
+        ch2_cq = doc_to_insert.get(FIELD_CH2_CQ)
+        ch3_cq = doc_to_insert.get(FIELD_CH3_CQ)
         if ch1_cq == None and ch2_cq == None and ch3_cq == None:
             return True
         elif ch1_cq <= 30 or ch2_cq <= 30 or ch3_cq <= 30:
