@@ -17,9 +17,9 @@ def positive_sample():
     return {
         FIELD_RESULT: POSITIVE_RESULT_VALUE,
         FIELD_ROOT_SAMPLE_ID: 'MCM001',
-        FIELD_CH1_CQ: Decimal128('20'),
-        FIELD_CH2_CQ: Decimal128('24'),
-        FIELD_CH3_CQ: Decimal128('30'),
+        FIELD_CH1_CQ: Decimal128('5.12345678'),
+        FIELD_CH2_CQ: Decimal128('6.12345678'),
+        FIELD_CH3_CQ: Decimal128('7.12345678'),
     }
 
 # ----- tests for current_version() -----
@@ -30,31 +30,32 @@ def test_current_version_is_latest():
 # ----- tests for is_positive() -----
 
 def test_is_positive_returns_true_matching_criteria():
-    # case invariant positive match
+    # expected positive match
     sample = positive_sample()
     assert identifier.is_positive(sample) == True
 
+    # case invariant positive match
     sample = positive_sample()
     sample[FIELD_RESULT] = 'POSITIVE'
     assert identifier.is_positive(sample) == True
 
-    # 3x one of FIELD_CHX_CQ <= 30
+    # 3x mix of ct values
     sample = positive_sample()
-    sample[FIELD_CH2_CQ] = Decimal128('31')
-    sample[FIELD_CH3_CQ] = Decimal128('31')
+    sample[FIELD_CH2_CQ] = Decimal128('41.12345678')
+    sample[FIELD_CH3_CQ] = None
     assert identifier.is_positive(sample) == True
 
     sample = positive_sample()
-    sample[FIELD_CH1_CQ] = Decimal128('31')
-    sample[FIELD_CH3_CQ] = Decimal128('31')
+    sample[FIELD_CH1_CQ] = None
+    sample[FIELD_CH3_CQ] = Decimal128('42.12345678')
     assert identifier.is_positive(sample) == True
 
     sample = positive_sample()
-    sample[FIELD_CH1_CQ] = Decimal128('31')
-    sample[FIELD_CH2_CQ] = Decimal128('31')
+    sample[FIELD_CH1_CQ] = Decimal128('40.12345678')
+    sample[FIELD_CH2_CQ] = None
     assert identifier.is_positive(sample) == True
 
-    # all FIELD_CHX_CQ None
+    # all ct values None
     sample = positive_sample()
     sample[FIELD_CH1_CQ] = None
     sample[FIELD_CH2_CQ] = None
@@ -69,12 +70,24 @@ def test_is_positive_returns_true_matching_criteria():
     assert identifier.is_positive(sample) == True
 
 def test_is_positive_returns_false_result_not_postive():
-    sample = positive_sample()
-    sample[FIELD_RESULT] = 'negative'
-    assert identifier.is_positive(sample) == False
-
+    # does not conform to regex
     sample = positive_sample()
     sample[FIELD_RESULT] = '  positive'
+    assert identifier.is_positive(sample) == False
+
+    # negative result
+    sample = positive_sample()
+    sample[FIELD_RESULT] = 'Negative'
+    assert identifier.is_positive(sample) == False
+
+    # void result
+    sample = positive_sample()
+    sample[FIELD_RESULT] = 'Void'
+    assert identifier.is_positive(sample) == False
+
+    # 'limit of detection' result
+    sample = positive_sample()
+    sample[FIELD_RESULT] = 'limit of detection'
     assert identifier.is_positive(sample) == False
 
 def test_is_positive_returns_false_control_sample():
@@ -82,11 +95,11 @@ def test_is_positive_returns_false_control_sample():
     sample[FIELD_ROOT_SAMPLE_ID] = 'CBIQA_MCM001'
     assert identifier.is_positive(sample) == False
 
-def test_is_positive_returns_false_all_chx_cq_greater_than_30():
+def test_is_positive_returns_false_all_ct_values_greater_than_30():
     sample = positive_sample()
-    sample[FIELD_CH1_CQ] = Decimal128('31')
-    sample[FIELD_CH2_CQ] = Decimal128('31')
-    sample[FIELD_CH3_CQ] = Decimal128('33')
+    sample[FIELD_CH1_CQ] = Decimal128('40.12345678')
+    sample[FIELD_CH2_CQ] = Decimal128('41.12345678')
+    sample[FIELD_CH3_CQ] = Decimal128('42.12345678')
     assert identifier.is_positive(sample) == False
 
 

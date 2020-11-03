@@ -50,7 +50,12 @@ class FilteredPositiveIdentifier:
             return True
         
         with decimal.localcontext(self.d128_context):
-            if ch1_cq.to_decimal() <= self.ct_value_limit or ch2_cq.to_decimal() <= self.ct_value_limit or ch3_cq.to_decimal() <= self.ct_value_limit:
+            # type check before attempting to convert to decimal
+            if ch1_cq is not None and ch1_cq.to_decimal() <= self.ct_value_limit:
                 return True
+            elif ch2_cq is not None and ch2_cq.to_decimal() <= self.ct_value_limit:
+              return True
+            elif ch3_cq is not None and ch3_cq.to_decimal() <= self.ct_value_limit:
+              return True
             else:
                 return False
