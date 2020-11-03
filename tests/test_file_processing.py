@@ -256,6 +256,8 @@ def test_parse_and_format_file_rows(config):
     timestamp = "some timestamp"
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
+    centre_file.filtered_positive_identifier.current_version = MagicMock(return_value = 'v2.3')
+    centre_file.filtered_positive_identifier.is_positive = MagicMock(return_value = True)
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
         extra_fields_added = [
             {
@@ -271,6 +273,9 @@ def test_parse_and_format_file_rows(config):
                 "created_at": timestamp,
                 "updated_at": timestamp,
                 "Lab ID": None,
+                "filtered_positive": True,
+                "filtered_positive_version": 'v2.3',
+                "filtered_positive_timestamp": timestamp,
             }
         ]
 
@@ -490,6 +495,8 @@ def test_parse_and_format_file_rows_to_add_file_details(config):
     timestamp = "some timestamp"
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("ASDF_200507_1340.csv", centre)
+    centre_file.filtered_positive_identifier.current_version = MagicMock(return_value = 'v2.3')
+    centre_file.filtered_positive_identifier.is_positive = MagicMock(return_value = True)
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
 
         extra_fields_added = [
@@ -506,6 +513,9 @@ def test_parse_and_format_file_rows_to_add_file_details(config):
                 "updated_at": timestamp,
                 "Result": "Positive",
                 "Lab ID": None,
+                "filtered_positive": True,
+                "filtered_positive_version": 'v2.3',
+                "filtered_positive_timestamp": timestamp,
             },
             {
                 "Root Sample ID": "2",
@@ -540,6 +550,8 @@ def test_parse_and_format_file_rows_detects_duplicates(config):
     timestamp = "some timestamp"
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("ASDF_200507_1340.csv", centre)
+    centre_file.filtered_positive_identifier.current_version = MagicMock(return_value = 'v2.3')
+    centre_file.filtered_positive_identifier.is_positive = MagicMock(return_value = True)
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
 
         extra_fields_added = [
@@ -556,6 +568,9 @@ def test_parse_and_format_file_rows_detects_duplicates(config):
                 "updated_at": timestamp,
                 "Result": "Positive",
                 "Lab ID": "Val",
+                "filtered_positive": True,
+                "filtered_positive_version": 'v2.3',
+                "filtered_positive_timestamp": timestamp,
             },
         ]
 

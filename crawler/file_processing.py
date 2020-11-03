@@ -45,6 +45,9 @@ from crawler.constants import (
     ALLOWED_CH_RESULT_VALUES,
     MIN_CQ_VALUE,
     MAX_CQ_VALUE,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
 )
 from crawler.helpers import (
     current_time,
@@ -74,6 +77,7 @@ from decimal import Decimal
 from bson.decimal128 import Decimal128 # type: ignore
 from more_itertools import groupby_transform
 import string
+from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 
 logger = logging.getLogger(__name__)
 
@@ -242,6 +246,8 @@ class CentreFile:
         FIELD_CH4_CQ,
     }
 
+    filtered_positive_identifier = FilteredPositiveIdentifier()
+
     def __init__(self, file_name, centre):
         """Initialiser for the class representing the file
 
@@ -362,8 +368,6 @@ class CentreFile:
             logger.error(f"Errors present in file {self.file_name}")
         else:
             logger.info(f"File {self.file_name} is valid")
-
-        # TODO: create docs_to_insert_with_true_positives_marked
 
         mongo_ids_of_inserted = []
         if len(docs_to_insert) > 0:
@@ -892,6 +896,12 @@ class CentreFile:
         modified_row[FIELD_FILE_NAME_DATE] = self.file_name_date()
         modified_row[FIELD_CREATED_AT] = import_timestamp
         modified_row[FIELD_UPDATED_AT] = import_timestamp
+
+        # filtered-positive calculations
+        if modified_row[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
+            modified_row[FIELD_FILTERED_POSITIVE] = self.filtered_positive_identifier.is_positive(modified_row)
+            modified_row[FIELD_FILTERED_POSITIVE_VERSION] = self.filtered_positive_identifier.current_version()
+            modified_row[FIELD_FILTERED_POSITIVE_TIMESTAMP] = import_timestamp
 
         # ---- store row signature to allow checking for duplicates in following rows ----
         seen_rows.add(row_signature)
