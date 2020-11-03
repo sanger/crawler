@@ -8,7 +8,7 @@ from crawler.constants import (
     FIELD_CH3_CQ,
 )
 
-class TruePositiveIdentifier:
+class FilteredPositiveIdentifier:
     # record/reference all versions and definitions here
     versions = [
       'v1', # initial implementation, as per GPL-669
@@ -24,14 +24,14 @@ class TruePositiveIdentifier:
         """
         return self.versions[-1]
 
-    def is_true_positive(self, doc_to_insert) -> bool:
-        """Insert sample records into the mongo database from the parsed file information.
+    def is_positive(self, doc_to_insert) -> bool:
+        """Determines whether a sample is a filtered positive.
 
             Arguments:
                 doc_to_insert {Dict[str, str]} -- information on a single sample extracted from csv files
 
             Returns:
-                {bool} -- whether the sample is a true positive
+                {bool} -- whether the sample is a filtered positive
         """
 
         if self.result_regex.match(doc_to_insert[FIELD_RESULT]) == None:
