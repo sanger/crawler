@@ -1342,3 +1342,56 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_plate_multiple_wells
         mock_conn().cursor().rollback.assert_not_called()
         assert mock_conn().cursor().commit.call_count == 1
         mock_conn().close.assert_called_once()
+
+def test_insert_plates_and_wells_from_docs_into_dart_sets_well_state(config):
+    with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
+        plate_barcode = 'TC-rna-00000029'
+        docs_to_insert = [
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+                FIELD_RNA_ID: f'{plate_barcode}_A01',
+                FIELD_PLATE_BARCODE: plate_barcode,
+                FIELD_COORDINATE: 'A01',
+                FIELD_LAB_ID: 'AP',
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
+                'well_index': 1,
+                'state': ''
+            },
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000006',
+                FIELD_RNA_ID: f'{plate_barcode}_A02',
+                FIELD_PLATE_BARCODE: plate_barcode,
+                FIELD_COORDINATE: 'A02',
+                FIELD_LAB_ID: 'AP',
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
+                FIELD_FILTERED_POSITIVE: False,
+                'well_index': 2,
+                'state': ''
+            },
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000008',
+                FIELD_RNA_ID: f'{plate_barcode}_A03',
+                FIELD_PLATE_BARCODE: plate_barcode,
+                FIELD_COORDINATE: 'A03',
+                FIELD_LAB_ID: 'AP',
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
+                FIELD_FILTERED_POSITIVE: True,
+                'well_index': 3,
+                'state': 'pickable'
+            }
+        ]
+
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+        centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+
+        # adds plate and wells as expected
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+        for doc in docs_to_insert:
+            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', doc['state'], doc['well_index']))
+        mock_conn().cursor().rollback.assert_not_called()
+        assert mock_conn().cursor().commit.call_count == 1
+        mock_conn().close.assert_called_once()
