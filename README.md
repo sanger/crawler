@@ -75,7 +75,7 @@ The process should not duplicate rows that are already present in MLWH, so you c
 
 ## Filtered Positive Rules
 
-This is a history of past and current rules by which positive samples are further filtered and identified as 'filtered positive'. Note that any rule change requires the `update_filtered_positive_results` migration be run, as outlined in the below relevant section.
+This is a history of past and current rules by which positive samples are further filtered and identified as 'filtered positive'. Note that any rule change requires the `update_filtered_positives` migration be run, as outlined in the below relevant section.
 
 The implementation of the current version can be found in the [FilteredPositiveIdentifier](./crawler/filtered_positive_identifier.py), with the implementation of previous versions (if any) in the git history.
 
@@ -91,11 +91,11 @@ TODO - link to task/confluence page
 ### Propagating Filtered Positive version changes to MongoDB, MLWH and DART
 
 On changing the positive filtering version/definition, all unpicked samples stored in MongoDB, MLWH and DART need updating to determine whether they are still filtered positive under the new rules, and can therefore be picked in DART.
-In order to keep the databases in-sync, the update process for all is performed in a single manual migration (update_filtered_positive_results) which identifies unpicked wells, re-determines their filtered positive value, and updates the databases.
+In order to keep the databases in-sync, the update process for all is performed in a single manual migration (update_filtered_positives) which identifies unpicked wells, re-determines their filtered positive value, and updates the databases.
 
 Usage (inside pipenv shell):
 
-    $ python run_migration.py update_filtered_positive_results
+    $ python run_migration.py update_filtered_positives
 
 The process does not duplicate any data, instead updating existing entries.
 
