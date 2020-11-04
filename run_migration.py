@@ -1,6 +1,7 @@
 from migrations import (
   sample_timestamps,
   update_mlwh_with_legacy_samples,
+  update_filtered_positives,
 )
 from crawler.helpers import get_config
 import sys
@@ -39,6 +40,7 @@ def migration_update_mlwh_with_legacy_samples():
 
 def migration_update_filtered_positives():
     print('Running update_filtered_positives migration')
+    update_filtered_positives.run()
 
 def migration_by_name(migration_name):
     switcher = {
