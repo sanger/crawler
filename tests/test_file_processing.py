@@ -91,6 +91,15 @@ from crawler.constants import (
 from crawler.db import get_mongo_collection
 
 
+# ----- tests helpers -----
+
+def centre_file_with_mocked_filtered_postitive_identifier(config, file_name):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile(file_name, centre)
+    centre_file.filtered_positive_identifier.current_version = MagicMock(return_value = 'v2.3')
+    centre_file.filtered_positive_identifier.is_positive = MagicMock(return_value = True)
+    return centre_file
+
 # ----- tests for class Centre -----
 
 def test_get_download_dir(config):
@@ -260,10 +269,7 @@ def test_extract_plate_barcode_and_coordinate(config):
 # tests for parsing and formatting the csv file rows
 def test_parse_and_format_file_rows(config):
     timestamp = "some timestamp"
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
-    centre_file.filtered_positive_identifier.current_version = MagicMock(return_value = 'v2.3')
-    centre_file.filtered_positive_identifier.is_positive = MagicMock(return_value = True)
+    centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, 'some file')
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
         extra_fields_added = [
             {
@@ -499,10 +505,7 @@ def test_filtered_row_with_ct_channel_columns(config):
 
 def test_parse_and_format_file_rows_to_add_file_details(config):
     timestamp = "some timestamp"
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("ASDF_200507_1340.csv", centre)
-    centre_file.filtered_positive_identifier.current_version = MagicMock(return_value = 'v2.3')
-    centre_file.filtered_positive_identifier.is_positive = MagicMock(return_value = True)
+    centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "ASDF_200507_1340.csv")
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
 
         extra_fields_added = [
@@ -554,10 +557,7 @@ def test_parse_and_format_file_rows_to_add_file_details(config):
 
 def test_parse_and_format_file_rows_detects_duplicates(config):
     timestamp = "some timestamp"
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("ASDF_200507_1340.csv", centre)
-    centre_file.filtered_positive_identifier.current_version = MagicMock(return_value = 'v2.3')
-    centre_file.filtered_positive_identifier.is_positive = MagicMock(return_value = True)
+    centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "ASDF_200507_1340.csv")
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
 
         extra_fields_added = [
@@ -984,10 +984,7 @@ def test_set_state_for_file_when_in_success_folder(config):
 # tests for inserting docs into mlwh using rows with and without ct columns
 def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
     with patch('crawler.db.create_mysql_connection', return_value = 'not none'):
-        centre = Centre(config, config.CENTRES[0])
-        centre_file = CentreFile("some file", centre)
-        centre_file.filtered_positive_identifier.current_version = MagicMock(return_value = 'v2.3')
-        centre_file.filtered_positive_identifier.is_positive = MagicMock(return_value = True)
+        centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "some file")
 
         docs = [
             {
