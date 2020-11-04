@@ -23,6 +23,9 @@ ch3_cq,
 ch4_target,
 ch4_result,
 ch4_cq,
+filtered_positive,
+filtered_positive_version,
+filtered_positive_timestamp,
 created_at,
 updated_at
 )
@@ -49,6 +52,9 @@ VALUES (
 %(ch4_target)s,
 %(ch4_result)s,
 %(ch4_cq)s,
+%(filtered_positive)s,
+%(filtered_positive_version)s,
+%(filtered_positive_timestamp)s,
 %(created_at)s,
 %(updated_at)s
 )
