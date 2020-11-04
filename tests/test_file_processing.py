@@ -54,6 +54,9 @@ from crawler.constants import (
     FIELD_CH4_TARGET,
     FIELD_CH4_RESULT,
     FIELD_CH4_CQ,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
     MLWH_TABLE_NAME,
     MLWH_TABLE_NAME,
     MLWH_MONGODB_ID,
@@ -78,6 +81,9 @@ from crawler.constants import (
     MLWH_CH4_TARGET,
     MLWH_CH4_RESULT,
     MLWH_CH4_CQ,
+    MLWH_FILTERED_POSITIVE,
+    MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_FILTERED_POSITIVE_TIMESTAMP,
     MLWH_CREATED_AT,
     MLWH_UPDATED_AT,
     POSITIVE_RESULT_VALUE,
@@ -980,6 +986,8 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
     with patch('crawler.db.create_mysql_connection', return_value = 'not none'):
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
+        centre_file.filtered_positive_identifier.current_version = MagicMock(return_value = 'v2.3')
+        centre_file.filtered_positive_identifier.is_positive = MagicMock(return_value = True)
 
         docs = [
             {
@@ -1015,6 +1023,9 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
                 FIELD_CH4_TARGET: 'MS2',
                 FIELD_CH4_RESULT: POSITIVE_RESULT_VALUE,
                 FIELD_CH4_CQ: Decimal128('26.25125612'),
+                FIELD_FILTERED_POSITIVE: True,
+                FIELD_FILTERED_POSITIVE_VERSION: 'v2.3',
+                FIELD_FILTERED_POSITIVE_TIMESTAMP: '2020-04-23 14:41:00 UTC',
             }
         ]
 
@@ -1051,6 +1062,9 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
         assert rows[0][MLWH_CH4_TARGET] is None
         assert rows[0][MLWH_CH4_RESULT] is None
         assert rows[0][MLWH_CH4_CQ] is None
+        assert rows[0][MLWH_FILTERED_POSITIVE] is None
+        assert rows[0][MLWH_FILTERED_POSITIVE_VERSION] is None
+        assert rows[0][MLWH_FILTERED_POSITIVE_TIMESTAMP] is None
         assert rows[0][MLWH_CREATED_AT] is not None
         assert rows[0][MLWH_UPDATED_AT] is not None
 
@@ -1076,6 +1090,9 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
         assert rows[1][MLWH_CH4_TARGET] == 'MS2'
         assert rows[1][MLWH_CH4_RESULT] == POSITIVE_RESULT_VALUE
         assert rows[1][MLWH_CH4_CQ] == Decimal('26.25125612')
+        assert rows[1][MLWH_FILTERED_POSITIVE] == 1
+        assert rows[1][MLWH_FILTERED_POSITIVE_VERSION] == 'v2.3'
+        assert rows[1][MLWH_FILTERED_POSITIVE_TIMESTAMP] == datetime(2020, 4, 23, 14, 41, 0)
         assert rows[1][MLWH_CREATED_AT] is not None
         assert rows[1][MLWH_UPDATED_AT] is not None
 
