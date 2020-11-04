@@ -41,6 +41,9 @@ from crawler.constants import (
     FIELD_CREATED_AT,
     FIELD_UPDATED_AT,
     FIELD_SOURCE,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
     MLWH_MONGODB_ID,
     MLWH_ROOT_SAMPLE_ID,
     MLWH_RNA_ID,
@@ -63,6 +66,9 @@ from crawler.constants import (
     MLWH_CH4_TARGET,
     MLWH_CH4_RESULT,
     MLWH_CH4_CQ,
+    MLWH_FILTERED_POSITIVE,
+    MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_FILTERED_POSITIVE_TIMESTAMP,
     MLWH_CREATED_AT,
     MLWH_UPDATED_AT,
     MYSQL_DATETIME_FORMAT,
@@ -167,6 +173,9 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
         MLWH_CH4_TARGET: doc.get(FIELD_CH4_TARGET, None),
         MLWH_CH4_RESULT: doc.get(FIELD_CH4_RESULT, None),
         MLWH_CH4_CQ: parse_decimal128(doc.get(FIELD_CH4_CQ, None)),
+        MLWH_FILTERED_POSITIVE: doc.get(FIELD_FILTERED_POSITIVE, None),
+        MLWH_FILTERED_POSITIVE_VERSION: doc.get(FIELD_FILTERED_POSITIVE_VERSION, None),
+        MLWH_FILTERED_POSITIVE_TIMESTAMP: parse_date_tested(doc.get(FIELD_FILTERED_POSITIVE_TIMESTAMP, None))
     }
 
 # Strip any leading zeros from the coordinate

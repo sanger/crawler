@@ -16,6 +16,9 @@ from crawler.constants import (
     FIELD_SOURCE,
     FIELD_CREATED_AT,
     FIELD_UPDATED_AT,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
     MLWH_MONGODB_ID,
     MLWH_ROOT_SAMPLE_ID,
     MLWH_RNA_ID,
@@ -28,6 +31,9 @@ from crawler.constants import (
     MLWH_LAB_ID,
     MLWH_CREATED_AT,
     MLWH_UPDATED_AT,
+    MLWH_FILTERED_POSITIVE,
+    MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_FILTERED_POSITIVE_TIMESTAMP,
     MYSQL_DATETIME_FORMAT,
 )
 from crawler.helpers import (
@@ -158,7 +164,10 @@ def test_map_lh_doc_to_sql_columns(config):
         FIELD_RESULT: 'Negative',
         FIELD_DATE_TESTED: '2020-04-23 14:40:08 UTC',
         FIELD_SOURCE: 'Test Centre',
-        FIELD_LAB_ID: 'TC'
+        FIELD_LAB_ID: 'TC',
+        FIELD_FILTERED_POSITIVE: True,
+        FIELD_FILTERED_POSITIVE_VERSION: 'v2.3',
+        FIELD_FILTERED_POSITIVE_TIMESTAMP: '2020-04-23 14:40:08 UTC'
     }
 
     result = map_lh_doc_to_sql_columns(doc_to_transform)
@@ -173,6 +182,9 @@ def test_map_lh_doc_to_sql_columns(config):
     assert result[MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 40, 8)
     assert result[MLWH_SOURCE] == 'Test Centre'
     assert result[MLWH_LAB_ID] == 'TC'
+    assert result[MLWH_FILTERED_POSITIVE] == True
+    assert result[MLWH_FILTERED_POSITIVE_VERSION] == 'v2.3'
+    assert result[MLWH_FILTERED_POSITIVE_TIMESTAMP] == datetime(2020, 4, 23, 14, 40, 8)
     assert result.get(MLWH_CREATED_AT) is not None
     assert result.get(MLWH_UPDATED_AT) is not None
 
