@@ -37,10 +37,14 @@ def migration_update_mlwh_with_legacy_samples():
     print("Running update_mlwh_with_legacy_samples migration")
     update_mlwh_with_legacy_samples.run(config, s_start_datetime=s_start_datetime, s_end_datetime=s_end_datetime)
 
+def migration_update_filtered_positive_results():
+    print('Running update_filtered_positive_results migration')
+
 def migration_by_name(migration_name):
     switcher = {
         'sample_timestamps': migration_sample_timestamps,
         'update_mlwh_with_legacy_samples': migration_update_mlwh_with_legacy_samples,
+        'update_filtered_positive_results': migration_update_filtered_positive_results,
     }
     # Get the function from switcher dictionary
     func = switcher.get(migration_name, lambda: print("Invalid migration name, aborting"))
