@@ -984,7 +984,8 @@ def test_set_state_for_file_when_in_success_folder(config):
 # tests for inserting docs into mlwh using rows with and without ct columns
 def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
     with patch('crawler.db.create_mysql_connection', return_value = 'not none'):
-        centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "some file")
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
 
         docs = [
             {
