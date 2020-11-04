@@ -1187,6 +1187,8 @@ def test_insert_plates_and_wells_from_docs_into_dart_none_connection(config):
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
         centre_file.insert_plates_and_wells_from_docs_into_dart([])
+
+        # logs error on failing to initialise the SQL server connection
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
         assert centre_file.logging_collection.aggregator_types["TYPE 24"].count_errors == 1
 
@@ -1196,6 +1198,8 @@ def test_insert_plates_and_wells_from_docs_into_dart_failed_cursor(config):
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
         centre_file.insert_plates_and_wells_from_docs_into_dart([])
+
+        # logs error on failing to initialise the SQL server cursor
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
         assert centre_file.logging_collection.aggregator_types["TYPE 23"].count_errors == 1
         mock_conn().close.assert_called_once()
@@ -1210,7 +1214,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_failed_cursor_execute(confi
                 FIELD_RNA_ID: 'TC-rna-00000029_H11',
                 FIELD_PLATE_BARCODE: 'TC-rna-00000029',
                 FIELD_COORDINATE: 'H11',
-                FIELD_RESULT: 'Negative',
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
             }
         ]
 
@@ -1218,6 +1222,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_failed_cursor_execute(confi
         centre_file = CentreFile("some file", centre)
         centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
+        # logs error and rolls back on exception calling the plate stored procedure
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
         assert centre_file.logging_collection.aggregator_types["TYPE 22"].count_errors == 1
         mock_conn().cursor().rollback.assert_called_once()
@@ -1233,7 +1238,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_none_well_index(config):
                 FIELD_RNA_ID: 'TC-rna-00000029_H11',
                 FIELD_PLATE_BARCODE: 'TC-rna-00000029',
                 FIELD_COORDINATE: 'H11',
-                FIELD_RESULT: 'Negative',
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
             }
         ]
 
@@ -1242,6 +1247,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_none_well_index(config):
         centre_file.calculate_dart_well_index = MagicMock(return_value = None)
         centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
+        # adds plate, but logs error on unable to determine well index
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
         assert centre_file.logging_collection.aggregator_types["TYPE 25"].count_errors == 1
         mock_conn().cursor().rollback.assert_not_called()
@@ -1258,7 +1264,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_plates(config):
                 FIELD_PLATE_BARCODE: 'TC-rna-00000029',
                 FIELD_COORDINATE: 'A01',
                 FIELD_LAB_ID: 'AP',
-                FIELD_RESULT: 'Negative',
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
                 'well_index': 1
             },
             {
@@ -1277,6 +1283,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_plates(config):
         centre_file = CentreFile("some file", centre)
         centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
+        # adds plates and wells as expected
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
         assert mock_conn().cursor().execute.call_count == 10
         for doc in docs_to_insert:
@@ -1302,7 +1309,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_plate_multiple_wells
                 FIELD_PLATE_BARCODE: plate_barcode,
                 FIELD_COORDINATE: 'A01',
                 FIELD_LAB_ID: 'AP',
-                FIELD_RESULT: 'Negative',
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
                 'well_index': 1
             },
             {
@@ -1321,6 +1328,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_plate_multiple_wells
         centre_file = CentreFile("some file", centre)
         centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
+        # adds plate and wells as expected
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
         assert mock_conn().cursor().execute.call_count == 9
         mock_conn().cursor().execute.assert_any_call('{CALL dbo.plDART_PlateCreate (?,?,?)}', (plate_barcode, 'BCFlat96', 96))
