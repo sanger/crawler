@@ -3,8 +3,6 @@ import logging.config
 import time
 from typing import List
 import pymongo
-import sys
-import traceback
 from crawler.constants import (
     COLLECTION_SAMPLES,
     FIELD_CREATED_AT,
@@ -20,6 +18,7 @@ from crawler.db import (
 from crawler.helpers import map_mongo_doc_to_sql_columns
 from datetime import datetime
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
+from migrations.helpers.shared_helper import print_exception
 
 def valid_datetime_string(s_datetime: str) -> bool:
     try:
@@ -30,14 +29,6 @@ def valid_datetime_string(s_datetime: str) -> bool:
     except Exception as e:
         print_exception()
         return False
-
-def print_exception() -> None:
-    print(f'An exception occurred, at {datetime.now()}')
-    e = sys.exc_info()
-    print(e[0]) # exception type
-    print(e[1]) # exception message
-    if e[2]: # traceback
-      traceback.print_tb(e[2], limit=10)
 
 def update_mlwh_with_legacy_samples(config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
     if not valid_datetime_string(s_start_datetime):
