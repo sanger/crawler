@@ -1,5 +1,6 @@
 from datetime import datetime
 from types import ModuleType
+from typing import List, Dict
 from migrations.helpers.shared_helper import print_exception
 from crawler.db import (
     create_dart_sql_server_conn,
@@ -24,6 +25,9 @@ def update_filtered_positives(config):
     # Update filtered-positive version etc. in mongo and MLWH
     # Re-upload well properties to DART - call insert_plates_and_wells_from_docs_into_dart?
 
+    mongo_updated = False
+    mlwh_updated = False
+    dart_updated = False
     try:
       # Get barcodes of pending plates in DART
       print("Selecting pending plates from DART")
@@ -42,16 +46,21 @@ def update_filtered_positives(config):
               print("Updating filtered positives")
               update_filtered_positives(FilteredPositiveIdentifier(), positive_pending_samples, datetime.now())
 
-              # update entries in mongo - throw if anything goes wrong
-              # update entries in mlwh - throw if anything goes wrong
-              # re-add to DART - throw if anything goes wrong
+              # update entries in mongo - throw if anything goes wrong, update flag if not
+              # update entries in mlwh - throw if anything goes wrong, update flag if not
+              # re-add to DART - throw if anything goes wrong, update flag if not
           else:
-              print("No positive samples in pending plates found in Mongo, nothing to update in any database")
+              print("No positive samples in pending plates found in Mongo, not updating any database")
       else:
-          print("No pending plates found in DART, nothing to update in any database")
+          print("No pending plates found in DART, not updating any database")
       
     except Exception as e:
-      print_exception()
+        print_exception()
+    finally:
+        print("---------- Processing status of filtered positive rule changes: ----------")
+        print(f"-- Mongo updated: {mongo_updated}")
+        print(f"-- MLWH updated: {mlwh_updated}")
+        print(f"-- DART updated: {dart_updated}")
 
 def pending_plate_barcodes_from_dart(config: ModuleType):
     """Fetch the barcodes of all plates from DART that in the 'pending' state
@@ -65,7 +74,7 @@ def pending_plate_barcodes_from_dart(config: ModuleType):
     sql_server_connection = create_dart_sql_server_conn(config, False)
     if  sql_server_connection is None:
         # to be caught by calling method
-        raise ValueError('Unable to establish SQL Server connection')
+        raise ValueError('Unable to establish DART SQL Server connection')
     
     plate_barcodes = []
     
@@ -90,6 +99,7 @@ def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[
         Arguments:
             config {ModuleType} -- application config specifying database details
             plate_barcodes {List[str]} -- barcodes of plates whose samples we are concerned with
+
         Returns:
             List[Dict[str, str]] -- List of positive samples contained within specified plates
     """
@@ -100,15 +110,15 @@ def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[
 
         # this should take everything from the cursor find into RAM memory (assuming you have enough memory)
         return list(
-            samples_collection.find(
+            samples_collection.find({
                 '$and': [
-                    { FIELD_RESULT: { '$eq': POSITIVE_RESULT_VALUE } }
+                    { FIELD_RESULT: { '$eq': POSITIVE_RESULT_VALUE } },
                     { FIELD_PLATE_BARCODE : { '$in': plate_barcodes } }
                 ]
-            )
+            })
         )
 
-def update_filtered_positives(filtered_positive_identifier: FilteredPositiveIdentifier, samples: List[Dict[str, str]], timestamp: Datetime) -> None:
+def update_filtered_positives(filtered_positive_identifier: FilteredPositiveIdentifier, samples: List[Dict[str, str]], timestamp: datetime) -> None:
     """Updates filtered positive fields on all passed-in samples
 
         Arguments:
