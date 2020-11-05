@@ -34,7 +34,7 @@ def update_filtered_positives(config):
     try:
       # Get barcodes of pending plates in DART
       print("Selecting pending plates from DART")
-      pending_plate_barcodes = pending_plate_barcodes_from_dart(cursor)
+      pending_plate_barcodes = pending_plate_barcodes_from_dart(config)
       num_pending_plates = len(pending_plate_barcodes)
       print(f"{len(pending_plate_barcodes)} pending plates found in DART")
 
@@ -47,7 +47,7 @@ def update_filtered_positives(config):
 
           if num_positive_pending_samples > 0:
               print("Updating filtered positives")
-              update_filtered_positives(FilteredPositiveIdentifier(), positive_pending_samples, datetime.now())
+              update_filtered_positive_fields(FilteredPositiveIdentifier(), positive_pending_samples, datetime.now())
 
               # update entries in mongo - throw if anything goes wrong, update flag if not
               # update entries in mlwh - throw if anything goes wrong, update flag if not
@@ -60,10 +60,7 @@ def update_filtered_positives(config):
     except Exception as e:
         print_exception()
     finally:
-        print("---------- Processing status of filtered positive rule changes: ----------")
-        print(f"-- Mongo updated: {mongo_updated}")
-        print(f"-- MLWH updated: {mlwh_updated}")
-        print(f"-- DART updated: {dart_updated}")
+        print_processing_status(mongo_updated, mlwh_updated, dart_updated)
 
 def pending_plate_barcodes_from_dart(config: ModuleType):
     """Fetch the barcodes of all plates from DART that in the 'pending' state
@@ -120,16 +117,29 @@ def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[
             })
         )
 
-def update_filtered_positives(filtered_positive_identifier: FilteredPositiveIdentifier, samples: List[Dict[str, str]], timestamp: datetime) -> None:
+def update_filtered_positive_fields(filtered_positive_identifier: FilteredPositiveIdentifier, samples: List[Dict[str, str]], timestamp: datetime) -> None:
     """Updates filtered positive fields on all passed-in samples
 
         Arguments:
             filtered_positive_identifier {FilteredPositiveIdentifier} -- the identifier through which to pass samples to determine whether they are filtered positive
             samples {List[Dict[str, str]]} -- the list of samples for which to re-determine filtered positive values
-            timestamp {Datetime} -- the current date/time
+            timestamp {datetime} -- the current date/time
     """
     # Expect all samples to be passed into here to have a positive result
     for sample in samples:
         sample[FIELD_FILTERED_POSITIVE] = filtered_positive_identifier.is_positive(sample)
         sample[FIELD_FILTERED_POSITIVE_VERSION] = self.filtered_positive_identifier.current_version()
         sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] = timestamp
+
+def print_processing_status(mongo_updated: bool, mlwh_updated: bool, dart_updated: bool) -> None:
+    """Prints the processing status of the update operation for each database, specifically whether entries were successfully updated
+
+        Arguments:
+            mongo_updated {bool} -- whether entries in the Mongo database were successfully updated
+            mlwh_updated {bool} -- whether entries in the MLWH database were successfully updated
+            datr_updated {bool} -- whether entries in the DART database were successfully updated
+    """
+    print("---------- Processing status of filtered positive rule changes: ----------")
+    print(f"-- Mongo updated: {mongo_updated}")
+    print(f"-- MLWH updated: {mlwh_updated}")
+    print(f"-- DART updated: {dart_updated}")
