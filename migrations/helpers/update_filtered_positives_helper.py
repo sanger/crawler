@@ -77,10 +77,10 @@ def pending_plate_barcodes_from_dart(config: ModuleType):
         raise ValueError('Unable to establish DART SQL Server connection')
     
     plate_barcodes = []
+    cursor = sql_server_connection.cursor()
     
     try:
         # TODO - implement correctly once stored procedure is in place
-        cursor = sql_server_connection.cursor()
         cursor.execute("{CALL dbo.plDART_PendingPlates}")
         plate_barcodes = cursor.commit()
     except Exception as e:
