@@ -4,6 +4,9 @@ from typing import List, Dict
 from migrations.helpers.shared_helper import print_exception
 from crawler.db import (
     create_dart_sql_server_conn,
+    create_mongo_client,
+    get_mongo_db,
+    get_mongo_collection,
 )
 from crawler.constants import (
     COLLECTION_SAMPLES,
@@ -109,12 +112,11 @@ def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
         # this should take everything from the cursor find into RAM memory (assuming you have enough memory)
+        # should we project to an object that has fewer fields?
         return list(
             samples_collection.find({
-                '$and': [
-                    { FIELD_RESULT: { '$eq': POSITIVE_RESULT_VALUE } },
-                    { FIELD_PLATE_BARCODE : { '$in': plate_barcodes } }
-                ]
+                FIELD_RESULT: { '$eq': POSITIVE_RESULT_VALUE },
+                FIELD_PLATE_BARCODE : { '$in': plate_barcodes }
             })
         )
 

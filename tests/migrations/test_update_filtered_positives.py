@@ -6,6 +6,12 @@ from migrations.helpers.update_filtered_positives_helper import (
     positive_result_samples_from_mongo,
     update_filtered_positives,
 )
+from crawler.constants import (
+    COLLECTION_SAMPLES,
+    FIELD_RESULT,
+    FIELD_PLATE_BARCODE,
+    POSITIVE_RESULT_VALUE,
+)
 
 # ----- test fixture helpers -----
 
@@ -18,6 +24,21 @@ def dart_conn():
 def print_exception():
     with patch('migrations.helpers.update_filtered_positives_helper.print_exception') as mock_print:
         yield mock_print
+
+@pytest.fixture
+def mongo_client():
+    with patch('migrations.helpers.update_filtered_positives_helper.create_mongo_client') as mock_client:
+        yield mock_client
+
+@pytest.fixture
+def mongo_db():
+    with patch('migrations.helpers.update_filtered_positives_helper.get_mongo_db') as mock_db:
+        yield mock_db
+
+@pytest.fixture
+def mongo_collection():
+    with patch('migrations.helpers.update_filtered_positives_helper.get_mongo_collection') as mock_collection:
+        yield mock_collection
 
 # ----- test pending_plate_barcodes_from_dart method -----
 
@@ -50,5 +71,45 @@ def test_pending_plate_barcodes_from_dart_returns_expected_plate_barcodes(config
     expected_plate_barcodes = ['ABC123', '123ABC', 'abcdef']
     dart_conn().cursor().commit = MagicMock(return_value = expected_plate_barcodes)
     result = pending_plate_barcodes_from_dart(config)
+
     dart_conn().cursor().execute.assert_called_once_with('{CALL dbo.plDART_PendingPlates}')
     assert result == expected_plate_barcodes
+
+# ----- test positive_result_samples_from_mongo method -----
+
+def test_positive_result_samples_from_mongo_throws_for_errors_creating_client(config, mongo_client):
+    mongo_client.side_effect = Exception('Boom!')
+    with pytest.raises(Exception):
+        positive_result_samples_from_mongo(config, [])
+
+def test_positive_result_samples_from_mongo_throws_for_error_creating_db(config, mongo_db):
+    mongo_db.side_effect = NotImplementedError('Boom!')
+    with pytest.raises(NotImplementedError):
+        positive_result_samples_from_mongo(config, [])
+
+def test_positive_result_samples_from_mongo_throws_for_error_getting_collection(config, mongo_collection):
+    mongo_collection.side_effect = ValueError('Boom!')
+    with pytest.raises(ValueError):
+        positive_result_samples_from_mongo(config, [])
+
+def test_positive_result_samples_from_mongo_throws_for_error_finding_samples(config, mongo_collection):
+    mongo_collection().find.side_effect = Exception('Boom!')
+    with pytest.raises(Exception):
+        positive_result_samples_from_mongo(config, [])
+
+def test_positive_result_samples_from_mongo_returns_expected_samples(config, mongo_db, mongo_collection):
+    plate_barcodes = ['ABC123', '123ABC', 'abcdef']
+    positive_result_samples_from_mongo(config, plate_barcodes)
+
+    # first check we make expected calls
+    mongo_collection.assert_called_once_with(mongo_db(), COLLECTION_SAMPLES)
+    mongo_collection().find.assert_called_once_with({
+        FIELD_RESULT: { '$eq': POSITIVE_RESULT_VALUE },
+        FIELD_PLATE_BARCODE: { '$in': plate_barcodes }
+    })
+
+    # then check expected results are returned
+    expected_samples = ['sample1', 'sample2']
+    mongo_collection().find.return_value = expected_samples
+    result = positive_result_samples_from_mongo(config, plate_barcodes)
+    assert result == expected_samples
