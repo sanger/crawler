@@ -13,6 +13,9 @@ from crawler.constants import (
     FIELD_RESULT,
     FIELD_PLATE_BARCODE,
     POSITIVE_RESULT_VALUE,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP
 )
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 
@@ -128,7 +131,7 @@ def update_filtered_positive_fields(filtered_positive_identifier: FilteredPositi
     # Expect all samples to be passed into here to have a positive result
     for sample in samples:
         sample[FIELD_FILTERED_POSITIVE] = filtered_positive_identifier.is_positive(sample)
-        sample[FIELD_FILTERED_POSITIVE_VERSION] = self.filtered_positive_identifier.current_version()
+        sample[FIELD_FILTERED_POSITIVE_VERSION] = filtered_positive_identifier.current_version()
         sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] = timestamp
 
 def print_processing_status(mongo_updated: bool, mlwh_updated: bool, dart_updated: bool) -> None:

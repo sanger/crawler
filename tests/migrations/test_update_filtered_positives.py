@@ -1,9 +1,11 @@
 from unittest.mock import patch, MagicMock
 import pytest
+from datetime import datetime
 
 from migrations.helpers.update_filtered_positives_helper import (
     pending_plate_barcodes_from_dart,
     positive_result_samples_from_mongo,
+    update_filtered_positive_fields,
     update_filtered_positives,
 )
 from crawler.constants import (
@@ -11,6 +13,9 @@ from crawler.constants import (
     FIELD_RESULT,
     FIELD_PLATE_BARCODE,
     POSITIVE_RESULT_VALUE,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP
 )
 
 # ----- test fixture helpers -----
@@ -44,6 +49,13 @@ def mongo_collection():
 def print_status():
     with patch('migrations.helpers.update_filtered_positives_helper.print_processing_status') as mock_print_status:
         yield mock_print_status
+
+@pytest.fixture
+def positive_identifier():
+    with patch('migrations.helpers.update_filtered_positives_helper.FilteredPositiveIdentifier') as mock_identifier:
+        mock_identifier.is_positive.return_value = True
+        mock_identifier.current_version.return_value = 'v2.3'
+        yield mock_identifier
 
 # ----- test pending_plate_barcodes_from_dart method -----
 
@@ -119,6 +131,19 @@ def test_positive_result_samples_from_mongo_returns_expected_samples(config, mon
     result = positive_result_samples_from_mongo(config, plate_barcodes)
     assert result == expected_samples
 
+# ----- test update_filtered_positive_fields method -----
+
+def test_update_filtered_positive_fields_assigns_expected_filtered_positive_fields(positive_identifier):
+    samples = [{}, {}]
+    timestamp = datetime.now()
+
+    update_filtered_positive_fields(positive_identifier, samples, timestamp)
+    for sample in samples:
+        assert sample[FIELD_FILTERED_POSITIVE] == True
+        assert sample[FIELD_FILTERED_POSITIVE_VERSION] == 'v2.3'
+        assert sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] == timestamp
+
+
 # ----- test update_filtered_positives method -----
 
 # TODO - add more tests as more of the method is implemented
@@ -152,5 +177,15 @@ def test_update_filtered_positives_aborts_with_no_positive_samples_fetched_from_
     mongo_collection().find.return_value = []
     update_filtered_positives(config)
 
+    print_status.assert_called_once_with(False, False, False)
+    # TODO - test no database update methods are called?
+
+def test_update_filtered_positives_catches_error_determining_filtered_positive_results(config, dart_conn, mongo_collection, positive_identifier, print_exception, print_status):
+    dart_conn().cursor().commit.return_value = ['ABC123']
+    mongo_collection().find.return_value = ['sample1']
+    positive_identifier.current_version.side_effect = NotImplementedError('Boom!')
+    update_filtered_positives(config)
+
+    print_exception.assert_called_once()
     print_status.assert_called_once_with(False, False, False)
     # TODO - test no database update methods are called?
