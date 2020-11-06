@@ -4,6 +4,7 @@ from typing import Dict, List, Any, Tuple, Set
 from pymongo.errors import BulkWriteError
 from pymongo.database import Database
 from bson.objectid import ObjectId # type: ignore
+import pyodbc
 
 from enum import Enum
 from csv import DictReader, DictWriter
@@ -570,19 +571,7 @@ class CentreFile:
                         cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, 'BCFlat96', 96))
                         # properties on plate: state?
                         for sample in samples:
-                            well_index = self.calculate_dart_well_index(sample)
-                            if well_index is not None:
-                                state = 'pickable' if sample.get(FIELD_FILTERED_POSITIVE, False) else ''
-                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', state, well_index))
-                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', sample[FIELD_ROOT_SAMPLE_ID], well_index))
-                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', sample[FIELD_RNA_ID], well_index))
-                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', sample[FIELD_LAB_ID], well_index))
-                            else:
-                                self.logging_collection.add_error(
-                                    "TYPE 25",
-                                    f"Unable to determine DART well index of sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode} in file {self.file_name}",
-                                ) 
-                                logger.critical(f"Critical error inserting well properties of sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode} in file {self.file_name}")
+                            self.add_dart_well_properties(cursor, sample, plate_barcode)
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(
@@ -609,6 +598,28 @@ class CentreFile:
                 f"DART database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
+
+    def add_dart_well_properties(self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str) -> None:
+        """Adds well properties to DART for the specified sample.
+
+            Arguments:
+                cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
+                sample {Dict[str, str]} -- The sample for which to add well properties.
+                plate_barcode {str} -- The barcode of the plate to which this sample belongs.
+        """
+        well_index = self.calculate_dart_well_index(sample)
+        if well_index is not None:
+            state = 'pickable' if sample.get(FIELD_FILTERED_POSITIVE, False) else ''
+            cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', state, well_index))
+            cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', sample[FIELD_ROOT_SAMPLE_ID], well_index))
+            cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', sample[FIELD_RNA_ID], well_index))
+            cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', sample[FIELD_LAB_ID], well_index))
+        else:
+            self.logging_collection.add_error(
+                "TYPE 25",
+                f"Unable to determine DART well index of sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode} in file {self.file_name}",
+            ) 
+            logger.critical(f"Critical error inserting well properties of sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode} in file {self.file_name}")
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.
