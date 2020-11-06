@@ -93,3 +93,6 @@ ALLOWED_CH_RESULT_VALUES = (POSITIVE_RESULT_VALUE, 'Negative', 'Inconclusive', '
 # range of allowed cq values (0 .. 100, set as strings for conversion to decimals in code)
 MIN_CQ_VALUE = Decimal('0.0')
 MAX_CQ_VALUE = Decimal('100.0')
+
+# DART constants
+DART_STATE_PENDING = 'pending'
