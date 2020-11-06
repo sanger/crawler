@@ -616,7 +616,7 @@ class CentreFile:
         # else if plate and state is pending, update wells
         # else: do not update wells
         # return state
-        cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, 'BCFlat96', 96))
+        cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, self.centre_config["biomek_labware_class"], 96))
         return DART_STATE_PENDING
 
     def add_dart_well_properties(self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str) -> None:

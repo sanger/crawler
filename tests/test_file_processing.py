@@ -1290,7 +1290,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_plates(config):
         for doc in docs_to_insert:
             plate_barcode = doc[FIELD_PLATE_BARCODE]
             well_index = doc['well_index']
-            mock_conn().cursor().execute.assert_any_call('{CALL dbo.plDART_PlateCreate (?,?,?)}', (plate_barcode, 'BCFlat96', 96))
+            mock_conn().cursor().execute.assert_any_call('{CALL dbo.plDART_PlateCreate (?,?,?)}', (plate_barcode, centre_file.centre_config["biomek_labware_class"], 96))
             mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', '', well_index))
             mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', doc[FIELD_ROOT_SAMPLE_ID], well_index))
             mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', doc[FIELD_RNA_ID], well_index))
@@ -1332,7 +1332,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_plate_multiple_wells
         # adds plate and wells as expected
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
         assert mock_conn().cursor().execute.call_count == 9
-        mock_conn().cursor().execute.assert_any_call('{CALL dbo.plDART_PlateCreate (?,?,?)}', (plate_barcode, 'BCFlat96', 96))
+        mock_conn().cursor().execute.assert_any_call('{CALL dbo.plDART_PlateCreate (?,?,?)}', (plate_barcode, centre_file.centre_config["biomek_labware_class"], 96))
         for doc in docs_to_insert:
             well_index = doc['well_index']
             mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', '', well_index))
