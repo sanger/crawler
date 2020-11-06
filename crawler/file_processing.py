@@ -49,6 +49,7 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
+    DART_STATE_PENDING,
 )
 from crawler.helpers import (
     current_time,
@@ -568,10 +569,10 @@ class CentreFile:
 
                 for plate_barcode, samples in groupby_transform(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]):
                     try:
-                        cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, 'BCFlat96', 96))
-                        # properties on plate: state?
-                        for sample in samples:
-                            self.add_dart_well_properties(cursor, sample, plate_barcode)
+                        plate_state = self.create_dart_plate_if_doesnt_exist(cursor, plate_barcode)
+                        if plate_state == DART_STATE_PENDING:
+                            for sample in samples:
+                                self.add_dart_well_properties(cursor, sample, plate_barcode)
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(
@@ -598,6 +599,25 @@ class CentreFile:
                 f"DART database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
+
+    def create_dart_plate_if_doesnt_exist(self, cursor, plate_barcode) -> str:
+        """Adds a plate to DART if it does not already exist. Returns the state of the plate.
+
+            Arguments:
+                cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
+                plate_barcode {str} -- The barcode of the plate to add.
+
+            Returns:
+                str -- The state of the plate in DART.
+        """
+        # TODO - implement as below
+        # get plate state property:
+        # if no plate: create plate, set property, update wells
+        # else if plate and state is pending, update wells
+        # else: do not update wells
+        # return state
+        cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, 'BCFlat96', 96))
+        return DART_STATE_PENDING
 
     def add_dart_well_properties(self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str) -> None:
         """Adds well properties to DART for the specified sample.
