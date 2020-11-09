@@ -1253,7 +1253,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_none_well_index(config):
 
         # adds plate, but logs error on unable to determine well index
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
-        assert centre_file.logging_collection.aggregator_types["TYPE 25"].count_errors == 1
+        assert centre_file.logging_collection.aggregator_types["TYPE 22"].count_errors == 1
         mock_conn().cursor().rollback.assert_not_called()
         mock_conn().cursor().commit.assert_called_once()
         mock_conn().close.assert_called_once()
