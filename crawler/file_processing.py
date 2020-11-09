@@ -49,13 +49,9 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    DART_GET_PLATE_PROPERTY_SQL,
-    DART_SET_PLATE_PROPERTY_SQL,
-    DART_STATE_PROPERTY_NAME,
     DART_STATE_PENDING,
     DART_STATE_NO_PLATE,
     DART_STATE_NO_PROP,
-    DART_SET_PROP_STATUS_SUCCESS,
 )
 from crawler.helpers import (
     current_time,
@@ -80,6 +76,8 @@ from crawler.db import (
     create_mysql_connection,
     run_mysql_executemany_query,
     create_dart_sql_server_conn,
+    get_dart_plate_state,
+    set_dart_plate_state,
 )
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from hashlib import md5
@@ -619,46 +617,16 @@ class CentreFile:
             Returns:
                 str -- The state of the plate in DART.
         """
-        state = self.get_dart_plate_state(cursor, plate_barcode)
+        state = get_dart_plate_state(cursor, plate_barcode)
         if state == DART_STATE_NO_PLATE:
             cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, self.centre_config["biomek_labware_class"], 96))
-            state = self.set_dart_plate_state(cursor, plate_barcode, DART_STATE_PENDING)
+            state = set_dart_plate_state(cursor, plate_barcode, DART_STATE_PENDING)
             if state == None:
                 raise DartStateError(f"Unable to set the state of a DART plate {plate_barcode} to pending")
         elif state == DART_STATE_NO_PROP:
             raise DartStateError(f"DART plate {plate_barcode} should have a state")
         
         return state
-
-    def get_dart_plate_state(self, cursor: pyodbc.Cursor, plate_barcode: str) -> str:
-        """Gets the state of a DART plate.
-
-            Arguments:
-                cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
-                plate_barcode {str} -- The barcode of the plate whose state to fetch.
-
-            Returns:
-                str -- The state of the plate in DART.
-        """
-        params = (plate_barcode, DART_STATE_PROPERTY_NAME)
-        cursor.execute(DART_GET_PLATE_PROPERTY_SQL, params)
-        return cursor.fetchval()
-
-    def set_dart_plate_state(self, cursor: pyodbc.Cursor, plate_barcode: str, state: str) -> str:
-        """Sets the state of a DART plate to pending.
-
-            Arguments:
-                cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
-                plate_barcode {str} -- The barcode of the plate whose state to set.
-                state {str} -- The state to set on the plate.
-
-            Returns:
-                bool -- The newly updated plate state; otherwise None if unsuccessful.
-        """
-        params = (plate_barcode, DART_STATE_PROPERTY_NAME, DART_STATE_PENDING)
-        cursor.execute(DART_SET_PLATE_PROPERTY_SQL, params)
-        response = cursor.fetchval()
-        return state if response == DART_SET_PROP_STATUS_SUCCESS else None
 
     def add_dart_well_properties(self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str) -> None:
         """Adds well properties to DART for the specified sample.
