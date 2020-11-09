@@ -1171,7 +1171,10 @@ def test_calculate_dart_well_index(config):
     assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with invalid coordinate"
 
     sample = { FIELD_COORDINATE: 'A00' }
-    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with coordinate column out of range"
+    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with coordinate column below accepted range"
+
+    sample = { FIELD_COORDINATE: 'B15' }
+    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with coordinate column above accepted range"
 
     sample = { FIELD_COORDINATE: 'Q01' }
     assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with coordinate row out of range"
