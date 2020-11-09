@@ -95,7 +95,6 @@ MIN_CQ_VALUE = Decimal('0.0')
 MAX_CQ_VALUE = Decimal('100.0')
 
 # DART constants
-DART_NO_PLATE_RESPONSE = 'NO PLATE'
 DART_GET_PLATE_PROPERTY_SQL = """\
 SET NOCOUNT ON
 DECLARE @output_value nvarchar(256)
