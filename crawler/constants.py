@@ -95,4 +95,21 @@ MIN_CQ_VALUE = Decimal('0.0')
 MAX_CQ_VALUE = Decimal('100.0')
 
 # DART constants
+DART_NO_PLATE_RESPONSE = 'NO PLATE'
+DART_GET_PLATE_PROPERTY_SQL = """\
+SET NOCOUNT ON
+DECLARE @output_value nvarchar(256)
+EXECUTE [dbo].[plDART_PlatePropGet] @plate_barcode = ?, @prop_name = ?, @value = @output_value OUTPUT
+SELECT @output_value
+"""
+DART_SET_PLATE_PROPERTY_SQL = """\
+SET NOCOUNT ON
+DECLARE @return_code int
+EXECUTE @return_code = [dbo].[plDART_PlatePropSet] @plate_barcode = ?, @prop_name = ?, @prop_value = ?
+SELECT @return_code
+"""
+DART_STATE_PROPERTY_NAME = 'state'
 DART_STATE_PENDING = 'pending'
+DART_STATE_NO_PLATE = 'NO PLATE'
+DART_STATE_NO_PROP = 'NO PROP'
+DART_SET_PROP_STATUS_SUCCESS = 0
