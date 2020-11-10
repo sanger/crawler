@@ -52,6 +52,10 @@ def mock_positive_identifier():
         mock_identifier.current_version.return_value = 'v2.3'
         yield mock_identifier
 
+def assert_no_database_updates(mongo_collection):
+    mongo_collection().update_many.assert_not_called()
+    # TODO - test other dbs aren't called
+
 # ----- test pending_plate_barcodes_from_dart method -----
 
 def test_pending_plate_barcodes_from_dart_throws_for_error_generating_connection(config, mock_dart_conn):
@@ -121,11 +125,12 @@ def test_positive_result_samples_from_mongo_returns_expected_samples(config, tes
 def test_update_filtered_positive_fields_assigns_expected_filtered_positive_fields(mock_positive_identifier):
     samples = [{}, {}]
     timestamp = datetime.now()
+    version = 'v2.3'
 
-    update_filtered_positive_fields(mock_positive_identifier, samples, timestamp)
+    update_filtered_positive_fields(mock_positive_identifier, samples, version, timestamp)
     for sample in samples:
         assert sample[FIELD_FILTERED_POSITIVE] == True
-        assert sample[FIELD_FILTERED_POSITIVE_VERSION] == 'v2.3'
+        assert sample[FIELD_FILTERED_POSITIVE_VERSION] == version
         assert sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] == timestamp
 
 
@@ -133,42 +138,43 @@ def test_update_filtered_positive_fields_assigns_expected_filtered_positive_fiel
 
 # TODO - add more tests as more of the method is implemented
 
-def test_update_filtered_positives_catches_error_fetching_from_dart(config, mock_dart_conn, mock_print_exception, mock_print_status):
+def test_update_filtered_positives_catches_error_fetching_from_dart(config, mock_dart_conn, mock_mongo_collection, mock_print_exception, mock_print_status):
     mock_dart_conn.side_effect = ValueError('Boom!')
     update_filtered_positives(config)
 
     mock_print_exception.assert_called_once()
-    mock_print_status.assert_called_once_with(False, False, False)
-    # TODO - test no database update methods are called?
+    mock_print_status.assert_called_once_with(0, 0, False, False, False)
+    assert_no_database_updates(mock_mongo_collection)
 
-def test_update_filtered_positives_aborts_with_no_plates_fetched_from_dart(config, mock_dart_conn, mock_print_status):
+def test_update_filtered_positives_aborts_with_no_plates_fetched_from_dart(config, mock_dart_conn, mock_mongo_collection, mock_print_status):
     mock_dart_conn().cursor().commit.return_value = []
     update_filtered_positives(config)
 
-    mock_print_status.assert_called_once_with(False, False, False)
-    # TODO - test no database update methods are called?
+    mock_print_status.assert_called_once_with(0, 0, False, False, False)
+    assert_no_database_updates(mock_mongo_collection)
 
-def test_update_filtered_positives_catches_error_fetching_from_mongo(config, mock_dart_conn, mock_mongo_client, mock_print_exception, mock_print_status):
+def test_update_filtered_positives_catches_error_fetching_from_mongo(config, mock_dart_conn, mock_mongo_client, mock_mongo_collection, mock_print_exception, mock_print_status):
     mock_dart_conn().cursor().commit.return_value = ['ABC123']
     mock_mongo_client.side_effect = NotImplementedError('Boom!')
     update_filtered_positives(config)
 
     mock_print_exception.assert_called_once()
-    mock_print_status.assert_called_once_with(False, False, False)
-    # TODO - test no database update methods are called?
+    mock_print_status.assert_called_once_with(1, 0, False, False, False)
+    assert_no_database_updates(mock_mongo_collection)
 
-def test_update_filtered_positives_aborts_with_no_positive_samples_fetched_from_mongo(config, mock_dart_conn, testing_samples, mock_print_status):
+def test_update_filtered_positives_aborts_with_no_positive_samples_fetched_from_mongo(config, mock_dart_conn, mock_mongo_collection, testing_samples, mock_print_status):
     mock_dart_conn().cursor().commit.return_value = ['barcode with no matching sample']
     update_filtered_positives(config)
 
-    mock_print_status.assert_called_once_with(False, False, False)
-    # TODO - test no database update methods are called?
+    mock_print_status.assert_called_once_with(1, 0, False, False, False)
+    assert_no_database_updates(mock_mongo_collection)
 
-def test_update_filtered_positives_catches_error_determining_filtered_positive_results(config, mock_dart_conn, testing_samples, mock_positive_identifier, mock_print_exception, mock_print_status):
+def test_update_filtered_positives_catches_error_determining_filtered_positive_results(config, mock_dart_conn, mock_mongo_collection, mock_positive_identifier, mock_print_exception, mock_print_status):
     mock_dart_conn().cursor().commit.return_value = ['123']
-    mock_positive_identifier().current_version.side_effect = NotImplementedError('Boom!')
+    mock_mongo_collection().find.return_value = [{ FIELD_PLATE_BARCODE: '123' }]
+    mock_positive_identifier().is_positive.side_effect = NotImplementedError('Boom!')
     update_filtered_positives(config)
 
     mock_print_exception.assert_called_once()
-    mock_print_status.assert_called_once_with(False, False, False)
-    # TODO - test no database update methods are called?
+    mock_print_status.assert_called_once_with(1, 1, False, False, False)
+    assert_no_database_updates(mock_mongo_collection)
