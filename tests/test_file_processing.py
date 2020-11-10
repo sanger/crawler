@@ -1283,7 +1283,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_plate_failure_setting_plate
         centre_file = CentreFile("some file", centre)
         centre_file.calculate_dart_well_index = MagicMock(return_value = None)
         with patch('crawler.file_processing.get_dart_plate_state', return_value = DART_STATE_NO_PLATE):
-            with patch('crawler.file_processing.set_dart_plate_state', side_effect = Exception('Boom!')):
+            with patch('crawler.file_processing.set_dart_plate_state_pending', side_effect = Exception('Boom!')):
                 centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
                 # logs error and rolls back on exception setting state of new plate
@@ -1310,7 +1310,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_plate_none_setting_plate_st
         centre_file = CentreFile("some file", centre)
         centre_file.calculate_dart_well_index = MagicMock(return_value = None)
         with patch('crawler.file_processing.get_dart_plate_state', return_value = DART_STATE_NO_PLATE):
-            with patch('crawler.file_processing.set_dart_plate_state', return_value = None):
+            with patch('crawler.file_processing.set_dart_plate_state_pending', return_value = None):
                 centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
                 # logs error and rolls back on when unable to set new plate state
@@ -1449,7 +1449,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
         with patch('crawler.file_processing.get_dart_plate_state', return_value = DART_STATE_NO_PLATE):
-            with patch('crawler.file_processing.set_dart_plate_state', return_value = DART_STATE_PENDING):
+            with patch('crawler.file_processing.set_dart_plate_state_pending', return_value = DART_STATE_PENDING):
                 centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
                 # adds plates and wells as expected
@@ -1496,7 +1496,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
         with patch('crawler.file_processing.get_dart_plate_state', return_value = DART_STATE_NO_PLATE):
-            with patch('crawler.file_processing.set_dart_plate_state', return_value = DART_STATE_PENDING):
+            with patch('crawler.file_processing.set_dart_plate_state_pending', return_value = DART_STATE_PENDING):
                 centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
                 # adds plate and wells as expected

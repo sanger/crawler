@@ -77,7 +77,7 @@ from crawler.db import (
     run_mysql_executemany_query,
     create_dart_sql_server_conn,
     get_dart_plate_state,
-    set_dart_plate_state,
+    set_dart_plate_state_pending,
 )
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from hashlib import md5
@@ -618,9 +618,12 @@ class CentreFile:
         state = get_dart_plate_state(cursor, plate_barcode)
         if state == DART_STATE_NO_PLATE:
             cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, self.centre_config["biomek_labware_class"], 96))
-            state = set_dart_plate_state(cursor, plate_barcode, DART_STATE_PENDING)
-            if state == None:
-                raise DartStateError(f"Unable to set the state of a DART plate {plate_barcode} to pending")
+            if set_dart_plate_state_pending(cursor, plate_barcode):
+                state = DART_STATE_PENDING
+            else:
+                raise DartStateError(
+                    f"Unable to set the state of a DART plate {plate_barcode} to pending"
+                )
         elif state == DART_STATE_NO_PROP:
             raise DartStateError(f"DART plate {plate_barcode} should have a state")
         
