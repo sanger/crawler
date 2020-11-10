@@ -16,13 +16,13 @@ black = "*"
 
 [packages]
 pymongo = "~=3.10"
-mysql-connector-python = "*"
-pyodbc = "*"
+mysql-connector-python = "~=8.0"
+pyodbc = "~=4.0"
 colorlog = "~=4.1"
 schedule = "~=0.6"
 pysftp = "~=0.2"
 slackclient = "~=2.5"
-pytest = "*"
+more-itertools = "~=8.6"
 
 [requires]
 python_version = "3.8"
