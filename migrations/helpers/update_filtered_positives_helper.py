@@ -1,6 +1,6 @@
 from datetime import datetime
 from types import ModuleType
-from typing import List, Dict
+from typing import List, Dict, Any
 from migrations.helpers.shared_helper import print_exception
 from crawler.db import (
     create_dart_sql_server_conn,
@@ -120,7 +120,7 @@ def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[
             })
         )
 
-def update_filtered_positive_fields(filtered_positive_identifier: FilteredPositiveIdentifier, samples: List[Dict[str, str]], timestamp: datetime) -> None:
+def update_filtered_positive_fields(filtered_positive_identifier: FilteredPositiveIdentifier, samples: List[Dict[str, Any]], timestamp: datetime) -> None:
     """Updates filtered positive fields on all passed-in samples
 
         Arguments:
