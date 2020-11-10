@@ -1,10 +1,10 @@
 import os
 import csv
-from typing import Dict, List, Any, Tuple, Set
+from typing import Dict, List, Any, Tuple, Set, Optional
 from pymongo.errors import BulkWriteError
 from pymongo.database import Database
 from bson.objectid import ObjectId # type: ignore
-import pyodbc
+import pyodbc  # type: ignore
 
 from enum import Enum
 from csv import DictReader, DictWriter
@@ -936,7 +936,7 @@ class CentreFile:
 
         # filtered-positive calculations
         if modified_row[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
-            modified_row[FIELD_FILTERED_POSITIVE] = self.filtered_positive_identifier.is_positive(modified_row)
+            modified_row[FIELD_FILTERED_POSITIVE] = str(self.filtered_positive_identifier.is_positive(modified_row))
             modified_row[FIELD_FILTERED_POSITIVE_VERSION] = self.filtered_positive_identifier.current_version()
             modified_row[FIELD_FILTERED_POSITIVE_TIMESTAMP] = import_timestamp
 
@@ -1248,7 +1248,7 @@ class CentreFile:
 
         return datetime.strptime(file_timestamp, "%y%m%d_%H%M")
 
-    def calculate_dart_well_index(self, sample: Dict[str, str]) -> int:
+    def calculate_dart_well_index(self, sample: Dict[str, str]) -> Optional[int]:
         """Determines a well index from a sample/document to insert. Otherwise returns None.
 
         Returns:

@@ -18,7 +18,7 @@ from mysql.connector import Error # type: ignore
 from crawler.sql_queries import (SQL_MLWH_MULTIPLE_INSERT, SQL_TEST_MLWH_CREATE)
 from crawler.helpers import get_config
 
-import pyodbc
+import pyodbc  # type: ignore
 from crawler.constants import (
     DART_STATE_PENDING,
     DART_STATE_PROPERTY_NAME,
@@ -322,19 +322,18 @@ def get_dart_plate_state(cursor: pyodbc.Cursor, plate_barcode: str) -> str:
     cursor.execute(DART_GET_PLATE_PROPERTY_SQL, params)
     return cursor.fetchval()
 
-def set_dart_plate_state(cursor: pyodbc.Cursor, plate_barcode: str, state: str) -> str:
+def set_dart_plate_state_pending(cursor: pyodbc.Cursor, plate_barcode: str) -> str:
     """Sets the state of a DART plate to pending.
 
         Arguments:
             cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
             plate_barcode {str} -- The barcode of the plate whose state to set.
-            state {str} -- The state to set on the plate.
 
         Returns:
-            bool -- The newly updated plate state; otherwise None if unsuccessful.
+            bool -- Return True if DART was updated successfully, else False.
     """
     params = (plate_barcode, DART_STATE_PROPERTY_NAME, DART_STATE_PENDING)
     cursor.execute(DART_SET_PLATE_PROPERTY_SQL, params)
     response = cursor.fetchval()
-    return state if response == DART_SET_PROP_STATUS_SUCCESS else None
+    return response == DART_SET_PROP_STATUS_SUCCESS
     
