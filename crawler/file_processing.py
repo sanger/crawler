@@ -4,6 +4,7 @@ from typing import Dict, List, Any, Tuple, Set
 from pymongo.errors import BulkWriteError
 from pymongo.database import Database
 from bson.objectid import ObjectId # type: ignore
+import pyodbc
 
 from enum import Enum
 from csv import DictReader, DictWriter
@@ -48,6 +49,9 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
+    DART_STATE_PENDING,
+    DART_STATE_NO_PLATE,
+    DART_STATE_NO_PROP,
 )
 from crawler.helpers import (
     current_time,
@@ -60,7 +64,10 @@ from crawler.constants import (
     COLLECTION_IMPORTS,
     COLLECTION_CENTRES,
 )
-from crawler.exceptions import CentreFileError
+from crawler.exceptions import (
+    CentreFileError,
+    DartStateError,
+)
 from crawler.db import (
     get_mongo_collection,
     get_mongo_db,
@@ -69,6 +76,8 @@ from crawler.db import (
     create_mysql_connection,
     run_mysql_executemany_query,
     create_dart_sql_server_conn,
+    get_dart_plate_state,
+    set_dart_plate_state,
 )
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from hashlib import md5
@@ -377,8 +386,6 @@ class CentreFile:
             # filter out docs which failed to insert into mongo - we don't want to create mlwh records for these
             docs_to_insert_mlwh = list(filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert))
 
-            # TODO: generate COG UK Ids for true positves in the file (will need to be inserted into MLWH)
-
             self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
             docs_to_insert_dart = list(filter(lambda x: x[FIELD_RESULT] == POSITIVE_RESULT_VALUE, docs_to_insert_mlwh))
@@ -567,22 +574,10 @@ class CentreFile:
 
                 for plate_barcode, samples in groupby_transform(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]):
                     try:
-                        cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, 'BCFlat96', 96))
-                        # properties on plate: state?
-                        for sample in samples:
-                            well_index = self.calculate_dart_well_index(sample)
-                            if well_index is not None:
-                                state = 'pickable' if sample.get(FIELD_FILTERED_POSITIVE, False) else ''
-                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', state, well_index))
-                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', sample[FIELD_ROOT_SAMPLE_ID], well_index))
-                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', sample[FIELD_RNA_ID], well_index))
-                                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', sample[FIELD_LAB_ID], well_index))
-                            else:
-                                self.logging_collection.add_error(
-                                    "TYPE 25",
-                                    f"Unable to determine DART well index of sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode} in file {self.file_name}",
-                                ) 
-                                logger.critical(f"Critical error inserting well properties of sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode} in file {self.file_name}")
+                        plate_state = self.create_dart_plate_if_doesnt_exist(cursor, plate_barcode)
+                        if plate_state == DART_STATE_PENDING:
+                            for sample in samples:
+                                self.add_dart_well_properties(cursor, sample, plate_barcode)
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(
@@ -609,6 +604,45 @@ class CentreFile:
                 f"DART database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
+
+    def create_dart_plate_if_doesnt_exist(self, cursor: pyodbc.Cursor, plate_barcode: str) -> str:
+        """Adds a plate to DART if it does not already exist. Returns the state of the plate.
+
+            Arguments:
+                cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
+                plate_barcode {str} -- The barcode of the plate to add.
+
+            Returns:
+                str -- The state of the plate in DART.
+        """
+        state = get_dart_plate_state(cursor, plate_barcode)
+        if state == DART_STATE_NO_PLATE:
+            cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, self.centre_config["biomek_labware_class"], 96))
+            state = set_dart_plate_state(cursor, plate_barcode, DART_STATE_PENDING)
+            if state == None:
+                raise DartStateError(f"Unable to set the state of a DART plate {plate_barcode} to pending")
+        elif state == DART_STATE_NO_PROP:
+            raise DartStateError(f"DART plate {plate_barcode} should have a state")
+        
+        return state
+
+    def add_dart_well_properties(self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str) -> None:
+        """Adds well properties to DART for the specified sample.
+
+            Arguments:
+                cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
+                sample {Dict[str, str]} -- The sample for which to add well properties.
+                plate_barcode {str} -- The barcode of the plate to which this sample belongs.
+        """
+        well_index = self.calculate_dart_well_index(sample)
+        if well_index is not None:
+            state = 'pickable' if sample.get(FIELD_FILTERED_POSITIVE, False) else ''
+            cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', state, well_index))
+            cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', sample[FIELD_ROOT_SAMPLE_ID], well_index))
+            cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', sample[FIELD_RNA_ID], well_index))
+            cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', sample[FIELD_LAB_ID], well_index))
+        else:
+            raise ValueError(f'Unable to determine DART well index for sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}')
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.

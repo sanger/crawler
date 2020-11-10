@@ -7,6 +7,7 @@ from crawler.helpers import current_time
 from unittest.mock import (
   patch,
   MagicMock,
+  call,
 )
 from csv import DictReader
 import pytest
@@ -87,6 +88,9 @@ from crawler.constants import (
     MLWH_CREATED_AT,
     MLWH_UPDATED_AT,
     POSITIVE_RESULT_VALUE,
+    DART_STATE_PENDING,
+    DART_STATE_NO_PLATE,
+    DART_STATE_NO_PROP,
 )
 from crawler.db import get_mongo_collection
 
@@ -1171,7 +1175,10 @@ def test_calculate_dart_well_index(config):
     assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with invalid coordinate"
 
     sample = { FIELD_COORDINATE: 'A00' }
-    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with coordinate column out of range"
+    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with coordinate column below accepted range"
+
+    sample = { FIELD_COORDINATE: 'B15' }
+    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with coordinate column above accepted range"
 
     sample = { FIELD_COORDINATE: 'Q01' }
     assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with coordinate row out of range"
@@ -1181,6 +1188,9 @@ def test_calculate_dart_well_index(config):
 
     sample = { FIELD_COORDINATE: 'F03' }
     assert centre_file.calculate_dart_well_index(sample) == 63, "Expected well index of 63"
+
+    sample = { FIELD_COORDINATE: 'H11' }
+    assert centre_file.calculate_dart_well_index(sample) == 95, "Expected well index of 95"
 
 # tests for inserting docs into DART
 def test_insert_plates_and_wells_from_docs_into_dart_none_connection(config):
@@ -1223,12 +1233,167 @@ def test_insert_plates_and_wells_from_docs_into_dart_failed_cursor_execute(confi
         centre_file = CentreFile("some file", centre)
         centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
-        # logs error and rolls back on exception calling the plate stored procedure
+        # logs error and rolls back on exception calling a stored procedure
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
         assert centre_file.logging_collection.aggregator_types["TYPE 22"].count_errors == 1
         mock_conn().cursor().rollback.assert_called_once()
         mock_conn().cursor().commit.assert_not_called()
         mock_conn().close.assert_called_once()
+
+def test_insert_plates_and_wells_from_docs_into_dart_plate_failure_adding_new_plate(config):
+    with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
+        docs_to_insert = [
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+                FIELD_RNA_ID: 'TC-rna-00000029_H11',
+                FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_COORDINATE: 'H11',
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            }
+        ]
+
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+        centre_file.calculate_dart_well_index = MagicMock(return_value = None)
+        with patch('crawler.file_processing.get_dart_plate_state', side_effect = Exception('Boom!')):
+            centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+
+            # logs error and rolls back on exception adding a new plate
+            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+            assert centre_file.logging_collection.aggregator_types["TYPE 22"].count_errors == 1
+            mock_conn().cursor().rollback.assert_called_once()
+            mock_conn().cursor().commit.assert_not_called()
+            mock_conn().close.assert_called_once()
+
+def test_insert_plates_and_wells_from_docs_into_dart_plate_failure_setting_plate_state(config):
+    with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
+        docs_to_insert = [
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+                FIELD_RNA_ID: 'TC-rna-00000029_H11',
+                FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_COORDINATE: 'H11',
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            }
+        ]
+
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+        centre_file.calculate_dart_well_index = MagicMock(return_value = None)
+        with patch('crawler.file_processing.get_dart_plate_state', return_value = DART_STATE_NO_PLATE):
+            with patch('crawler.file_processing.set_dart_plate_state', side_effect = Exception('Boom!')):
+                centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+
+                # logs error and rolls back on exception setting state of new plate
+                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+                assert centre_file.logging_collection.aggregator_types["TYPE 22"].count_errors == 1
+                mock_conn().cursor().rollback.assert_called_once()
+                mock_conn().cursor().commit.assert_not_called()
+                mock_conn().close.assert_called_once()
+
+def test_insert_plates_and_wells_from_docs_into_dart_plate_none_setting_plate_state(config):
+    with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
+        docs_to_insert = [
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+                FIELD_RNA_ID: 'TC-rna-00000029_H11',
+                FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_COORDINATE: 'H11',
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            }
+        ]
+
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+        centre_file.calculate_dart_well_index = MagicMock(return_value = None)
+        with patch('crawler.file_processing.get_dart_plate_state', return_value = DART_STATE_NO_PLATE):
+            with patch('crawler.file_processing.set_dart_plate_state', return_value = None):
+                centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+
+                # logs error and rolls back on when unable to set new plate state
+                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+                assert centre_file.logging_collection.aggregator_types["TYPE 22"].count_errors == 1
+                mock_conn().cursor().rollback.assert_called_once()
+                mock_conn().cursor().commit.assert_not_called()
+                mock_conn().close.assert_called_once()
+
+def test_insert_plates_and_wells_from_docs_into_dart_existing_plate_failure_without_state_property(config):
+    with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
+        docs_to_insert = [
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+                FIELD_RNA_ID: 'TC-rna-00000029_H11',
+                FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_COORDINATE: 'H11',
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            }
+        ]
+
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+        centre_file.calculate_dart_well_index = MagicMock(return_value = None)
+        with patch('crawler.file_processing.get_dart_plate_state', return_value = DART_STATE_NO_PROP):
+            centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+
+            # logs error and rolls back on existing plate without state property
+            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+            assert centre_file.logging_collection.aggregator_types["TYPE 22"].count_errors == 1
+            mock_conn().cursor().rollback.assert_called_once()
+            mock_conn().cursor().commit.assert_not_called()
+            mock_conn().close.assert_called_once()
+
+def test_insert_plates_and_wells_from_docs_into_dart_existing_non_pending_plate_does_not_update_wells(config):
+    with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
+        docs_to_insert = [
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+                FIELD_RNA_ID: 'TC-rna-00000029_H11',
+                FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_COORDINATE: 'H11',
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            }
+        ]
+
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+        centre_file.calculate_dart_well_index = MagicMock(return_value = None)
+        with patch('crawler.file_processing.get_dart_plate_state', return_value = 'not pending'):
+            centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+
+            # does not call any stored procedure
+            assert centre_file.logging_collection.aggregator_types["TYPE 22"].count_errors == 0
+            mock_conn().cursor().execute.assert_not_called()
+            mock_conn().close.assert_called_once()
+
+def test_insert_plates_and_wells_from_docs_into_dart_does_not_create_pending_plate(config):
+    with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
+        plate_barcode = 'TC-rna-00000029'
+        docs_to_insert = [
+            {
+                '_id': ObjectId('5f562d9931d9959b92544728'),
+                FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+                FIELD_RNA_ID: f'{plate_barcode}_H11',
+                FIELD_PLATE_BARCODE: plate_barcode,
+                FIELD_COORDINATE: 'H11',
+                FIELD_LAB_ID: 'AP',
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            }
+        ]
+
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+        with patch('crawler.file_processing.get_dart_plate_state', return_value = DART_STATE_PENDING):
+            centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+
+            # does not call to create a plate
+            assert centre_file.logging_collection.aggregator_types["TYPE 22"].count_errors == 0
+            assert call('{CALL dbo.plDART_PlateCreate (?,?,?)}', (plate_barcode, centre_file.centre_config["biomek_labware_class"], 96)) not in mock_conn().cursor().execute.call_args_list
+            mock_conn().close.assert_called_once()
 
 def test_insert_plates_and_wells_from_docs_into_dart_none_well_index(config):
     with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
@@ -1246,16 +1411,17 @@ def test_insert_plates_and_wells_from_docs_into_dart_none_well_index(config):
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
         centre_file.calculate_dart_well_index = MagicMock(return_value = None)
-        centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+        with patch('crawler.file_processing.get_dart_plate_state', return_value = DART_STATE_PENDING):
+            centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
-        # adds plate, but logs error on unable to determine well index
-        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
-        assert centre_file.logging_collection.aggregator_types["TYPE 25"].count_errors == 1
-        mock_conn().cursor().rollback.assert_not_called()
-        mock_conn().cursor().commit.assert_called_once()
-        mock_conn().close.assert_called_once()
+            # logs error and rolls back on exception determining well index
+            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+            assert centre_file.logging_collection.aggregator_types["TYPE 22"].count_errors == 1
+            mock_conn().cursor().rollback.assert_called_once()
+            mock_conn().cursor().commit.assert_not_called()
+            mock_conn().close.assert_called_once()
 
-def test_insert_plates_and_wells_from_docs_into_dart_multiple_plates(config):
+def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config):
     with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
         docs_to_insert = [
             {
@@ -1282,24 +1448,26 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_plates(config):
 
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
-        centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+        with patch('crawler.file_processing.get_dart_plate_state', return_value = DART_STATE_NO_PLATE):
+            with patch('crawler.file_processing.set_dart_plate_state', return_value = DART_STATE_PENDING):
+                centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
-        # adds plates and wells as expected
-        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
-        assert mock_conn().cursor().execute.call_count == 10
-        for doc in docs_to_insert:
-            plate_barcode = doc[FIELD_PLATE_BARCODE]
-            well_index = doc['well_index']
-            mock_conn().cursor().execute.assert_any_call('{CALL dbo.plDART_PlateCreate (?,?,?)}', (plate_barcode, 'BCFlat96', 96))
-            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', '', well_index))
-            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', doc[FIELD_ROOT_SAMPLE_ID], well_index))
-            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', doc[FIELD_RNA_ID], well_index))
-            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', doc[FIELD_LAB_ID], well_index))
-        mock_conn().cursor().rollback.assert_not_called()
-        assert mock_conn().cursor().commit.call_count == 2
-        mock_conn().close.assert_called_once()
+                # adds plates and wells as expected
+                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+                assert mock_conn().cursor().execute.call_count == 10
+                for doc in docs_to_insert:
+                    plate_barcode = doc[FIELD_PLATE_BARCODE]
+                    well_index = doc['well_index']
+                    mock_conn().cursor().execute.assert_any_call('{CALL dbo.plDART_PlateCreate (?,?,?)}', (plate_barcode, centre_file.centre_config["biomek_labware_class"], 96))
+                    mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', '', well_index))
+                    mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', doc[FIELD_ROOT_SAMPLE_ID], well_index))
+                    mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', doc[FIELD_RNA_ID], well_index))
+                    mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', doc[FIELD_LAB_ID], well_index))
+                mock_conn().cursor().rollback.assert_not_called()
+                assert mock_conn().cursor().commit.call_count == 2
+                mock_conn().close.assert_called_once()
 
-def test_insert_plates_and_wells_from_docs_into_dart_single_plate_multiple_wells(config):
+def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_wells(config):
     with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
         plate_barcode = 'TC-rna-00000029'
         docs_to_insert = [
@@ -1327,23 +1495,25 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_plate_multiple_wells
 
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
-        centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+        with patch('crawler.file_processing.get_dart_plate_state', return_value = DART_STATE_NO_PLATE):
+            with patch('crawler.file_processing.set_dart_plate_state', return_value = DART_STATE_PENDING):
+                centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
-        # adds plate and wells as expected
-        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
-        assert mock_conn().cursor().execute.call_count == 9
-        mock_conn().cursor().execute.assert_any_call('{CALL dbo.plDART_PlateCreate (?,?,?)}', (plate_barcode, 'BCFlat96', 96))
-        for doc in docs_to_insert:
-            well_index = doc['well_index']
-            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', '', well_index))
-            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', doc[FIELD_ROOT_SAMPLE_ID], well_index))
-            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', doc[FIELD_RNA_ID], well_index))
-            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', doc[FIELD_LAB_ID], well_index))
-        mock_conn().cursor().rollback.assert_not_called()
-        assert mock_conn().cursor().commit.call_count == 1
-        mock_conn().close.assert_called_once()
+                # adds plate and wells as expected
+                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+                assert mock_conn().cursor().execute.call_count == 9
+                mock_conn().cursor().execute.assert_any_call('{CALL dbo.plDART_PlateCreate (?,?,?)}', (plate_barcode, centre_file.centre_config["biomek_labware_class"], 96))
+                for doc in docs_to_insert:
+                    well_index = doc['well_index']
+                    mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', '', well_index))
+                    mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', doc[FIELD_ROOT_SAMPLE_ID], well_index))
+                    mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', doc[FIELD_RNA_ID], well_index))
+                    mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', doc[FIELD_LAB_ID], well_index))
+                mock_conn().cursor().rollback.assert_not_called()
+                assert mock_conn().cursor().commit.call_count == 1
+                mock_conn().close.assert_called_once()
 
-def test_insert_plates_and_wells_from_docs_into_dart_sets_well_state(config):
+def test_insert_plates_and_wells_from_docs_into_dart_sets_well_states(config):
     with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
         plate_barcode = 'TC-rna-00000029'
         docs_to_insert = [
@@ -1386,12 +1556,13 @@ def test_insert_plates_and_wells_from_docs_into_dart_sets_well_state(config):
 
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
-        centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+        with patch('crawler.file_processing.get_dart_plate_state', return_value = DART_STATE_PENDING):
+            centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
-        # adds plate and wells as expected
-        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
-        for doc in docs_to_insert:
-            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', doc['state'], doc['well_index']))
-        mock_conn().cursor().rollback.assert_not_called()
-        assert mock_conn().cursor().commit.call_count == 1
-        mock_conn().close.assert_called_once()
+            # adds plate and wells as expected
+            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+            for doc in docs_to_insert:
+                mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', doc['state'], doc['well_index']))
+            mock_conn().cursor().rollback.assert_not_called()
+            assert mock_conn().cursor().commit.call_count == 1
+            mock_conn().close.assert_called_once()
