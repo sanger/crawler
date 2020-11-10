@@ -386,8 +386,6 @@ class CentreFile:
             # filter out docs which failed to insert into mongo - we don't want to create mlwh records for these
             docs_to_insert_mlwh = list(filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert))
 
-            # TODO: generate COG UK Ids for true positves in the file (will need to be inserted into MLWH)
-
             self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
             docs_to_insert_dart = list(filter(lambda x: x[FIELD_RESULT] == POSITIVE_RESULT_VALUE, docs_to_insert_mlwh))
