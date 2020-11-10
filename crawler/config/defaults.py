@@ -102,7 +102,7 @@ DART_DB_RO_USER = "root"
 DART_DB_RO_PASSWORD = ""
 DART_DB_RW_USER = "root"
 DART_DB_RW_PASSWORD = ""
-DART_DB_DRIVER = '{ODBC Driver 17 for SQL Server}'
+DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
 
 # SFTP details
 SFTP_UPLOAD = False  # upload files to SFTP server
@@ -124,10 +124,10 @@ LOGGING = {
     "formatters": {
         "colored": {
             "()": "colorlog.ColoredFormatter",
-            "format": "%(asctime)-15s %(name)-16s:%(lineno)-3s %(log_color)s%(levelname)-7s %(message)s",
+            "format": "%(asctime)-15s %(name)-25s:%(lineno)-3s %(log_color)s%(levelname)-7s %(message)s",
         },
         "verbose": {
-            "format": "%(asctime)-15s %(name)-16s:%(lineno)-3s %(levelname)-7s %(message)s"
+            "format": "%(asctime)-15s %(name)-25s:%(lineno)-3s %(levelname)-7s %(message)s"
         },
     },
     "handlers": {

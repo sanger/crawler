@@ -1,10 +1,10 @@
 import os
 import csv
-from typing import Dict, List, Any, Tuple, Set
+from typing import Dict, List, Any, Tuple, Set, Optional
 from pymongo.errors import BulkWriteError
 from pymongo.database import Database
 from bson.objectid import ObjectId # type: ignore
-import pyodbc
+import pyodbc  # type: ignore
 
 from enum import Enum
 from csv import DictReader, DictWriter
@@ -77,7 +77,7 @@ from crawler.db import (
     run_mysql_executemany_query,
     create_dart_sql_server_conn,
     get_dart_plate_state,
-    set_dart_plate_state,
+    set_dart_plate_state_pending,
 )
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from hashlib import md5
@@ -387,9 +387,7 @@ class CentreFile:
             docs_to_insert_mlwh = list(filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert))
 
             self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
-
-            docs_to_insert_dart = list(filter(lambda x: x[FIELD_RESULT] == POSITIVE_RESULT_VALUE, docs_to_insert_mlwh))
-            self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_dart)
+            self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
 
         self.backup_file()
         self.create_import_record_for_file()
@@ -577,7 +575,7 @@ class CentreFile:
                         plate_state = self.create_dart_plate_if_doesnt_exist(cursor, plate_barcode)
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
-                                self.add_dart_well_properties(cursor, sample, plate_barcode)
+                                self.add_dart_well_properties_if_pickable(cursor, sample, plate_barcode)
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(
@@ -618,15 +616,18 @@ class CentreFile:
         state = get_dart_plate_state(cursor, plate_barcode)
         if state == DART_STATE_NO_PLATE:
             cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, self.centre_config["biomek_labware_class"], 96))
-            state = set_dart_plate_state(cursor, plate_barcode, DART_STATE_PENDING)
-            if state == None:
-                raise DartStateError(f"Unable to set the state of a DART plate {plate_barcode} to pending")
+            if set_dart_plate_state_pending(cursor, plate_barcode):
+                state = DART_STATE_PENDING
+            else:
+                raise DartStateError(
+                    f"Unable to set the state of a DART plate {plate_barcode} to pending"
+                )
         elif state == DART_STATE_NO_PROP:
             raise DartStateError(f"DART plate {plate_barcode} should have a state")
         
         return state
 
-    def add_dart_well_properties(self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str) -> None:
+    def add_dart_well_properties_if_pickable(self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str) -> None:
         """Adds well properties to DART for the specified sample.
 
             Arguments:
@@ -634,15 +635,15 @@ class CentreFile:
                 sample {Dict[str, str]} -- The sample for which to add well properties.
                 plate_barcode {str} -- The barcode of the plate to which this sample belongs.
         """
-        well_index = self.calculate_dart_well_index(sample)
-        if well_index is not None:
-            state = 'pickable' if sample.get(FIELD_FILTERED_POSITIVE, False) else ''
-            cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', state, well_index))
-            cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', sample[FIELD_ROOT_SAMPLE_ID], well_index))
-            cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', sample[FIELD_RNA_ID], well_index))
-            cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', sample[FIELD_LAB_ID], well_index))
-        else:
-            raise ValueError(f'Unable to determine DART well index for sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}')
+        if sample.get(FIELD_FILTERED_POSITIVE, False):
+            well_index = self.calculate_dart_well_index(sample)
+            if well_index is not None:
+                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', 'pickable', well_index))
+                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', sample[FIELD_ROOT_SAMPLE_ID], well_index))
+                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', sample[FIELD_RNA_ID], well_index))
+                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', sample[FIELD_LAB_ID], well_index))
+            else:
+                raise ValueError(f'Unable to determine DART well index for sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}')
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.
@@ -933,7 +934,7 @@ class CentreFile:
 
         # filtered-positive calculations
         if modified_row[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
-            modified_row[FIELD_FILTERED_POSITIVE] = self.filtered_positive_identifier.is_positive(modified_row)
+            modified_row[FIELD_FILTERED_POSITIVE] = str(self.filtered_positive_identifier.is_positive(modified_row))
             modified_row[FIELD_FILTERED_POSITIVE_VERSION] = self.filtered_positive_identifier.current_version()
             modified_row[FIELD_FILTERED_POSITIVE_TIMESTAMP] = import_timestamp
 
@@ -1245,7 +1246,7 @@ class CentreFile:
 
         return datetime.strptime(file_timestamp, "%y%m%d_%H%M")
 
-    def calculate_dart_well_index(self, sample: Dict[str, str]) -> int:
+    def calculate_dart_well_index(self, sample: Dict[str, str]) -> Optional[int]:
         """Determines a well index from a sample/document to insert. Otherwise returns None.
 
         Returns:

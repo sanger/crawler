@@ -1,6 +1,6 @@
 import re
 import decimal
-from bson.decimal128 import create_decimal128_context
+from bson.decimal128 import create_decimal128_context  # type: ignore
 from crawler.constants import (
     POSITIVE_RESULT_VALUE,
     FIELD_RESULT,
