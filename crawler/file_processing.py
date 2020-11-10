@@ -570,7 +570,7 @@ class CentreFile:
             try:
                 cursor = sql_server_connection.cursor()
 
-                for plate_barcode, samples in groupby_transform(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]):
+                for plate_barcode, samples in groupby_transform(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]):  # type:ignore
                     try:
                         plate_state = self.create_dart_plate_if_doesnt_exist(cursor, plate_barcode)
                         if plate_state == DART_STATE_PENDING:
@@ -624,7 +624,7 @@ class CentreFile:
                 )
         elif state == DART_STATE_NO_PROP:
             raise DartStateError(f"DART plate {plate_barcode} should have a state")
-        
+
         return state
 
     def add_dart_well_properties_if_pickable(self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str) -> None:
@@ -716,7 +716,7 @@ class CentreFile:
         return True
 
     def extract_plate_barcode_and_coordinate(
-        self, row: Dict[str, str], line_number, barcode_field: str, regex: str
+        self, row: Dict[str, Any], line_number, barcode_field: str, regex: str
     ) -> Tuple[str, str]:
         """Extracts fields from a row of data (from the CSV file). Currently extracting the barcode and
         coordinate (well position) using regex groups.
@@ -764,7 +764,7 @@ class CentreFile:
             f"No Lab ID, line: {line_number}, root_sample_id: {row.get(FIELD_ROOT_SAMPLE_ID)}",
         )
 
-    def filtered_row(self, row, line_number) -> Dict[str, str]:
+    def filtered_row(self, row, line_number) -> Dict[str, Any]:
         """ Filter unneeded columns and add lab id if not present and config flag set.
 
             Arguments:
@@ -773,7 +773,7 @@ class CentreFile:
             Returns:
                 Dict[str][str] - returns a modified version of the row
         """
-        modified_row: Dict[str, str] = {}
+        modified_row: Dict[str, Any] = {}
         if self.config.ADD_LAB_ID:
             # when we need to add the lab id if not present
             if FIELD_LAB_ID in row:
@@ -934,7 +934,7 @@ class CentreFile:
 
         # filtered-positive calculations
         if modified_row[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
-            modified_row[FIELD_FILTERED_POSITIVE] = str(self.filtered_positive_identifier.is_positive(modified_row))
+            modified_row[FIELD_FILTERED_POSITIVE] = self.filtered_positive_identifier.is_positive(modified_row)
             modified_row[FIELD_FILTERED_POSITIVE_VERSION] = self.filtered_positive_identifier.current_version()
             modified_row[FIELD_FILTERED_POSITIVE_TIMESTAMP] = import_timestamp
 
@@ -1254,7 +1254,7 @@ class CentreFile:
         """
         if not sample or FIELD_COORDINATE not in sample.keys():
             return None
-            
+
         regex = r"^([A-Z])(\d{1,2})$"
         m = re.match(regex, sample[FIELD_COORDINATE])
 
