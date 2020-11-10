@@ -133,48 +133,72 @@ def test_update_filtered_positive_fields_assigns_expected_filtered_positive_fiel
         assert sample[FIELD_FILTERED_POSITIVE_VERSION] == version
         assert sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] == timestamp
 
+# ----- test update_samples_in_mongo method -----
+
+# TODO - add tests to check the mongo bulk updates work as expected (and do some integration tests around the transaction workflow)
 
 # ----- test update_filtered_positives method -----
 
 # TODO - add more tests as more of the method is implemented
 
 def test_update_filtered_positives_catches_error_fetching_from_dart(config, mock_dart_conn, mock_mongo_collection, mock_print_exception, mock_print_status):
+    # mock fetching from DART to throw
     mock_dart_conn.side_effect = ValueError('Boom!')
+
+    # call the migration
     update_filtered_positives(config)
 
+    # ensure expected outputs, and that no databases are updated
     mock_print_exception.assert_called_once()
     mock_print_status.assert_called_once_with(0, 0, False, False, False)
     assert_no_database_updates(mock_mongo_collection)
 
 def test_update_filtered_positives_aborts_with_no_plates_fetched_from_dart(config, mock_dart_conn, mock_mongo_collection, mock_print_status):
+    # mock DART to return no pending plates
     mock_dart_conn().cursor().commit.return_value = []
+
+    # call the migration
     update_filtered_positives(config)
 
+    # ensure expected outputs, and that no databases are updated
     mock_print_status.assert_called_once_with(0, 0, False, False, False)
     assert_no_database_updates(mock_mongo_collection)
 
 def test_update_filtered_positives_catches_error_fetching_from_mongo(config, mock_dart_conn, mock_mongo_client, mock_mongo_collection, mock_print_exception, mock_print_status):
+    # mock dart to return a pending plate, but mongo to throw
     mock_dart_conn().cursor().commit.return_value = ['ABC123']
     mock_mongo_client.side_effect = NotImplementedError('Boom!')
+
+    # call the migration
     update_filtered_positives(config)
 
+    # ensure expected outputs, and that no databases are updated
     mock_print_exception.assert_called_once()
     mock_print_status.assert_called_once_with(1, 0, False, False, False)
     assert_no_database_updates(mock_mongo_collection)
 
-def test_update_filtered_positives_aborts_with_no_positive_samples_fetched_from_mongo(config, mock_dart_conn, mock_mongo_collection, testing_samples, mock_print_status):
+def test_update_filtered_positives_aborts_with_no_positive_samples_fetched_from_mongo(config, mock_dart_conn, mock_mongo_collection, mock_print_status):
+    # mock dart to return a pending plate, but mongo to return no samples
     mock_dart_conn().cursor().commit.return_value = ['barcode with no matching sample']
+    mock_mongo_collection().find.return_value = []
+
+    # call the migration
     update_filtered_positives(config)
 
+    # ensure expected outputs, and that no databases are updated
     mock_print_status.assert_called_once_with(1, 0, False, False, False)
     assert_no_database_updates(mock_mongo_collection)
 
 def test_update_filtered_positives_catches_error_determining_filtered_positive_results(config, mock_dart_conn, mock_mongo_collection, mock_positive_identifier, mock_print_exception, mock_print_status):
+    # mock a single pending plate and sample, but determining the filtered positive fields to throw
     mock_dart_conn().cursor().commit.return_value = ['123']
     mock_mongo_collection().find.return_value = [{ FIELD_PLATE_BARCODE: '123' }]
     mock_positive_identifier().is_positive.side_effect = NotImplementedError('Boom!')
+
+    # call the migration
     update_filtered_positives(config)
 
+    # ensure expected outputs, and that no databases are updated
     mock_print_exception.assert_called_once()
     mock_print_status.assert_called_once_with(1, 1, False, False, False)
     assert_no_database_updates(mock_mongo_collection)
