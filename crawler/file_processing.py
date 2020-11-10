@@ -575,7 +575,7 @@ class CentreFile:
                         plate_state = self.create_dart_plate_if_doesnt_exist(cursor, plate_barcode)
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
-                                self.add_dart_well_properties(cursor, sample, plate_barcode)
+                                self.add_dart_well_properties_if_pickable(cursor, sample, plate_barcode)
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(
@@ -627,7 +627,7 @@ class CentreFile:
         
         return state
 
-    def add_dart_well_properties(self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str) -> None:
+    def add_dart_well_properties_if_pickable(self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str) -> None:
         """Adds well properties to DART for the specified sample.
 
             Arguments:
@@ -635,15 +635,15 @@ class CentreFile:
                 sample {Dict[str, str]} -- The sample for which to add well properties.
                 plate_barcode {str} -- The barcode of the plate to which this sample belongs.
         """
-        well_index = self.calculate_dart_well_index(sample)
-        if well_index is not None:
-            state = 'pickable' if sample.get(FIELD_FILTERED_POSITIVE, False) else ''
-            cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', state, well_index))
-            cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', sample[FIELD_ROOT_SAMPLE_ID], well_index))
-            cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', sample[FIELD_RNA_ID], well_index))
-            cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', sample[FIELD_LAB_ID], well_index))
-        else:
-            raise ValueError(f'Unable to determine DART well index for sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}')
+        if sample.get(FIELD_FILTERED_POSITIVE, False):
+            well_index = self.calculate_dart_well_index(sample)
+            if well_index is not None:
+                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', 'pickable', well_index))
+                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', sample[FIELD_ROOT_SAMPLE_ID], well_index))
+                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', sample[FIELD_RNA_ID], well_index))
+                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', sample[FIELD_LAB_ID], well_index))
+            else:
+                raise ValueError(f'Unable to determine DART well index for sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}')
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.
