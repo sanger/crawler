@@ -91,6 +91,7 @@ from crawler.constants import (
     DART_STATE_PENDING,
     DART_STATE_NO_PLATE,
     DART_STATE_NO_PROP,
+    DART_STATE_PICKABLE,
 )
 from crawler.db import get_mongo_collection
 
@@ -1454,7 +1455,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
                     plate_barcode = doc[FIELD_PLATE_BARCODE]
                     well_index = doc['well_index']
                     mock_conn().cursor().execute.assert_any_call('{CALL dbo.plDART_PlateCreate (?,?,?)}', (plate_barcode, centre_file.centre_config["biomek_labware_class"], 96))
-                    mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', 'pickable', well_index))
+                    mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', DART_STATE_PICKABLE, well_index))
                     mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', doc[FIELD_ROOT_SAMPLE_ID], well_index))
                     mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', doc[FIELD_RNA_ID], well_index))
                     mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', doc[FIELD_LAB_ID], well_index))
@@ -1500,7 +1501,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
                 mock_conn().cursor().execute.assert_any_call('{CALL dbo.plDART_PlateCreate (?,?,?)}', (plate_barcode, centre_file.centre_config["biomek_labware_class"], 96))
                 for doc in docs_to_insert:
                     well_index = doc['well_index']
-                    mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', 'pickable', well_index))
+                    mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', DART_STATE_PICKABLE, well_index))
                     mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', doc[FIELD_ROOT_SAMPLE_ID], well_index))
                     mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', doc[FIELD_RNA_ID], well_index))
                     mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', doc[FIELD_LAB_ID], well_index))
@@ -1552,7 +1553,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_sets_well_states(config):
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
             assert call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', '', 1)) not in mock_conn().cursor().execute.call_args_list
             assert call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', '', 2)) not in mock_conn().cursor().execute.call_args_list
-            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', 'pickable', 3))
+            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', DART_STATE_PICKABLE, 3))
             mock_conn().cursor().rollback.assert_not_called()
             assert mock_conn().cursor().commit.call_count == 1
             mock_conn().close.assert_called_once()

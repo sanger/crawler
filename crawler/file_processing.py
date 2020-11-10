@@ -52,6 +52,7 @@ from crawler.constants import (
     DART_STATE_PENDING,
     DART_STATE_NO_PLATE,
     DART_STATE_NO_PROP,
+    DART_STATE_PICKABLE,
 )
 from crawler.helpers import (
     current_time,
@@ -638,7 +639,7 @@ class CentreFile:
         if sample.get(FIELD_FILTERED_POSITIVE, False):
             well_index = self.calculate_dart_well_index(sample)
             if well_index is not None:
-                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', 'pickable', well_index))
+                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', DART_STATE_PICKABLE, well_index))
                 cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', sample[FIELD_ROOT_SAMPLE_ID], well_index))
                 cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', sample[FIELD_RNA_ID], well_index))
                 cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', sample[FIELD_LAB_ID], well_index))
