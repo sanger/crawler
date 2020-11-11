@@ -86,7 +86,7 @@ def test_pending_plate_barcodes_from_dart_returns_expected_plate_barcodes(config
     mock_dart_conn().cursor().execute().fetchall.return_value = expected_rows
     result = pending_plate_barcodes_from_dart(config)
 
-    mock_dart_conn().cursor().execute.assert_called_with("SELECT DISTINCT [Labware BarCode] FROM [dbo].[LIMS_test_plate_status] WHERE [Labware plate_status] = ?", DART_STATE_PENDING)
+    mock_dart_conn().cursor().execute.assert_called_with("SELECT DISTINCT [Labware LIMS BARCODE] FROM [dbo].[LIMS_test_plate_status] WHERE [Labware state] = ?", DART_STATE_PENDING)
     assert result == ['ABC123', '123ABC', 'abcdef']
 
 # ----- test positive_result_samples_from_mongo method -----
