@@ -593,9 +593,9 @@ class CentreFile:
             try:
                 cursor = sql_server_connection.cursor()
 
-                for plate_barcode, samples in groupby_transform(
+                for plate_barcode, samples in groupby_transform(  # type:ignore
                     docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]
-                ):  # type:ignore
+                ):
                     try:
                         plate_state = self.create_dart_plate_if_doesnt_exist(cursor, plate_barcode)
                         if plate_state == DART_STATE_PENDING:
