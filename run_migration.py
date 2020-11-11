@@ -1,10 +1,8 @@
-from migrations import (
-    sample_timestamps,
-    update_mlwh_with_legacy_samples,
-)
-from crawler.helpers import get_config
-import sys
 import logging
+import sys
+
+from crawler.helpers import get_config
+from migrations import sample_timestamps, update_mlwh_with_legacy_samples
 
 config, settings_module = get_config("")
 
@@ -32,7 +30,8 @@ def migration_sample_timestamps():
 def migration_update_mlwh_with_legacy_samples():
     if not len(sys.argv) == 4:
         print(
-            "Please add both start and end datetime range arguments for this migration (format YYMMDD_HHmm e.g. 200115_1200, inclusive), aborting"
+            "Please add both start and end datetime range arguments for this migration (format "
+            "YYMMDD_HHmm e.g. 200115_1200, inclusive), aborting"
         )
         return
 
@@ -60,4 +59,4 @@ if len(sys.argv) > 1:
     print(f"Migration name selected = {migration_name}")
     migration_by_name(migration_name)
 else:
-    print(f"You must include a migration name as an argument after the command, aborting")
+    print("You must include a migration name as an argument after the command, aborting")

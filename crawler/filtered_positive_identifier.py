@@ -1,13 +1,15 @@
-import re
 import decimal
+import re
+
 from bson.decimal128 import create_decimal128_context  # type: ignore
+
 from crawler.constants import (
-    POSITIVE_RESULT_VALUE,
-    FIELD_RESULT,
-    FIELD_ROOT_SAMPLE_ID,
     FIELD_CH1_CQ,
     FIELD_CH2_CQ,
     FIELD_CH3_CQ,
+    FIELD_RESULT,
+    FIELD_ROOT_SAMPLE_ID,
+    POSITIVE_RESULT_VALUE,
 )
 
 
@@ -33,12 +35,13 @@ class FilteredPositiveIdentifier:
         """Determines whether a sample is a filtered positive.
 
         Arguments:
-            doc_to_insert {Dict[str, str]} -- information on a single sample extracted from csv files
+            doc_to_insert {Dict[str, str]} -- information on a single sample extracted from csv
+            files
 
         Returns:
             {bool} -- whether the sample is a filtered positive
         """
-        if self.result_regex.match(doc_to_insert[FIELD_RESULT]) == None:
+        if self.result_regex.match(doc_to_insert[FIELD_RESULT]) is None:
             return False
 
         if self.root_sample_id_regex.match(doc_to_insert[FIELD_ROOT_SAMPLE_ID]) is not None:
@@ -47,7 +50,7 @@ class FilteredPositiveIdentifier:
         ch1_cq = doc_to_insert.get(FIELD_CH1_CQ)
         ch2_cq = doc_to_insert.get(FIELD_CH2_CQ)
         ch3_cq = doc_to_insert.get(FIELD_CH3_CQ)
-        if ch1_cq == None and ch2_cq == None and ch3_cq == None:
+        if ch1_cq is None and ch2_cq is None and ch3_cq is None:
             return True
 
         with decimal.localcontext(self.d128_context):

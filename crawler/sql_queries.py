@@ -1,3 +1,4 @@
+# flake8: noqa
 # SQL query to insert multiple rows into the MLWH
 SQL_MLWH_MULTIPLE_INSERT = """
 INSERT INTO lighthouse_sample (

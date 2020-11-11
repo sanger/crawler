@@ -1,31 +1,27 @@
 import logging
+from contextlib import contextmanager
 from datetime import datetime
 from types import ModuleType
-from typing import Dict, List, Iterator
-from crawler.helpers import current_time
+from typing import Dict, Iterator, List
 
+import mysql.connector as mysql  # type: ignore
+import pyodbc  # type: ignore
+from mysql.connector import Error  # type: ignore
+from mysql.connector.connection_cext import CMySQLConnection  # type: ignore
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
-from pymongo.errors import DuplicateKeyError, OperationFailure
 from pymongo.results import InsertOneResult
 
-from contextlib import contextmanager
-
-import mysql.connector as mysql  # type: ignore
-from mysql.connector.connection_cext import CMySQLConnection  # type: ignore
-from mysql.connector import Error  # type: ignore
-from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT, SQL_TEST_MLWH_CREATE
-from crawler.helpers import get_config
-
-import pyodbc  # type: ignore
 from crawler.constants import (
-    DART_STATE_PENDING,
-    DART_STATE_PROPERTY_NAME,
     DART_GET_PLATE_PROPERTY_SQL,
     DART_SET_PLATE_PROPERTY_SQL,
     DART_SET_PROP_STATUS_SUCCESS,
+    DART_STATE_PENDING,
+    DART_STATE_PROPERTY_NAME,
 )
+from crawler.helpers import get_config
+from crawler.sql_queries import SQL_TEST_MLWH_CREATE
 
 logger = logging.getLogger(__name__)
 
@@ -40,10 +36,10 @@ def create_mongo_client(config: ModuleType) -> MongoClient:
         MongoClient -- a client used to interact with the database server
     """
     try:
-        logger.debug(f"Connecting to mongo")
+        logger.debug("Connecting to mongo")
         mongo_uri = config.MONGO_URI  # type: ignore
         return MongoClient(mongo_uri)
-    except AttributeError as e:
+    except AttributeError:
         #  there is no MONGO_URI so try each config separately
         # logger.warning(e)
 
@@ -212,31 +208,36 @@ def run_mysql_executemany_query(
     Arguments:
         mysql_conn {CMySQLConnection} -- a client used to interact with the database server
         sql_query {str} -- the SQL query to run (see sql_queries.py)
-        values {List[Dict[str, str]]} -- array of value hashes representing documents inserted into the Mongo DB
+        values {List[Dict[str, str]]} -- array of value hashes representing documents inserted into
+        the Mongo DB
     """
-    ## fetch the cursor from the DB connection
+    # fetch the cursor from the DB connection
     cursor = mysql_conn.cursor()
 
     try:
-        ## executing the query with values
+        # executing the query with values
         num_values = len(values)
 
-        # BN. If ROWS_PER_QUERY value is too high, you may get '2006 (HY000): MySQL server has gone away' error
-        # indicating you've exceeded the max_allowed_packet size for MySQL
+        # BN. If ROWS_PER_QUERY value is too high, you may get '2006 (HY000): MySQL server has
+        # gone away' error indicating you've exceeded the max_allowed_packet size for MySQL
         ROWS_PER_QUERY = 25000
         values_index = 0
         total_rows_affected = 0
         logger.debug(
-            f"Attempting to insert or update {num_values} rows in the MLWH database in batches of {ROWS_PER_QUERY}"
+            f"Attempting to insert or update {num_values} rows in the MLWH database in batches of "
+            f"{ROWS_PER_QUERY}"
         )
 
         while values_index < num_values:
             logger.debug(
                 f"Inserting records between {values_index} and {values_index + ROWS_PER_QUERY}"
             )
-            cursor.executemany(sql_query, values[values_index : values_index + ROWS_PER_QUERY])
+            cursor.executemany(
+                sql_query, values[values_index : (values_index + ROWS_PER_QUERY)]  # noqa: E203
+            )
             logger.debug(
-                f"{cursor.rowcount} rows affected in MLWH. (Note: each updated row increases the count by 2, instead of 1)"
+                f"{cursor.rowcount} rows affected in MLWH. (Note: each updated row increases the "
+                "count by 2, instead of 1)"
             )
             total_rows_affected += cursor.rowcount
             values_index += ROWS_PER_QUERY
@@ -248,9 +249,10 @@ def run_mysql_executemany_query(
         # 2 per updated existing row,
         # and 0 per unchanged existing row
         logger.debug(
-            f"A total of {total_rows_affected} rows were affected in MLWH. (Note: each updated row increases the count by 2, instead of 1)"
+            f"A total of {total_rows_affected} rows were affected in MLWH. (Note: each updated row "
+            "increases the count by 2, instead of 1)"
         )
-    except:
+    except Exception:
         logger.error("MLWH database executemany transaction failed")
         raise
     finally:
@@ -303,16 +305,12 @@ def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> pyodbc.Con
     dart_db_driver = config.DART_DB_DRIVER  # type: ignore
 
     connection_string = (
-        "DRIVER="
-        + dart_db_driver
-        + ";SERVER="
-        + dart_db_host
-        + f";PORT={dart_db_port};DATABASE="
-        + dart_db_db
-        + ";UID="
-        + dart_db_username
-        + ";PWD="
-        + dart_db_password
+        f"DRIVER={dart_db_driver};"
+        f"SERVER={dart_db_host};"
+        f"PORT={dart_db_port};"
+        f"DATABASE={dart_db_db};"
+        f"UID={dart_db_username};"
+        f"PWD={dart_db_password}"
     )
 
     logger.debug(f"Attempting to connect to {dart_db_host} on port {dart_db_port}")

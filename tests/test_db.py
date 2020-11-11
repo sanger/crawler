@@ -1,32 +1,30 @@
 from datetime import datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import pytest
-
-from pymongo import MongoClient
-from pymongo.collection import Collection
-from pymongo.database import Database
-from mysql.connector.connection_cext import CMySQLConnection
-import mysql.connector as mysql
-
+from crawler.constants import (
+    DART_GET_PLATE_PROPERTY_SQL,
+    DART_SET_PLATE_PROPERTY_SQL,
+    DART_STATE_PENDING,
+    DART_STATE_PROPERTY_NAME,
+)
 from crawler.db import (
+    create_dart_sql_server_conn,
     create_import_record,
     create_mongo_client,
+    create_mysql_connection,
+    get_dart_plate_state,
     get_mongo_collection,
     get_mongo_db,
-    create_mysql_connection,
     run_mysql_executemany_query,
-    create_dart_sql_server_conn,
-    get_dart_plate_state,
     set_dart_plate_state_pending,
 )
 from crawler.helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
-from crawler.constants import (
-    DART_GET_PLATE_PROPERTY_SQL,
-    DART_STATE_PROPERTY_NAME,
-    DART_SET_PLATE_PROPERTY_SQL,
-    DART_STATE_PENDING,
-)
+from mysql.connector.connection_cext import CMySQLConnection
+from pymongo import MongoClient
+from pymongo.collection import Collection
+from pymongo.database import Database
 
 
 def test_create_mongo_client(config):
@@ -71,7 +69,7 @@ def test_create_import_record(freezer, mongo_database):
 
 def test_create_mysql_connection_none(config):
     with patch("mysql.connector.connect", return_value=None):
-        assert create_mysql_connection(config) == None
+        assert create_mysql_connection(config) is None
 
 
 def test_create_mysql_connection_exception(config):
@@ -98,11 +96,11 @@ def test_run_mysql_executemany_query_success(config):
     )
 
     # check transaction is committed
-    assert conn.commit.called == True
+    assert conn.commit.called is True
 
     # check connection is closed
-    assert cursor.close.called == True
-    assert conn.close.called == True
+    assert cursor.close.called is True
+    assert conn.close.called is True
 
 
 def test_run_mysql_executemany_query_execute_error(config):
@@ -123,30 +121,38 @@ def test_run_mysql_executemany_query_execute_error(config):
         )
 
         # check transaction is not committed
-        assert conn.commit.called == False
+        assert conn.commit.called is False
 
         # check connection is closed
-        assert cursor.close.called == True
-        assert conn.close.called == True
+        assert cursor.close.called is True
+        assert conn.close.called is True
 
 
 def test_create_dart_sql_server_conn_readonly(config):
     with patch("pyodbc.connect") as mock_connect:
-        conn_string = f"DRIVER={config.DART_DB_DRIVER};SERVER={config.DART_DB_HOST};PORT={config.DART_DB_PORT};DATABASE={config.DART_DB_DBNAME};UID={config.DART_DB_RO_USER};PWD={config.DART_DB_RO_PASSWORD}"
+        conn_string = (
+            f"DRIVER={config.DART_DB_DRIVER};SERVER={config.DART_DB_HOST};"
+            f"PORT={config.DART_DB_PORT};DATABASE={config.DART_DB_DBNAME};"
+            f"UID={config.DART_DB_RO_USER};PWD={config.DART_DB_RO_PASSWORD}"
+        )
         create_dart_sql_server_conn(config)
         mock_connect.assert_called_with(conn_string)
 
 
 def test_create_dart_sql_server_conn_readwrite(config):
     with patch("pyodbc.connect") as mock_connect:
-        conn_string = f"DRIVER={config.DART_DB_DRIVER};SERVER={config.DART_DB_HOST};PORT={config.DART_DB_PORT};DATABASE={config.DART_DB_DBNAME};UID={config.DART_DB_RW_USER};PWD={config.DART_DB_RW_PASSWORD}"
+        conn_string = (
+            f"DRIVER={config.DART_DB_DRIVER};SERVER={config.DART_DB_HOST};"
+            f"PORT={config.DART_DB_PORT};DATABASE={config.DART_DB_DBNAME};"
+            f"UID={config.DART_DB_RW_USER};PWD={config.DART_DB_RW_PASSWORD}"
+        )
         create_dart_sql_server_conn(config, readonly=False)
         mock_connect.assert_called_with(conn_string)
 
 
 def test_create_dart_sql_server_conn_none(config):
     with patch("pyodbc.connect", return_value=None):
-        assert create_dart_sql_server_conn(config) == None
+        assert create_dart_sql_server_conn(config) is None
 
 
 def test_create_dart_sql_server_conn_expection(config):

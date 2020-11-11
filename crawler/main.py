@@ -1,13 +1,11 @@
 import logging
 import logging.config
 import time
-from typing import List
 
 import pymongo
 
 from crawler.constants import (
     COLLECTION_CENTRES,
-    COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
     FIELD_CENTRE_NAME,
     FIELD_LAB_ID,
@@ -23,11 +21,8 @@ from crawler.db import (
     populate_centres_collection,
     samples_collection_accessor,
 )
-from crawler.helpers import (
-    get_config,
-    current_time,
-)
 from crawler.file_processing import Centre
+from crawler.helpers import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +51,7 @@ def run(sftp: bool, keep_files: bool, settings_module: str = "") -> None:
             centres_collection.create_index(FIELD_CENTRE_NAME, unique=True)
             populate_centres_collection(centres_collection, centres, FIELD_CENTRE_NAME)
 
-            imports_collection = get_mongo_collection(db, COLLECTION_IMPORTS)
+            # imports_collection = get_mongo_collection(db, COLLECTION_IMPORTS)
 
             with samples_collection_accessor(db, COLLECTION_SAMPLES) as samples_collection:
                 # Index on plate barcode to make it easier to select based on plate barcode
@@ -71,9 +66,9 @@ def run(sftp: bool, keep_files: bool, settings_module: str = "") -> None:
 
                 # Index on unique combination of columns
                 logger.debug(f"Creating compound index on '{samples_collection.full_name}'")
-                # create compound index on 'Root Sample ID', 'RNA ID', 'Result', 'Lab ID' - some data
-                #   had the same plate tested at another time so ignore the data if it is exactly the
-                #   same
+                # create compound index on 'Root Sample ID', 'RNA ID', 'Result', 'Lab ID' - some
+                # data had the same plate tested at another time so ignore the data if it is exactly
+                # the same
                 samples_collection.create_index(
                     [
                         (FIELD_ROOT_SAMPLE_ID, pymongo.ASCENDING),

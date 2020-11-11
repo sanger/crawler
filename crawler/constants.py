@@ -1,3 +1,4 @@
+# flake8: noqa
 from decimal import Decimal
 
 # mongo collections
