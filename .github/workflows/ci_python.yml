@@ -62,6 +62,6 @@ jobs:
           mypy .
       - name: Test with pytest
         run: |
-          pytest -vsx
+          python -m pytest -vsx
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
