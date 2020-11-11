@@ -611,6 +611,9 @@ def test_where_result_has_unexpected_value(config):
             fake_csv.write("5,RNA_0043_H10,NotAValidResult,Val\n")
             fake_csv.seek(0)
 
+            csv_to_test_reader = DictReader(fake_csv)
+            centre_file.parse_and_format_file_rows(csv_to_test_reader)
+
             # should create a specific error type for the row
             assert centre_file.logging_collection.aggregator_types["TYPE 16"].count_errors == 1
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
@@ -634,6 +637,9 @@ def test_where_ct_channel_target_has_unexpected_value(config):
             fake_csv.write("2,RNA_0043_H11,Positive,Val,NotATarget\n")
             fake_csv.seek(0)
 
+            csv_to_test_reader = DictReader(fake_csv)
+            centre_file.parse_and_format_file_rows(csv_to_test_reader)
+
             # should create a specific error type for the row
             assert centre_file.logging_collection.aggregator_types["TYPE 17"].count_errors == 1
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
@@ -655,6 +661,9 @@ def test_where_ct_channel_result_has_unexpected_value(config):
             # row with empty value - should pass
             fake_csv.write("2,RNA_0043_H11,Negative,Val,\n")
             fake_csv.seek(0)
+
+            csv_to_test_reader = DictReader(fake_csv)
+            centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
             # should create a specific error type for the row
             assert centre_file.logging_collection.aggregator_types["TYPE 18"].count_errors == 1
@@ -700,6 +709,9 @@ def test_where_ct_channel_cq_value_is_not_numeric(config):
             # where row has invalid value - should error
             fake_csv.write("2,RNA_0043_H10,Positive,Val,NotANumber\n")
             fake_csv.seek(0)
+
+            csv_to_test_reader = DictReader(fake_csv)
+            centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
             # should create a specific error type for the row
             assert centre_file.logging_collection.aggregator_types["TYPE 19"].count_errors == 1
@@ -753,6 +765,9 @@ def test_where_ct_channel_cq_value_is_not_within_range(config):
             fake_csv.write("3,RNA_0043_H11,Positive,Val,100.01290002\n")
             fake_csv.seek(0)
 
+            csv_to_test_reader = DictReader(fake_csv)
+            centre_file.parse_and_format_file_rows(csv_to_test_reader)
+
             # should create a specific error type for the row
             assert centre_file.logging_collection.aggregator_types["TYPE 20"].count_errors == 2
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 2
@@ -780,6 +795,9 @@ def test_where_positive_result_does_not_align_with_ct_channel_results(config):
             # row where channel values are all negative, inconclusive or void - should fail
             fake_csv.write("4,RNA_0043_H12,Positive,Val,Negative,Negative,Inconclusive,Void\n")
             fake_csv.seek(0)
+
+            csv_to_test_reader = DictReader(fake_csv)
+            centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
             # should create a specific error type for the row
             assert centre_file.logging_collection.aggregator_types["TYPE 21"].count_errors == 1

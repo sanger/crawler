@@ -96,7 +96,7 @@ def test_logging_collection_with_multiple_errors():
     exptd_msgs = [
         "DEBUG: Blank rows in files. (TYPE 1)",
         (
-            "CRITICAL: Files where we do not have the expected main column headers of Root Sample"
+            "CRITICAL: Files where we do not have the expected main column headers of Root Sample "
             "ID, RNA ID and Result. (TYPE 2)"
         ),
         (
