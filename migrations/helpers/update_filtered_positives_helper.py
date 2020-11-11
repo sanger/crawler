@@ -20,6 +20,9 @@ from crawler.constants import (
     DART_STATE_PENDING,
 )
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
+from crawler.sql_queries import (
+    SQL_DART_GET_PLATE_BARCODES,
+)
 
 def update_filtered_positives(config):
     """Updates filtered positive values for all positive samples in pending plates
@@ -94,7 +97,7 @@ def pending_plate_barcodes_from_dart(config: ModuleType):
     cursor = sql_server_connection.cursor()
     
     try:
-        rows = cursor.execute("SELECT DISTINCT [Labware LIMS BARCODE] FROM [dbo].[LIMS_test_plate_status] WHERE [Labware state] = ?", DART_STATE_PENDING).fetchall()
+        rows = cursor.execute(SQL_DART_GET_PLATE_BARCODES, DART_STATE_PENDING).fetchall()
         plate_barcodes = [row[0] for row in rows]
     except Exception as e:
         print_exception()

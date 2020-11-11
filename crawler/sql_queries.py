@@ -123,3 +123,7 @@ DECLARE @return_code int
 EXECUTE @return_code = [dbo].[plDART_PlatePropSet] @plate_barcode = ?, @prop_name = ?, @prop_value = ?
 SELECT @return_code
 """
+
+SQL_DART_GET_PLATE_BARCODES = """\
+SELECT DISTINCT [Labware LIMS BARCODE] FROM [dbo].[LIMS_test_plate_status] WHERE [Labware state] = ?
+"""
