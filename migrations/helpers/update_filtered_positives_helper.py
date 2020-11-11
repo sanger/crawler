@@ -162,8 +162,6 @@ def update_samples_in_mongo(config: ModuleType, samples: List[Dict[str, Any]], v
         filtered_positive_ids = [sample[FIELD_MONGODB_ID] for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] == True, samples))]
         filtered_negative_ids = [mongo_id for mongo_id in all_ids if mongo_id not in filtered_positive_ids]
 
-        # bulk update all samples in a single transaction
-        # TODO - fix for transactions not being supported (at least in local development environments)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
         samples_collection.update_many(
             { FIELD_MONGODB_ID: { '$in': filtered_positive_ids } },
