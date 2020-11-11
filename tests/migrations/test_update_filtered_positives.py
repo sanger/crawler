@@ -6,10 +6,12 @@ from migrations.helpers.update_filtered_positives_helper import (
     pending_plate_barcodes_from_dart,
     positive_result_samples_from_mongo,
     update_filtered_positive_fields,
+    update_samples_in_mongo,
     update_filtered_positives,
 )
 from crawler.constants import (
     COLLECTION_SAMPLES,
+    FIELD_MONGODB_ID,
     FIELD_RESULT,
     FIELD_PLATE_BARCODE,
     POSITIVE_RESULT_VALUE,
@@ -135,7 +137,32 @@ def test_update_filtered_positive_fields_assigns_expected_filtered_positive_fiel
 
 # ----- test update_samples_in_mongo method -----
 
-# TODO - add tests to check the mongo bulk updates work as expected (and do some integration tests around the transaction workflow)
+# TODO - integration testing around the transaction workflow
+
+def test_update_samples_in_mongo_does_update_with_error_updating_mongo(config, mock_mongo_collection):
+    mock_mongo_collection().update_many.side_effect = ValueError('Boom!')
+    with pytest.raises(ValueError):
+        update_samples_in_mongo(config, [], 'v2.3', None)
+
+def test_update_samples_in_mongo_updates_expected_samples(config, testing_samples, samples_collection_accessor):
+    version = 'v2.3'
+    timestamp = datetime.now()
+    updated_samples = testing_samples[:3]
+    updated_samples[0][FIELD_FILTERED_POSITIVE] = True
+    updated_samples[1][FIELD_FILTERED_POSITIVE] = False
+    updated_samples[2][FIELD_FILTERED_POSITIVE] = False
+    update_samples_in_mongo(config, updated_samples, version, timestamp)
+
+    # ensure samples in mongo are updated as expected
+    for sample in samples_collection_accessor.find({ FIELD_MONGODB_ID: updated_samples[0][FIELD_MONGODB_ID] }):
+        assert sample[FIELD_FILTERED_POSITIVE] == True
+        assert sample[FIELD_FILTERED_POSITIVE_VERSION] == version
+        assert sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] is not None
+
+    for sample in samples_collection_accessor.find({ FIELD_MONGODB_ID: { "$in": [updated_samples[1][FIELD_MONGODB_ID], updated_samples[2][FIELD_MONGODB_ID]] } }):
+        assert sample[FIELD_FILTERED_POSITIVE] == False
+        assert sample[FIELD_FILTERED_POSITIVE_VERSION] == version
+        assert sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] is not None
 
 # ----- test update_filtered_positives method -----
 
@@ -202,3 +229,18 @@ def test_update_filtered_positives_catches_error_determining_filtered_positive_r
     mock_print_exception.assert_called_once()
     mock_print_status.assert_called_once_with(1, 1, False, False, False)
     assert_no_database_updates(mock_mongo_collection)
+
+def test_update_filtered_positives_catches_error_updating_samples_in_mongo(config, mock_dart_conn, testing_samples, mock_mongo_collection, mock_print_exception, mock_print_status):
+    # mock a single pending plate and sample, but updating the samples in mongo to throw
+    mock_dart_conn().cursor().commit.return_value = ['123']
+    mock_mongo_collection().find.return_value = [{ FIELD_PLATE_BARCODE: '123' }]
+    with patch('migrations.helpers.update_filtered_positives_helper.update_samples_in_mongo', side_effect = NotImplementedError('Boom!')):
+        # call the migration
+        update_filtered_positives(config)
+
+        # ensure expected outputs, and that no databases are updated
+        mock_print_exception.assert_called_once()
+        mock_print_status.assert_called_once_with(1, 1, False, False, False)
+        assert_no_database_updates(mock_mongo_collection)
+
+# def test_update_filtered_positives_outputs_success(config):
