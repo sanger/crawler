@@ -32,7 +32,7 @@ from crawler.db import get_mongo_collection
 
 def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
     _, mongo_database = mongo_database
-    with patch('crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh'):
+    with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
         run(False, False, "crawler.config.integration")
 
     # We expect to have three collections following import
@@ -66,7 +66,9 @@ def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
 
     # check the code cleaned up the temporary files
     (_, subfolders, files) = next(os.walk("tmp/files/"))
-    assert 0 == len(subfolders), f"Wrong number of subfolders. Expected: 0, Actual: {len(subfolders)}"
+    assert 0 == len(
+        subfolders
+    ), f"Wrong number of subfolders. Expected: 0, Actual: {len(subfolders)}"
 
 
 def test_run_creates_right_files_backups(mongo_database, testing_files_for_process, pyodbc_conn):
@@ -76,7 +78,7 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     # main copy of the data. We don't disable the clean up as:
     # 1) It also clears up any modified test files, which we'd otherwise need to handle
     # 2) It means we keep the tested process closer to the actual one
-    with patch('crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh'):
+    with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
         run(False, False, "crawler.config.integration")
 
     # check number of success files after first run
@@ -113,7 +115,7 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
 
     # Run with a different config that does not blacklist one of the files
-    with patch('crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh'):
+    with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
         run(False, False, "crawler.config.integration_with_blacklist_change")
 
     # We expect an additional import entry
@@ -121,7 +123,9 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
 
     # We expect the previously blacklisted file to now be processed
     (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
-    assert 1 == len(files), f"Wrong number of success files. Expected: 1, actual: {len(files)}. Previously blacklisted file should have been processed."
+    assert 1 == len(
+        files
+    ), f"Wrong number of success files. Expected: 1, actual: {len(files)}. Previously blacklisted file should have been processed."
 
     # We expect the previous blacklisted file to still be in the errors directory as well
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
@@ -135,7 +139,7 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
 def test_error_run(mongo_database, testing_files_for_process, pyodbc_conn):
     _, mongo_database = mongo_database
 
-    with patch('crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh'):
+    with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
         run(False, False, "crawler.config.integration")
 
     # We expect to have three collections following import
@@ -165,13 +169,15 @@ def test_error_run(mongo_database, testing_files_for_process, pyodbc_conn):
     assert imports_collection.count_documents({}) == 8
 
 
-def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_for_process, pyodbc_conn):
+def test_error_run_duplicates_in_imports_message(
+    mongo_database, testing_files_for_process, pyodbc_conn
+):
     _, mongo_database = mongo_database
 
     # copy an additional file with duplicates
     _ = shutil.copytree("tests/files_with_duplicate_samples", "tmp/files", dirs_exist_ok=True)
 
-    with patch('crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh'):
+    with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
         run(False, False, "crawler.config.integration")
 
     # Fetch the imports collection, expect it to contain the additional duplicate error file record

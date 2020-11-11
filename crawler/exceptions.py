@@ -18,6 +18,7 @@ class CentreFileError(Error):
         else:
             return f"CentreFileError: {default_message}"
 
+
 class DartStateError(Error):
     """Raised when the state of plate in DART is not a permitted value."""
 

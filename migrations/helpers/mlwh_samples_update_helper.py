@@ -21,6 +21,7 @@ from crawler.helpers import map_mongo_doc_to_sql_columns
 from datetime import datetime
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
+
 def valid_datetime_string(s_datetime: str) -> bool:
     try:
         dt = datetime.strptime(s_datetime, MONGO_DATETIME_FORMAT)
@@ -31,21 +32,25 @@ def valid_datetime_string(s_datetime: str) -> bool:
         print_exception()
         return False
 
-def print_exception() -> None:
-    print(f'An exception occurred, at {datetime.now()}')
-    e = sys.exc_info()
-    print(e[0]) # exception type
-    print(e[1]) # exception message
-    if e[2]: # traceback
-      traceback.print_tb(e[2], limit=10)
 
-def update_mlwh_with_legacy_samples(config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
+def print_exception() -> None:
+    print(f"An exception occurred, at {datetime.now()}")
+    e = sys.exc_info()
+    print(e[0])  # exception type
+    print(e[1])  # exception message
+    if e[2]:  # traceback
+        traceback.print_tb(e[2], limit=10)
+
+
+def update_mlwh_with_legacy_samples(
+    config, s_start_datetime: str = "", s_end_datetime: str = ""
+) -> None:
     if not valid_datetime_string(s_start_datetime):
-        print('Aborting run: Expected format of Start datetime is YYMMDD_HHmm')
+        print("Aborting run: Expected format of Start datetime is YYMMDD_HHmm")
         return
 
     if not valid_datetime_string(s_end_datetime):
-        print('Aborting run: Expected format of End datetime is YYMMDD_HHmm')
+        print("Aborting run: Expected format of End datetime is YYMMDD_HHmm")
         return
 
     start_datetime = datetime.strptime(s_start_datetime, MONGO_DATETIME_FORMAT)
@@ -55,11 +60,13 @@ def update_mlwh_with_legacy_samples(config, s_start_datetime: str = "", s_end_da
         print("Aborting run: End datetime must be greater than Start datetime")
         return
 
-    print(f"Starting MLWH update process with Start datetime {start_datetime} and End datetime {end_datetime}")
+    print(
+        f"Starting MLWH update process with Start datetime {start_datetime} and End datetime {end_datetime}"
+    )
 
     try:
         mongo_docs_for_sql = []
-        number_docs_found  = 0
+        number_docs_found = 0
 
         # open connection mongo
         with create_mongo_client(config) as client:
@@ -72,16 +79,13 @@ def update_mlwh_with_legacy_samples(config, s_start_datetime: str = "", s_end_da
             # this should take everything from the cursor find into RAM memory (assuming you have enough memory)
             mongo_docs = list(
                 samples_collection.find(
-                    {
-                        FIELD_CREATED_AT:{
-                            '$gte': start_datetime,
-                            '$lte': end_datetime
-                        }
-                    }
+                    {FIELD_CREATED_AT: {"$gte": start_datetime, "$lte": end_datetime}}
                 )
             )
             number_docs_found = len(mongo_docs)
-            print(f"{number_docs_found} documents found in the mongo database between these timestamps")
+            print(
+                f"{number_docs_found} documents found in the mongo database between these timestamps"
+            )
 
             # convert mongo field values into MySQL format
             for doc in mongo_docs:
@@ -92,10 +96,12 @@ def update_mlwh_with_legacy_samples(config, s_start_datetime: str = "", s_end_da
             # create connection to the MLWH database
             with create_mysql_connection(config, False) as mlwh_conn:
 
-                    # execute sql query to insert/update timestamps into MLWH
-                    run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
+                # execute sql query to insert/update timestamps into MLWH
+                run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
         else:
-            print("No documents found for this timestamp range, nothing to insert or update in MLWH")
+            print(
+                "No documents found for this timestamp range, nothing to insert or update in MLWH"
+            )
 
     except Exception as e:
         print_exception()

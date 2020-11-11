@@ -14,15 +14,15 @@ from crawler.constants import (
     FIELD_RESULT,
     FIELD_PLATE_BARCODE,
     FIELD_ROOT_SAMPLE_ID,
-    MLWH_TABLE_NAME
+    MLWH_TABLE_NAME,
 )
 
 from crawler.db import (
-  create_mongo_client,
-  get_mongo_db,
-  get_mongo_collection,
-  create_mysql_connection,
-  create_dart_sql_server_conn,
+    create_mongo_client,
+    get_mongo_db,
+    get_mongo_collection,
+    create_mysql_connection,
+    create_dart_sql_server_conn,
 )
 from crawler.helpers import get_config
 
@@ -76,10 +76,12 @@ def mlwh_connection(config):
         # close the connection
         mysql_conn.close()
 
+
 @pytest.fixture
 def pyodbc_conn(config):
-    with patch('pyodbc.connect') as mock_connect:
+    with patch("pyodbc.connect") as mock_connect:
         yield mock_connect
+
 
 @pytest.fixture
 def testing_files_for_process(cleanup_backups):
@@ -134,6 +136,7 @@ def samples_collection_accessor(mongo_database):
 def centres_collection_accessor(mongo_database):
     return get_mongo_collection(mongo_database[1], COLLECTION_CENTRES)
 
+
 @pytest.fixture
 def samples_history_collection_accessor(mongo_database):
     return get_mongo_collection(mongo_database[1], COLLECTION_SAMPLES_HISTORY)
@@ -156,6 +159,7 @@ def testing_centres(centres_collection_accessor, config):
         yield result
     finally:
         centres_collection_accessor.delete_many({})
+
 
 @pytest.fixture
 def cleanup_backups():
