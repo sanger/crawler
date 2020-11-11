@@ -147,7 +147,9 @@ def test_update_samples_in_mongo_updates_expected_samples(config, testing_sample
     updated_samples[0][FIELD_FILTERED_POSITIVE] = True
     updated_samples[1][FIELD_FILTERED_POSITIVE] = False
     updated_samples[2][FIELD_FILTERED_POSITIVE] = False
-    update_samples_in_mongo(config, updated_samples, version, timestamp)
+
+    result = update_samples_in_mongo(config, updated_samples, version, timestamp)
+    assert result == True
 
     # ensure samples in mongo are updated as expected
     for sample in samples_collection_accessor.find({ FIELD_MONGODB_ID: updated_samples[0][FIELD_MONGODB_ID] }):

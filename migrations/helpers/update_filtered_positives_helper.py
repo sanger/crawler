@@ -61,8 +61,7 @@ def update_filtered_positives(config):
                 print("Updated filtered positives")
 
                 print("Updating Mongo")
-                update_samples_in_mongo(config, positive_pending_samples, version, update_timestamp)
-                mongo_updated = True
+                mongo_updated = update_samples_in_mongo(config, positive_pending_samples, version, update_timestamp)
                 print("Finished updating Mongo")
 
                 # update entries in mlwh - throw if anything goes wrong, update flag if not
@@ -143,7 +142,7 @@ def update_filtered_positive_fields(filtered_positive_identifier: FilteredPositi
         sample[FIELD_FILTERED_POSITIVE_VERSION] = version
         sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] = update_timestamp
 
-def update_samples_in_mongo(config: ModuleType, samples: List[Dict[str, Any]], version: str, update_timestamp: datetime) -> None:
+def update_samples_in_mongo(config: ModuleType, samples: List[Dict[str, Any]], version: str, update_timestamp: datetime) -> bool:
     """Bulk updates sample filtered positive fields in the Mongo database
 
         Arguments:
@@ -151,6 +150,9 @@ def update_samples_in_mongo(config: ModuleType, samples: List[Dict[str, Any]], v
             samples {List[Dict[str, str]]} -- the list of samples for which to re-determine filtered positive values
             version {str} -- the filtered positive identifier version used
             update_timestamp {datetime} -- the timestamp at which the update was performed
+
+        Returns:
+            bool -- whether the updates completed successfully
     """
     with create_mongo_client(config) as client:
         mongo_db = get_mongo_db(config, client)
@@ -170,6 +172,7 @@ def update_samples_in_mongo(config: ModuleType, samples: List[Dict[str, Any]], v
                 samples_collection.update_many(
                     { FIELD_MONGODB_ID: { '$in': filtered_negative_ids } },
                     { "$set": { FIELD_FILTERED_POSITIVE: False, FIELD_FILTERED_POSITIVE_VERSION: version, FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp } })
+    return True
 
 def print_processing_status(num_pending_plates: int, num_positive_pending_samples: int, mongo_updated: bool, mlwh_updated: bool, dart_updated: bool) -> None:
     """Prints the processing status of the update operation for each database, specifically whether entries were successfully updated
