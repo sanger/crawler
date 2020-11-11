@@ -175,7 +175,7 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
         MLWH_CH4_CQ: parse_decimal128(doc.get(FIELD_CH4_CQ, None)),
         MLWH_FILTERED_POSITIVE: doc.get(FIELD_FILTERED_POSITIVE, None),
         MLWH_FILTERED_POSITIVE_VERSION: doc.get(FIELD_FILTERED_POSITIVE_VERSION, None),
-        MLWH_FILTERED_POSITIVE_TIMESTAMP: parse_date_tested(doc.get(FIELD_FILTERED_POSITIVE_TIMESTAMP, None))
+        MLWH_FILTERED_POSITIVE_TIMESTAMP: doc.get(FIELD_FILTERED_POSITIVE_TIMESTAMP, None)
     }
 
 # Strip any leading zeros from the coordinate
