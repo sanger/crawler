@@ -60,6 +60,9 @@ jobs:
       - name: Run mypy
         run: |
           mypy .
+      - name: Create mysql test warehouse database and table
+        run: >-
+          python setup_test_db.py
       - name: Test with pytest
         run: |
           python -m pytest -x
