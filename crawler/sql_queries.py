@@ -109,6 +109,12 @@ KEY `index_lighthouse_sample_on_date_tested` (`date_tested`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 """
 
+SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE = """\
+UPDATE lighthouse_sample
+SET filtered_positive = %(filtered_positive)s, filtered_positive_version = %(filtered_positive_version)s, filtered_positive_timestamp = %(filtered_positive_timestamp)s
+WHERE mongodb_id = %(mongodb_id)s
+"""
+
 # DART SQL queries
 SQL_DART_GET_PLATE_PROPERTY = """\
 SET NOCOUNT ON
