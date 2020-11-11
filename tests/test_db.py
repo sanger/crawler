@@ -21,7 +21,14 @@ from crawler.db import (
 )
 from crawler.helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
-from crawler.constants import (DART_GET_PLATE_PROPERTY_SQL, DART_STATE_PROPERTY_NAME, DART_SET_PLATE_PROPERTY_SQL, DART_STATE_PENDING)
+from crawler.constants import (
+    DART_STATE_PROPERTY_NAME,
+    DART_STATE_PENDING,
+)
+from crawler.sql_queries import (
+    SQL_DART_GET_PLATE_PROPERTY,
+    SQL_DART_SET_PLATE_PROPERTY,
+)
 
 def test_create_mongo_client(config):
     assert type(create_mongo_client(config)) == MongoClient
@@ -145,7 +152,7 @@ def test_get_dart_plate_state(config):
             == mock_conn.cursor().fetchval()
         )
         mock_conn.cursor().execute.assert_called_with(
-            DART_GET_PLATE_PROPERTY_SQL, (test_plate_barcode, DART_STATE_PROPERTY_NAME)
+            SQL_DART_GET_PLATE_PROPERTY, (test_plate_barcode, DART_STATE_PROPERTY_NAME)
         )
 
 
@@ -155,6 +162,6 @@ def test_set_dart_plate_state_pending(config):
         test_plate_barcode = "AB123"
         set_dart_plate_state_pending(mock_conn.cursor(), test_plate_barcode)
         mock_conn.cursor().execute.assert_called_with(
-            DART_SET_PLATE_PROPERTY_SQL,
+            SQL_DART_SET_PLATE_PROPERTY,
             (test_plate_barcode, DART_STATE_PROPERTY_NAME, DART_STATE_PENDING),
         )

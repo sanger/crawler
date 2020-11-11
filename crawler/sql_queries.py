@@ -108,3 +108,18 @@ UNIQUE KEY `index_lighthouse_sample_on_mongodb_id` (`mongodb_id`),
 KEY `index_lighthouse_sample_on_date_tested` (`date_tested`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 """
+
+# DART SQL queries
+SQL_DART_GET_PLATE_PROPERTY = """\
+SET NOCOUNT ON
+DECLARE @output_value nvarchar(256)
+EXECUTE [dbo].[plDART_PlatePropGet] @plate_barcode = ?, @prop_name = ?, @value = @output_value OUTPUT
+SELECT @output_value
+"""
+
+SQL_DART_SET_PLATE_PROPERTY = """\
+SET NOCOUNT ON
+DECLARE @return_code int
+EXECUTE @return_code = [dbo].[plDART_PlatePropSet] @plate_barcode = ?, @prop_name = ?, @prop_value = ?
+SELECT @return_code
+"""
