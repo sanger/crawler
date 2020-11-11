@@ -66,26 +66,26 @@ SFTP_PORT = "22"
 SFTP_USER = "foo"
 
 # MongoDB details
-MONGO_HOST = "172.27.16.48"
+MONGO_HOST = "127.0.0.1"
 MONGO_DB = "crawlerTestDB"
 
 # MLWH database details
 MLWH_DB_DBNAME = "unified_warehouse_test"
-MLWH_DB_HOST = "172.27.16.48"
+MLWH_DB_HOST = "127.0.0.1"
 MLWH_DB_PORT = 3306
 MLWH_DB_RO_USER = "root"
-MLWH_DB_RO_PASSWORD = ""
+MLWH_DB_RO_PASSWORD = "root"
 MLWH_DB_RW_USER = "root"
-MLWH_DB_RW_PASSWORD = ""
+MLWH_DB_RW_PASSWORD = "root"
 
 # DART database details
-DART_DB_DBNAME = "DART"
-DART_DB_HOST = "DARTDEV-DB-SRV"
+DART_DB_DBNAME = "dart_test"
+DART_DB_HOST = "127.0.0.1"
 DART_DB_PORT = 1433
 DART_DB_RO_USER = "root"
 DART_DB_RO_PASSWORD = ""
-DART_DB_RW_USER = "dart_dev_rw"
-DART_DB_RW_PASSWORD = "Dtrw6789!"
+DART_DB_RW_USER = "root"
+DART_DB_RW_PASSWORD = ""
 DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
 
 # logging config
