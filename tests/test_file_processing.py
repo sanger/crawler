@@ -1028,7 +1028,7 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
                 FIELD_CH4_CQ: Decimal128('26.25125612'),
                 FIELD_FILTERED_POSITIVE: True,
                 FIELD_FILTERED_POSITIVE_VERSION: 'v2.3',
-                FIELD_FILTERED_POSITIVE_TIMESTAMP: '2020-04-23 14:41:00 UTC',
+                FIELD_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 41, 0),
             }
         ]
 

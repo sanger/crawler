@@ -167,7 +167,7 @@ def test_map_lh_doc_to_sql_columns(config):
         FIELD_LAB_ID: 'TC',
         FIELD_FILTERED_POSITIVE: True,
         FIELD_FILTERED_POSITIVE_VERSION: 'v2.3',
-        FIELD_FILTERED_POSITIVE_TIMESTAMP: '2020-04-23 14:40:08 UTC'
+        FIELD_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 40, 8)
     }
 
     result = map_lh_doc_to_sql_columns(doc_to_transform)
