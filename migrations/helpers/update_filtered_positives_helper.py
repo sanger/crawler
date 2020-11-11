@@ -168,11 +168,11 @@ def update_samples_in_mongo(config: ModuleType, samples: List[Dict[str, Any]], v
             with session.start_transaction():
                 samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
                 samples_collection.update_many(
-                    { FIELD_MONGODB_ID in filtered_positive_ids },
-                    { FIELD_FILTERED_POSITIVE: True, FIELD_FILTERED_POSITIVE_VERSION: version, FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp })
+                    { FIELD_MONGODB_ID: { '$in': filtered_positive_ids } },
+                    { "$set": { FIELD_FILTERED_POSITIVE: True, FIELD_FILTERED_POSITIVE_VERSION: version, FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp } })
                 samples_collection.update_many(
-                    { FIELD_MONGODB_ID in filtered_negative_ids },
-                    { FIELD_FILTERED_POSITIVE: False, FIELD_FILTERED_POSITIVE_VERSION: version, FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp })
+                    { FIELD_MONGODB_ID: { '$in': filtered_negative_ids } },
+                    { "$set": { FIELD_FILTERED_POSITIVE: False, FIELD_FILTERED_POSITIVE_VERSION: version, FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp } })
 
 def print_processing_status(num_pending_plates: int, num_positive_pending_samples: int, mongo_updated: bool, mlwh_updated: bool, dart_updated: bool) -> None:
     """Prints the processing status of the update operation for each database, specifically whether entries were successfully updated
