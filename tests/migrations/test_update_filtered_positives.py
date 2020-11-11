@@ -17,7 +17,8 @@ from crawler.constants import (
     POSITIVE_RESULT_VALUE,
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
+    DART_STATE_PENDING,
 )
 
 # ----- test fixture helpers -----
@@ -80,18 +81,13 @@ def test_pending_plate_barcodes_from_dart_handles_error_executing_statement(conf
     pending_plate_barcodes_from_dart(config)
     mock_print_exception.assert_called_once()
 
-def test_pending_plate_barcodes_from_dart_handles_error_committing(config, mock_dart_conn, mock_print_exception):
-    mock_dart_conn().cursor().commit.side_effect = Exception('Boom!')
-    pending_plate_barcodes_from_dart(config)
-    mock_print_exception.assert_called_once()
-
 def test_pending_plate_barcodes_from_dart_returns_expected_plate_barcodes(config, mock_dart_conn):
-    expected_plate_barcodes = ['ABC123', '123ABC', 'abcdef']
-    mock_dart_conn().cursor().commit.return_value = expected_plate_barcodes
+    expected_rows = [('ABC123', ), ('123ABC', ), ('abcdef', )]
+    mock_dart_conn().cursor().execute().fetchall.return_value = expected_rows
     result = pending_plate_barcodes_from_dart(config)
 
-    mock_dart_conn().cursor().execute.assert_called_once_with('{CALL dbo.plDART_PendingPlates}')
-    assert result == expected_plate_barcodes
+    mock_dart_conn().cursor().execute.assert_called_with("SELECT DISTINCT [Labware BarCode] FROM [dbo].[LIMS_test_plate_status] WHERE [Labware plate_status] = ?", DART_STATE_PENDING)
+    assert result == ['ABC123', '123ABC', 'abcdef']
 
 # ----- test positive_result_samples_from_mongo method -----
 
@@ -182,7 +178,7 @@ def test_update_filtered_positives_catches_error_fetching_from_dart(config, mock
 
 def test_update_filtered_positives_aborts_with_no_plates_fetched_from_dart(config, mock_dart_conn, mock_mongo_collection, mock_print_status):
     # mock DART to return no pending plates
-    mock_dart_conn().cursor().commit.return_value = []
+    mock_dart_conn().cursor().execute().fetchall.return_value = []
 
     # call the migration
     update_filtered_positives(config)
@@ -193,7 +189,7 @@ def test_update_filtered_positives_aborts_with_no_plates_fetched_from_dart(confi
 
 def test_update_filtered_positives_catches_error_fetching_from_mongo(config, mock_dart_conn, mock_mongo_client, mock_mongo_collection, mock_print_exception, mock_print_status):
     # mock dart to return a pending plate, but mongo to throw
-    mock_dart_conn().cursor().commit.return_value = ['ABC123']
+    mock_dart_conn().cursor().execute().fetchall.return_value = ['ABC123']
     mock_mongo_client.side_effect = NotImplementedError('Boom!')
 
     # call the migration
@@ -206,7 +202,7 @@ def test_update_filtered_positives_catches_error_fetching_from_mongo(config, moc
 
 def test_update_filtered_positives_aborts_with_no_positive_samples_fetched_from_mongo(config, mock_dart_conn, mock_mongo_collection, mock_print_status):
     # mock dart to return a pending plate, but mongo to return no samples
-    mock_dart_conn().cursor().commit.return_value = ['barcode with no matching sample']
+    mock_dart_conn().cursor().execute().fetchall.return_value = ['barcode with no matching sample']
     mock_mongo_collection().find.return_value = []
 
     # call the migration
@@ -218,7 +214,7 @@ def test_update_filtered_positives_aborts_with_no_positive_samples_fetched_from_
 
 def test_update_filtered_positives_catches_error_determining_filtered_positive_results(config, mock_dart_conn, mock_mongo_collection, mock_positive_identifier, mock_print_exception, mock_print_status):
     # mock a single pending plate and sample, but determining the filtered positive fields to throw
-    mock_dart_conn().cursor().commit.return_value = ['123']
+    mock_dart_conn().cursor().execute().fetchall.return_value = ['123']
     mock_mongo_collection().find.return_value = [{ FIELD_PLATE_BARCODE: '123' }]
     mock_positive_identifier().is_positive.side_effect = NotImplementedError('Boom!')
 
@@ -232,7 +228,7 @@ def test_update_filtered_positives_catches_error_determining_filtered_positive_r
 
 def test_update_filtered_positives_catches_error_updating_samples_in_mongo(config, mock_dart_conn, testing_samples, mock_mongo_collection, mock_print_exception, mock_print_status):
     # mock a single pending plate and sample, but updating the samples in mongo to throw
-    mock_dart_conn().cursor().commit.return_value = ['123']
+    mock_dart_conn().cursor().execute().fetchall.return_value = ['123']
     mock_mongo_collection().find.return_value = [{ FIELD_PLATE_BARCODE: '123' }]
     with patch('migrations.helpers.update_filtered_positives_helper.update_samples_in_mongo', side_effect = NotImplementedError('Boom!')):
         # call the migration

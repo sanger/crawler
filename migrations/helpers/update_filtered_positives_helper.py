@@ -16,7 +16,8 @@ from crawler.constants import (
     POSITIVE_RESULT_VALUE,
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
+    DART_STATE_PENDING,
 )
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 
@@ -94,13 +95,9 @@ def pending_plate_barcodes_from_dart(config: ModuleType):
     cursor = sql_server_connection.cursor()
     
     try:
-        # TODO - implement correctly once stored procedure is in place
-        cursor.execute("{CALL dbo.plDART_PendingPlates}")
-        plate_barcodes = cursor.commit()
+        rows = cursor.execute("SELECT DISTINCT [Labware BarCode] FROM [dbo].[LIMS_test_plate_status] WHERE [Labware plate_status] = ?", DART_STATE_PENDING).fetchall()
+        plate_barcodes = [row[0] for row in rows]
     except Exception as e:
-        # catch SQL Server cursor specific exceptions so we can rollback
-        cursor.rollback()
-        plate_barcodes = []
         print_exception()
     finally:
         sql_server_connection.close()
