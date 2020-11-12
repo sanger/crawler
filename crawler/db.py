@@ -6,7 +6,6 @@ from typing import Dict, Iterator, List, Optional
 
 import mysql.connector as mysql  # type: ignore
 import pyodbc  # type: ignore
-from mysql.connector import Error  # type: ignore
 from mysql.connector.connection_cext import CMySQLConnection  # type: ignore
 from pymongo import MongoClient
 from pymongo.collection import Collection

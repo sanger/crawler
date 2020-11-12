@@ -1,6 +1,8 @@
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
+import mysql
+import pyodbc
 import pytest
 from crawler.constants import (
     DART_GET_PLATE_PROPERTY_SQL,
@@ -74,8 +76,8 @@ def test_create_mysql_connection_none(config):
 
 def test_create_mysql_connection_exception(config):
     # For example, if the credentials in the config are wrong
-    with patch("mysql.connector.connect", side_effect=mysql.Error()):
-        assert create_mysql_connection(config) == None
+    with patch("mysql.connector.connect", side_effect=mysql.connector.Error()):
+        assert create_mysql_connection(config) is None
 
 
 def test_run_mysql_executemany_query_success(config):
