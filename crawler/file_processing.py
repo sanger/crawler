@@ -576,7 +576,7 @@ class CentreFile:
                         plate_state = self.create_dart_plate_if_doesnt_exist(cursor, plate_barcode)
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
-                                self.add_dart_well_properties_if_pickable(cursor, sample, plate_barcode)
+                                self.add_dart_well_properties_if_positive(cursor, sample, plate_barcode)
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(
@@ -628,18 +628,19 @@ class CentreFile:
 
         return state
 
-    def add_dart_well_properties_if_pickable(self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str) -> None:
-        """Adds well properties to DART for the specified sample.
+    def add_dart_well_properties_if_positive(self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str) -> None:
+        """Adds well properties to DART for the specified sample if that sample is positive.
 
             Arguments:
                 cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
                 sample {Dict[str, str]} -- The sample for which to add well properties.
                 plate_barcode {str} -- The barcode of the plate to which this sample belongs.
         """
-        if sample.get(FIELD_FILTERED_POSITIVE, False):
+        if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
             well_index = self.calculate_dart_well_index(sample)
             if well_index is not None:
-                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', DART_STATE_PICKABLE, well_index))
+                state = DART_STATE_PICKABLE if sample.get(FIELD_FILTERED_POSITIVE, False) else ''
+                cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', state, well_index))
                 cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'root_sample_id', sample[FIELD_ROOT_SAMPLE_ID], well_index))
                 cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'rna_id', sample[FIELD_RNA_ID], well_index))
                 cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'lab_id', sample[FIELD_LAB_ID], well_index))
