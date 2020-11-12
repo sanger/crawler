@@ -75,8 +75,9 @@ def update_filtered_positives(config):
                 mlwh_updated = update_samples_in_mlwh(config, positive_pending_samples)
                 print("Finished updating MLWH")
 
-                # update entries in mlwh - throw if anything goes wrong, update flag if not
-                # re-add to DART - throw if anything goes wrong, update flag if not
+                print("Updating DART")
+                dart_updated = update_samples_in_dart(config, positive_pending_samples)
+                print("Finished updating DART")
             else:
                 print("No positive samples in pending plates found in Mongo, not updating any database")
         else:
@@ -201,6 +202,18 @@ def update_samples_in_mlwh(config: ModuleType, samples: List[Dict[str, Any]]) ->
         return True
     else:
         return False
+
+def update_samples_in_dart(config: ModuleType, samples: List[Dict[str, Any]]) -> bool:
+    """Updates DART entries following updates to the filtered positive fields
+
+        Arguments:
+            config {ModuleType} -- application config specifying database details
+            samples {List[Dict[str, str]]} -- the list of samples to update in DART
+
+        Returns:
+            bool -- whether the updates completed successfully
+    """
+    print("Implement!!")
 
 def print_processing_status(num_pending_plates: int, num_positive_pending_samples: int, mongo_updated: bool, mlwh_updated: bool, dart_updated: bool) -> None:
     """Prints the processing status of the update operation for each database, specifically whether entries were successfully updated

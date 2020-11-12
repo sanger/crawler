@@ -70,6 +70,11 @@ def mock_update_mlwh():
         yield mock_update
 
 @pytest.fixture
+def mock_update_dart():
+    with patch('migrations.helpers.update_filtered_positives_helper.update_samples_in_dart') as mock_update:
+        yield mock_update
+
+@pytest.fixture
 def mock_print_status():
     with patch('migrations.helpers.update_filtered_positives_helper.print_processing_status') as mock_print:
         yield mock_print
@@ -276,7 +281,7 @@ def test_update_samples_in_mlwh_calls_to_update_samples(config, mlwh_connection)
 
 # TODO - add more tests as more of the method is implemented
 
-def test_update_filtered_positives_catches_error_fetching_from_dart(config, mock_dart_conn, mock_mongo_collection, mock_print_exception, mock_print_status, mock_update_mongo, mock_update_mlwh):
+def test_update_filtered_positives_catches_error_fetching_from_dart(config, mock_dart_conn, mock_mongo_collection, mock_print_exception, mock_print_status, mock_update_mongo, mock_update_mlwh, mock_update_dart):
     # mock fetching from DART to throw
     mock_dart_conn.side_effect = ValueError('Boom!')
 
@@ -288,8 +293,9 @@ def test_update_filtered_positives_catches_error_fetching_from_dart(config, mock
     mock_print_status.assert_called_once_with(0, 0, False, False, False)
     mock_update_mongo.assert_not_called()
     mock_update_mlwh.assert_not_called()
+    mock_update_dart.assert_not_called()
 
-def test_update_filtered_positives_aborts_with_no_plates_fetched_from_dart(config, mock_dart_conn, mock_mongo_collection, mock_print_status, mock_update_mongo, mock_update_mlwh):
+def test_update_filtered_positives_aborts_with_no_plates_fetched_from_dart(config, mock_dart_conn, mock_mongo_collection, mock_print_status, mock_update_mongo, mock_update_mlwh, mock_update_dart):
     # mock DART to return no pending plates
     mock_dart_conn().cursor().execute().fetchall.return_value = []
 
@@ -300,8 +306,9 @@ def test_update_filtered_positives_aborts_with_no_plates_fetched_from_dart(confi
     mock_print_status.assert_called_once_with(0, 0, False, False, False)
     mock_update_mongo.assert_not_called()
     mock_update_mlwh.assert_not_called()
+    mock_update_dart.assert_not_called()
 
-def test_update_filtered_positives_catches_error_fetching_from_mongo(config, mock_dart_conn, mock_mongo_client, mock_mongo_collection, mock_print_exception, mock_print_status, mock_update_mongo, mock_update_mlwh):
+def test_update_filtered_positives_catches_error_fetching_from_mongo(config, mock_dart_conn, mock_mongo_client, mock_mongo_collection, mock_print_exception, mock_print_status, mock_update_mongo, mock_update_mlwh, mock_update_dart):
     # mock dart to return a pending plate, but mongo to throw
     mock_dart_conn().cursor().execute().fetchall.return_value = ['ABC123']
     mock_mongo_client.side_effect = NotImplementedError('Boom!')
@@ -314,8 +321,9 @@ def test_update_filtered_positives_catches_error_fetching_from_mongo(config, moc
     mock_print_status.assert_called_once_with(1, 0, False, False, False)
     mock_update_mongo.assert_not_called()
     mock_update_mlwh.assert_not_called()
+    mock_update_dart.assert_not_called()
 
-def test_update_filtered_positives_aborts_with_no_positive_samples_fetched_from_mongo(config, mock_dart_conn, mock_mongo_collection, mock_print_status, mock_update_mongo, mock_update_mlwh):
+def test_update_filtered_positives_aborts_with_no_positive_samples_fetched_from_mongo(config, mock_dart_conn, mock_mongo_collection, mock_print_status, mock_update_mongo, mock_update_mlwh, mock_update_dart):
     # mock dart to return a pending plate, but mongo to return no samples
     mock_dart_conn().cursor().execute().fetchall.return_value = ['barcode with no matching sample']
     mock_mongo_collection().find.return_value = []
@@ -327,8 +335,9 @@ def test_update_filtered_positives_aborts_with_no_positive_samples_fetched_from_
     mock_print_status.assert_called_once_with(1, 0, False, False, False)
     mock_update_mongo.assert_not_called()
     mock_update_mlwh.assert_not_called()
+    mock_update_dart.assert_not_called()
 
-def test_update_filtered_positives_catches_error_determining_filtered_positive_results(config, mock_dart_conn, mock_mongo_collection, mock_positive_identifier, mock_print_exception, mock_print_status, mock_update_mongo, mock_update_mlwh):
+def test_update_filtered_positives_catches_error_determining_filtered_positive_results(config, mock_dart_conn, mock_mongo_collection, mock_positive_identifier, mock_print_exception, mock_print_status, mock_update_mongo, mock_update_mlwh, mock_update_dart):
     # mock a single pending plate and sample, but determining the filtered positive fields to throw
     mock_dart_conn().cursor().execute().fetchall.return_value = ['123']
     mock_mongo_collection().find.return_value = [{ FIELD_PLATE_BARCODE: '123' }]
@@ -342,8 +351,9 @@ def test_update_filtered_positives_catches_error_determining_filtered_positive_r
     mock_print_status.assert_called_once_with(1, 1, False, False, False)
     mock_update_mongo.assert_not_called()
     mock_update_mlwh.assert_not_called()
+    mock_update_dart.assert_not_called()
 
-def test_update_filtered_positives_catches_error_updating_samples_in_mongo(config, mock_dart_conn, mock_mongo_collection, mock_print_exception, mock_print_status, mock_update_mongo, mock_update_mlwh):
+def test_update_filtered_positives_catches_error_updating_samples_in_mongo(config, mock_dart_conn, mock_mongo_collection, mock_print_exception, mock_print_status, mock_update_mongo, mock_update_mlwh, mock_update_dart):
     # mock a single pending plate and sample, but updating the samples in mongo to throw
     mock_dart_conn().cursor().execute().fetchall.return_value = ['123']
     mock_mongo_collection().find.return_value = [{ FIELD_MONGODB_ID: '1', FIELD_PLATE_BARCODE: '123', FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_ROOT_SAMPLE_ID: 'MCM001' }]
@@ -356,8 +366,9 @@ def test_update_filtered_positives_catches_error_updating_samples_in_mongo(confi
     mock_print_exception.assert_called_once()
     mock_print_status.assert_called_once_with(1, 1, False, False, False)
     mock_update_mlwh.assert_not_called()
+    mock_update_dart.assert_not_called()
 
-def test_update_filtered_positives_catched_error_updating_samples_in_mlwh(config, mock_dart_conn, mock_mongo_collection, mock_print_exception, mock_print_status, mock_update_mongo, mock_update_mlwh):
+def test_update_filtered_positives_catched_error_updating_samples_in_mlwh(config, mock_dart_conn, mock_mongo_collection, mock_print_exception, mock_print_status, mock_update_mongo, mock_update_mlwh, mock_update_dart):
     # mock a single pending plate and sample, but updating the samples in mlwh to throw
     mock_dart_conn().cursor().execute().fetchall.return_value = ['123']
     mock_mongo_collection().find.return_value = [{ FIELD_MONGODB_ID: '1', FIELD_PLATE_BARCODE: '123', FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_ROOT_SAMPLE_ID: 'MCM001' }]
@@ -370,5 +381,21 @@ def test_update_filtered_positives_catched_error_updating_samples_in_mlwh(config
     # ensure expected outputs, and that no databases are updated
     mock_print_exception.assert_called_once()
     mock_print_status.assert_called_once_with(1, 1, True, False, False)
+    mock_update_dart.assert_not_called()
+
+def test_update_filtered_positives_catched_error_updating_samples_in_dart(config, mock_dart_conn, mock_mongo_collection, mock_print_exception, mock_print_status, mock_update_mongo, mock_update_mlwh, mock_update_dart):
+    # mock a single pending plate and sample, but updating the samples in dart to throw
+    mock_dart_conn().cursor().execute().fetchall.return_value = ['123']
+    mock_mongo_collection().find.return_value = [{ FIELD_MONGODB_ID: '1', FIELD_PLATE_BARCODE: '123', FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_ROOT_SAMPLE_ID: 'MCM001' }]
+    mock_update_mongo.return_value = True
+    mock_update_mlwh.return_value = True
+    mock_update_dart.side_effect = NotImplementedError('Boom!')
+
+    # call the migration
+    update_filtered_positives(config)
+
+    # ensure expected outputs, and that no databases are updated
+    mock_print_exception.assert_called_once()
+    mock_print_status.assert_called_once_with(1, 1, True, True, False)
 
 # def test_update_filtered_positives_outputs_success(config):
