@@ -9,6 +9,7 @@ from migrations.helpers.update_filtered_positives_helper import (
     update_mongo_filtered_positive_fields,
     update_mlwh_filtered_positive_fields,
     update_filtered_positives,
+    biomek_labclass_by_centre_name,
 )
 from crawler.constants import (
     COLLECTION_SAMPLES,
@@ -276,6 +277,25 @@ def test_update_mlwh_filtered_positive_fields_calls_to_update_samples(config, ml
     assert filtered_negative_sample[0] == False
     assert filtered_negative_sample[1] == 'v2.3'
     assert filtered_negative_sample[2] == update_timestamp
+
+# ----- test biomek_labclass_by_centre_name method -----
+
+def test_biomek_labclass_by_centre_name(config):
+    centres = [
+        {
+            "name": "test centre 1",
+            "biomek_labware_class": "test class 1"
+        },
+        {
+            "name": "test centre 2",
+            "biomek_labware_class": "test class 2"   
+        }
+    ]
+    labclass_by_name = biomek_labclass_by_centre_name(centres)
+
+    assert len(labclass_by_name.keys()) == 2
+    assert labclass_by_name["test centre 1"] == "test class 1"
+    assert labclass_by_name["test centre 2"] == "test class 2"
 
 # ----- test update_filtered_positives method -----
 
