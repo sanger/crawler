@@ -7,6 +7,7 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from mysql.connector.connection_cext import CMySQLConnection
 import mysql.connector as mysql
+import pyodbc
 
 from crawler.db import (
     create_import_record,
@@ -75,9 +76,8 @@ def test_create_mysql_connection_none(config):
 
 def test_create_mysql_connection_exception(config):
     # For example, if the credentials in the config are wrong
-    with patch('mysql.connector.connect', side_effect = Exception('Boom!')):
-        with pytest.raises(Exception):
-            create_mysql_connection(config)
+    with patch('mysql.connector.connect', side_effect = mysql.Error()):
+        assert create_mysql_connection(config) == None
 
 def test_run_mysql_executemany_query_success(config):
     conn = CMySQLConnection()
@@ -139,9 +139,8 @@ def test_create_dart_sql_server_conn_none(config):
         assert create_dart_sql_server_conn(config) == None
 
 def test_create_dart_sql_server_conn_expection(config):
-    with patch('pyodbc.connect', side_effect = Exception('Boom!')):
-        with pytest.raises(Exception):
-            create_dart_sql_server_conn(config)
+    with patch('pyodbc.connect', side_effect = pyodbc.Error()):
+        assert create_dart_sql_server_conn(config) == None
 
 def test_get_dart_plate_state(config):
     with patch("pyodbc.connect") as mock_conn:

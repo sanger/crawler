@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from types import ModuleType
-from typing import Dict, List, Iterator
+from typing import Dict, List, Iterator, Optional
 from crawler.helpers import current_time
 
 from pymongo import MongoClient
@@ -14,7 +14,6 @@ from contextlib import contextmanager
 
 import mysql.connector as mysql # type: ignore
 from mysql.connector.connection_cext import CMySQLConnection # type: ignore
-from mysql.connector import Error # type: ignore
 from crawler.sql_queries import (SQL_MLWH_MULTIPLE_INSERT, SQL_TEST_MLWH_CREATE)
 from crawler.helpers import get_config
 
@@ -198,7 +197,7 @@ def create_mysql_connection(config: ModuleType, readonly=True) -> CMySQLConnecti
             else:
                 logger.error('MySQL Connection Failed')
 
-    except Error as e:
+    except mysql.Error as e:
         logger.error(f"Exception on connecting to MySQL database: {e}")
 
     return mysql_conn
@@ -272,7 +271,7 @@ def init_warehouse_db_command():
     logger.debug("Done")
 
 
-def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> pyodbc.Connection:
+def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> Optional[pyodbc.Connection]:
     """Create a SQL Server connection to DART with the given config parameters.
 
     Arguments:
@@ -292,7 +291,7 @@ def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> pyodbc.Con
     dart_db_db = config.DART_DB_DBNAME  # type: ignore
     dart_db_driver = config.DART_DB_DRIVER  # type: ignore
 
-    connection_string = 'DRIVER='+dart_db_driver+';SERVER='+dart_db_host+f';PORT={dart_db_port};DATABASE='+dart_db_db+';UID='+dart_db_username+';PWD=' + dart_db_password
+    connection_string = f'DRIVER={dart_db_driver};SERVER={dart_db_host};PORT={dart_db_port};DATABASE={dart_db_db};UID={dart_db_username};PWD={dart_db_password}'
 
     logger.debug(f"Attempting to connect to {dart_db_host} on port {dart_db_port}")
 
@@ -305,7 +304,7 @@ def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> pyodbc.Con
         else:
             logger.error('DART Connection Failed')
 
-    except Error as e:
+    except pyodbc.Error as e:
         logger.error(f"Exception on connecting to DART database: {e}")
 
     return sql_server_conn
