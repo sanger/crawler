@@ -22,12 +22,17 @@ from crawler.constants import (
     DART_STATE_PENDING,
     DART_STATE,
     DART_SET_PROP_STATUS_SUCCESS,
+    DART_STATE_NO_PLATE,
+    DART_STATE_NO_PROP,
+    DART_STATE_PENDING,
 )
 from crawler.sql_queries import (
     SQL_DART_GET_PLATE_PROPERTY,
     SQL_DART_SET_PLATE_PROPERTY,
     SQL_DART_SET_WELL_PROPERTY,
+    SQL_DART_ADD_PLATE,
 )
+from crawler.exceptions import DartStateError
 
 logger = logging.getLogger(__name__)
 
@@ -350,4 +355,29 @@ def set_dart_well_properties(cursor: pyodbc.Cursor, plate_barcode: str, well_pro
     """
     for prop_name, prop_value in well_props.items():
         cursor.execute(SQL_DART_SET_WELL_PROPERTY, (plate_barcode, prop_name, prop_value, well_index))
+
+def add_dart_plate_if_doesnt_exist(cursor: pyodbc.Cursor, plate_barcode: str, biomek_labclass: str) -> str:
+    """Adds a plate to DART if it does not already exist. Returns the state of the plate.
+
+        Arguments:
+            cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
+            plate_barcode {str} -- The barcode of the plate to add.
+            biomek_labclass -- The biomek labware class of the plate.
+
+        Returns:
+            str -- The state of the plate in DART.
+    """
+    state = get_dart_plate_state(cursor, plate_barcode)
+    if state == DART_STATE_NO_PLATE:
+        cursor.execute(SQL_DART_ADD_PLATE, (plate_barcode, biomek_labclass, 96))
+        if set_dart_plate_state_pending(cursor, plate_barcode):
+            state = DART_STATE_PENDING
+        else:
+            raise DartStateError(
+                f"Unable to set the state of a DART plate {plate_barcode} to pending"
+            )
+    elif state == DART_STATE_NO_PROP:
+        raise DartStateError(f"DART plate {plate_barcode} should have a state")
+
+    return state
     

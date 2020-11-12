@@ -20,18 +20,23 @@ from crawler.db import (
     get_dart_plate_state,
     set_dart_plate_state_pending,
     set_dart_well_properties,
+    add_dart_plate_if_doesnt_exist,
 )
 from crawler.helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from crawler.constants import (
     DART_STATE,
     DART_STATE_PENDING,
+    DART_STATE_NO_PROP,
+    DART_STATE_NO_PLATE,
 )
 from crawler.sql_queries import (
     SQL_DART_GET_PLATE_PROPERTY,
     SQL_DART_SET_PLATE_PROPERTY,
-    SQL_DART_SET_WELL_PROPERTY
+    SQL_DART_SET_WELL_PROPERTY,
+    SQL_DART_ADD_PLATE,
 )
+from crawler.exceptions import DartStateError
 
 def test_create_mongo_client(config):
     assert type(create_mongo_client(config)) == MongoClient
@@ -178,3 +183,34 @@ def test_set_dart_well_properties(config):
                 SQL_DART_SET_WELL_PROPERTY,
                 (test_plate_barcode, prop_name, prop_value, test_well_index)
             )
+
+def test_add_dart_plate_if_doesnt_exist_throws_without_state_property(config):
+    with patch("pyodbc.connect") as mock_conn:
+        test_plate_barcode = 'AB123'
+        test_labclass = 'test class'
+
+        # does not create existing plate and returns its state
+        with patch("crawler.db.get_dart_plate_state", return_value = DART_STATE_PENDING):
+            result = add_dart_plate_if_doesnt_exist(mock_conn.cursor(), test_plate_barcode, test_labclass)
+            mock_conn.cursor().assert_not_called()
+            assert result == DART_STATE_PENDING
+
+        # if plate does not exist, creates new plate with pending state
+        with patch("crawler.db.get_dart_plate_state", return_value = DART_STATE_NO_PLATE):
+            with patch("crawler.db.set_dart_plate_state_pending", return_value = True):
+                result = add_dart_plate_if_doesnt_exist(mock_conn.cursor(), test_plate_barcode, test_labclass)
+                mock_conn.cursor().execute.assert_called_with(SQL_DART_ADD_PLATE, (test_plate_barcode, test_labclass, 96))
+                assert result == DART_STATE_PENDING
+
+        # if plate does not exist, throws on failure adding setting new plate state to pending
+        with patch("crawler.db.get_dart_plate_state", return_value = DART_STATE_NO_PLATE):
+            with patch("crawler.db.set_dart_plate_state_pending", return_value = False):
+                with pytest.raises(DartStateError):
+                    add_dart_plate_if_doesnt_exist(mock_conn.cursor(), test_plate_barcode, test_labclass)
+
+        # throws without state property
+        with patch("crawler.db.get_dart_plate_state", return_value = DART_STATE_NO_PROP):
+            with pytest.raises(DartStateError):
+                add_dart_plate_if_doesnt_exist(mock_conn.cursor(), test_plate_barcode, test_labclass)
+
+

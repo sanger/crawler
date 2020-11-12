@@ -68,10 +68,7 @@ from crawler.constants import (
     COLLECTION_IMPORTS,
     COLLECTION_CENTRES,
 )
-from crawler.exceptions import (
-    CentreFileError,
-    DartStateError,
-)
+from crawler.exceptions import CentreFileError
 from crawler.db import (
     get_mongo_collection,
     get_mongo_db,
@@ -83,6 +80,7 @@ from crawler.db import (
     get_dart_plate_state,
     set_dart_plate_state_pending,
     set_dart_well_properties,
+    add_dart_plate_if_doesnt_exist,
 )
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from hashlib import md5
@@ -576,7 +574,7 @@ class CentreFile:
 
                 for plate_barcode, samples in groupby_transform(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]):  # type:ignore
                     try:
-                        plate_state = self.create_dart_plate_if_doesnt_exist(cursor, plate_barcode)
+                        plate_state = add_dart_plate_if_doesnt_exist(cursor, plate_barcode, self.centre_config["biomek_labware_class"])
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
                                 self.add_dart_well_properties_if_positive(cursor, sample, plate_barcode)
@@ -606,30 +604,6 @@ class CentreFile:
                 f"DART database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
-
-    def create_dart_plate_if_doesnt_exist(self, cursor: pyodbc.Cursor, plate_barcode: str) -> str:
-        """Adds a plate to DART if it does not already exist. Returns the state of the plate.
-
-            Arguments:
-                cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
-                plate_barcode {str} -- The barcode of the plate to add.
-
-            Returns:
-                str -- The state of the plate in DART.
-        """
-        state = get_dart_plate_state(cursor, plate_barcode)
-        if state == DART_STATE_NO_PLATE:
-            cursor.execute("{CALL dbo.plDART_PlateCreate (?,?,?)}", (plate_barcode, self.centre_config["biomek_labware_class"], 96))
-            if set_dart_plate_state_pending(cursor, plate_barcode):
-                state = DART_STATE_PENDING
-            else:
-                raise DartStateError(
-                    f"Unable to set the state of a DART plate {plate_barcode} to pending"
-                )
-        elif state == DART_STATE_NO_PROP:
-            raise DartStateError(f"DART plate {plate_barcode} should have a state")
-
-        return state
 
     def add_dart_well_properties_if_positive(self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str) -> None:
         """Adds well properties to DART for the specified sample if that sample is positive.

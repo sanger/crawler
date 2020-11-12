@@ -135,3 +135,5 @@ SELECT DISTINCT [Labware LIMS BARCODE] FROM dbo.LIMS_test_plate_status WHERE [La
 """
 
 SQL_DART_SET_WELL_PROPERTY ="{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}"
+
+SQL_DART_ADD_PLATE = "{CALL dbo.plDART_PlateCreate (?,?,?)}"
