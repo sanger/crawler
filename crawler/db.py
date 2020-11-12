@@ -2,7 +2,7 @@ import logging
 from contextlib import contextmanager
 from datetime import datetime
 from types import ModuleType
-from typing import Dict, Iterator, List
+from typing import Dict, Iterator, List, Optional
 
 import mysql.connector as mysql  # type: ignore
 import pyodbc  # type: ignore
@@ -194,7 +194,7 @@ def create_mysql_connection(config: ModuleType, readonly=True) -> CMySQLConnecti
             else:
                 logger.error("MySQL Connection Failed")
 
-    except Error as e:
+    except mysql.Error as e:
         logger.error(f"Exception on connecting to MySQL database: {e}")
 
     return mysql_conn
@@ -284,7 +284,7 @@ def init_warehouse_db_command():
     logger.debug("Done")
 
 
-def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> pyodbc.Connection:
+def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> Optional[pyodbc.Connection]:
     """Create a SQL Server connection to DART with the given config parameters.
 
     Arguments:
@@ -324,7 +324,7 @@ def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> pyodbc.Con
         else:
             logger.error("DART Connection Failed")
 
-    except Error as e:
+    except pyodbc.Error as e:
         logger.error(f"Exception on connecting to DART database: {e}")
 
     return sql_server_conn
