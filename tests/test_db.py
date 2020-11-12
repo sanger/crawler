@@ -18,7 +18,8 @@ from crawler.db import (
     run_mysql_executemany_query,
     create_dart_sql_server_conn,
     get_dart_plate_state,
-    set_dart_plate_state_pending
+    set_dart_plate_state_pending,
+    set_dart_well_properties,
 )
 from crawler.helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
@@ -29,6 +30,7 @@ from crawler.constants import (
 from crawler.sql_queries import (
     SQL_DART_GET_PLATE_PROPERTY,
     SQL_DART_SET_PLATE_PROPERTY,
+    SQL_DART_SET_WELL_PROPERTY
 )
 
 def test_create_mongo_client(config):
@@ -164,3 +166,15 @@ def test_set_dart_plate_state_pending(config):
             SQL_DART_SET_PLATE_PROPERTY,
             (test_plate_barcode, DART_STATE, DART_STATE_PENDING),
         )
+
+def test_set_dart_well_properties(config):
+    with patch("pyodbc.connect") as mock_conn:
+        test_plate_barcode = "AB123"
+        test_well_props = { 'prop1': 'value1', 'test prop': 'test value'}
+        test_well_index = 12
+        set_dart_well_properties(mock_conn.cursor(), test_plate_barcode, test_well_props, test_well_index)
+        for prop_name, prop_value in test_well_props.items():
+            mock_conn.cursor().execute.assert_any_call(
+                SQL_DART_SET_WELL_PROPERTY,
+                (test_plate_barcode, prop_name, prop_value, test_well_index)
+            )

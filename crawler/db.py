@@ -26,6 +26,7 @@ from crawler.constants import (
 from crawler.sql_queries import (
     SQL_DART_GET_PLATE_PROPERTY,
     SQL_DART_SET_PLATE_PROPERTY,
+    SQL_DART_SET_WELL_PROPERTY,
 )
 
 logger = logging.getLogger(__name__)
@@ -313,7 +314,7 @@ def get_dart_plate_state(cursor: pyodbc.Cursor, plate_barcode: str) -> str:
     """Gets the state of a DART plate.
 
         Arguments:
-            cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
+            cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
             plate_barcode {str} -- The barcode of the plate whose state to fetch.
 
         Returns:
@@ -327,7 +328,7 @@ def set_dart_plate_state_pending(cursor: pyodbc.Cursor, plate_barcode: str) -> s
     """Sets the state of a DART plate to pending.
 
         Arguments:
-            cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
+            cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
             plate_barcode {str} -- The barcode of the plate whose state to set.
 
         Returns:
@@ -337,4 +338,16 @@ def set_dart_plate_state_pending(cursor: pyodbc.Cursor, plate_barcode: str) -> s
     cursor.execute(SQL_DART_SET_PLATE_PROPERTY, params)
     response = cursor.fetchval()
     return response == DART_SET_PROP_STATUS_SUCCESS
+
+def set_dart_well_properties(cursor: pyodbc.Cursor, plate_barcode: str, well_props: Dict[str, str], well_index: int) -> None:
+    """Calls the DART stored procedure to add or update properties on a well
+
+        Arguments:
+            cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
+            plate_barcode {str} -- The barcode of the plate whose well properties to update.
+            well_props {Dict[str, str]} -- The names and values of the well properties to update.
+            well_index {int} -- The index of the well to update.
+    """
+    for prop_name, prop_value in well_props.items():
+        cursor.execute(SQL_DART_SET_WELL_PROPERTY, (plate_barcode, prop_name, prop_value, well_index))
     

@@ -82,6 +82,7 @@ from crawler.db import (
     create_dart_sql_server_conn,
     get_dart_plate_state,
     set_dart_plate_state_pending,
+    set_dart_well_properties,
 )
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from hashlib import md5
@@ -642,8 +643,7 @@ class CentreFile:
             well_index = get_dart_well_index(sample.get(FIELD_COORDINATE, None))
             if well_index is not None:
                 dart_well_props = map_mongo_doc_to_dart_well_props(sample)
-                for prop_name, prop_value in dart_well_props.items():
-                    cursor.execute("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, prop_name, prop_value, well_index))
+                set_dart_well_properties(cursor, plate_barcode, dart_well_props, well_index)
             else:
                 raise ValueError(f'Unable to determine DART well index for sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}')
 
