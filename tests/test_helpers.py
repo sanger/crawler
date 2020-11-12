@@ -35,6 +35,12 @@ from crawler.constants import (
     MLWH_FILTERED_POSITIVE_VERSION,
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
     MYSQL_DATETIME_FORMAT,
+    DART_STATE,
+    DART_ROOT_SAMPLE_ID,
+    DART_RNA_ID,
+    DART_LAB_ID,
+    DART_STATE_PICKABLE,
+    DART_STATE_EMPTY,
 )
 from crawler.helpers import (
     parse_date_tested,
@@ -44,6 +50,7 @@ from crawler.helpers import (
     map_mongo_doc_to_sql_columns,
     unpad_coordinate,
     get_dart_well_index,
+    map_mongo_doc_to_dart_well_props,
 )
 from datetime import (
     datetime,
@@ -243,3 +250,41 @@ def test_get_dart_well_index(config):
 
     coordinate = 'H11'
     assert get_dart_well_index(coordinate) == 95, "Expected well index of 95"
+
+def test_map_mongo_doc_to_dart_well_props(config):
+    # all fields present, filtered positive
+    doc_to_transform = {
+        FIELD_FILTERED_POSITIVE: True,
+        FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+        FIELD_RNA_ID: 'TC-rna-00000029_H01',
+        FIELD_LAB_ID: 'TC',
+    }
+
+    result = map_mongo_doc_to_dart_well_props(doc_to_transform)
+
+    assert result[DART_STATE] == DART_STATE_PICKABLE
+    assert result[DART_ROOT_SAMPLE_ID] == 'ABC00000004'
+    assert result[DART_RNA_ID] == 'TC-rna-00000029_H01'
+    assert result[DART_LAB_ID] == 'TC'
+
+    # missing lab id, not a filtered positive
+    doc_to_transform = {
+        FIELD_FILTERED_POSITIVE: False,
+        FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+        FIELD_RNA_ID: 'TC-rna-00000029_H01',
+    }
+
+    result = map_mongo_doc_to_dart_well_props(doc_to_transform)
+
+    assert result[DART_STATE] == DART_STATE_EMPTY
+    assert result[DART_LAB_ID] == DART_STATE_EMPTY
+
+    # missing filtered positive
+    doc_to_transform = {
+        FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
+        FIELD_RNA_ID: 'TC-rna-00000029_H01',
+    }
+
+    result = map_mongo_doc_to_dart_well_props(doc_to_transform)
+
+    assert result[DART_STATE] == DART_STATE_EMPTY

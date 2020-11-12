@@ -73,6 +73,12 @@ from crawler.constants import (
     MLWH_CREATED_AT,
     MLWH_UPDATED_AT,
     MYSQL_DATETIME_FORMAT,
+    DART_STATE,
+    DART_ROOT_SAMPLE_ID,
+    DART_RNA_ID,
+    DART_LAB_ID,
+    DART_STATE_PICKABLE,
+    DART_STATE_EMPTY,
 )
 
 logger = logging.getLogger(__name__)
@@ -276,6 +282,14 @@ def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
                 return well_index
 
     return None
+
+def map_mongo_doc_to_dart_well_props(doc: Dict[str, Any]) -> Dict[str, str]:
+    return {
+        DART_STATE: DART_STATE_PICKABLE if doc.get(FIELD_FILTERED_POSITIVE, False) else DART_STATE_EMPTY,
+        DART_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
+        DART_RNA_ID: doc[FIELD_RNA_ID],
+        DART_LAB_ID: doc.get(FIELD_LAB_ID, None),
+    }
 
 class ErrorLevel(Enum):
     DEBUG = 1
