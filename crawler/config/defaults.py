@@ -38,6 +38,7 @@ CENTRES = [
         "backups_folder": "data/backups/ALDP",
         "sftp_file_regex": r"^AP_sanger_report_(\d{6}_\d{4}).*\.csv$",
         "sftp_root_read": "project-heron_alderly-park",
+        "biomek_labware_class": "KingFisher 96 2ml",
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -49,6 +50,7 @@ CENTRES = [
         "sftp_file_regex": r"^MK_sanger_report_(\d{6}_\d{4}).*\.csv$",
         "sftp_root_read": "project-heron/UK-Biocenter/Sanger Reports",
         "file_names_to_ignore": ["MK_sanger_report_200715_2000_master.csv"],
+        "biomek_labware_class": "KingFisher 96 2ml",
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -60,6 +62,7 @@ CENTRES = [
         "sftp_file_regex": r"^GLS_sanger_report_(\d{6}_\d{4}).*\.csv$",
         "sftp_root_read": "project-heron_glasgow",
         "file_names_to_ignore": ["GLS_sanger_report_200713_0001_master.csv"],
+        "biomek_labware_class": "KingFisher 96 2ml",
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -71,6 +74,7 @@ CENTRES = [
         "sftp_file_regex": r"^CB_sanger_report_(\d{6}_\d{4}).*\.csv$",
         "sftp_root_read": "project-heron_cambridge-az",
         "file_names_to_ignore": ["CB_sanger_report_200714_0001_master.csv"],
+        "biomek_labware_class": "Bio-Rad 96PCR",
     },
 ]
 
@@ -89,6 +93,16 @@ MLWH_DB_RO_USER = "root"
 MLWH_DB_RO_PASSWORD = "root"
 MLWH_DB_RW_USER = "root"
 MLWH_DB_RW_PASSWORD = "root"
+
+# DART database details
+DART_DB_DBNAME = "dart_test"
+DART_DB_HOST = "127.0.0.1"
+DART_DB_PORT = 1433
+DART_DB_RO_USER = "root"
+DART_DB_RO_PASSWORD = ""
+DART_DB_RW_USER = "root"
+DART_DB_RW_PASSWORD = ""
+DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
 
 # SFTP details
 SFTP_UPLOAD = False  # upload files to SFTP server
@@ -110,10 +124,10 @@ LOGGING = {
     "formatters": {
         "colored": {
             "()": "colorlog.ColoredFormatter",
-            "format": "%(asctime)-15s %(name)-16s:%(lineno)-3s %(log_color)s%(levelname)-7s %(message)s",
+            "format": "%(asctime)-15s %(name)-25s:%(lineno)-3s %(log_color)s%(levelname)-7s %(message)s",
         },
         "verbose": {
-            "format": "%(asctime)-15s %(name)-16s:%(lineno)-3s %(levelname)-7s %(message)s"
+            "format": "%(asctime)-15s %(name)-25s:%(lineno)-3s %(levelname)-7s %(message)s"
         },
     },
     "handlers": {

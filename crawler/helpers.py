@@ -41,6 +41,9 @@ from crawler.constants import (
     FIELD_CREATED_AT,
     FIELD_UPDATED_AT,
     FIELD_SOURCE,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
     MLWH_MONGODB_ID,
     MLWH_ROOT_SAMPLE_ID,
     MLWH_RNA_ID,
@@ -63,6 +66,9 @@ from crawler.constants import (
     MLWH_CH4_TARGET,
     MLWH_CH4_RESULT,
     MLWH_CH4_CQ,
+    MLWH_FILTERED_POSITIVE,
+    MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_FILTERED_POSITIVE_TIMESTAMP,
     MLWH_CREATED_AT,
     MLWH_UPDATED_AT,
     MYSQL_DATETIME_FORMAT,
@@ -167,6 +173,9 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
         MLWH_CH4_TARGET: doc.get(FIELD_CH4_TARGET, None),
         MLWH_CH4_RESULT: doc.get(FIELD_CH4_RESULT, None),
         MLWH_CH4_CQ: parse_decimal128(doc.get(FIELD_CH4_CQ, None)),
+        MLWH_FILTERED_POSITIVE: doc.get(FIELD_FILTERED_POSITIVE, None),
+        MLWH_FILTERED_POSITIVE_VERSION: doc.get(FIELD_FILTERED_POSITIVE_VERSION, None),
+        MLWH_FILTERED_POSITIVE_TIMESTAMP: doc.get(FIELD_FILTERED_POSITIVE_TIMESTAMP, None)
     }
 
 # Strip any leading zeros from the coordinate
@@ -485,6 +494,30 @@ class AggregateType21(AggregateTypeBase):
         self.max_errors = 5
         self.short_display_description = "Result not aligned with CHn-Results"
 
+class AggregateType22(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = 'TYPE 22'
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = f"CRITICAL: Files where the DART database inserts have failed for some plates. ({self.type_str})"
+        self.short_display_description = "Failed DART plate inserts"
+
+class AggregateType23(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = 'TYPE 23'
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = f"CRITICAL: Files where all DART database inserts have failed. ({self.type_str})"
+        self.short_display_description = "Failed DART file inserts"
+
+class AggregateType24(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = 'TYPE 24'
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = f"CRITICAL: Files where the DART database connection could not be made. ({self.type_str})"
+        self.short_display_description = "Failed DART connection"
+
 # Class to handle logging of errors of the various types per file
 class LoggingCollection:
     def __init__(self):
@@ -508,6 +541,9 @@ class LoggingCollection:
             "TYPE 19": AggregateType19(),
             "TYPE 20": AggregateType20(),
             "TYPE 21": AggregateType21(),
+            "TYPE 22": AggregateType22(),
+            "TYPE 23": AggregateType23(),
+            "TYPE 24": AggregateType24(),
         }
 
     def add_error(self, aggregate_error_type, message):

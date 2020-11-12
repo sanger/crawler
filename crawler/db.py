@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from types import ModuleType
-from typing import Dict, List, Iterator
+from typing import Dict, List, Iterator, Optional
 from crawler.helpers import current_time
 
 from pymongo import MongoClient
@@ -14,9 +14,17 @@ from contextlib import contextmanager
 
 import mysql.connector as mysql # type: ignore
 from mysql.connector.connection_cext import CMySQLConnection # type: ignore
-from mysql.connector import Error # type: ignore
 from crawler.sql_queries import (SQL_MLWH_MULTIPLE_INSERT, SQL_TEST_MLWH_CREATE)
 from crawler.helpers import get_config
+
+import pyodbc  # type: ignore
+from crawler.constants import (
+    DART_STATE_PENDING,
+    DART_STATE_PROPERTY_NAME,
+    DART_GET_PLATE_PROPERTY_SQL,
+    DART_SET_PLATE_PROPERTY_SQL,
+    DART_SET_PROP_STATUS_SUCCESS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -187,7 +195,7 @@ def create_mysql_connection(config: ModuleType, readonly=True) -> CMySQLConnecti
             else:
                 logger.error('MySQL Connection Failed')
 
-    except Error as e:
+    except mysql.Error as e:
         logger.error(f"Exception on connecting to MySQL database: {e}")
 
     return mysql_conn
@@ -259,3 +267,72 @@ def init_warehouse_db_command():
     mysql_conn.close()
 
     logger.debug("Done")
+
+
+def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> Optional[pyodbc.Connection]:
+    """Create a SQL Server connection to DART with the given config parameters.
+
+    Arguments:
+        config {ModuleType} -- application config specifying database details
+
+    Returns:
+        pyodbc.Connection -- connection object used to interact with the sql server database
+    """
+    dart_db_host = config.DART_DB_HOST  # type: ignore
+    dart_db_port = config.DART_DB_PORT  # type: ignore
+    if readonly:
+        dart_db_username = config.DART_DB_RO_USER  # type: ignore
+        dart_db_password = config.DART_DB_RO_PASSWORD  # type: ignore
+    else:
+        dart_db_username = config.DART_DB_RW_USER  # type: ignore
+        dart_db_password = config.DART_DB_RW_PASSWORD  # type: ignore
+    dart_db_db = config.DART_DB_DBNAME  # type: ignore
+    dart_db_driver = config.DART_DB_DRIVER  # type: ignore
+
+    connection_string = f'DRIVER={dart_db_driver};SERVER={dart_db_host};PORT={dart_db_port};DATABASE={dart_db_db};UID={dart_db_username};PWD={dart_db_password}'
+
+    logger.debug(f"Attempting to connect to {dart_db_host} on port {dart_db_port}")
+
+    sql_server_conn = None
+    try:
+        sql_server_conn = pyodbc.connect(connection_string)
+
+        if sql_server_conn is not None:
+            logger.debug('DART Connection Successful')
+        else:
+            logger.error('DART Connection Failed')
+
+    except pyodbc.Error as e:
+        logger.error(f"Exception on connecting to DART database: {e}")
+
+    return sql_server_conn
+
+def get_dart_plate_state(cursor: pyodbc.Cursor, plate_barcode: str) -> str:
+    """Gets the state of a DART plate.
+
+        Arguments:
+            cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
+            plate_barcode {str} -- The barcode of the plate whose state to fetch.
+
+        Returns:
+            str -- The state of the plate in DART.
+    """
+    params = (plate_barcode, DART_STATE_PROPERTY_NAME)
+    cursor.execute(DART_GET_PLATE_PROPERTY_SQL, params)
+    return cursor.fetchval()
+
+def set_dart_plate_state_pending(cursor: pyodbc.Cursor, plate_barcode: str) -> str:
+    """Sets the state of a DART plate to pending.
+
+        Arguments:
+            cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
+            plate_barcode {str} -- The barcode of the plate whose state to set.
+
+        Returns:
+            bool -- Return True if DART was updated successfully, else False.
+    """
+    params = (plate_barcode, DART_STATE_PROPERTY_NAME, DART_STATE_PENDING)
+    cursor.execute(DART_SET_PLATE_PROPERTY_SQL, params)
+    response = cursor.fetchval()
+    return response == DART_SET_PROP_STATUS_SUCCESS
+    

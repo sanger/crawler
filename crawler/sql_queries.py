@@ -1,4 +1,4 @@
-## SQL query to insert multiple rows into the MLWH
+# SQL query to insert multiple rows into the MLWH
 SQL_MLWH_MULTIPLE_INSERT = """
 INSERT INTO lighthouse_sample (
 mongodb_id,
@@ -23,6 +23,9 @@ ch3_cq,
 ch4_target,
 ch4_result,
 ch4_cq,
+filtered_positive,
+filtered_positive_version,
+filtered_positive_timestamp,
 created_at,
 updated_at
 )
@@ -49,6 +52,9 @@ VALUES (
 %(ch4_target)s,
 %(ch4_result)s,
 %(ch4_cq)s,
+%(filtered_positive)s,
+%(filtered_positive_version)s,
+%(filtered_positive_timestamp)s,
 %(created_at)s,
 %(updated_at)s
 )
@@ -91,6 +97,9 @@ CREATE TABLE `unified_warehouse_test`.`lighthouse_sample` (
 `ch4_target` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL COMMENT 'Target for channel 4',
 `ch4_result` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL COMMENT 'Result for channel 4',
 `ch4_cq` decimal(11,8) DEFAULT NULL COMMENT 'Cq value for channel 4',
+`filtered_positive` boolean DEFAULT NULL COMMENT 'Filtered positive result value',
+`filtered_positive_version` varchar(255) DEFAULT NULL COMMENT 'Filtered positive version',
+`filtered_positive_timestamp` datetime DEFAULT NULL COMMENT 'Filtered positive timestamp',
 `created_at` datetime DEFAULT NULL COMMENT 'When this record was inserted',
 `updated_at` datetime DEFAULT NULL COMMENT 'When this record was last updated',
 PRIMARY KEY (`id`),

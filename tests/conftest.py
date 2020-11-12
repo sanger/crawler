@@ -17,12 +17,14 @@ from crawler.constants import (
     MLWH_TABLE_NAME
 )
 
-from crawler.db import create_mongo_client, get_mongo_db
-from crawler.helpers import get_config
 from crawler.db import (
-    get_mongo_collection,
-    create_mysql_connection,
+  create_mongo_client,
+  get_mongo_db,
+  get_mongo_collection,
+  create_mysql_connection,
+  create_dart_sql_server_conn,
 )
+from crawler.helpers import get_config
 
 logger = logging.getLogger(__name__)
 CONFIG, _ = get_config("crawler.config.test")
@@ -73,6 +75,11 @@ def mlwh_connection(config):
     finally:
         # close the connection
         mysql_conn.close()
+
+@pytest.fixture
+def pyodbc_conn(config):
+    with patch('pyodbc.connect') as mock_connect:
+        yield mock_connect
 
 @pytest.fixture
 def testing_files_for_process(cleanup_backups):

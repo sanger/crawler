@@ -7,6 +7,7 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from mysql.connector.connection_cext import CMySQLConnection
 import mysql.connector as mysql
+import pyodbc
 
 from crawler.db import (
     create_import_record,
@@ -15,9 +16,13 @@ from crawler.db import (
     get_mongo_db,
     create_mysql_connection,
     run_mysql_executemany_query,
+    create_dart_sql_server_conn,
+    get_dart_plate_state,
+    set_dart_plate_state_pending
 )
 from crawler.helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
+from crawler.constants import (DART_GET_PLATE_PROPERTY_SQL, DART_STATE_PROPERTY_NAME, DART_SET_PLATE_PROPERTY_SQL, DART_STATE_PENDING)
 
 def test_create_mongo_client(config):
     assert type(create_mongo_client(config)) == MongoClient
@@ -64,9 +69,8 @@ def test_create_mysql_connection_none(config):
 
 def test_create_mysql_connection_exception(config):
     # For example, if the credentials in the config are wrong
-    with patch('mysql.connector.connect', side_effect = Exception('Boom!')):
-        with pytest.raises(Exception):
-            create_mysql_connection(config)
+    with patch('mysql.connector.connect', side_effect = mysql.Error()):
+        assert create_mysql_connection(config) == None
 
 def test_run_mysql_executemany_query_success(config):
     conn = CMySQLConnection()
@@ -110,3 +114,46 @@ def test_run_mysql_executemany_query_execute_error(config):
         # check connection is closed
         assert cursor.close.called == True
         assert conn.close.called == True
+
+def test_create_dart_sql_server_conn_readonly(config):
+    with patch('pyodbc.connect') as mock_connect:
+        conn_string = f'DRIVER={config.DART_DB_DRIVER};SERVER={config.DART_DB_HOST};PORT={config.DART_DB_PORT};DATABASE={config.DART_DB_DBNAME};UID={config.DART_DB_RO_USER};PWD={config.DART_DB_RO_PASSWORD}'
+        create_dart_sql_server_conn(config)
+        mock_connect.assert_called_with(conn_string)
+
+def test_create_dart_sql_server_conn_readwrite(config):
+    with patch('pyodbc.connect') as mock_connect:
+        conn_string = f'DRIVER={config.DART_DB_DRIVER};SERVER={config.DART_DB_HOST};PORT={config.DART_DB_PORT};DATABASE={config.DART_DB_DBNAME};UID={config.DART_DB_RW_USER};PWD={config.DART_DB_RW_PASSWORD}'
+        create_dart_sql_server_conn(config, readonly=False)
+        mock_connect.assert_called_with(conn_string)
+
+def test_create_dart_sql_server_conn_none(config):
+    with patch('pyodbc.connect', return_value = None):
+        assert create_dart_sql_server_conn(config) == None
+
+def test_create_dart_sql_server_conn_expection(config):
+    with patch('pyodbc.connect', side_effect = pyodbc.Error()):
+        assert create_dart_sql_server_conn(config) == None
+
+def test_get_dart_plate_state(config):
+    with patch("pyodbc.connect") as mock_conn:
+
+        test_plate_barcode = "AB123"
+        assert (
+            get_dart_plate_state(mock_conn.cursor(), test_plate_barcode)
+            == mock_conn.cursor().fetchval()
+        )
+        mock_conn.cursor().execute.assert_called_with(
+            DART_GET_PLATE_PROPERTY_SQL, (test_plate_barcode, DART_STATE_PROPERTY_NAME)
+        )
+
+
+def test_set_dart_plate_state_pending(config):
+    with patch("pyodbc.connect") as mock_conn:
+
+        test_plate_barcode = "AB123"
+        set_dart_plate_state_pending(mock_conn.cursor(), test_plate_barcode)
+        mock_conn.cursor().execute.assert_called_with(
+            DART_SET_PLATE_PROPERTY_SQL,
+            (test_plate_barcode, DART_STATE_PROPERTY_NAME, DART_STATE_PENDING),
+        )

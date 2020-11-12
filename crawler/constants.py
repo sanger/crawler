@@ -39,6 +39,11 @@ FIELD_CREATED_AT = "created_at"
 FIELD_UPDATED_AT = "updated_at"
 FIELD_SOURCE = "source"
 
+# filtered-positive field names
+FIELD_FILTERED_POSITIVE_TIMESTAMP = "filtered_positive_timestamp"
+FIELD_FILTERED_POSITIVE_VERSION = "filtered_positive_version"
+FIELD_FILTERED_POSITIVE = "filtered_positive"
+
 # multi-lims warehouse field names
 MLWH_TABLE_NAME = "lighthouse_sample"
 MLWH_MONGODB_ID = "mongodb_id"
@@ -63,6 +68,9 @@ MLWH_CH3_CQ = "ch3_cq"
 MLWH_CH4_TARGET = "ch4_target"
 MLWH_CH4_RESULT = "ch4_result"
 MLWH_CH4_CQ = "ch4_cq"
+MLWH_FILTERED_POSITIVE = "filtered_positive"
+MLWH_FILTERED_POSITIVE_VERSION = "filtered_positive_version"
+MLWH_FILTERED_POSITIVE_TIMESTAMP = "filtered_positive_timestamp"
 MLWH_CREATED_AT = "created_at"
 MLWH_UPDATED_AT = "updated_at"
 
@@ -70,15 +78,37 @@ MLWH_UPDATED_AT = "updated_at"
 MONGO_DATETIME_FORMAT = "%y%m%d_%H%M"
 MYSQL_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
+# positive Result value
+POSITIVE_RESULT_VALUE = 'Positive'
+
 # allowed Result field values
-ALLOWED_RESULT_VALUES = ('Positive', 'Negative', 'limit of detection', 'Void')
+ALLOWED_RESULT_VALUES = (POSITIVE_RESULT_VALUE, 'Negative', 'limit of detection', 'Void')
 
 # allowed CT channel CHn-Target field values (or can be null)
 ALLOWED_CH_TARGET_VALUES = ('ORF1ab', 'N gene', 'S gene', 'MS2')
 
 # allowed CT channel CHn-Result field values (or can be null)
-ALLOWED_CH_RESULT_VALUES = ('Positive', 'Negative', 'Inconclusive', 'Void')
+ALLOWED_CH_RESULT_VALUES = (POSITIVE_RESULT_VALUE, 'Negative', 'Inconclusive', 'Void')
 
 # range of allowed cq values (0 .. 100, set as strings for conversion to decimals in code)
 MIN_CQ_VALUE = Decimal('0.0')
 MAX_CQ_VALUE = Decimal('100.0')
+
+# DART constants
+DART_GET_PLATE_PROPERTY_SQL = """\
+SET NOCOUNT ON
+DECLARE @output_value nvarchar(256)
+EXECUTE [dbo].[plDART_PlatePropGet] @plate_barcode = ?, @prop_name = ?, @value = @output_value OUTPUT
+SELECT @output_value
+"""
+DART_SET_PLATE_PROPERTY_SQL = """\
+SET NOCOUNT ON
+DECLARE @return_code int
+EXECUTE @return_code = [dbo].[plDART_PlatePropSet] @plate_barcode = ?, @prop_name = ?, @prop_value = ?
+SELECT @return_code
+"""
+DART_STATE_PROPERTY_NAME = 'state'
+DART_STATE_PENDING = 'pending'
+DART_STATE_NO_PLATE = 'NO PLATE'
+DART_STATE_NO_PROP = 'NO PROP'
+DART_SET_PROP_STATUS_SUCCESS = 0
