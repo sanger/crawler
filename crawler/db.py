@@ -290,7 +290,7 @@ def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> pyodbc.Con
     dart_db_db = config.DART_DB_DBNAME  # type: ignore
     dart_db_driver = config.DART_DB_DRIVER  # type: ignore
 
-    connection_string = 'DRIVER='+dart_db_driver+';SERVER='+dart_db_host+f';PORT={dart_db_port};DATABASE='+dart_db_db+';UID='+dart_db_username+';PWD=' + dart_db_password
+    connection_string = f'DRIVER={dart_db_driver};SERVER={dart_db_host};PORT={dart_db_port};DATABASE={dart_db_db};UID={dart_db_username};PWD={dart_db_password}'
 
     logger.debug(f"Attempting to connect to {dart_db_host} on port {dart_db_port}")
 
