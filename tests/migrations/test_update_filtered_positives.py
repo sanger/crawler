@@ -6,8 +6,8 @@ from migrations.helpers.update_filtered_positives_helper import (
     pending_plate_barcodes_from_dart,
     positive_result_samples_from_mongo,
     update_filtered_positive_fields,
-    update_samples_in_mongo,
-    update_samples_in_mlwh,
+    update_mongo_filtered_positive_fields,
+    update_mlwh_filtered_positive_fields,
     update_filtered_positives,
 )
 from crawler.constants import (
@@ -61,12 +61,12 @@ def mock_mongo_collection():
         
 @pytest.fixture
 def mock_update_mongo():
-    with patch('migrations.helpers.update_filtered_positives_helper.update_samples_in_mongo') as mock_update:
+    with patch('migrations.helpers.update_filtered_positives_helper.update_mongo_filtered_positive_fields') as mock_update:
         yield mock_update
 
 @pytest.fixture
 def mock_update_mlwh():
-    with patch('migrations.helpers.update_filtered_positives_helper.update_samples_in_mlwh') as mock_update:
+    with patch('migrations.helpers.update_filtered_positives_helper.update_mlwh_filtered_positive_fields') as mock_update:
         yield mock_update
 
 @pytest.fixture
@@ -158,14 +158,14 @@ def test_update_filtered_positive_fields_assigns_expected_filtered_positive_fiel
         assert sample[FIELD_FILTERED_POSITIVE_VERSION] == version
         assert sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] == timestamp
 
-# ----- test update_samples_in_mongo method -----
+# ----- test update_mongo_filtered_positive_fields method -----
 
-def test_update_samples_in_mongo_raises_with_error_updating_mongo(config, mock_mongo_collection):
+def test_update_mongo_filtered_positive_fields_raises_with_error_updating_mongo(config, mock_mongo_collection):
     mock_mongo_collection().update_many.side_effect = ValueError('Boom!')
     with pytest.raises(ValueError):
-        update_samples_in_mongo(config, [], 'v2.3', None)
+        update_mongo_filtered_positive_fields(config, [], 'v2.3', None)
 
-def test_update_samples_in_mongo_updates_expected_samples(config, testing_samples, samples_collection_accessor):
+def test_update_mongo_filtered_positive_fields_updates_expected_samples(config, testing_samples, samples_collection_accessor):
     version = 'v2.3'
     timestamp = datetime.now()
     updated_samples = testing_samples[:3]
@@ -173,7 +173,7 @@ def test_update_samples_in_mongo_updates_expected_samples(config, testing_sample
     updated_samples[1][FIELD_FILTERED_POSITIVE] = False
     updated_samples[2][FIELD_FILTERED_POSITIVE] = False
 
-    result = update_samples_in_mongo(config, updated_samples, version, timestamp)
+    result = update_mongo_filtered_positive_fields(config, updated_samples, version, timestamp)
     assert result == True
 
     assert samples_collection_accessor.count() == len(testing_samples)
@@ -188,20 +188,20 @@ def test_update_samples_in_mongo_updates_expected_samples(config, testing_sample
         assert sample[FIELD_FILTERED_POSITIVE_VERSION] == version
         assert sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] is not None
 
-# ----- test update_samples_in_mlwh method -----
+# ----- test update_mlwh_filtered_positive_fields method -----
 
-def test_update_samples_in_mlwh_return_false_with_no_connection(config):
+def test_update_mlwh_filtered_positive_fields_return_false_with_no_connection(config):
     with patch('migrations.helpers.update_filtered_positives_helper.create_mysql_connection') as mock_connection:
         mock_connection().is_connected.return_value = False
-        result = update_samples_in_mlwh(config, [])
+        result = update_mlwh_filtered_positive_fields(config, [])
         assert result == False
 
-def test_update_samples_in_mlwh_raises_with_error_updating_mlwh(config, mlwh_connection):
+def test_update_mlwh_filtered_positive_fields_raises_with_error_updating_mlwh(config, mlwh_connection):
     with patch('migrations.helpers.update_filtered_positives_helper.run_mysql_executemany_query', side_effect = NotImplementedError('Boom!')):
         with pytest.raises(NotImplementedError):
-           update_samples_in_mlwh(config, [])
+           update_mlwh_filtered_positive_fields(config, [])
 
-def test_update_samples_in_mlwh_calls_to_update_samples(config, mlwh_connection):
+def test_update_mlwh_filtered_positive_fields_calls_to_update_samples(config, mlwh_connection):
     # populate the mlwh database with existing entries
     mlwh_samples = [{
         MLWH_MONGODB_ID: '1',
@@ -257,7 +257,7 @@ def test_update_samples_in_mlwh_calls_to_update_samples(config, mlwh_connection)
         FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp
     }]
 
-    result = update_samples_in_mlwh(config, mongo_samples)
+    result = update_mlwh_filtered_positive_fields(config, mongo_samples)
     assert result == True
 
     cursor = mlwh_connection.cursor()

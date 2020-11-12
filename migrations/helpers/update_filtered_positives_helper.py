@@ -72,11 +72,11 @@ def update_filtered_positives(config):
                 print("Updated filtered positives")
 
                 print("Updating Mongo...")
-                mongo_updated = update_samples_in_mongo(config, positive_pending_samples, version, update_timestamp)
+                mongo_updated = update_mongo_filtered_positive_fields(config, positive_pending_samples, version, update_timestamp)
                 print("Finished updating Mongo")
 
                 print("Updating MLWH...")
-                mlwh_updated = update_samples_in_mlwh(config, positive_pending_samples)
+                mlwh_updated = update_mlwh_filtered_positive_fields(config, positive_pending_samples)
                 print("Finished updating MLWH")
 
                 print("Updating DART...")
@@ -159,7 +159,7 @@ def update_filtered_positive_fields(filtered_positive_identifier: FilteredPositi
         sample[FIELD_FILTERED_POSITIVE_VERSION] = version
         sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] = update_timestamp
 
-def update_samples_in_mongo(config: ModuleType, samples: List[Dict[str, Any]], version: str, update_timestamp: datetime) -> bool:
+def update_mongo_filtered_positive_fields(config: ModuleType, samples: List[Dict[str, Any]], version: str, update_timestamp: datetime) -> bool:
     """Bulk updates sample filtered positive fields in the Mongo database
 
         Arguments:
@@ -188,7 +188,7 @@ def update_samples_in_mongo(config: ModuleType, samples: List[Dict[str, Any]], v
             { "$set": { FIELD_FILTERED_POSITIVE: False, FIELD_FILTERED_POSITIVE_VERSION: version, FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp } })
     return True
 
-def update_samples_in_mlwh(config: ModuleType, samples: List[Dict[str, Any]]) -> bool:
+def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Dict[str, Any]]) -> bool:
     """Bulk updates sample filtered positive fields in the MLWH database
 
         Arguments:
