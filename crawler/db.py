@@ -20,7 +20,7 @@ from crawler.helpers import get_config
 import pyodbc  # type: ignore
 from crawler.constants import (
     DART_STATE_PENDING,
-    DART_STATE_PROPERTY_NAME,
+    DART_STATE,
     DART_SET_PROP_STATUS_SUCCESS,
 )
 from crawler.sql_queries import (
@@ -319,7 +319,7 @@ def get_dart_plate_state(cursor: pyodbc.Cursor, plate_barcode: str) -> str:
         Returns:
             str -- The state of the plate in DART.
     """
-    params = (plate_barcode, DART_STATE_PROPERTY_NAME)
+    params = (plate_barcode, DART_STATE)
     cursor.execute(SQL_DART_GET_PLATE_PROPERTY, params)
     return cursor.fetchval()
 
@@ -333,7 +333,7 @@ def set_dart_plate_state_pending(cursor: pyodbc.Cursor, plate_barcode: str) -> s
         Returns:
             bool -- Return True if DART was updated successfully, else False.
     """
-    params = (plate_barcode, DART_STATE_PROPERTY_NAME, DART_STATE_PENDING)
+    params = (plate_barcode, DART_STATE, DART_STATE_PENDING)
     cursor.execute(SQL_DART_SET_PLATE_PROPERTY, params)
     response = cursor.fetchval()
     return response == DART_SET_PROP_STATUS_SUCCESS

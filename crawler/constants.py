@@ -95,7 +95,7 @@ MIN_CQ_VALUE = Decimal('0.0')
 MAX_CQ_VALUE = Decimal('100.0')
 
 # DART constants
-DART_STATE_PROPERTY_NAME = 'state'
+DART_STATE = 'state'
 DART_STATE_PENDING = 'pending'
 DART_STATE_NO_PLATE = 'NO PLATE'
 DART_STATE_NO_PROP = 'NO PROP'
