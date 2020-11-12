@@ -94,10 +94,17 @@ ALLOWED_CH_RESULT_VALUES = (POSITIVE_RESULT_VALUE, 'Negative', 'Inconclusive', '
 MIN_CQ_VALUE = Decimal('0.0')
 MAX_CQ_VALUE = Decimal('100.0')
 
-# DART constants
+# DART property names
 DART_STATE = 'state'
+DART_ROOT_SAMPLE_ID = 'root_sample_id'
+DART_RNA_ID = 'rna_id'
+DART_LAB_ID = 'lab_id'
+
+# DART property values
 DART_STATE_PENDING = 'pending'
 DART_STATE_NO_PLATE = 'NO PLATE'
 DART_STATE_NO_PROP = 'NO PROP'
-DART_SET_PROP_STATUS_SUCCESS = 0
 DART_STATE_PICKABLE = 'pickable'
+
+# DART others
+DART_SET_PROP_STATUS_SUCCESS = 0
