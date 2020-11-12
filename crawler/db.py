@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from types import ModuleType
-from typing import Dict, List, Iterator
+from typing import Dict, List, Iterator, Optional
 from crawler.helpers import current_time
 
 from pymongo import MongoClient
@@ -270,7 +270,7 @@ def init_warehouse_db_command():
     logger.debug("Done")
 
 
-def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> pyodbc.Connection:
+def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> Optional[pyodbc.Connection]:
     """Create a SQL Server connection to DART with the given config parameters.
 
     Arguments:
