@@ -7,6 +7,8 @@ from crawler.db import (
     create_mongo_client,
     get_mongo_db,
     get_mongo_collection,
+    create_mysql_connection,
+    run_mysql_executemany_query,
 )
 from crawler.constants import (
     COLLECTION_SAMPLES,
@@ -22,7 +24,9 @@ from crawler.constants import (
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 from crawler.sql_queries import (
     SQL_DART_GET_PLATE_BARCODES,
+    SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE,
 )
+from crawler.helpers import map_mongo_to_sql_common
 
 def update_filtered_positives(config):
     """Updates filtered positive values for all positive samples in pending plates
@@ -67,6 +71,10 @@ def update_filtered_positives(config):
                 mongo_updated = update_samples_in_mongo(config, positive_pending_samples, version, update_timestamp)
                 print("Finished updating Mongo")
 
+                print("Updating MLWH")
+                mlwh_updated = update_samples_in_mlwh(config, positive_pending_samples)
+                print("Finished updating MLWH")
+
                 # update entries in mlwh - throw if anything goes wrong, update flag if not
                 # re-add to DART - throw if anything goes wrong, update flag if not
             else:
@@ -75,6 +83,7 @@ def update_filtered_positives(config):
             print("No pending plates found in DART, not updating any database")
         
     except Exception as e:
+        print("---------- Process aborted: ----------")
         print_exception()
     finally:
         print_processing_status(num_pending_plates, num_positive_pending_samples, mongo_updated, mlwh_updated, dart_updated)
@@ -150,7 +159,7 @@ def update_samples_in_mongo(config: ModuleType, samples: List[Dict[str, Any]], v
 
         Arguments:
             config {ModuleType} -- application config specifying database details
-            samples {List[Dict[str, str]]} -- the list of samples for which to re-determine filtered positive values
+            samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields should be updated
             version {str} -- the filtered positive identifier version used
             update_timestamp {datetime} -- the timestamp at which the update was performed
 
@@ -173,6 +182,25 @@ def update_samples_in_mongo(config: ModuleType, samples: List[Dict[str, Any]], v
             { FIELD_MONGODB_ID: { '$in': filtered_negative_ids } },
             { "$set": { FIELD_FILTERED_POSITIVE: False, FIELD_FILTERED_POSITIVE_VERSION: version, FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp } })
     return True
+
+def update_samples_in_mlwh(config: ModuleType, samples: List[Dict[str, Any]]) -> bool:
+    """Bulk updates sample filtered positive fields in the MLWH database
+
+        Arguments:
+            config {ModuleType} -- application config specifying database details
+            samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields should be updated
+
+        Returns:
+            bool -- whether the updates completed successfully
+    """
+    mysql_conn = create_mysql_connection(config, False)
+
+    if mysql_conn is not None and mysql_conn.is_connected():
+        mlwh_samples = [map_mongo_to_sql_common(sample) for sample in samples]
+        run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE, mlwh_samples)
+        return True
+    else:
+        return False
 
 def print_processing_status(num_pending_plates: int, num_positive_pending_samples: int, mongo_updated: bool, mlwh_updated: bool, dart_updated: bool) -> None:
     """Prints the processing status of the update operation for each database, specifically whether entries were successfully updated

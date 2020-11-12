@@ -7,6 +7,7 @@ from migrations.helpers.update_filtered_positives_helper import (
     positive_result_samples_from_mongo,
     update_filtered_positive_fields,
     update_samples_in_mongo,
+    update_samples_in_mlwh,
     update_filtered_positives,
 )
 from crawler.constants import (
@@ -19,6 +20,18 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
     DART_STATE_PENDING,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_RNA_ID,
+    FIELD_COORDINATE,
+    MLWH_MONGODB_ID,
+    MLWH_ROOT_SAMPLE_ID,
+    MLWH_PLATE_BARCODE,
+    MLWH_RNA_ID,
+    MLWH_COORDINATE,
+    MLWH_RESULT,
+    MLWH_FILTERED_POSITIVE,
+    MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_FILTERED_POSITIVE_TIMESTAMP,
 )
 from crawler.sql_queries import (
     SQL_DART_GET_PLATE_BARCODES,
@@ -45,6 +58,16 @@ def mock_mongo_client():
 def mock_mongo_collection():
     with patch('migrations.helpers.update_filtered_positives_helper.get_mongo_collection') as mock_collection:
         yield mock_collection
+        
+@pytest.fixture
+def mock_update_mongo():
+    with patch('migrations.helpers.update_filtered_positives_helper.update_samples_in_mongo') as mock_update:
+        yield mock_update
+
+@pytest.fixture
+def mock_update_mlwh():
+    with patch('migrations.helpers.update_filtered_positives_helper.update_samples_in_mlwh') as mock_update:
+        yield mock_update
 
 @pytest.fixture
 def mock_print_status():
@@ -165,6 +188,95 @@ def test_update_samples_in_mongo_updates_expected_samples(config, testing_sample
         assert sample[FIELD_FILTERED_POSITIVE_VERSION] == version
         assert sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] is not None
 
+# ----- test update_samples_in_mlwh method -----
+
+def test_update_samples_in_mlwh_return_false_with_no_connection(config):
+    with patch('migrations.helpers.update_filtered_positives_helper.create_mysql_connection') as mock_connection:
+        mock_connection().is_connected.return_value = False
+        result = update_samples_in_mlwh(config, [])
+        assert result == False
+
+def test_update_samples_in_mlwh_raises_with_error_updating_mlwh(config, mlwh_connection):
+    with patch('migrations.helpers.update_filtered_positives_helper.run_mysql_executemany_query', side_effect = NotImplementedError('Boom!')):
+        with pytest.raises(NotImplementedError):
+           update_samples_in_mlwh(config, [])
+
+def test_update_samples_in_mlwh_calls_to_update_samples(config, mlwh_connection):
+    # populate the mlwh database with existing entries
+    mlwh_samples = [{
+        MLWH_MONGODB_ID: '1',
+        MLWH_COORDINATE: 'A1',
+        MLWH_PLATE_BARCODE: '123',
+        MLWH_ROOT_SAMPLE_ID: 'MCM001',
+        MLWH_RNA_ID: 'AAA123',
+        MLWH_RESULT: POSITIVE_RESULT_VALUE,
+        MLWH_FILTERED_POSITIVE: None,
+        MLWH_FILTERED_POSITIVE_VERSION: None,
+        MLWH_FILTERED_POSITIVE_TIMESTAMP: None,
+    },
+    {
+        MLWH_MONGODB_ID: '2',
+        MLWH_COORDINATE: 'B1',
+        MLWH_PLATE_BARCODE: '123',
+        MLWH_ROOT_SAMPLE_ID: 'MCM002',
+        MLWH_RNA_ID: 'BBB123',
+        MLWH_RESULT: POSITIVE_RESULT_VALUE,
+        MLWH_FILTERED_POSITIVE: True,
+        MLWH_FILTERED_POSITIVE_VERSION: 'v1.0',
+        MLWH_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 40, 8)
+    }]
+    insert_sql = """\
+    INSERT INTO lighthouse_sample (mongodb_id, root_sample_id, rna_id, plate_barcode, coordinate, result, filtered_positive, filtered_positive_version, filtered_positive_timestamp)
+    VALUES (%(mongodb_id)s, %(root_sample_id)s, %(rna_id)s, %(plate_barcode)s, %(coordinate)s, %(result)s, %(filtered_positive)s, %(filtered_positive_version)s, %(filtered_positive_timestamp)s)
+    """
+    cursor = mlwh_connection.cursor()
+    cursor.executemany(insert_sql, mlwh_samples)
+    cursor.close()
+    mlwh_connection.commit()
+
+    # call to update the database with newly filtered positive entries
+    update_timestamp = datetime(2020, 6, 23, 14, 40, 8)
+    mongo_samples = [{
+        FIELD_MONGODB_ID: '1',
+        FIELD_COORDINATE: "A01",
+        FIELD_PLATE_BARCODE: "123",
+        FIELD_ROOT_SAMPLE_ID: "MCM001",
+        FIELD_RNA_ID: 'AAA123',
+        FIELD_FILTERED_POSITIVE: True,
+        FIELD_FILTERED_POSITIVE_VERSION: 'v2.3',
+        FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp
+    },
+    {
+        FIELD_MONGODB_ID: '2',
+        FIELD_COORDINATE: "B01",
+        FIELD_PLATE_BARCODE: "123",
+        FIELD_ROOT_SAMPLE_ID: "MCM002",
+        FIELD_RNA_ID: 'BBB123',
+        FIELD_FILTERED_POSITIVE: False,
+        FIELD_FILTERED_POSITIVE_VERSION: 'v2.3',
+        FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp
+    }]
+
+    result = update_samples_in_mlwh(config, mongo_samples)
+    assert result == True
+
+    cursor = mlwh_connection.cursor()
+    cursor.execute("SELECT COUNT(*) FROM lighthouse_sample")
+    sample_count = cursor.fetchone()[0]
+    cursor.execute("SELECT filtered_positive, filtered_positive_version, filtered_positive_timestamp FROM lighthouse_sample WHERE mongodb_id = '1'")
+    filtered_positive_sample = cursor.fetchone()
+    cursor.execute("SELECT filtered_positive, filtered_positive_version, filtered_positive_timestamp FROM lighthouse_sample WHERE mongodb_id = '2'")
+    filtered_negative_sample = cursor.fetchone()
+    cursor.close()
+
+    assert sample_count == 2
+    assert filtered_positive_sample[0] == True
+    assert filtered_positive_sample[1] == 'v2.3'
+    assert filtered_positive_sample[2] == update_timestamp
+    assert filtered_negative_sample[0] == False
+    assert filtered_negative_sample[1] == 'v2.3'
+    assert filtered_negative_sample[2] == update_timestamp
+
 # ----- test update_filtered_positives method -----
 
 # TODO - add more tests as more of the method is implemented
@@ -243,5 +355,19 @@ def test_update_filtered_positives_catches_error_updating_samples_in_mongo(confi
         mock_print_exception.assert_called_once()
         mock_print_status.assert_called_once_with(1, 1, False, False, False)
         assert_no_database_updates(mock_mongo_collection)
+
+def test_update_filtered_positives_catched_error_updating_samples_in_mlwh(config, mock_dart_conn, mock_mongo_collection, mock_print_exception, mock_print_status, mock_update_mongo, mock_update_mlwh):
+    # mock a single pending plate and sample, but updating the samples in mlwh to throw
+    mock_dart_conn().cursor().execute().fetchall.return_value = ['123']
+    mock_mongo_collection().find.return_value = [{ FIELD_MONGODB_ID: '1', FIELD_PLATE_BARCODE: '123', FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_ROOT_SAMPLE_ID: 'MCM001' }]
+    mock_update_mongo.return_value = True
+    mock_update_mlwh.side_effect = NotImplementedError('Boom!')
+
+    # call the migration
+    update_filtered_positives(config)
+
+    # ensure expected outputs, and that no databases are updated
+    mock_print_exception.assert_called_once()
+    mock_print_status.assert_called_once_with(1, 1, True, False, False)
 
 # def test_update_filtered_positives_outputs_success(config):
