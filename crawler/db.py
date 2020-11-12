@@ -14,7 +14,6 @@ from contextlib import contextmanager
 
 import mysql.connector as mysql # type: ignore
 from mysql.connector.connection_cext import CMySQLConnection # type: ignore
-from mysql.connector import Error # type: ignore
 from crawler.sql_queries import (SQL_MLWH_MULTIPLE_INSERT, SQL_TEST_MLWH_CREATE)
 from crawler.helpers import get_config
 
@@ -196,7 +195,7 @@ def create_mysql_connection(config: ModuleType, readonly=True) -> CMySQLConnecti
             else:
                 logger.error('MySQL Connection Failed')
 
-    except Error as e:
+    except mysql.Error as e:
         logger.error(f"Exception on connecting to MySQL database: {e}")
 
     return mysql_conn
@@ -303,7 +302,7 @@ def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> Optional[p
         else:
             logger.error('DART Connection Failed')
 
-    except Error as e:
+    except pyodbc.Error as e:
         logger.error(f"Exception on connecting to DART database: {e}")
 
     return sql_server_conn
