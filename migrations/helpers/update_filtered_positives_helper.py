@@ -9,12 +9,18 @@ from crawler.db import (
     get_mongo_collection,
     create_mysql_connection,
     run_mysql_executemany_query,
+    add_dart_plate_if_doesnt_exist,
+    set_dart_well_properties,
 )
 from crawler.constants import (
     COLLECTION_SAMPLES,
+    COLLECTION_CENTRES,
     FIELD_MONGODB_ID,
     FIELD_RESULT,
     FIELD_PLATE_BARCODE,
+    FIELD_SOURCE,
+    FIELD_COORDINATE,
+    FIELD_ROOT_SAMPLE_ID,
     POSITIVE_RESULT_VALUE,
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_VERSION,
@@ -26,7 +32,11 @@ from crawler.sql_queries import (
     SQL_DART_GET_PLATE_BARCODES,
     SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE,
 )
-from crawler.helpers import map_mongo_to_sql_common
+from crawler.helpers import (
+    map_mongo_to_sql_common,
+    get_dart_well_index,
+    map_mongo_doc_to_dart_well_props,
+)
 
 def update_filtered_positives(config):
     """Updates filtered positive values for all positive samples in pending plates
@@ -34,12 +44,6 @@ def update_filtered_positives(config):
         Arguments:
             config {ModuleType} -- application config specifying database details
     """
-    # Get pending plate barcodes from DART - no way to do this yet
-    # Pull all RESULT=positive samples from mongo with these plate barcodes - can probably do this. Get everything structured from mongo as we pass it to mongo
-    # Re-determine whether filtered-positive - just pass what we get from mongo through the identifier
-    # Update filtered-positive version etc. in mongo and MLWH
-    # Re-upload well properties to DART - call insert_plates_and_wells_from_docs_into_dart, or extract out common methods?
-
     num_pending_plates = 0
     num_positive_pending_samples = 0
     mongo_updated = False
@@ -47,14 +51,14 @@ def update_filtered_positives(config):
     dart_updated = False
     try:
         # Get barcodes of pending plates in DART
-        print("Selecting pending plates from DART")
+        print("Selecting pending plates from DART...")
         pending_plate_barcodes = pending_plate_barcodes_from_dart(config)
         num_pending_plates = len(pending_plate_barcodes)
         print(f"{len(pending_plate_barcodes)} pending plates found in DART")
 
         if num_pending_plates > 0:
             # Get positive result samples from Mongo in these pending plates
-            print("Selecting postive samples in pending plates from Mongo")
+            print("Selecting postive samples in pending plates from Mongo...")
             positive_pending_samples = positive_result_samples_from_mongo(config, pending_plate_barcodes)
             num_positive_pending_samples = len(positive_pending_samples)
             print(f"{num_positive_pending_samples} positive samples in pending plates found in Mongo")
@@ -63,19 +67,19 @@ def update_filtered_positives(config):
                 filtered_positive_identifier = FilteredPositiveIdentifier()
                 version = filtered_positive_identifier.current_version()
                 update_timestamp = datetime.now()
-                print("Updating filtered positives")
+                print("Updating filtered positives...")
                 update_filtered_positive_fields(filtered_positive_identifier, positive_pending_samples, version, update_timestamp)
                 print("Updated filtered positives")
 
-                print("Updating Mongo")
+                print("Updating Mongo...")
                 mongo_updated = update_samples_in_mongo(config, positive_pending_samples, version, update_timestamp)
                 print("Finished updating Mongo")
 
-                print("Updating MLWH")
+                print("Updating MLWH...")
                 mlwh_updated = update_samples_in_mlwh(config, positive_pending_samples)
                 print("Finished updating MLWH")
 
-                print("Updating DART")
+                print("Updating DART...")
                 dart_updated = update_samples_in_dart(config, positive_pending_samples)
                 print("Finished updating DART")
             else:
@@ -213,7 +217,56 @@ def update_samples_in_dart(config: ModuleType, samples: List[Dict[str, Any]]) ->
         Returns:
             bool -- whether the updates completed successfully
     """
-    print("Implement!!")
+    sql_server_connection = create_dart_sql_server_conn(config, True)
+    if  sql_server_connection is None:
+        raise ValueError('Unable to establish DART SQL Server connection')
+    
+    dart_updated_successfully = True
+    centres = config.CENTRES  # type: ignore
+    labclass_by_centre_name = biomek_labclass_by_centre_name(centres)
+    try:
+        cursor = sql_server_connection.cursor()
+
+        for plate_barcode, samples_in_plate in groupby_transform(samples, lambda x: x[FIELD_PLATE_BARCODE]):  # type:ignore
+            try:
+                labware_class = labclass_by_centre_name[samples_in_plate[0][FIELD_SOURCE]]
+                plate_state = add_dart_plate_if_doesnt_exist(cursor, plate_barcode, labware_class)
+                if plate_state == DART_STATE_PENDING:
+                    for sample in samples_in_plate:
+                        well_index = get_dart_well_index(sample.get[FIELD_COORDINATE, None])
+                        if well_index is not None:
+                            well_props = map_mongo_doc_to_dart_well_props(sample)
+                            set_dart_well_properties(cursor, plate_barcode, well_props, well_index)
+                        else:
+                            raise ValueError(f'Unable to determine DART well index for sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}')
+                cursor.commit()
+                dart_updated_successfully &= True
+            except:
+                print(f"** Failed updating DART for samples in plate {plate_barcode} **")
+                print_exception()
+                cursor.rollback()
+                dart_updated_successfully = False
+    except:
+        print_exception()
+        dart_updated_successfully = False
+    finally:
+        sql_server_connection.close()
+
+    return dart_updated_successfully
+
+def biomek_labclass_by_centre_name(centres: List[Dict[str, str]]) -> Dict[str, str]:
+    """Determines a mapping between centre name and biomek labware class.
+
+        Arguments:
+            centres {List[Dict[str, str]]} -- the list of all centres
+
+        Returns:
+            Dict[str, str] -- biomek labware class by centre name
+    """
+    class_by_name = {}
+    for centre in centres:
+        class_by_name[centre["name"]] = centre["biomek_labware_class"]
+    return class_by_name
 
 def print_processing_status(num_pending_plates: int, num_positive_pending_samples: int, mongo_updated: bool, mlwh_updated: bool, dart_updated: bool) -> None:
     """Prints the processing status of the update operation for each database, specifically whether entries were successfully updated

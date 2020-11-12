@@ -362,9 +362,10 @@ def test_update_filtered_positives_catches_error_updating_samples_in_mongo(confi
     # call the migration
     update_filtered_positives(config)
 
-    # ensure expected outputs, and that no databases are updated
+    # ensure expected outputs
     mock_print_exception.assert_called_once()
     mock_print_status.assert_called_once_with(1, 1, False, False, False)
+    mock_update_mongo.assert_called_once()
     mock_update_mlwh.assert_not_called()
     mock_update_dart.assert_not_called()
 
@@ -378,9 +379,11 @@ def test_update_filtered_positives_catched_error_updating_samples_in_mlwh(config
     # call the migration
     update_filtered_positives(config)
 
-    # ensure expected outputs, and that no databases are updated
+    # ensure expected outputs
     mock_print_exception.assert_called_once()
     mock_print_status.assert_called_once_with(1, 1, True, False, False)
+    mock_update_mongo.assert_called_once()
+    mock_update_mlwh.assert_called_once()
     mock_update_dart.assert_not_called()
 
 def test_update_filtered_positives_catched_error_updating_samples_in_dart(config, mock_dart_conn, mock_mongo_collection, mock_print_exception, mock_print_status, mock_update_mongo, mock_update_mlwh, mock_update_dart):
@@ -394,8 +397,27 @@ def test_update_filtered_positives_catched_error_updating_samples_in_dart(config
     # call the migration
     update_filtered_positives(config)
 
-    # ensure expected outputs, and that no databases are updated
+    # ensure expected outputs
     mock_print_exception.assert_called_once()
     mock_print_status.assert_called_once_with(1, 1, True, True, False)
+    mock_update_mongo.assert_called_once()
+    mock_update_mlwh.assert_called_once()
+    mock_update_dart.assert_called_once()
 
-# def test_update_filtered_positives_outputs_success(config):
+def test_update_filtered_positives_outputs_success(config, mock_dart_conn, mock_mongo_collection, mock_print_exception, mock_print_status, mock_update_mongo, mock_update_mlwh, mock_update_dart):
+    # mock a single pending plate and sample, and update success
+    mock_dart_conn().cursor().execute().fetchall.return_value = ['123']
+    mock_mongo_collection().find.return_value = [{ FIELD_MONGODB_ID: '1', FIELD_PLATE_BARCODE: '123', FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_ROOT_SAMPLE_ID: 'MCM001' }]
+    mock_update_mongo.return_value = True
+    mock_update_mlwh.return_value = True
+    mock_update_dart.return_value = True
+
+    # call the migration
+    update_filtered_positives(config)
+
+    # ensure expected outputs, and that no databases are updated
+    mock_print_exception.assert_not_called()
+    mock_print_status.assert_called_once_with(1, 1, True, True, True)
+    mock_update_mongo.assert_called_once()
+    mock_update_mlwh.assert_called_once()
+    mock_update_dart.assert_called_once()
