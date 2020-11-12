@@ -92,6 +92,7 @@ from crawler.constants import (
     DART_STATE_NO_PLATE,
     DART_STATE_NO_PROP,
     DART_STATE_PICKABLE,
+    DART_STATE_EMPTY,
 )
 from crawler.db import get_mongo_collection
 
@@ -1418,7 +1419,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
                 FIELD_RESULT: POSITIVE_RESULT_VALUE,
                 FIELD_FILTERED_POSITIVE: False,
                 'well_index': 13,
-                'state': ''
+                'state': DART_STATE_EMPTY
             }
         ]
 
@@ -1469,7 +1470,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
                 FIELD_RESULT: POSITIVE_RESULT_VALUE,
                 FIELD_FILTERED_POSITIVE: False,
                 'well_index': 2,
-                'state': ''
+                'state': DART_STATE_EMPTY
             }
         ]
 
@@ -1535,8 +1536,8 @@ def test_insert_plates_and_wells_from_docs_into_dart_sets_well_states(config):
 
             # adds plate and wells as expected
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
-            assert call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', '', 1)) not in mock_conn().cursor().execute.call_args_list
-            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', '', 2))
+            assert call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', DART_STATE_EMPTY, 1)) not in mock_conn().cursor().execute.call_args_list
+            mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', DART_STATE_EMPTY, 2))
             mock_conn().cursor().execute.assert_any_call("{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}", (plate_barcode, 'state', DART_STATE_PICKABLE, 3))
             mock_conn().cursor().rollback.assert_not_called()
             assert mock_conn().cursor().commit.call_count == 1
