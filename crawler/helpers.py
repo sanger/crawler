@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 import re
+import string
 
 from datetime import (
     datetime,
@@ -10,7 +11,7 @@ from datetime import (
 from importlib import import_module
 from types import ModuleType
 from enum import Enum
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 from bson.decimal128 import Decimal128 # type: ignore
 import pysftp  # type: ignore
 
@@ -249,6 +250,32 @@ def parse_decimal128(value: Decimal128) -> Any:
         return dec
     except:
         return None
+
+def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
+    """Determines a well index from a coordinate; otherwise returns None.
+
+    Arguments:
+        coordinate {Optional[str]} -- The coordinate for which to determine the well index
+
+    Returns:
+        int -- the well index
+    """
+    if not coordinate:
+        return None
+
+    regex = r"^([A-Z])(\d{1,2})$"
+    m = re.match(regex, coordinate)
+
+    # assumes a 96-well plate with A1 - H12 wells
+    if m is not None:
+        col_idx = int(m.group(2))
+        if 1 <= col_idx <= 12:
+            multiplier = string.ascii_lowercase.index(m.group(1).lower())
+            well_index = (multiplier * 12) + col_idx
+            if 1 <= well_index <= 96:
+                return well_index
+
+    return None
 
 class ErrorLevel(Enum):
     DEBUG = 1

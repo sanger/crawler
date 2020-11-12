@@ -1162,37 +1162,6 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_blank(config, mlwh_conne
 
         assert rows[0][MLWH_DATE_TESTED] == None
 
-def test_calculate_dart_well_index(config):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
-
-    sample = None
-    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for no sample"
-
-    sample = {}
-    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample without a coordinate"
-
-    sample = { FIELD_COORDINATE: '01A' }
-    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with invalid coordinate"
-
-    sample = { FIELD_COORDINATE: 'A00' }
-    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with coordinate column below accepted range"
-
-    sample = { FIELD_COORDINATE: 'B15' }
-    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with coordinate column above accepted range"
-
-    sample = { FIELD_COORDINATE: 'Q01' }
-    assert centre_file.calculate_dart_well_index(sample) == None, "Expected to be unable to determine a well index for sample with coordinate row out of range"
-
-    sample = { FIELD_COORDINATE: 'B7' }
-    assert centre_file.calculate_dart_well_index(sample) == 19, "Expected well index of 19"
-
-    sample = { FIELD_COORDINATE: 'F03' }
-    assert centre_file.calculate_dart_well_index(sample) == 63, "Expected well index of 63"
-
-    sample = { FIELD_COORDINATE: 'H11' }
-    assert centre_file.calculate_dart_well_index(sample) == 95, "Expected well index of 95"
-
 # tests for inserting docs into DART
 def test_insert_plates_and_wells_from_docs_into_dart_none_connection(config):
     with patch('crawler.file_processing.create_dart_sql_server_conn', return_value = None):
@@ -1225,6 +1194,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_failed_cursor_execute(confi
                 FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
                 FIELD_RNA_ID: 'TC-rna-00000029_H11',
                 FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_LAB_ID: 'AP',
                 FIELD_COORDINATE: 'H11',
                 FIELD_RESULT: POSITIVE_RESULT_VALUE,
             }
@@ -1249,6 +1219,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_plate_failure_adding_new_pl
                 FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
                 FIELD_RNA_ID: 'TC-rna-00000029_H11',
                 FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_LAB_ID: 'AP',
                 FIELD_COORDINATE: 'H11',
                 FIELD_RESULT: POSITIVE_RESULT_VALUE,
             }
@@ -1274,6 +1245,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_plate_failure_setting_plate
                 FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
                 FIELD_RNA_ID: 'TC-rna-00000029_H11',
                 FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_LAB_ID: 'AP',
                 FIELD_COORDINATE: 'H11',
                 FIELD_RESULT: POSITIVE_RESULT_VALUE,
             }
@@ -1300,6 +1272,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_plate_none_setting_plate_st
                 FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
                 FIELD_RNA_ID: 'TC-rna-00000029_H11',
                 FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_LAB_ID: 'AP',
                 FIELD_COORDINATE: 'H11',
                 FIELD_RESULT: POSITIVE_RESULT_VALUE,
             }
@@ -1326,6 +1299,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_existing_plate_failure_with
                 FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
                 FIELD_RNA_ID: 'TC-rna-00000029_H11',
                 FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_LAB_ID: 'AP',
                 FIELD_COORDINATE: 'H11',
                 FIELD_RESULT: POSITIVE_RESULT_VALUE,
             }
@@ -1351,6 +1325,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_existing_non_pending_plate_
                 FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
                 FIELD_RNA_ID: 'TC-rna-00000029_H11',
                 FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_LAB_ID: 'AP',
                 FIELD_COORDINATE: 'H11',
                 FIELD_RESULT: POSITIVE_RESULT_VALUE,
             }
@@ -1399,23 +1374,24 @@ def test_insert_plates_and_wells_from_docs_into_dart_none_well_index(config):
                 FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
                 FIELD_RNA_ID: 'TC-rna-00000029_H11',
                 FIELD_PLATE_BARCODE: 'TC-rna-00000029',
+                FIELD_LAB_ID: 'AP',
                 FIELD_COORDINATE: 'H11',
-                FIELD_FILTERED_POSITIVE: POSITIVE_RESULT_VALUE,
+                FIELD_RESULT: POSITIVE_RESULT_VALUE,
             }
         ]
 
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
-        centre_file.calculate_dart_well_index = MagicMock(return_value = None)
         with patch('crawler.file_processing.get_dart_plate_state', return_value = DART_STATE_PENDING):
-            centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+            with patch('crawler.file_processing.get_dart_well_index', return_value = None):
+                centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
-            # logs error and rolls back on exception determining well index
-            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
-            assert centre_file.logging_collection.aggregator_types["TYPE 22"].count_errors == 1
-            mock_conn().cursor().rollback.assert_called_once()
-            mock_conn().cursor().commit.assert_not_called()
-            mock_conn().close.assert_called_once()
+                # logs error and rolls back on exception determining well index
+                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+                assert centre_file.logging_collection.aggregator_types["TYPE 22"].count_errors == 1
+                mock_conn().cursor().rollback.assert_called_once()
+                mock_conn().cursor().commit.assert_not_called()
+                mock_conn().close.assert_called_once()
 
 def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config):
     with patch('crawler.file_processing.create_dart_sql_server_conn') as mock_conn:
