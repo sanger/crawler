@@ -40,7 +40,7 @@ from crawler.constants import (
     DART_RNA_ID,
     DART_LAB_ID,
     DART_STATE_PICKABLE,
-    DART_STATE_EMPTY,
+    DART_EMPTY_VALUE,
 )
 from crawler.helpers import (
     parse_date_tested,
@@ -276,8 +276,8 @@ def test_map_mongo_doc_to_dart_well_props(config):
 
     result = map_mongo_doc_to_dart_well_props(doc_to_transform)
 
-    assert result[DART_STATE] == DART_STATE_EMPTY
-    assert result[DART_LAB_ID] == DART_STATE_EMPTY
+    assert result[DART_STATE] == DART_EMPTY_VALUE
+    assert result[DART_LAB_ID] == DART_EMPTY_VALUE
 
     # missing filtered positive
     doc_to_transform = {
@@ -287,4 +287,4 @@ def test_map_mongo_doc_to_dart_well_props(config):
 
     result = map_mongo_doc_to_dart_well_props(doc_to_transform)
 
-    assert result[DART_STATE] == DART_STATE_EMPTY
+    assert result[DART_STATE] == DART_EMPTY_VALUE
