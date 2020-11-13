@@ -1,7 +1,7 @@
-name: Docker CI
+name: CI docker
 
-# Trigger the workflow on push or pull request
 on:
+  # Trigger the workflow on push or pull request,
   push:
     branches:
       - develop
@@ -42,6 +42,27 @@ jobs:
           docker build .
           --file Dockerfile
           --tag docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
+      - name: Check format with black
+        run: >-
+          # stop the build if there are black formatting errors
+          docker run
+          --network host
+          docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
+          python -m black --check .
+      - name: Lint with flake8 (1)
+        run: >-
+          # stop the build if there are Python syntax errors or undefined names
+          docker run
+          --network host
+          docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      - name: Lint with flake8 (2)
+        run: >-
+          # exit-zero treats all errors as warnings
+          docker run
+          --network host
+          docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
+          flake8 . --count --exit-zero --max-complexity=12 --max-line-length=100 --statistics
       - name: Run mypy against the image
         run: >-
           docker run
@@ -59,22 +80,14 @@ jobs:
           docker run
           --network host
           docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
-          python -m pytest -vsx
-      - name: Login to registry
+          python -m pytest -x
+      - name: Login to regitry
         run: >-
           docker login
           -u ${{ github.actor }}
           -p ${{ secrets.GITHUB_TOKEN }}
           docker.pkg.github.com
-        #if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master' || contains(github.ref, 'release') || contains(github.ref, 'uat')
-      - name: Publish image with image tag being "develop" or git tag name (when not "master")
+      - name: Publish image with image tag being either develop/master/<tag_name>
         run: >-
           docker push
           docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
-        #if: github.ref == 'refs/heads/develop' || contains(github.ref, 'release') || contains(github.ref, 'uat')
-      - name: Tag the Docker image with "latest" if it's the "master" branch
-        run: docker tag docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/} docker.pkg.github.com/${IMAGE_NAME}:latest
-        if: github.ref == 'refs/heads/master'
-      - name: Publish image (if "master" branch)
-        run: docker push docker.pkg.github.com/${IMAGE_NAME}:latest
-        if: github.ref == 'refs/heads/master'

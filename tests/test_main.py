@@ -1,26 +1,16 @@
-import logging
-import logging.config
-import shutil
 import os
-from crawler.helpers import current_time
+import shutil
 from unittest.mock import patch
 
-import pytest
-
+from crawler.constants import COLLECTION_CENTRES, COLLECTION_IMPORTS, COLLECTION_SAMPLES
+from crawler.db import get_mongo_collection
 from crawler.main import run
-
-from crawler.constants import (
-    COLLECTION_CENTRES,
-    COLLECTION_IMPORTS,
-    COLLECTION_SAMPLES,
-)
 
 NUMBER_CENTRES = 4
 NUMBER_VALID_SAMPLES = 14
 NUMBER_SAMPLES_ON_PARTIAL_IMPORT = 10
 NUMBER_OF_FILES_PROCESSED = 7
 
-from crawler.db import get_mongo_collection
 
 # The run method encompasses the main actions of the crawler
 # As a result, this may be considered an integration test,
@@ -46,16 +36,18 @@ def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
 
     # We record *all* our samples
 
-    assert (
-        samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
-    ), f"Wrong number of samples inserted. Expected: {NUMBER_VALID_SAMPLES}, Actual: {samples_collection.count_documents({})}"
+    assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES, (
+        f"Wrong number of samples inserted. Expected: {NUMBER_VALID_SAMPLES}, Actual: "
+        f"{samples_collection.count_documents({})}"
+    )
     assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
     assert samples_collection.count_documents({"RNA ID": "123_H09", "source": "UK Biocentre"}) == 1
 
     # We get one import per centre
-    assert (
-        imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED
-    ), f"Wrong number of imports inserted. Expected: {NUMBER_OF_FILES_PROCESSED}, Actual: {imports_collection.count_documents({})}"
+    assert imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED, (
+        f"Wrong number of imports inserted. Expected: {NUMBER_OF_FILES_PROCESSED}, Actual: "
+        f"{imports_collection.count_documents({})}"
+    )
 
     # check number of success files
     (_, _, files) = next(os.walk("tmp/backups/ALDP/successes"))
@@ -123,9 +115,10 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
 
     # We expect the previously blacklisted file to now be processed
     (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
-    assert 1 == len(
-        files
-    ), f"Wrong number of success files. Expected: 1, actual: {len(files)}. Previously blacklisted file should have been processed."
+    assert 1 == len(files), (
+        f"Wrong number of success files. Expected: 1, actual: {len(files)}. Previously "
+        "blacklisted file should have been processed."
+    )
 
     # We expect the previous blacklisted file to still be in the errors directory as well
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
@@ -190,12 +183,13 @@ def test_error_run_duplicates_in_imports_message(
     # We expect 2 errors for this file, type 5 (duplicates) errors, 1 message and 1 aggregate count
     assert len(test_centre_imports["errors"]) == 2
 
-    # We expect errors to contain messages for type 5 duplicates, an aggregate total and a message line
+    # We expect errors to contain messages for type 5 duplicates, an aggregate total and a message
+    # line
     assert (
         "Total number of Duplicates within file errors (TYPE 5): 1"
         in test_centre_imports["errors"][0]
     )
     assert (
-        "WARNING: Duplicates detected within the file. (TYPE 5) (e.g. Duplicated, line: 3, root_sample_id: 16)"
-        in test_centre_imports["errors"][1]
-    )
+        "WARNING: Duplicates detected within the file. (TYPE 5) (e.g. Duplicated, line: 3, "
+        "root_sample_id: 16)"
+    ) in test_centre_imports["errors"][1]

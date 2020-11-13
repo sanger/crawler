@@ -1,36 +1,32 @@
 import logging
 import logging.config
 import shutil
-import tempfile
-import pytest
+from typing import Dict, List
 from unittest.mock import patch
-from typing import Dict, List, Any
+
+import pytest
 from crawler.constants import (
-    COLLECTION_SAMPLES,
     COLLECTION_CENTRES,
+    COLLECTION_SAMPLES,
     COLLECTION_SAMPLES_HISTORY,
     FIELD_COORDINATE,
-    FIELD_SOURCE,
-    FIELD_RESULT,
     FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
     FIELD_ROOT_SAMPLE_ID,
+    FIELD_SOURCE,
     MLWH_TABLE_NAME,
 )
-
 from crawler.db import (
     create_mongo_client,
-    get_mongo_db,
-    get_mongo_collection,
     create_mysql_connection,
-    create_dart_sql_server_conn,
+    get_mongo_collection,
+    get_mongo_db,
 )
 from crawler.helpers import get_config
 
 logger = logging.getLogger(__name__)
 CONFIG, _ = get_config("crawler.config.test")
 logging.config.dictConfig(CONFIG.LOGGING)  # type: ignore
-
-from copy import deepcopy
 
 
 @pytest.fixture
@@ -67,7 +63,7 @@ def mlwh_connection(config):
         try:
             cursor.execute(f"TRUNCATE TABLE {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
             mysql_conn.commit()
-        except:
+        except Exception:
             pytest.fail("An exception occurred clearing the table")
         finally:
             cursor.close()

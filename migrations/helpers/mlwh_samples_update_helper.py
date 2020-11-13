@@ -1,22 +1,16 @@
-import logging
-import logging.config
-import time
-from typing import List
-import pymongo
-from crawler.constants import (
-    COLLECTION_SAMPLES,
-    FIELD_CREATED_AT,
-    MONGO_DATETIME_FORMAT,
-)
+import sys
+import traceback
+from datetime import datetime
+
+from crawler.constants import COLLECTION_SAMPLES, FIELD_CREATED_AT, MONGO_DATETIME_FORMAT
 from crawler.db import (
     create_mongo_client,
+    create_mysql_connection,
     get_mongo_collection,
     get_mongo_db,
-    create_mysql_connection,
     run_mysql_executemany_query,
 )
 from crawler.helpers import map_mongo_doc_to_sql_columns
-from datetime import datetime
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from migrations.helpers.shared_helper import print_exception
 
@@ -24,10 +18,10 @@ from migrations.helpers.shared_helper import print_exception
 def valid_datetime_string(s_datetime: str) -> bool:
     try:
         dt = datetime.strptime(s_datetime, MONGO_DATETIME_FORMAT)
-        if dt == None:
+        if dt is None:
             return False
         return True
-    except Exception as e:
+    except Exception:
         print_exception()
         return False
 
@@ -51,7 +45,8 @@ def update_mlwh_with_legacy_samples(
         return
 
     print(
-        f"Starting MLWH update process with Start datetime {start_datetime} and End datetime {end_datetime}"
+        f"Starting MLWH update process with Start datetime {start_datetime} and End datetime "
+        f"{end_datetime}"
     )
 
     try:
@@ -66,7 +61,8 @@ def update_mlwh_with_legacy_samples(
 
             print("Selecting Mongo samples")
 
-            # this should take everything from the cursor find into RAM memory (assuming you have enough memory)
+            # this should take everything from the cursor find into RAM memory (assuming you have
+            # enough memory)
             mongo_docs = list(
                 samples_collection.find(
                     {FIELD_CREATED_AT: {"$gte": start_datetime, "$lte": end_datetime}}
@@ -74,7 +70,8 @@ def update_mlwh_with_legacy_samples(
             )
             number_docs_found = len(mongo_docs)
             print(
-                f"{number_docs_found} documents found in the mongo database between these timestamps"
+                f"{number_docs_found} documents found in the mongo database between these "
+                "timestamps"
             )
 
             # convert mongo field values into MySQL format
@@ -93,5 +90,5 @@ def update_mlwh_with_legacy_samples(
                 "No documents found for this timestamp range, nothing to insert or update in MLWH"
             )
 
-    except Exception as e:
+    except Exception:
         print_exception()

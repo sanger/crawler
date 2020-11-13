@@ -1,35 +1,38 @@
-import os
-import pytest
-from crawler.helpers import LoggingCollection
-from unittest.mock import patch
+from datetime import datetime, timezone
 from decimal import Decimal
+
+import pytest
 from bson.decimal128 import Decimal128  # type: ignore
+from bson.objectid import ObjectId
 from crawler.constants import (
-    FIELD_MONGODB_ID,
+    FIELD_COORDINATE,
+    FIELD_CREATED_AT,
     FIELD_DATE_TESTED,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
+    FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_LAB_ID,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_BARCODE,
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
-    FIELD_PLATE_BARCODE,
-    FIELD_COORDINATE,
     FIELD_SOURCE,
-    FIELD_CREATED_AT,
     FIELD_UPDATED_AT,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    MLWH_MONGODB_ID,
-    MLWH_ROOT_SAMPLE_ID,
-    MLWH_RNA_ID,
-    MLWH_PLATE_BARCODE,
     MLWH_COORDINATE,
-    MLWH_RESULT,
-    MLWH_DATE_TESTED_STRING,
-    MLWH_DATE_TESTED,
-    MLWH_SOURCE,
-    MLWH_LAB_ID,
     MLWH_CREATED_AT,
+    MLWH_DATE_TESTED,
+    MLWH_DATE_TESTED_STRING,
+    MLWH_FILTERED_POSITIVE,
+    MLWH_FILTERED_POSITIVE_TIMESTAMP,
+    MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_LAB_ID,
+    MLWH_MONGODB_ID,
+    MLWH_PLATE_BARCODE,
+    MLWH_RESULT,
+    MLWH_RNA_ID,
+    MLWH_ROOT_SAMPLE_ID,
+    MLWH_SOURCE,
     MLWH_UPDATED_AT,
     MLWH_FILTERED_POSITIVE,
     MLWH_FILTERED_POSITIVE_VERSION,
@@ -43,20 +46,16 @@ from crawler.constants import (
     DART_EMPTY_VALUE,
 )
 from crawler.helpers import (
+    LoggingCollection,
+    get_config,
+    get_dart_well_index,
+    map_lh_doc_to_sql_columns,
+    map_mongo_doc_to_dart_well_props,
+    map_mongo_doc_to_sql_columns,
     parse_date_tested,
     parse_decimal128,
-    get_config,
-    map_lh_doc_to_sql_columns,
-    map_mongo_doc_to_sql_columns,
     unpad_coordinate,
-    get_dart_well_index,
-    map_mongo_doc_to_dart_well_props,
 )
-from datetime import (
-    datetime,
-    timezone,
-)
-from bson.objectid import ObjectId
 
 
 def test_get_config():
@@ -73,7 +72,10 @@ def test_logging_collection_with_a_single_error():
     assert (
         aggregator.get_report_message() == "Total number of Only root sample id errors (TYPE 3): 1"
     )
-    exptd_msgs = "WARNING: Sample rows that have Root Sample ID value but no other information. (TYPE 3) (e.g. This is a testing message)"
+    exptd_msgs = (
+        "WARNING: Sample rows that have Root Sample ID value but no other information. (TYPE 3) "
+        "(e.g. This is a testing message)"
+    )
     assert aggregator.get_message() == exptd_msgs
     assert logging.get_aggregate_messages() == [exptd_msgs]
     assert logging.get_count_of_all_errors_and_criticals() == 0
@@ -105,9 +107,19 @@ def test_logging_collection_with_multiple_errors():
 
     exptd_msgs = [
         "DEBUG: Blank rows in files. (TYPE 1)",
-        "CRITICAL: Files where we do not have the expected main column headers of Root Sample ID, RNA ID and Result. (TYPE 2)",
-        "WARNING: Sample rows that have Root Sample ID value but no other information. (TYPE 3) (e.g. This is the first type 3 message) (e.g. This is the second type 3 message) (e.g. This is the third type 3 message)",
-        "ERROR: Sample rows that have Root Sample ID and Result values but no RNA ID (no plate barcode). (TYPE 4) (e.g. This is the first type 4 message)",
+        (
+            "CRITICAL: Files where we do not have the expected main column headers of Root Sample "
+            "ID, RNA ID and Result. (TYPE 2)"
+        ),
+        (
+            "WARNING: Sample rows that have Root Sample ID value but no other information. "
+            "(TYPE 3) (e.g. This is the first type 3 message) (e.g. This is the second type 3 "
+            "message) (e.g. This is the third type 3 message)"
+        ),
+        (
+            "ERROR: Sample rows that have Root Sample ID and Result values but no RNA ID (no plate "
+            "barcode). (TYPE 4) (e.g. This is the first type 4 message)"
+        ),
     ]
     assert logging.get_aggregate_messages() == exptd_msgs
     assert logging.get_count_of_all_errors_and_criticals() == 3
@@ -129,26 +141,26 @@ def test_parse_date_tested(config):
 
 def test_parse_date_tested_none(config):
     result = parse_date_tested(date_string=None)
-    assert result == None
+    assert result is None
 
 
 def test_parse_date_tested_wrong_format(config):
     result = parse_date_tested(date_string="2nd November 2020")
-    assert result == None
+    assert result is None
 
 
 # tests for parsing Decimal128
 def test_parse_decimal128(config):
     result = parse_decimal128(None)
-    assert result == None
+    assert result is None
 
 
-def test_parse_decimal128(config):
+def test_parse_decimal128_one(config):
     result = parse_decimal128("")
-    assert result == None
+    assert result is None
 
 
-def test_parse_decimal128(config):
+def test_parse_decimal128_two(config):
     result = parse_decimal128(Decimal128("23.26273818"))
     assert result == Decimal("23.26273818")
 
@@ -199,7 +211,7 @@ def test_map_lh_doc_to_sql_columns(config):
     assert result[MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 40, 8)
     assert result[MLWH_SOURCE] == "Test Centre"
     assert result[MLWH_LAB_ID] == "TC"
-    assert result[MLWH_FILTERED_POSITIVE] == True
+    assert result[MLWH_FILTERED_POSITIVE] is True
     assert result[MLWH_FILTERED_POSITIVE_VERSION] == "v2.3"
     assert result[MLWH_FILTERED_POSITIVE_TIMESTAMP] == datetime(2020, 4, 23, 14, 40, 8)
     assert result.get(MLWH_CREATED_AT) is not None

@@ -1,5 +1,8 @@
 import datetime
 import re
+import sys
+import traceback
+
 import pymongo
 from migrations.helpers.shared_helper import print_exception
 
@@ -35,7 +38,8 @@ def add_timestamps_to_samples(db):
         print(f"Time after adding index to samples collection: {datetime.datetime.now()}")
 
         print("\n-- Order the collections chronologically (oldest first) --")
-        # so that when we loop through, the timestamp we set is when the sample first appeared in a collection
+        # so that when we loop through, the timestamp we set is when the sample first appeared in a
+        # collection
         collection_name_to_timestamp = map_collection_name_to_timestamp(db)
         collection_names_chrono_order = sorted(collection_name_to_timestamp)
         # collection_names_chrono_order = ['samples_200804_1430'] # for testing specific files only
@@ -44,7 +48,8 @@ def add_timestamps_to_samples(db):
 
         for collection_name in collection_names_chrono_order:
             print(
-                f"\n-- Starting processing collection: {collection_name} at {datetime.datetime.now()} --"
+                f"\n-- Starting processing collection: {collection_name} at "
+                f"{datetime.datetime.now()} --"
             )
 
             print(f"\n-- Update collection {collection_name} with new concatenated id column --")
@@ -78,7 +83,8 @@ def add_timestamps_to_samples(db):
             print(f"Of which, number to process: {len(concat_ids)}")
 
             print(
-                f"\n-- Update samples collection with timestamps, where concat id matches and not yet migrated, in batches of {BATCH_SIZE} --"
+                "\n-- Update samples collection with timestamps, where concat id matches and not "
+                f"yet migrated, in batches of {BATCH_SIZE} --"
             )
             # in batches, because otherwise get "Error: 'update' command document too large"
 
@@ -90,13 +96,13 @@ def add_timestamps_to_samples(db):
             for batch in range(num_batches):
                 # Each batch takes ~30 secs for batch size of 250,000
                 print(
-                    f"\n-- Starting batch {batch + 1} of {num_batches}: {datetime.datetime.now()} --"
+                    f"\n-- Starting batch {batch + 1} of {num_batches}: {datetime.datetime.now()} -"
                 )
 
                 start = batch * BATCH_SIZE
-                end = (
-                    start + BATCH_SIZE
-                )  # this will go out of bounds on the final batch but python is ok with that and just returns the remaining items
+                end = start + BATCH_SIZE
+                # this will go out of bounds on the final batch but python is ok with that and
+                # just returns the remaining items
                 print(f"Processing samples {start} to {end}")
                 concat_ids_subset = concat_ids[start:end]  # e.g. 0:250000, 250000:500000 etc.
 
@@ -115,10 +121,11 @@ def add_timestamps_to_samples(db):
                 #   { '$set': { CREATED_DATE_FIELD_NAME: '2020-08-06 14:06 test' } }
                 # )
                 print(
-                    f"Time after querying based on new field and updating with timestamp: {datetime.datetime.now()}"
+                    "Time after querying based on new field and updating with timestamp: "
+                    f"{datetime.datetime.now()}"
                 )
                 print("Number samples modified: ", update_result_3.modified_count)
-    except:
+    except Exception:
         print_exception()
 
 
@@ -151,7 +158,8 @@ def extract_timestamp(collection_name):
             timestamp_string = m.group(1)
             timestamp_datetime = datetime.datetime.strptime(timestamp_string, "%d%m%Y_%H%M")
         else:
-            # shouldn't get here, because we check against the regexes in map_collection_name_to_timestamp
+            # shouldn't get here, because we check against the regexes in
+            # map_collection_name_to_timestamp
             return None
 
     return timestamp_datetime

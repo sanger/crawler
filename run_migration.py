@@ -1,11 +1,12 @@
+import logging
+import sys
+
+from crawler.helpers import get_config
 from migrations import (
     sample_timestamps,
     update_mlwh_with_legacy_samples,
     update_filtered_positives,
 )
-from crawler.helpers import get_config
-import sys
-import logging
 
 config, settings_module = get_config("")
 
@@ -67,4 +68,4 @@ if len(sys.argv) > 1:
     print(f"Migration name selected = {migration_name}")
     migration_by_name(migration_name)
 else:
-    print(f"You must include a migration name as an argument after the command, aborting")
+    print("You must include a migration name as an argument after the command, aborting")

@@ -124,7 +124,9 @@ LOGGING = {
     "formatters": {
         "colored": {
             "()": "colorlog.ColoredFormatter",
-            "format": "%(asctime)-15s %(name)-25s:%(lineno)-3s %(log_color)s%(levelname)-7s %(message)s",
+            "format": (
+                "%(asctime)-15s %(name)-25s:%(lineno)-3s %(log_color)s%(levelname)-7s %(message)s"
+            ),
         },
         "verbose": {
             "format": "%(asctime)-15s %(name)-25s:%(lineno)-3s %(levelname)-7s %(message)s"

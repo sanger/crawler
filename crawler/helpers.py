@@ -1,76 +1,70 @@
 import logging
 import os
-import sys
 import re
-import string
-
-from datetime import (
-    datetime,
-    timezone,
-)
-from importlib import import_module
-from types import ModuleType
+import sys
+from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, Any, Tuple, Optional
-from bson.decimal128 import Decimal128  # type: ignore
+from importlib import import_module
+import string
+from types import ModuleType
+from typing import Any, Dict, Tuple, Optional
+
 import pysftp  # type: ignore
+from bson.decimal128 import Decimal128  # type: ignore
 
 from crawler.constants import (
-    FIELD_MONGODB_ID,
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_PLATE_BARCODE,
-    FIELD_COORDINATE,
-    FIELD_RNA_ID,
-    FIELD_RESULT,
-    FIELD_DATE_TESTED,
-    FIELD_LAB_ID,
-    FIELD_CH1_TARGET,
-    FIELD_CH1_RESULT,
     FIELD_CH1_CQ,
-    FIELD_CH2_TARGET,
-    FIELD_CH2_RESULT,
+    FIELD_CH1_RESULT,
+    FIELD_CH1_TARGET,
     FIELD_CH2_CQ,
-    FIELD_CH3_TARGET,
-    FIELD_CH3_RESULT,
+    FIELD_CH2_RESULT,
+    FIELD_CH2_TARGET,
     FIELD_CH3_CQ,
-    FIELD_CH4_TARGET,
-    FIELD_CH4_RESULT,
+    FIELD_CH3_RESULT,
+    FIELD_CH3_TARGET,
     FIELD_CH4_CQ,
-    FIELD_LINE_NUMBER,
-    FIELD_FILE_NAME,
-    FIELD_FILE_NAME_DATE,
+    FIELD_CH4_RESULT,
+    FIELD_CH4_TARGET,
+    FIELD_COORDINATE,
     FIELD_CREATED_AT,
-    FIELD_UPDATED_AT,
-    FIELD_SOURCE,
+    FIELD_DATE_TESTED,
     FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    MLWH_MONGODB_ID,
-    MLWH_ROOT_SAMPLE_ID,
-    MLWH_RNA_ID,
-    MLWH_PLATE_BARCODE,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_LAB_ID,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_SOURCE,
+    FIELD_UPDATED_AT,
+    MLWH_CH1_CQ,
+    MLWH_CH1_RESULT,
+    MLWH_CH1_TARGET,
+    MLWH_CH2_CQ,
+    MLWH_CH2_RESULT,
+    MLWH_CH2_TARGET,
+    MLWH_CH3_CQ,
+    MLWH_CH3_RESULT,
+    MLWH_CH3_TARGET,
+    MLWH_CH4_CQ,
+    MLWH_CH4_RESULT,
+    MLWH_CH4_TARGET,
     MLWH_COORDINATE,
-    MLWH_RESULT,
+    MLWH_CREATED_AT,
     MLWH_DATE_TESTED,
     MLWH_DATE_TESTED_STRING,
-    MLWH_SOURCE,
-    MLWH_LAB_ID,
-    MLWH_CH1_TARGET,
-    MLWH_CH1_RESULT,
-    MLWH_CH1_CQ,
-    MLWH_CH2_TARGET,
-    MLWH_CH2_RESULT,
-    MLWH_CH2_CQ,
-    MLWH_CH3_TARGET,
-    MLWH_CH3_RESULT,
-    MLWH_CH3_CQ,
-    MLWH_CH4_TARGET,
-    MLWH_CH4_RESULT,
-    MLWH_CH4_CQ,
     MLWH_FILTERED_POSITIVE,
-    MLWH_FILTERED_POSITIVE_VERSION,
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
-    MLWH_CREATED_AT,
+    MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_LAB_ID,
+    MLWH_MONGODB_ID,
+    MLWH_PLATE_BARCODE,
+    MLWH_RESULT,
+    MLWH_RNA_ID,
+    MLWH_ROOT_SAMPLE_ID,
+    MLWH_SOURCE,
     MLWH_UPDATED_AT,
     MYSQL_DATETIME_FORMAT,
     DART_STATE,
@@ -161,7 +155,8 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
     return {
         MLWH_MONGODB_ID: str(
             doc[FIELD_MONGODB_ID]
-        ),  #  hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
+        ),  #  hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn
+        # it back
         MLWH_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
         MLWH_RNA_ID: doc[FIELD_RNA_ID],
         MLWH_PLATE_BARCODE: doc[FIELD_PLATE_BARCODE],
@@ -246,7 +241,7 @@ def parse_date_tested(date_string: str) -> Any:
     try:
         date_time = datetime.strptime(date_string, f"{MYSQL_DATETIME_FORMAT} %Z")
         return date_time
-    except:
+    except Exception:
         return None
 
 
@@ -262,7 +257,7 @@ def parse_decimal128(value: Decimal128) -> Any:
     try:
         dec = value.to_decimal()
         return dec
-    except:
+    except Exception:
         return None
 
 
@@ -325,8 +320,9 @@ class AggregateTypeBase:
         self.type_str = ""
 
     def add_error(self, message) -> None:
-        """Adds a new error to the aggregate type. Checks max_errors to decide whether message should be appended
-        to the default message or not. Increments total counter for this type of error.
+        """Adds a new error to the aggregate type. Checks max_errors to decide whether message
+        should be appended to the default message or not. Increments total counter for this type of
+        error.
 
         Arguments:
             message {str} -- the specific message for this error e.g. with a line number or barcode
@@ -339,10 +335,14 @@ class AggregateTypeBase:
         return self.message
 
     def get_report_message(self):
-        return f"Total number of {self.short_display_description} errors ({self.type_str}): {self.count_errors}"
+        return (
+            f"Total number of {self.short_display_description} errors ({self.type_str}): "
+            f"{self.count_errors}"
+        )
 
 
-# See confluence for full table of aggregate types https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/i.+Low+Occupancy+Cherry+Picking
+# See confluence for full table of aggregate types
+# https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/i.+Low+Occupancy+Cherry+Picking
 
 
 class AggregateType1(AggregateTypeBase):
@@ -359,7 +359,10 @@ class AggregateType2(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 2"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = f"CRITICAL: Files where we do not have the expected main column headers of Root Sample ID, RNA ID and Result. ({self.type_str})"
+        self.message = (
+            "CRITICAL: Files where we do not have the expected main column headers of Root Sample "
+            f"ID, RNA ID and Result. ({self.type_str})"
+        )
         self.short_display_description = "Missing header column"
 
 
@@ -368,7 +371,10 @@ class AggregateType3(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 3"
         self.error_level = ErrorLevel.WARNING
-        self.message = f"WARNING: Sample rows that have Root Sample ID value but no other information. ({self.type_str})"
+        self.message = (
+            "WARNING: Sample rows that have Root Sample ID value but no other information. "
+            f"({self.type_str})"
+        )
         self.max_errors = 5
         self.short_display_description = "Only root sample id"
 
@@ -378,7 +384,10 @@ class AggregateType4(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 4"
         self.error_level = ErrorLevel.ERROR
-        self.message = f"ERROR: Sample rows that have Root Sample ID and Result values but no RNA ID (no plate barcode). ({self.type_str})"
+        self.message = (
+            "ERROR: Sample rows that have Root Sample ID and Result values but no RNA ID "
+            f"(no plate barcode). ({self.type_str})"
+        )
         self.max_errors = 5
         self.short_display_description = "No plate barcode"
 
@@ -410,7 +419,10 @@ class AggregateType7(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 7"
         self.error_level = ErrorLevel.WARNING
-        self.message = f"WARNING: Samples rows matching previously uploaded rows but with different test date. ({self.type_str})"
+        self.message = (
+            "WARNING: Samples rows matching previously uploaded rows but with different test "
+            f"date. ({self.type_str})"
+        )
         self.max_errors = 5
         self.short_display_description = "Different test date"
 
@@ -423,7 +435,10 @@ class AggregateType9(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 9"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = f"CRITICAL: Sample rows failing to match expected format (regex) for RNA ID field. ({self.type_str})"
+        self.message = (
+            "CRITICAL: Sample rows failing to match expected format (regex) for RNA ID field. "
+            f"({self.type_str})"
+        )
         self.max_errors = 5
         self.short_display_description = "Failed regex on plate barcode"
 
@@ -479,7 +494,10 @@ class AggregateType15(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 15"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = f"CRITICAL: Files where the MLWH database connection could not be made. ({self.type_str})"
+        self.message = (
+            "CRITICAL: Files where the MLWH database connection could not be made. "
+            f"({self.type_str})"
+        )
         self.short_display_description = "Failed MLWH connection"
 
 
@@ -546,7 +564,10 @@ class AggregateType21(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 21"
         self.error_level = ErrorLevel.ERROR
-        self.message = f"ERROR: Sample rows where a Positive Result value does not align with CT channel Results. ({self.type_str})"
+        self.message = (
+            "ERROR: Sample rows where a Positive Result value does not align with CT channel "
+            f"Results. ({self.type_str})"
+        )
         self.max_errors = 5
         self.short_display_description = "Result not aligned with CHn-Results"
 
@@ -556,7 +577,10 @@ class AggregateType22(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 22"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = f"CRITICAL: Files where the DART database inserts have failed for some plates. ({self.type_str})"
+        self.message = (
+            "CRITICAL: Files where the DART database inserts have failed for some plates. "
+            f"({self.type_str})"
+        )
         self.short_display_description = "Failed DART plate inserts"
 
 
@@ -576,7 +600,10 @@ class AggregateType24(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 24"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = f"CRITICAL: Files where the DART database connection could not be made. ({self.type_str})"
+        self.message = (
+            "CRITICAL: Files where the DART database connection could not be made. "
+            f"({self.type_str})"
+        )
         self.short_display_description = "Failed DART connection"
 
 
@@ -613,7 +640,7 @@ class LoggingCollection:
 
     def get_aggregate_messages(self):
         msgs = []
-        for (k, v) in sorted(self.aggregator_types.items()):
+        for (_k, v) in sorted(self.aggregator_types.items()):
             if v.count_errors > 0:
                 msgs.append(v.get_message())
 
@@ -621,7 +648,7 @@ class LoggingCollection:
 
     def get_aggregate_total_messages(self):
         msgs = []
-        for (k, v) in sorted(self.aggregator_types.items()):
+        for (_k, v) in sorted(self.aggregator_types.items()):
             if v.count_errors > 0:
                 msgs.append(v.get_report_message())
 
@@ -632,7 +659,7 @@ class LoggingCollection:
 
     def get_count_of_all_errors_and_criticals(self):
         count = 0
-        for (k, v) in self.aggregator_types.items():
+        for (_k, v) in self.aggregator_types.items():
             if v.error_level == ErrorLevel.ERROR or v.error_level == ErrorLevel.CRITICAL:
                 count += v.count_errors
 

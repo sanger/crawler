@@ -1,85 +1,69 @@
-import logging
-import logging.config
-import shutil
 import os
-from io import StringIO
-from crawler.helpers import current_time
-from unittest.mock import (
-    patch,
-    MagicMock,
-    call,
-)
 from csv import DictReader
-import pytest
-from datetime import (
-    datetime,
-    timezone,
-)
-from bson.objectid import ObjectId
+from datetime import datetime
 from decimal import Decimal
+from io import StringIO
+from unittest.mock import MagicMock, call, patch
+
 from bson.decimal128 import Decimal128  # type: ignore
-from tempfile import mkstemp
-from crawler.file_processing import Centre, CentreFile, CentreFileState, SUCCESSES_DIR, ERRORS_DIR
+from bson.objectid import ObjectId
 from crawler.constants import (
-    COLLECTION_CENTRES,
-    COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
-    COLLECTION_SAMPLES_HISTORY,
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_RNA_ID,
-    FIELD_RESULT,
-    FIELD_DATE_TESTED,
-    FIELD_LAB_ID,
-    FIELD_VIRAL_PREP_ID,
-    FIELD_RNA_PCR_ID,
-    FIELD_PLATE_BARCODE,
-    FIELD_COORDINATE,
-    FIELD_SOURCE,
-    FIELD_CREATED_AT,
-    FIELD_UPDATED_AT,
-    FIELD_CH1_TARGET,
-    FIELD_CH1_RESULT,
+    DART_STATE_NO_PLATE,
+    DART_STATE_NO_PROP,
+    DART_STATE_PENDING,
     FIELD_CH1_CQ,
-    FIELD_CH2_TARGET,
-    FIELD_CH2_RESULT,
+    FIELD_CH1_RESULT,
+    FIELD_CH1_TARGET,
     FIELD_CH2_CQ,
-    FIELD_CH3_TARGET,
-    FIELD_CH3_RESULT,
+    FIELD_CH2_RESULT,
+    FIELD_CH2_TARGET,
     FIELD_CH3_CQ,
-    FIELD_CH4_TARGET,
-    FIELD_CH4_RESULT,
+    FIELD_CH3_RESULT,
+    FIELD_CH3_TARGET,
     FIELD_CH4_CQ,
+    FIELD_CH4_RESULT,
+    FIELD_CH4_TARGET,
+    FIELD_COORDINATE,
+    FIELD_DATE_TESTED,
     FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    MLWH_TABLE_NAME,
-    MLWH_TABLE_NAME,
-    MLWH_MONGODB_ID,
-    MLWH_ROOT_SAMPLE_ID,
-    MLWH_RNA_ID,
-    MLWH_PLATE_BARCODE,
-    MLWH_COORDINATE,
-    MLWH_RESULT,
-    MLWH_DATE_TESTED_STRING,
-    MLWH_DATE_TESTED,
-    MLWH_SOURCE,
-    MLWH_LAB_ID,
-    MLWH_CH1_TARGET,
-    MLWH_CH1_RESULT,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_LAB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_RNA_PCR_ID,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_SOURCE,
+    FIELD_VIRAL_PREP_ID,
     MLWH_CH1_CQ,
-    MLWH_CH2_TARGET,
-    MLWH_CH2_RESULT,
+    MLWH_CH1_RESULT,
+    MLWH_CH1_TARGET,
     MLWH_CH2_CQ,
-    MLWH_CH3_TARGET,
-    MLWH_CH3_RESULT,
+    MLWH_CH2_RESULT,
+    MLWH_CH2_TARGET,
     MLWH_CH3_CQ,
-    MLWH_CH4_TARGET,
-    MLWH_CH4_RESULT,
+    MLWH_CH3_RESULT,
+    MLWH_CH3_TARGET,
     MLWH_CH4_CQ,
-    MLWH_FILTERED_POSITIVE,
-    MLWH_FILTERED_POSITIVE_VERSION,
-    MLWH_FILTERED_POSITIVE_TIMESTAMP,
+    MLWH_CH4_RESULT,
+    MLWH_CH4_TARGET,
+    MLWH_COORDINATE,
     MLWH_CREATED_AT,
+    MLWH_DATE_TESTED,
+    MLWH_DATE_TESTED_STRING,
+    MLWH_FILTERED_POSITIVE,
+    MLWH_FILTERED_POSITIVE_TIMESTAMP,
+    MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_LAB_ID,
+    MLWH_MONGODB_ID,
+    MLWH_PLATE_BARCODE,
+    MLWH_RESULT,
+    MLWH_RNA_ID,
+    MLWH_ROOT_SAMPLE_ID,
+    MLWH_SOURCE,
+    MLWH_TABLE_NAME,
     MLWH_UPDATED_AT,
     POSITIVE_RESULT_VALUE,
     DART_STATE_PENDING,
@@ -89,7 +73,7 @@ from crawler.constants import (
     DART_EMPTY_VALUE,
 )
 from crawler.db import get_mongo_collection
-
+from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile, CentreFileState
 
 # ----- tests helpers -----
 
@@ -118,16 +102,13 @@ def test_process_files(
     mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn
 ):
     _, mongo_database = mongo_database
-    logger = logging.getLogger(__name__)
 
     centre_config = config.CENTRES[0]
     centre_config["sftp_root_read"] = "tmp/files"
     centre = Centre(config, centre_config)
     centre.process_files()
 
-    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
-    samples_history_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES_HISTORY)
 
     # # We record *all* our samples
     assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
@@ -162,7 +143,7 @@ def test_checksum_not_match(config, tmpdir):
             centre = Centre(config, config.CENTRES[0])
             centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
 
-            assert centre_file.checksum_match("successes") == False
+            assert centre_file.checksum_match("successes") is False
         finally:
             for tmpfile_for_list in list_files:
                 os.remove(tmpfile_for_list)
@@ -183,7 +164,7 @@ def test_checksum_match(config, tmpdir):
         try:
             centre = Centre(config, config.CENTRES[0])
             centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
-            assert centre_file.checksum_match("successes") == True
+            assert centre_file.checksum_match("successes") is True
         finally:
             for tmpfile_for_list in list_files:
                 os.remove(tmpfile_for_list)
@@ -315,18 +296,6 @@ def test_parse_and_format_file_rows(config):
             assert augmented_data == extra_fields_added
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
-        wrong_barcode = [
-            {
-                "Root Sample ID": "1",
-                "RNA ID": "RNA_0043_",
-                "Result": "",
-                "plate_barcode": "",
-                "source": "Alderley",
-                "coordinate": "",
-                "Lab ID": "",
-            }
-        ]
-
         with StringIO() as fake_csv:
             fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
             fake_csv.write("1,RNA_0043_,Positive\n")
@@ -348,10 +317,13 @@ def test_filtered_row_with_extra_unrecognised_columns(config):
 
     with StringIO() as fake_csv_with_extra_columns:
         fake_csv_with_extra_columns.write(
-            f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},{FIELD_LAB_ID},{FIELD_CH1_TARGET},{FIELD_CH1_RESULT},{FIELD_CH1_CQ},extra_col_1,extra_col_2,extra_col_3\n"
+            f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},"
+            f"{FIELD_LAB_ID},{FIELD_CH1_TARGET},{FIELD_CH1_RESULT},{FIELD_CH1_CQ},extra_col_1,"
+            "extra_col_2,extra_col_3\n"
         )
         fake_csv_with_extra_columns.write(
-            "1,RNA_0043,Positive,today,AP,ORF1ab,Positive,23.12345678,extra_value_1,extra_value_2,extra_value_3\n"
+            "1,RNA_0043,Positive,today,AP,ORF1ab,Positive,23.12345678,extra_value_1,extra_value_2,"
+            "extra_value_3\n"
         )
         fake_csv_with_extra_columns.seek(0)
 
@@ -414,7 +386,8 @@ def test_filtered_row_with_lab_id_present(config):
 
         with StringIO() as fake_csv_without_lab_id:
             fake_csv_without_lab_id.write(
-                f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},{FIELD_LAB_ID}\n"
+                f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},"
+                f"{FIELD_LAB_ID}\n"
             )
             fake_csv_without_lab_id.write("1,RNA_0043,Positive,today,RealLabID\n")
             fake_csv_without_lab_id.seek(0)
@@ -644,8 +617,7 @@ def test_where_result_has_unexpected_value(config):
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
-
-            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+            centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
             # should create a specific error type for the row
             assert centre_file.logging_collection.aggregator_types["TYPE 16"].count_errors == 1
@@ -671,8 +643,7 @@ def test_where_ct_channel_target_has_unexpected_value(config):
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
-
-            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+            centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
             # should create a specific error type for the row
             assert centre_file.logging_collection.aggregator_types["TYPE 17"].count_errors == 1
@@ -697,8 +668,7 @@ def test_where_ct_channel_result_has_unexpected_value(config):
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
-
-            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+            centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
             # should create a specific error type for the row
             assert centre_file.logging_collection.aggregator_types["TYPE 18"].count_errors == 1
@@ -746,8 +716,7 @@ def test_where_ct_channel_cq_value_is_not_numeric(config):
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
-
-            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+            centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
             # should create a specific error type for the row
             assert centre_file.logging_collection.aggregator_types["TYPE 19"].count_errors == 1
@@ -802,8 +771,7 @@ def test_where_ct_channel_cq_value_is_not_within_range(config):
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
-
-            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+            centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
             # should create a specific error type for the row
             assert centre_file.logging_collection.aggregator_types["TYPE 20"].count_errors == 2
@@ -834,8 +802,7 @@ def test_where_positive_result_does_not_align_with_ct_channel_results(config):
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
-
-            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+            centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
             # should create a specific error type for the row
             assert centre_file.logging_collection.aggregator_types["TYPE 21"].count_errors == 1
@@ -995,7 +962,7 @@ def test_file_name_date_parses_right(config):
     assert centre_file.file_name_date().minute == 38
 
     centre_file = CentreFile("AP_sanger_report_200503_2338 (2).csv", centre)
-    assert centre_file.file_name_date() == None
+    assert centre_file.file_name_date() is None
 
 
 def test_set_state_for_file_when_file_in_black_list(config, blacklist_for_centre, testing_centres):
@@ -1017,7 +984,6 @@ def test_set_state_for_file_when_never_seen_before(config, testing_centres):
 def test_set_state_for_file_when_in_error_folder(config, tmpdir, testing_centres):
     with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
         errors_folder = tmpdir.mkdir(ERRORS_DIR)
-        success_folder = tmpdir.mkdir(SUCCESSES_DIR)
 
         # configure to use the backups folder for this test
 
@@ -1091,9 +1057,10 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
 
         error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
         error_messages = centre_file.logging_collection.get_aggregate_messages()
-        assert (
-            error_count == 0
-        ), f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
+        assert error_count == 0, (
+            f"Should not be any errors. Actual number errors: {error_count}. Error details: "
+            f"{error_messages}"
+        )
 
         cursor = mlwh_connection.cursor(dictionary=True)
         cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
@@ -1179,16 +1146,17 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_con
 
         error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
         error_messages = centre_file.logging_collection.get_aggregate_messages()
-        assert (
-            error_count == 0
-        ), f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
+        assert error_count == 0, (
+            f"Should not be any errors. Actual number errors: {error_count}. Error details: "
+            f"{error_messages}"
+        )
 
         cursor = mlwh_connection.cursor(dictionary=True)
         cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
         rows = cursor.fetchall()
         cursor.close()
 
-        assert rows[0][MLWH_DATE_TESTED] == None
+        assert rows[0][MLWH_DATE_TESTED] is None
 
 
 def test_insert_samples_from_docs_into_mlwh_date_tested_blank(config, mlwh_connection):
@@ -1214,16 +1182,17 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_blank(config, mlwh_conne
 
         error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
         error_messages = centre_file.logging_collection.get_aggregate_messages()
-        assert (
-            error_count == 0
-        ), f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
+        assert error_count == 0, (
+            f"Should not be any errors. Actual number errors: {error_count}. Error details: "
+            f"{error_messages}"
+        )
 
         cursor = mlwh_connection.cursor(dictionary=True)
         cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
         rows = cursor.fetchall()
         cursor.close()
 
-        assert rows[0][MLWH_DATE_TESTED] == None
+        assert rows[0][MLWH_DATE_TESTED] is None
 
 
 # tests for inserting docs into DART

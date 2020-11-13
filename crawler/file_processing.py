@@ -1,51 +1,68 @@
-import os
 import csv
-from typing import Dict, List, Any, Tuple, Set, Optional
-from pymongo.errors import BulkWriteError
-from pymongo.database import Database
-from bson.objectid import ObjectId  # type: ignore
-import pyodbc  # type: ignore
-
-from enum import Enum
-from csv import DictReader, DictWriter
-import shutil
-import logging, pathlib
+import logging
+import os
+import pathlib
 import re
+import shutil
+import string
+from csv import DictReader
+from datetime import datetime
+from decimal import Decimal
+from enum import Enum
+from hashlib import md5
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+import pyodbc  # type: ignore
+from bson.decimal128 import Decimal128  # type: ignore
+from bson.objectid import ObjectId  # type: ignore
+from more_itertools import groupby_transform
+from pymongo.database import Database
+from pymongo.errors import BulkWriteError
+
 from crawler.constants import (
-    FIELD_MONGODB_ID,
+    ALLOWED_CH_RESULT_VALUES,
+    ALLOWED_CH_TARGET_VALUES,
+    ALLOWED_RESULT_VALUES,
+    COLLECTION_CENTRES,
+    COLLECTION_IMPORTS,
+    COLLECTION_SAMPLES,
+    DART_STATE_NO_PLATE,
+    DART_STATE_NO_PROP,
+    DART_STATE_PENDING,
+    FIELD_CH1_CQ,
+    FIELD_CH1_RESULT,
+    FIELD_CH1_TARGET,
+    FIELD_CH2_CQ,
+    FIELD_CH2_RESULT,
+    FIELD_CH2_TARGET,
+    FIELD_CH3_CQ,
+    FIELD_CH3_RESULT,
+    FIELD_CH3_TARGET,
+    FIELD_CH4_CQ,
+    FIELD_CH4_RESULT,
+    FIELD_CH4_TARGET,
     FIELD_COORDINATE,
+    FIELD_CREATED_AT,
     FIELD_DATE_TESTED,
+    FIELD_FILE_NAME,
+    FIELD_FILE_NAME_DATE,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
+    FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_LAB_ID,
+    FIELD_LINE_NUMBER,
+    FIELD_MONGODB_ID,
     FIELD_PLATE_BARCODE,
     FIELD_RESULT,
     FIELD_RNA_ID,
+    FIELD_RNA_PCR_ID,
     FIELD_ROOT_SAMPLE_ID,
-    FIELD_LINE_NUMBER,
-    FIELD_FILE_NAME,
-    FIELD_FILE_NAME_DATE,
-    FIELD_CREATED_AT,
+    FIELD_SOURCE,
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
-    FIELD_RNA_PCR_ID,
-    FIELD_SOURCE,
-    FIELD_CH1_TARGET,
-    FIELD_CH1_RESULT,
-    FIELD_CH1_CQ,
-    FIELD_CH2_TARGET,
-    FIELD_CH2_RESULT,
-    FIELD_CH2_CQ,
-    FIELD_CH3_TARGET,
-    FIELD_CH3_RESULT,
-    FIELD_CH3_CQ,
-    FIELD_CH4_TARGET,
-    FIELD_CH4_RESULT,
-    FIELD_CH4_CQ,
-    POSITIVE_RESULT_VALUE,
-    ALLOWED_RESULT_VALUES,
-    ALLOWED_CH_TARGET_VALUES,
-    ALLOWED_CH_RESULT_VALUES,
-    MIN_CQ_VALUE,
     MAX_CQ_VALUE,
+    MIN_CQ_VALUE,
+    POSITIVE_RESULT_VALUE,
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
@@ -55,7 +72,23 @@ from crawler.constants import (
     DART_STATE_PICKABLE,
     DART_EMPTY_VALUE,
 )
+from crawler.exceptions import CentreFileError, DartStateError
+from crawler.db import (
+    create_dart_sql_server_conn,
+    create_import_record,
+    create_mongo_client,
+    create_mysql_connection,
+    get_dart_plate_state,
+    get_mongo_collection,
+    get_mongo_db,
+    run_mysql_executemany_query,
+    set_dart_plate_state_pending,
+    set_dart_well_properties,
+    add_dart_plate_if_doesnt_exist,
+)
+from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 from crawler.helpers import (
+    LoggingCollection,
     current_time,
     get_sftp_connection,
     LoggingCollection,
@@ -63,32 +96,7 @@ from crawler.helpers import (
     get_dart_well_index,
     map_mongo_doc_to_dart_well_props,
 )
-from crawler.constants import (
-    COLLECTION_SAMPLES,
-    COLLECTION_IMPORTS,
-    COLLECTION_CENTRES,
-)
-from crawler.exceptions import CentreFileError
-from crawler.db import (
-    get_mongo_collection,
-    get_mongo_db,
-    create_mongo_client,
-    create_import_record,
-    create_mysql_connection,
-    run_mysql_executemany_query,
-    create_dart_sql_server_conn,
-    get_dart_plate_state,
-    set_dart_plate_state_pending,
-    set_dart_well_properties,
-    add_dart_plate_if_doesnt_exist,
-)
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
-from hashlib import md5
-from datetime import datetime
-from decimal import Decimal
-from bson.decimal128 import Decimal128  # type: ignore
-from more_itertools import groupby_transform
-from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +140,7 @@ class Centre:
             centre_files = list(filter(pattern.match, files))
 
             return centre_files
-        except:
+        except Exception:
             logger.error(f"Failed when reading files from {path_to_walk}")
             return []
 
@@ -145,7 +153,7 @@ class Centre:
         logger.debug("Remove files")
         try:
             shutil.rmtree(self.get_download_dir())
-        except Exception as e:
+        except Exception:
             logger.exception("Failed clean up")
 
     def process_files(self) -> None:
@@ -318,14 +326,15 @@ class CentreFile:
         for backup_copy_file in files_from_backup_folder:
             matches = regexp.match(backup_copy_file)
             if matches:
-                backup_timestamp = matches.group(1)
+                # backup_timestamp = matches.group(1)
                 backup_filename = matches.group(2)
                 backup_checksum = matches.group(3)
 
                 if checksum_for_file == backup_checksum:
                     if backup_filename != self.file_name:
                         logger.warning(
-                            f"Found identical file {backup_filename} in path {dir_path} which has same checksum but different filename"
+                            f"Found identical file {backup_filename} in path {dir_path} which has "
+                            "same checksum but different filename"
                         )
                     return True
         return False
@@ -368,9 +377,10 @@ class CentreFile:
 
     def process_samples(self) -> None:
         """Processes the samples extracted from the centre file."""
-        logger.info(f"Processing samples")
+        logger.info("Processing samples")
 
-        # Internally traps TYPE 2: missing headers and TYPE 10 malformed files and returns docs_to_insert = []
+        # Internally traps TYPE 2: missing headers and TYPE 10 malformed files and returns
+        # docs_to_insert = []
         docs_to_insert = self.parse_csv()
 
         if self.logging_collection.get_count_of_all_errors_and_criticals() > 0:
@@ -383,7 +393,8 @@ class CentreFile:
             mongo_ids_of_inserted = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
 
         if len(mongo_ids_of_inserted) > 0:
-            # filter out docs which failed to insert into mongo - we don't want to create mlwh records for these
+            # filter out docs which failed to insert into mongo - we don't want to create mlwh
+            # records for these
             docs_to_insert_mlwh = list(
                 filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert)
             )
@@ -405,7 +416,10 @@ class CentreFile:
                 f"{self.centre_config['backups_folder']}/{ERRORS_DIR}/{self.timestamped_filename()}"
             )
         else:
-            return f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}/{self.timestamped_filename()}"
+            return (
+                f"{self.centre_config['backups_folder']}/"
+                f"{SUCCESSES_DIR}/{self.timestamped_filename()}"
+            )
 
     def timestamped_filename(self):
         return f"{current_time()}_{self.file_name}_{self.checksum()}"
@@ -465,19 +479,23 @@ class CentreFile:
                 )[0]
                 if not (entry):
                     logger.critical(
-                        f"When trying to insert root_sample_id: {wrong_instance[FIELD_ROOT_SAMPLE_ID]}, contents: {wrong_instance}"
+                        f"When trying to insert root_sample_id: "
+                        f"{wrong_instance[FIELD_ROOT_SAMPLE_ID]}, contents: {wrong_instance}"
                     )
                     continue
 
                 if entry[FIELD_DATE_TESTED] != wrong_instance[FIELD_DATE_TESTED]:
                     self.logging_collection.add_error(
                         "TYPE 7",
-                        f"Already in database, line: {wrong_instance['line_number']}, root sample id: {wrong_instance['Root Sample ID']}, dates: ({entry[FIELD_DATE_TESTED]} != {wrong_instance[FIELD_DATE_TESTED]})",
+                        f"Already in database, line: {wrong_instance['line_number']}, root sample "
+                        f"id: {wrong_instance['Root Sample ID']}, dates: "
+                        f"({entry[FIELD_DATE_TESTED]} != {wrong_instance[FIELD_DATE_TESTED]})",
                     )
                 else:
                     self.logging_collection.add_error(
                         "TYPE 6",
-                        f"Already in database, line: {wrong_instance['line_number']}, root sample id: {wrong_instance['Root Sample ID']}",
+                        f"Already in database, line: {wrong_instance['line_number']}, root sample "
+                        f"id: {wrong_instance['Root Sample ID']}",
                     )
         except Exception as e:
             logger.critical(f"Unknown error with file {self.file_name}: {e}")
@@ -486,7 +504,8 @@ class CentreFile:
         """Insert sample records into the mongo database from the parsed file information.
 
         Arguments:
-            docs_to_insert {List[Dict[str, str]]} -- list of filtered sample information extracted from csv files
+            docs_to_insert {List[Dict[str, str]]} -- list of filtered sample information extracted
+            from csv files
         """
         logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
@@ -496,7 +515,8 @@ class CentreFile:
             result = samples_collection.insert_many(docs_to_insert, ordered=False)
             self.docs_inserted = len(result.inserted_ids)
 
-            # inserted_ids is in the same order as docs_to_insert, even if the query has ordered=False parameter
+            # inserted_ids is in the same order as docs_to_insert, even if the query has
+            # ordered=False parameter
             return result.inserted_ids
 
         # TODO could trap DuplicateKeyError specifically
@@ -505,12 +525,14 @@ class CentreFile:
             # the records from being written
             logger.warning(f"{e} - usually happens when duplicates are trying to be inserted")
 
-            # filter out any errors that are duplicates by checking the code in e.details["writeErrors"]
+            # filter out any errors that are duplicates by checking the code in
+            # e.details["writeErrors"]
             filtered_errors = list(filter(lambda x: x["code"] != 11000, e.details["writeErrors"]))
 
             if len(filtered_errors) > 0:
                 logger.info(
-                    f"Number of exceptions left after filtering out duplicates = {len(filtered_errors)}. Example:"
+                    f"Number of exceptions left after filtering out "
+                    f"duplicates = {len(filtered_errors)}. Example:"
                 )
                 logger.info(filtered_errors[0])
 
@@ -531,13 +553,16 @@ class CentreFile:
             return []
 
     def insert_samples_from_docs_into_mlwh(self, docs_to_insert) -> None:
-        """Insert sample records into the MLWH database from the parsed file information, including the corresponding mongodb _id
+        """Insert sample records into the MLWH database from the parsed file information, including
+        the corresponding mongodb _id
 
         Arguments:
-            docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from csv files.
-                                                     Includes the mongodb id, as the list has already been inserted into mongodb
+            docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted
+            from csv files.
+            Includes the mongodb id, as the list has already been inserted into mongodb
 
-            mongo_ids {List[ObjectId]} -- list of mongodb ids in the same order as docs_to_insert, from the insert into the mongodb
+            mongo_ids {List[ObjectId]} -- list of mongodb ids in the same order as docs_to_insert,
+            from the insert into the mongodb
         """
         values = []
         for doc in docs_to_insert:
@@ -565,14 +590,16 @@ class CentreFile:
                 f"MLWH database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(
-                f"Error writing to MLWH for file {self.file_name}, could not create Database connection"
+                f"Error writing to MLWH for file {self.file_name}, could not create Database "
+                "connection"
             )
 
     def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert) -> None:
         """Insert plates and wells into the DART database from the parsed file information
 
         Arguments:
-            docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from csv files.
+            docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted
+            from csv files.
         """
         sql_server_connection = create_dart_sql_server_conn(self.config, False)
 
@@ -596,13 +623,16 @@ class CentreFile:
                     except Exception as e:
                         self.logging_collection.add_error(
                             "TYPE 22",
-                            f"DART database inserts failed for plate {plate_barcode} in file {self.file_name}",
+                            f"DART database inserts failed for plate {plate_barcode} in file "
+                            f"{self.file_name}",
                         )
                         logger.critical(
-                            f"Critical error inserting plate {plate_barcode} in file {self.file_name}: {e}"
+                            f"Critical error inserting plate {plate_barcode} in file "
+                            f"{self.file_name}: {e}"
                         )
                         logger.exception(e)
-                        cursor.rollback()  # rollback statements executed since previous commit/rollback
+                        # rollback statements executed since previous commit/rollback
+                        cursor.rollback()
 
                 logger.debug(
                     f"DART database inserts completed successfully for file {self.file_name}"
@@ -664,8 +694,8 @@ class CentreFile:
                     documents = self.parse_and_format_file_rows(csvreader)
 
                     return documents
-            except csv.Error as e:
-                self.logging_collection.add_error("TYPE 10", f"Wrong read from file")
+            except csv.Error:
+                self.logging_collection.add_error("TYPE 10", "Wrong read from file")
 
         return []
 
@@ -718,13 +748,13 @@ class CentreFile:
     def extract_plate_barcode_and_coordinate(
         self, row: Dict[str, Any], line_number, barcode_field: str, regex: str
     ) -> Tuple[str, str]:
-        """Extracts fields from a row of data (from the CSV file). Currently extracting the barcode and
-        coordinate (well position) using regex groups.
+        """Extracts fields from a row of data (from the CSV file). Currently extracting the barcode
+        and coordinate (well position) using regex groups.
 
         Arguments:
             row {Dict[str, Any]} -- row of data from CSV file
-            barcode_field {str} -- field indicating the plate barcode of interest, might also include
-            coordinate
+            barcode_field {str} -- field indicating the plate barcode of interest, might also
+            include coordinate
             regex {str} -- regex pattern to use to extract the fields
 
         Returns:
@@ -741,7 +771,8 @@ class CentreFile:
 
             self.logging_collection.add_error(
                 "TYPE 9",
-                f"Wrong reg. exp. {barcode_field}, line:{line_number}, root_sample_id: {sample_id}, value: {row.get(barcode_field)}",
+                f"Wrong reg. exp. {barcode_field}, line:{line_number}, "
+                f"root_sample_id: {sample_id}, value: {row.get(barcode_field)}",
             )
             return "", ""
 
@@ -785,7 +816,8 @@ class CentreFile:
                 else:
                     if row.get(FIELD_LAB_ID) != self.centre_config["lab_id_default"]:
                         logger.warning(
-                            f"Different lab id setting: {row[FIELD_LAB_ID]}!={self.centre_config['lab_id_default']}"
+                            "Different lab id setting: "
+                            f"{row[FIELD_LAB_ID]}!={self.centre_config['lab_id_default']}"
                         )
                     modified_row[FIELD_LAB_ID] = row.get(FIELD_LAB_ID)
             else:
@@ -801,7 +833,8 @@ class CentreFile:
                 seen_headers.append(key)
                 modified_row[key] = row[key]
 
-        # and check the row for values for any of the optional CT channel headers and copy them across
+        # and check the row for values for any of the optional CT channel headers and copy them
+        # across
         for key in self.get_channel_headers():
             if key in row:
                 seen_headers.append(key)
@@ -814,17 +847,19 @@ class CentreFile:
         if len(unexpected_headers) > 0:
             self.logging_collection.add_error(
                 "TYPE 13",
-                f"Unexpected headers, line: {line_number}, root_sample_id: {row.get(FIELD_ROOT_SAMPLE_ID)}, extra headers: {unexpected_headers}",
+                f"Unexpected headers, line: {line_number}, "
+                f"root_sample_id: {row.get(FIELD_ROOT_SAMPLE_ID)}, "
+                f"extra headers: {unexpected_headers}",
             )
 
         return modified_row
 
     def parse_and_format_file_rows(self, csvreader: DictReader) -> Any:
         """Attempts to parse and format the file rows
-           Adds additional derived and calculated fields to the imported rows that will aid querying later.
-           Filters out blank rows, duplicated rows, and rows with values failing various rules on content.
-           Creates error records for rows that do not pass checks, that will get written to the import logs
-           for display in the Lighthouse-UI imports screen.
+           Adds additional derived and calculated fields to the imported rows that will aid querying
+           later. Filters out blank rows, duplicated rows, and rows with values failing various
+           rules on content. Creates error records for rows that do not pass checks, that will get
+           written to the import logs for display in the Lighthouse-UI imports screen.
 
         Arguments:
             csvreader {DictReader} -- CSV file reader to iterate over
@@ -883,7 +918,8 @@ class CentreFile:
             logger.debug(f"Skipping {row_signature}: duplicate")
             self.logging_collection.add_error(
                 "TYPE 5",
-                f"Duplicated, line: {line_number}, root_sample_id: {modified_row[FIELD_ROOT_SAMPLE_ID]}",
+                f"Duplicated, line: {line_number}, "
+                f"root_sample_id: {modified_row[FIELD_ROOT_SAMPLE_ID]}",
             )
             return None
 
@@ -964,7 +1000,7 @@ class CentreFile:
         try:
             # pymongo requires Decimal128 format for numbers rather than normal Decimal
             row[fieldname] = Decimal128(row[fieldname])
-        except:
+        except Exception:
             self.logging_collection.add_error(
                 "TYPE 19",
                 f"{fieldname} invalid, line: {line_number}, value: {row.get(fieldname)}",
@@ -1111,7 +1147,8 @@ class CentreFile:
             if not self.is_within_cq_range(MIN_CQ_VALUE, MAX_CQ_VALUE, row.get(fieldname)):
                 self.logging_collection.add_error(
                     "TYPE 20",
-                    f"{fieldname} not in range ({MIN_CQ_VALUE}, {MAX_CQ_VALUE}), line: {line_number}, result: {row.get(fieldname)}",
+                    f"{fieldname} not in range ({MIN_CQ_VALUE}, {MAX_CQ_VALUE}), "
+                    f"line: {line_number}, result: {row.get(fieldname)}",
                 )
                 return False
 
@@ -1188,7 +1225,8 @@ class CentreFile:
         if ch_results_positive == 0:
             self.logging_collection.add_error(
                 "TYPE 21",
-                f"Positive Result does not match to CT Channel Results (none are positive), line: {line_number}",
+                "Positive Result does not match to CT Channel Results (none are positive), "
+                f"line: {line_number}",
             )
             return False
 
