@@ -6,7 +6,7 @@ from migrations.helpers.update_filtered_positives_helper import (
     update_filtered_positive_fields,
     update_mongo_filtered_positive_fields,
     update_mlwh_filtered_positive_fields,
-    update_samples_in_dart,
+    update_dart_filtered_positive_fields,
 )
 from migrations.helpers.shared_helper import print_exception
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
@@ -60,7 +60,7 @@ def run(settings_module: str = "") -> None:
 
                     if mlwh_updated:
                         print("Updating DART...")
-                        dart_updated = update_samples_in_dart(config, positive_pending_samples)
+                        dart_updated = update_dart_filtered_positive_fields(config, positive_pending_samples)
                         print("Finished updating DART")
             else:
                 print("No positive samples in pending plates found in Mongo, not updating any database")

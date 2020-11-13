@@ -151,8 +151,8 @@ def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Dict[
     else:
         return False
 
-def update_samples_in_dart(config: ModuleType, samples: List[Dict[str, Any]]) -> bool:
-    """Updates DART entries following updates to the filtered positive fields
+def update_dart_filtered_positive_fields(config: ModuleType, samples: List[Dict[str, Any]]) -> bool:
+    """Updates DART plates and wells following updates to the filtered positive fields
 
         Arguments:
             config {ModuleType} -- application config specifying database details
@@ -211,4 +211,3 @@ def biomek_labclass_by_centre_name(centres: List[Dict[str, str]]) -> Dict[str, s
     for centre in centres:
         class_by_name[centre["name"]] = centre["biomek_labware_class"]
     return class_by_name
-    
