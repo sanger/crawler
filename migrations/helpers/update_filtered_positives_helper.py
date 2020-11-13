@@ -2,6 +2,7 @@ from datetime import datetime
 from types import ModuleType
 from typing import List, Dict, Any
 from migrations.helpers.shared_helper import print_exception
+from more_itertools import groupby_transform
 from crawler.db import (
     create_dart_sql_server_conn,
     create_mongo_client,
@@ -171,13 +172,13 @@ def update_dart_filtered_positive_fields(config: ModuleType, samples: List[Dict[
     try:
         cursor = sql_server_connection.cursor()
 
-        for plate_barcode, samples_in_plate in groupby_transform(samples, lambda x: x[FIELD_PLATE_BARCODE]):  # type:ignore
+        for plate_barcode, samples_in_plate in groupby_transform(samples, lambda x: x[FIELD_PLATE_BARCODE], reducefunc=lambda x: list(x)):  # type:ignore
             try:
                 labware_class = labclass_by_centre_name[samples_in_plate[0][FIELD_SOURCE]]
                 plate_state = add_dart_plate_if_doesnt_exist(cursor, plate_barcode, labware_class)
                 if plate_state == DART_STATE_PENDING:
                     for sample in samples_in_plate:
-                        well_index = get_dart_well_index(sample.get[FIELD_COORDINATE, None])
+                        well_index = get_dart_well_index(sample.get(FIELD_COORDINATE, None))
                         if well_index is not None:
                             well_props = map_mongo_doc_to_dart_well_props(sample)
                             set_dart_well_properties(cursor, plate_barcode, well_props, well_index)
