@@ -4,13 +4,11 @@ import os
 import pathlib
 import re
 import shutil
-import string
 from csv import DictReader
 from datetime import datetime
-from decimal import Decimal
 from enum import Enum
 from hashlib import md5
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 import pyodbc  # type: ignore
 from bson.decimal128 import Decimal128  # type: ignore
@@ -26,8 +24,6 @@ from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
-    DART_STATE_NO_PLATE,
-    DART_STATE_NO_PROP,
     DART_STATE_PENDING,
     FIELD_CH1_CQ,
     FIELD_CH1_RESULT,
@@ -63,32 +59,20 @@ from crawler.constants import (
     MAX_CQ_VALUE,
     MIN_CQ_VALUE,
     POSITIVE_RESULT_VALUE,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    DART_STATE_PENDING,
-    DART_STATE_NO_PLATE,
-    DART_STATE_NO_PROP,
-    DART_STATE_PICKABLE,
-    DART_EMPTY_VALUE,
 )
-from crawler.exceptions import CentreFileError, DartStateError
 from crawler.db import (
+    add_dart_plate_if_doesnt_exist,
     create_dart_sql_server_conn,
     create_import_record,
     create_mongo_client,
     create_mysql_connection,
-    get_dart_plate_state,
     get_mongo_collection,
     get_mongo_db,
     run_mysql_executemany_query,
-    set_dart_plate_state_pending,
     set_dart_well_properties,
-    add_dart_plate_if_doesnt_exist,
 )
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 from crawler.helpers import (
-    LoggingCollection,
     current_time,
     get_sftp_connection,
     LoggingCollection,
@@ -652,7 +636,8 @@ class CentreFile:
                 f"DART database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(
-                f"Error writing to DART for file {self.file_name}, could not create Database connection"
+                f"Error writing to DART for file {self.file_name}, "
+                "could not create Database connection"
             )
 
     def add_dart_well_properties_if_positive(
@@ -672,7 +657,8 @@ class CentreFile:
                 set_dart_well_properties(cursor, plate_barcode, dart_well_props, well_index)
             else:
                 raise ValueError(
-                    f"Unable to determine DART well index for sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
+                    "Unable to determine DART well index for sample "
+                    f"{sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
                 )
 
     def parse_csv(self) -> List[Dict[str, Any]]:

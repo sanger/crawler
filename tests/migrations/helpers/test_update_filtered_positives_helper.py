@@ -170,7 +170,7 @@ def test_update_filtered_positive_fields_assigns_expected_filtered_positive_fiel
 
     update_filtered_positive_fields(mock_positive_identifier, samples, version, timestamp)
     for sample in samples:
-        assert sample[FIELD_FILTERED_POSITIVE] == True
+        assert sample[FIELD_FILTERED_POSITIVE] is True
         assert sample[FIELD_FILTERED_POSITIVE_VERSION] == version
         assert sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] == timestamp
 
@@ -197,14 +197,14 @@ def test_update_mongo_filtered_positive_fields_updates_expected_samples(
     updated_samples[2][FIELD_FILTERED_POSITIVE] = False
 
     result = update_mongo_filtered_positive_fields(config, updated_samples, version, timestamp)
-    assert result == True
+    assert result is True
 
     assert samples_collection_accessor.count() == len(testing_samples)
     # ensure samples in mongo are updated as expected
     for sample in samples_collection_accessor.find(
         {FIELD_MONGODB_ID: updated_samples[0][FIELD_MONGODB_ID]}
     ):
-        assert sample[FIELD_FILTERED_POSITIVE] == True
+        assert sample[FIELD_FILTERED_POSITIVE] is True
         assert sample[FIELD_FILTERED_POSITIVE_VERSION] == version
         assert sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] is not None
 
@@ -215,7 +215,7 @@ def test_update_mongo_filtered_positive_fields_updates_expected_samples(
             }
         }
     ):
-        assert sample[FIELD_FILTERED_POSITIVE] == False
+        assert sample[FIELD_FILTERED_POSITIVE] is False
         assert sample[FIELD_FILTERED_POSITIVE_VERSION] == version
         assert sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] is not None
 
@@ -229,7 +229,7 @@ def test_update_mlwh_filtered_positive_fields_return_false_with_no_connection(co
     ) as mock_connection:
         mock_connection().is_connected.return_value = False
         result = update_mlwh_filtered_positive_fields(config, [])
-        assert result == False
+        assert result is False
 
 
 def test_update_mlwh_filtered_positive_fields_raises_with_error_updating_mlwh(
@@ -270,8 +270,11 @@ def test_update_mlwh_filtered_positive_fields_calls_to_update_samples(config, ml
         },
     ]
     insert_sql = """\
-    INSERT INTO lighthouse_sample (mongodb_id, root_sample_id, rna_id, plate_barcode, coordinate, result, filtered_positive, filtered_positive_version, filtered_positive_timestamp)
-    VALUES (%(mongodb_id)s, %(root_sample_id)s, %(rna_id)s, %(plate_barcode)s, %(coordinate)s, %(result)s, %(filtered_positive)s, %(filtered_positive_version)s, %(filtered_positive_timestamp)s)
+    INSERT INTO lighthouse_sample (mongodb_id, root_sample_id, rna_id, plate_barcode, coordinate,
+    result, filtered_positive, filtered_positive_version, filtered_positive_timestamp)
+    VALUES (%(mongodb_id)s, %(root_sample_id)s, %(rna_id)s, %(plate_barcode)s, %(coordinate)s,
+    %(result)s, %(filtered_positive)s, %(filtered_positive_version)s,
+    %(filtered_positive_timestamp)s)
     """
     cursor = mlwh_connection.cursor()
     cursor.executemany(insert_sql, mlwh_samples)
@@ -304,26 +307,28 @@ def test_update_mlwh_filtered_positive_fields_calls_to_update_samples(config, ml
     ]
 
     result = update_mlwh_filtered_positive_fields(config, mongo_samples)
-    assert result == True
+    assert result is True
 
     cursor = mlwh_connection.cursor()
     cursor.execute("SELECT COUNT(*) FROM lighthouse_sample")
     sample_count = cursor.fetchone()[0]
     cursor.execute(
-        "SELECT filtered_positive, filtered_positive_version, filtered_positive_timestamp FROM lighthouse_sample WHERE mongodb_id = '1'"
+        "SELECT filtered_positive, filtered_positive_version, filtered_positive_timestamp FROM "
+        "lighthouse_sample WHERE mongodb_id = '1'"
     )
     filtered_positive_sample = cursor.fetchone()
     cursor.execute(
-        "SELECT filtered_positive, filtered_positive_version, filtered_positive_timestamp FROM lighthouse_sample WHERE mongodb_id = '2'"
+        "SELECT filtered_positive, filtered_positive_version, filtered_positive_timestamp FROM "
+        "lighthouse_sample WHERE mongodb_id = '2'"
     )
     filtered_negative_sample = cursor.fetchone()
     cursor.close()
 
     assert sample_count == 2
-    assert filtered_positive_sample[0] == True
+    assert filtered_positive_sample[0] is True
     assert filtered_positive_sample[1] == "v2.3"
     assert filtered_positive_sample[2] == update_timestamp
-    assert filtered_negative_sample[0] == False
+    assert filtered_negative_sample[0] is False
     assert filtered_negative_sample[1] == "v2.3"
     assert filtered_negative_sample[2] == update_timestamp
 
@@ -432,7 +437,7 @@ def test_update_dart_filtered_positive_fields_returns_false_error_mapping_to_wel
             return_value=None,
         ):
             with patch(
-                "migrations.helpers.update_filtered_positives_helper.map_mongo_doc_to_dart_well_props",
+                "migrations.helpers.update_filtered_positives_helper.map_mongo_doc_to_dart_well_props",  # noqa: E501
                 side_effect=Exception("Boom!"),
             ):
                 with patch(
@@ -460,7 +465,7 @@ def test_update_dart_filtered_positive_fields_returns_false_error_adding_well_pr
             return_value=12,
         ):
             with patch(
-                "migrations.helpers.update_filtered_positives_helper.map_mongo_doc_to_dart_well_props"
+                "migrations.helpers.update_filtered_positives_helper.map_mongo_doc_to_dart_well_props"  # noqa: E501
             ):
                 with patch(
                     "migrations.helpers.update_filtered_positives_helper.set_dart_well_properties",
@@ -488,7 +493,7 @@ def test_update_dart_filtered_positive_fields_returns_true_multiple_new_plates(
             test_well_index = 12
             mock_get_well_index.return_value = test_well_index
             with patch(
-                "migrations.helpers.update_filtered_positives_helper.map_mongo_doc_to_dart_well_props"
+                "migrations.helpers.update_filtered_positives_helper.map_mongo_doc_to_dart_well_props"  # noqa: E501
             ) as mock_map:
                 test_well_props = {"prop1": "value1", "test prop": "test value"}
                 mock_map.return_value = test_well_props
@@ -553,7 +558,7 @@ def test_update_dart_filtered_positive_fields_returns_true_single_new_plate_mult
             test_well_index = 12
             mock_get_well_index.return_value = test_well_index
             with patch(
-                "migrations.helpers.update_filtered_positives_helper.map_mongo_doc_to_dart_well_props"
+                "migrations.helpers.update_filtered_positives_helper.map_mongo_doc_to_dart_well_props"  # noqa: E501
             ) as mock_map:
                 test_well_props = {"prop1": "value1", "test prop": "test value"}
                 mock_map.return_value = test_well_props

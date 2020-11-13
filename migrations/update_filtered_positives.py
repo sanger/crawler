@@ -80,12 +80,13 @@ def run(settings_module: str = "") -> None:
                         print("Finished updating DART")
             else:
                 print(
-                    "No positive samples in pending plates found in Mongo, not updating any database"
+                    "No positive samples in pending plates found in Mongo, "
+                    "not updating any database"
                 )
         else:
             print("No pending plates found in DART, not updating any database")
 
-    except Exception as e:
+    except Exception:
         print("---------- Process aborted: ----------")
         print_exception()
     finally:

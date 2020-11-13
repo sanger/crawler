@@ -1,5 +1,3 @@
-import sys
-import traceback
 from datetime import datetime
 
 from crawler.constants import COLLECTION_SAMPLES, FIELD_CREATED_AT, MONGO_DATETIME_FORMAT

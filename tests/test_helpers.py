@@ -34,10 +34,6 @@ from crawler.constants import (
     MLWH_ROOT_SAMPLE_ID,
     MLWH_SOURCE,
     MLWH_UPDATED_AT,
-    MLWH_FILTERED_POSITIVE,
-    MLWH_FILTERED_POSITIVE_VERSION,
-    MLWH_FILTERED_POSITIVE_TIMESTAMP,
-    MYSQL_DATETIME_FORMAT,
     DART_STATE,
     DART_ROOT_SAMPLE_ID,
     DART_RNA_ID,
@@ -252,27 +248,29 @@ def test_map_mongo_doc_to_sql_columns(config):
 def test_get_dart_well_index(config):
     coordinate = None
     assert (
-        get_dart_well_index(coordinate) == None
+        get_dart_well_index(coordinate) is None
     ), "Expected to be unable to determine a well index for no sample"
 
     coordinate = "01A"
     assert (
-        get_dart_well_index(coordinate) == None
+        get_dart_well_index(coordinate) is None
     ), "Expected to be unable to determine a well index for sample with invalid coordinate"
 
     coordinate = "A00"
     assert (
-        get_dart_well_index(coordinate) == None
-    ), "Expected to be unable to determine a well index for sample with coordinate column below accepted range"
+        get_dart_well_index(coordinate) is None
+    ), "Expected to be unable to determine a well index for sample with coordinate column "
+    "below accepted range"
 
     coordinate = "B15"
     assert (
-        get_dart_well_index(coordinate) == None
-    ), "Expected to be unable to determine a well index for sample with coordinate column above accepted range"
+        get_dart_well_index(coordinate) is None
+    ), "Expected to be unable to determine a well index for sample with coordinate column "
+    "above accepted range"
 
     coordinate = "Q01"
     assert (
-        get_dart_well_index(coordinate) == None
+        get_dart_well_index(coordinate) is None
     ), "Expected to be unable to determine a well index for sample with coordinate row out of range"
 
     coordinate = "B7"

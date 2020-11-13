@@ -1,7 +1,5 @@
 import datetime
 import re
-import sys
-import traceback
 
 import pymongo
 from migrations.helpers.shared_helper import print_exception

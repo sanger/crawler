@@ -14,7 +14,6 @@ from pymongo.results import InsertOneResult
 
 from crawler.exceptions import DartStateError
 from crawler.constants import (
-    DART_STATE_PENDING,
     DART_STATE,
     DART_SET_PROP_STATUS_SUCCESS,
     DART_STATE_NO_PLATE,

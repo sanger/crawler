@@ -59,7 +59,7 @@ def pending_plate_barcodes_from_dart(config: ModuleType):
     try:
         rows = cursor.execute(SQL_DART_GET_PLATE_BARCODES, DART_STATE_PENDING).fetchall()
         plate_barcodes = [row[0] for row in rows]
-    except Exception as e:
+    except Exception:
         print_exception()
     finally:
         sql_server_connection.close()
@@ -83,7 +83,8 @@ def positive_result_samples_from_mongo(
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-        # this should take everything from the cursor find into RAM memory (assuming you have enough memory)
+        # this should take everything from the cursor find into RAM memory
+        # (assuming you have enough memory)
         # should we project to an object that has fewer fields?
         return list(
             samples_collection.find(
@@ -104,8 +105,12 @@ def update_filtered_positive_fields(
     """Updates filtered positive fields on all passed-in samples
 
     Arguments:
-        filtered_positive_identifier {FilteredPositiveIdentifier} -- the identifier through which to pass samples to determine whether they are filtered positive
-        samples {List[Dict[str, str]]} -- the list of samples for which to re-determine filtered positive values
+        filtered_positive_identifier {FilteredPositiveIdentifier} -- the identifier through which
+        to pass samples to determine whether they are filtered positive
+
+        samples {List[Dict[str, str]]} -- the list of samples for which to re-determine filtered
+        positive values
+
         version {str} -- the filtered positive identifier version used
         update_timestamp {datetime} -- the timestamp at which the update was performed
     """
@@ -124,7 +129,9 @@ def update_mongo_filtered_positive_fields(
 
     Arguments:
         config {ModuleType} -- application config specifying database details
-        samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields should be updated
+        samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields
+        should be updated
+
         version {str} -- the filtered positive identifier version used
         update_timestamp {datetime} -- the timestamp at which the update was performed
 
@@ -138,7 +145,7 @@ def update_mongo_filtered_positive_fields(
         all_ids = [sample[FIELD_MONGODB_ID] for sample in samples]
         filtered_positive_ids = [
             sample[FIELD_MONGODB_ID]
-            for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] == True, samples))
+            for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] is True, samples))
         ]
         filtered_negative_ids = [
             mongo_id for mongo_id in all_ids if mongo_id not in filtered_positive_ids
@@ -173,7 +180,8 @@ def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Dict[
 
     Arguments:
         config {ModuleType} -- application config specifying database details
-        samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields should be updated
+        samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields
+        should be updated
 
     Returns:
         bool -- whether the updates completed successfully
@@ -228,16 +236,17 @@ def update_dart_filtered_positive_fields(config: ModuleType, samples: List[Dict[
                             )
                         else:
                             raise ValueError(
-                                f"Unable to determine DART well index for sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
+                                "Unable to determine DART well index for sample "
+                                f"{sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
                             )
                 cursor.commit()
                 dart_updated_successfully &= True
-            except:
+            except Exception:
                 print(f"** Failed updating DART for samples in plate {plate_barcode} **")
                 print_exception()
                 cursor.rollback()
                 dart_updated_successfully = False
-    except:
+    except Exception:
         print_exception()
         dart_updated_successfully = False
     finally:

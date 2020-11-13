@@ -3,14 +3,12 @@ from csv import DictReader
 from datetime import datetime
 from decimal import Decimal
 from io import StringIO
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 from bson.decimal128 import Decimal128  # type: ignore
 from bson.objectid import ObjectId
 from crawler.constants import (
     COLLECTION_SAMPLES,
-    DART_STATE_NO_PLATE,
-    DART_STATE_NO_PROP,
     DART_STATE_PENDING,
     FIELD_CH1_CQ,
     FIELD_CH1_RESULT,
@@ -66,11 +64,6 @@ from crawler.constants import (
     MLWH_TABLE_NAME,
     MLWH_UPDATED_AT,
     POSITIVE_RESULT_VALUE,
-    DART_STATE_PENDING,
-    DART_STATE_NO_PLATE,
-    DART_STATE_NO_PROP,
-    DART_STATE_PICKABLE,
-    DART_EMPTY_VALUE,
 )
 from crawler.db import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile, CentreFileState
@@ -1251,7 +1244,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_failure_adding_new_plate(co
             mock_conn().close.assert_called_once()
 
 
-def test_insert_plates_and_wells_from_docs_into_dart_existing_non_pending_plate_does_not_update_wells(
+def test_insert_plates_and_wells_from_docs_into_dart_non_pending_plate_does_not_update_wells(
     config,
 ):
     centre = Centre(config, config.CENTRES[0])
