@@ -1,52 +1,56 @@
-import sys
-import traceback
+from datetime import datetime, timedelta
+
 import pytest
-from migrations.helpers.mlwh_samples_update_helper import (
-    valid_datetime_string,
-    update_mlwh_with_legacy_samples,
-)
 from crawler.constants import (
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_RNA_ID,
-    FIELD_RESULT,
+    FIELD_CREATED_AT,
     FIELD_DATE_TESTED,
     FIELD_LAB_ID,
-    FIELD_SOURCE,
     FIELD_PLATE_BARCODE,
-    FIELD_CREATED_AT,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_SOURCE,
     FIELD_UPDATED_AT,
-    MLWH_TABLE_NAME,
     MLWH_CREATED_AT,
+    MLWH_TABLE_NAME,
     MONGO_DATETIME_FORMAT,
 )
-from datetime import (datetime, timedelta)
+
+from migrations.helpers.mlwh_samples_update_helper import (
+    update_mlwh_with_legacy_samples,
+    valid_datetime_string,
+)
+
 
 def generate_example_samples(range, start_datetime):
     samples = []
     for n in range:
-        samples.append({
-            FIELD_ROOT_SAMPLE_ID: "TLS0000000" + str(n),
-            FIELD_RNA_ID: "TL-rna-00000001_A01",
-            FIELD_RESULT: "Positive",
-            FIELD_PLATE_BARCODE: "DN1000000" + str(n),
-            FIELD_DATE_TESTED: "2020-05-10 14:01:00 UTC",
-            FIELD_LAB_ID: "TLS",
-            FIELD_SOURCE: "Test Lab Somewhere",
-            FIELD_CREATED_AT: start_datetime + timedelta(days=n),
-            FIELD_UPDATED_AT: start_datetime + timedelta(days=n),
-        })
+        samples.append(
+            {
+                FIELD_ROOT_SAMPLE_ID: "TLS0000000" + str(n),
+                FIELD_RNA_ID: "TL-rna-00000001_A01",
+                FIELD_RESULT: "Positive",
+                FIELD_PLATE_BARCODE: "DN1000000" + str(n),
+                FIELD_DATE_TESTED: "2020-05-10 14:01:00 UTC",
+                FIELD_LAB_ID: "TLS",
+                FIELD_SOURCE: "Test Lab Somewhere",
+                FIELD_CREATED_AT: start_datetime + timedelta(days=n),
+                FIELD_UPDATED_AT: start_datetime + timedelta(days=n),
+            }
+        )
     return samples
 
 
-
 def test_valid_datetime_string_invalid(config):
-    assert(valid_datetime_string("") == False)
-    assert(valid_datetime_string(None) == False)
-    assert(valid_datetime_string("rubbish") == False)
+    assert valid_datetime_string("") is False
+    assert valid_datetime_string(None) is False
+    assert valid_datetime_string("rubbish") is False
+
 
 def test_valid_datetime_string_valid(config):
     valid_dt = datetime.strftime(datetime.now(), MONGO_DATETIME_FORMAT)
-    assert(valid_datetime_string(valid_dt) == True)
+    assert valid_datetime_string(valid_dt) is True
+
 
 def test_basic_usage(mongo_database, mlwh_connection):
     config, mongo_db = mongo_database
@@ -66,11 +70,13 @@ def test_basic_usage(mongo_database, mlwh_connection):
     # run the method to update the MLWH from the mongo database
     try:
         update_mlwh_with_legacy_samples(config, s_start_datetime, s_end_datetime)
-    except:
-        pytest.fail('Exception running update method')
+    except Exception:
+        pytest.fail("Exception running update method")
 
     # query for selecting rows from MLWH (it was emptied before so select * is fine for this)
-    sql_query = f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} ORDER BY {MLWH_CREATED_AT} ASC"
+    sql_query = (
+        f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} ORDER BY {MLWH_CREATED_AT} ASC"
+    )
 
     try:
         # run the query and fetch the results
@@ -84,11 +90,12 @@ def test_basic_usage(mongo_database, mlwh_connection):
         # check the plate barcodes are as expected
         assert records[0][5] == "DN10000000"
         assert records[3][5] == "DN10000003"
-    except:
+    except Exception:
         pytest.fail("An exception occurred checking the mlwh table for rows inserted")
     finally:
         cursor.close()
         mlwh_connection.close()
+
 
 def test_when_no_rows_match_timestamp_range(mongo_database, mlwh_connection):
     config, mongo_db = mongo_database
@@ -110,17 +117,19 @@ def test_when_no_rows_match_timestamp_range(mongo_database, mlwh_connection):
     update_mlwh_with_legacy_samples(config, s_start_datetime, s_end_datetime)
 
     # query for selecting rows from MLWH (it was emptied before so select * is fine for this)
-    sql_query = f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} ORDER BY {MLWH_CREATED_AT} ASC"
+    sql_query = (
+        f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} ORDER BY {MLWH_CREATED_AT} ASC"
+    )
 
     try:
         # run the query and fetch the results
         cursor = mlwh_connection.cursor()
         cursor.execute(sql_query)
-        records = cursor.fetchall()
+        _ = cursor.fetchall()
 
         # check there are the expected number of rows in the MLWH (0 fell within date range)
         assert cursor.rowcount == 0
-    except:
+    except Exception:
         pytest.fail("An exception occurred checking the mlwh table for rows inserted")
     finally:
         cursor.close()

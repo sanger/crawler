@@ -1,54 +1,50 @@
-import os
-import pytest
-from crawler.helpers import LoggingCollection
-from unittest.mock import patch
+from datetime import datetime, timezone
 from decimal import Decimal
-from bson.decimal128 import Decimal128 # type: ignore
+
+import pytest
+from bson.decimal128 import Decimal128  # type: ignore
+from bson.objectid import ObjectId
 from crawler.constants import (
-    FIELD_MONGODB_ID,
+    FIELD_COORDINATE,
+    FIELD_CREATED_AT,
     FIELD_DATE_TESTED,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
+    FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_LAB_ID,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_BARCODE,
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
-    FIELD_PLATE_BARCODE,
-    FIELD_COORDINATE,
     FIELD_SOURCE,
-    FIELD_CREATED_AT,
     FIELD_UPDATED_AT,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    MLWH_MONGODB_ID,
-    MLWH_ROOT_SAMPLE_ID,
-    MLWH_RNA_ID,
-    MLWH_PLATE_BARCODE,
     MLWH_COORDINATE,
-    MLWH_RESULT,
-    MLWH_DATE_TESTED_STRING,
-    MLWH_DATE_TESTED,
-    MLWH_SOURCE,
-    MLWH_LAB_ID,
     MLWH_CREATED_AT,
-    MLWH_UPDATED_AT,
+    MLWH_DATE_TESTED,
+    MLWH_DATE_TESTED_STRING,
     MLWH_FILTERED_POSITIVE,
-    MLWH_FILTERED_POSITIVE_VERSION,
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
-    MYSQL_DATETIME_FORMAT,
+    MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_LAB_ID,
+    MLWH_MONGODB_ID,
+    MLWH_PLATE_BARCODE,
+    MLWH_RESULT,
+    MLWH_RNA_ID,
+    MLWH_ROOT_SAMPLE_ID,
+    MLWH_SOURCE,
+    MLWH_UPDATED_AT,
 )
 from crawler.helpers import (
-    parse_date_tested,
-    parse_decimal128,
+    LoggingCollection,
     get_config,
     map_lh_doc_to_sql_columns,
     map_mongo_doc_to_sql_columns,
-    unpad_coordinate
+    parse_date_tested,
+    parse_decimal128,
+    unpad_coordinate,
 )
-from datetime import (
-    datetime,
-    timezone,
-)
-from bson.objectid import ObjectId
+
 
 def test_get_config():
     with pytest.raises(ModuleNotFoundError):
@@ -64,7 +60,10 @@ def test_logging_collection_with_a_single_error():
     assert (
         aggregator.get_report_message() == "Total number of Only root sample id errors (TYPE 3): 1"
     )
-    exptd_msgs = "WARNING: Sample rows that have Root Sample ID value but no other information. (TYPE 3) (e.g. This is a testing message)"
+    exptd_msgs = (
+        "WARNING: Sample rows that have Root Sample ID value but no other information. (TYPE 3) "
+        "(e.g. This is a testing message)"
+    )
     assert aggregator.get_message() == exptd_msgs
     assert logging.get_aggregate_messages() == [exptd_msgs]
     assert logging.get_count_of_all_errors_and_criticals() == 0
@@ -96,9 +95,19 @@ def test_logging_collection_with_multiple_errors():
 
     exptd_msgs = [
         "DEBUG: Blank rows in files. (TYPE 1)",
-        "CRITICAL: Files where we do not have the expected main column headers of Root Sample ID, RNA ID and Result. (TYPE 2)",
-        "WARNING: Sample rows that have Root Sample ID value but no other information. (TYPE 3) (e.g. This is the first type 3 message) (e.g. This is the second type 3 message) (e.g. This is the third type 3 message)",
-        "ERROR: Sample rows that have Root Sample ID and Result values but no RNA ID (no plate barcode). (TYPE 4) (e.g. This is the first type 4 message)",
+        (
+            "CRITICAL: Files where we do not have the expected main column headers of Root Sample "
+            "ID, RNA ID and Result. (TYPE 2)"
+        ),
+        (
+            "WARNING: Sample rows that have Root Sample ID value but no other information. "
+            "(TYPE 3) (e.g. This is the first type 3 message) (e.g. This is the second type 3 "
+            "message) (e.g. This is the third type 3 message)"
+        ),
+        (
+            "ERROR: Sample rows that have Root Sample ID and Result values but no RNA ID (no plate "
+            "barcode). (TYPE 4) (e.g. This is the first type 4 message)"
+        ),
     ]
     assert logging.get_aggregate_messages() == exptd_msgs
     assert logging.get_count_of_all_errors_and_criticals() == 3
@@ -111,31 +120,38 @@ def test_logging_collection_with_multiple_errors():
     ]
     assert logging.get_aggregate_total_messages() == exptd_report_msgs
 
+
 # tests for parsing date tested
 def test_parse_date_tested(config):
-    result = parse_date_tested(date_string='2020-11-02 13:04:23 UTC')
+    result = parse_date_tested(date_string="2020-11-02 13:04:23 UTC")
     assert result == datetime(2020, 11, 2, 13, 4, 23)
+
 
 def test_parse_date_tested_none(config):
     result = parse_date_tested(date_string=None)
-    assert result == None
+    assert result is None
+
 
 def test_parse_date_tested_wrong_format(config):
-    result = parse_date_tested(date_string='2nd November 2020')
-    assert result == None
+    result = parse_date_tested(date_string="2nd November 2020")
+    assert result is None
+
 
 # tests for parsing Decimal128
 def test_parse_decimal128(config):
     result = parse_decimal128(None)
-    assert result == None
+    assert result is None
 
-def test_parse_decimal128(config):
-    result = parse_decimal128('')
-    assert result == None
 
-def test_parse_decimal128(config):
-    result = parse_decimal128(Decimal128('23.26273818'))
-    assert result == Decimal('23.26273818')
+def test_parse_decimal128_one(config):
+    result = parse_decimal128("")
+    assert result is None
+
+
+def test_parse_decimal128_two(config):
+    result = parse_decimal128(Decimal128("23.26273818"))
+    assert result == Decimal("23.26273818")
+
 
 # tests for unpad coordinate
 def test_unpad_coordinate_A01():
@@ -153,67 +169,69 @@ def test_unpad_coordinate_A10():
 def test_unpad_coordinate_B01010():
     assert unpad_coordinate("B01010") == "B1010"
 
+
 # tests for lighthouse doc to MLWH mapping
 def test_map_lh_doc_to_sql_columns(config):
     doc_to_transform = {
-        FIELD_MONGODB_ID: ObjectId('5f562d9931d9959b92544728'),
-        FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
-        FIELD_RNA_ID: 'TC-rna-00000029_H01',
-        FIELD_PLATE_BARCODE: 'TC-rna-00000029',
-        FIELD_COORDINATE: 'H01',
-        FIELD_RESULT: 'Negative',
-        FIELD_DATE_TESTED: '2020-04-23 14:40:08 UTC',
-        FIELD_SOURCE: 'Test Centre',
-        FIELD_LAB_ID: 'TC',
+        FIELD_MONGODB_ID: ObjectId("5f562d9931d9959b92544728"),
+        FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+        FIELD_RNA_ID: "TC-rna-00000029_H01",
+        FIELD_PLATE_BARCODE: "TC-rna-00000029",
+        FIELD_COORDINATE: "H01",
+        FIELD_RESULT: "Negative",
+        FIELD_DATE_TESTED: "2020-04-23 14:40:08 UTC",
+        FIELD_SOURCE: "Test Centre",
+        FIELD_LAB_ID: "TC",
         FIELD_FILTERED_POSITIVE: True,
-        FIELD_FILTERED_POSITIVE_VERSION: 'v2.3',
-        FIELD_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 40, 8)
+        FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
+        FIELD_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 40, 8),
     }
 
     result = map_lh_doc_to_sql_columns(doc_to_transform)
 
-    assert result[MLWH_MONGODB_ID] == '5f562d9931d9959b92544728'
-    assert result[MLWH_ROOT_SAMPLE_ID] == 'ABC00000004'
-    assert result[MLWH_RNA_ID] == 'TC-rna-00000029_H01'
-    assert result[MLWH_PLATE_BARCODE] == 'TC-rna-00000029'
-    assert result[MLWH_COORDINATE] == 'H1'
-    assert result[MLWH_RESULT] == 'Negative'
-    assert result[MLWH_DATE_TESTED_STRING] == '2020-04-23 14:40:08 UTC'
+    assert result[MLWH_MONGODB_ID] == "5f562d9931d9959b92544728"
+    assert result[MLWH_ROOT_SAMPLE_ID] == "ABC00000004"
+    assert result[MLWH_RNA_ID] == "TC-rna-00000029_H01"
+    assert result[MLWH_PLATE_BARCODE] == "TC-rna-00000029"
+    assert result[MLWH_COORDINATE] == "H1"
+    assert result[MLWH_RESULT] == "Negative"
+    assert result[MLWH_DATE_TESTED_STRING] == "2020-04-23 14:40:08 UTC"
     assert result[MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 40, 8)
-    assert result[MLWH_SOURCE] == 'Test Centre'
-    assert result[MLWH_LAB_ID] == 'TC'
-    assert result[MLWH_FILTERED_POSITIVE] == True
-    assert result[MLWH_FILTERED_POSITIVE_VERSION] == 'v2.3'
+    assert result[MLWH_SOURCE] == "Test Centre"
+    assert result[MLWH_LAB_ID] == "TC"
+    assert result[MLWH_FILTERED_POSITIVE] is True
+    assert result[MLWH_FILTERED_POSITIVE_VERSION] == "v2.3"
     assert result[MLWH_FILTERED_POSITIVE_TIMESTAMP] == datetime(2020, 4, 23, 14, 40, 8)
     assert result.get(MLWH_CREATED_AT) is not None
     assert result.get(MLWH_UPDATED_AT) is not None
 
+
 def test_map_mongo_doc_to_sql_columns(config):
     doc_to_transform = {
-        FIELD_MONGODB_ID: ObjectId('5f562d9931d9959b92544728'),
-        FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
-        FIELD_RNA_ID: 'TC-rna-00000029_H01',
-        FIELD_PLATE_BARCODE: 'TC-rna-00000029',
-        FIELD_COORDINATE: 'H01',
-        FIELD_RESULT: 'Negative',
-        FIELD_DATE_TESTED: '2020-04-23 14:40:08 UTC',
-        FIELD_SOURCE: 'Test Centre',
-        FIELD_LAB_ID: 'TC',
+        FIELD_MONGODB_ID: ObjectId("5f562d9931d9959b92544728"),
+        FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+        FIELD_RNA_ID: "TC-rna-00000029_H01",
+        FIELD_PLATE_BARCODE: "TC-rna-00000029",
+        FIELD_COORDINATE: "H01",
+        FIELD_RESULT: "Negative",
+        FIELD_DATE_TESTED: "2020-04-23 14:40:08 UTC",
+        FIELD_SOURCE: "Test Centre",
+        FIELD_LAB_ID: "TC",
         FIELD_CREATED_AT: datetime(2020, 4, 27, 5, 20, 0, tzinfo=timezone.utc),
         FIELD_UPDATED_AT: datetime(2020, 5, 13, 12, 50, 0, tzinfo=timezone.utc),
     }
 
     result = map_mongo_doc_to_sql_columns(doc_to_transform)
 
-    assert result[MLWH_MONGODB_ID] == '5f562d9931d9959b92544728'
-    assert result[MLWH_ROOT_SAMPLE_ID] == 'ABC00000004'
-    assert result[MLWH_RNA_ID] == 'TC-rna-00000029_H01'
-    assert result[MLWH_PLATE_BARCODE] == 'TC-rna-00000029'
-    assert result[MLWH_COORDINATE] == 'H1'
-    assert result[MLWH_RESULT] == 'Negative'
-    assert result[MLWH_DATE_TESTED_STRING] == '2020-04-23 14:40:08 UTC'
+    assert result[MLWH_MONGODB_ID] == "5f562d9931d9959b92544728"
+    assert result[MLWH_ROOT_SAMPLE_ID] == "ABC00000004"
+    assert result[MLWH_RNA_ID] == "TC-rna-00000029_H01"
+    assert result[MLWH_PLATE_BARCODE] == "TC-rna-00000029"
+    assert result[MLWH_COORDINATE] == "H1"
+    assert result[MLWH_RESULT] == "Negative"
+    assert result[MLWH_DATE_TESTED_STRING] == "2020-04-23 14:40:08 UTC"
     assert result[MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 40, 8)
-    assert result[MLWH_SOURCE] == 'Test Centre'
-    assert result[MLWH_LAB_ID] == 'TC'
+    assert result[MLWH_SOURCE] == "Test Centre"
+    assert result[MLWH_LAB_ID] == "TC"
     assert result[MLWH_CREATED_AT] == datetime(2020, 4, 27, 5, 20, 0, tzinfo=timezone.utc)
     assert result[MLWH_UPDATED_AT] == datetime(2020, 5, 13, 12, 50, 0, tzinfo=timezone.utc)

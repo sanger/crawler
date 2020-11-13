@@ -9,7 +9,7 @@ DIR_DOWNLOADED_DATA = "tmp/files/"
 # centre details
 CENTRES = [
     {
-        "barcode_field": FIELD_RNA_ID,
+        "barcode_field": FIELD_RNA_ID,  # noqa: F405
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
         "name": "Alderley",
         "prefix": "ALDP",
@@ -21,7 +21,7 @@ CENTRES = [
         "biomek_labware_class": "KingFisher 96 2ml",
     },
     {
-        "barcode_field": FIELD_RNA_ID,
+        "barcode_field": FIELD_RNA_ID,  # noqa: F405
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
         "name": "UK Biocentre",
         "prefix": "MILK",
@@ -33,7 +33,7 @@ CENTRES = [
         "biomek_labware_class": "KingFisher 96 2ml",
     },
     {
-        "barcode_field": FIELD_RNA_ID,
+        "barcode_field": FIELD_RNA_ID,  # noqa: F405
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
         "name": "Test Centre",
         "prefix": "TEST",
@@ -45,7 +45,7 @@ CENTRES = [
         "biomek_labware_class": "KingFisher 96 2ml",
     },
     {
-        "barcode_field": FIELD_RNA_ID,
+        "barcode_field": FIELD_RNA_ID,  # noqa: F405
         "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
         "name": "Cambridge-az",
         "prefix": "CAMC",

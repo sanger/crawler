@@ -1,6 +1,5 @@
-from crawler.constants import FIELD_RNA_ID
-
 from crawler.config.defaults import *  # noqa: F403,F401
+from crawler.constants import FIELD_RNA_ID
 
 # settings here overwrite those in defaults.py
 
@@ -87,8 +86,8 @@ DART_DB_RO_USER = "root"
 DART_DB_RO_PASSWORD = ""
 DART_DB_RW_USER = "root"
 DART_DB_RW_PASSWORD = ""
-DART_DB_DRIVER = '{ODBC Driver 17 for SQL Server}'
+DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
 
 # logging config
-LOGGING["loggers"]["crawler"]["level"] = "DEBUG"
-LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]
+LOGGING["loggers"]["crawler"]["level"] = "DEBUG"  # noqa: F405
+LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]  # noqa: F405

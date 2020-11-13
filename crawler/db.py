@@ -1,32 +1,29 @@
 import logging
+from contextlib import contextmanager
 from datetime import datetime
 from types import ModuleType
-from typing import Dict, List, Iterator, Optional
-from crawler.helpers import current_time
+from typing import Dict, Iterator, List, Optional
 
+import mysql.connector as mysql  # type: ignore
+import pyodbc  # type: ignore
+from mysql.connector.connection_cext import CMySQLConnection  # type: ignore
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
-from pymongo.errors import DuplicateKeyError, OperationFailure
 from pymongo.results import InsertOneResult
 
-from contextlib import contextmanager
-
-import mysql.connector as mysql # type: ignore
-from mysql.connector.connection_cext import CMySQLConnection # type: ignore
-from crawler.sql_queries import (SQL_MLWH_MULTIPLE_INSERT, SQL_TEST_MLWH_CREATE)
-from crawler.helpers import get_config
-
-import pyodbc  # type: ignore
 from crawler.constants import (
-    DART_STATE_PENDING,
-    DART_STATE_PROPERTY_NAME,
     DART_GET_PLATE_PROPERTY_SQL,
     DART_SET_PLATE_PROPERTY_SQL,
     DART_SET_PROP_STATUS_SUCCESS,
+    DART_STATE_PENDING,
+    DART_STATE_PROPERTY_NAME,
 )
+from crawler.helpers import get_config
+from crawler.sql_queries import SQL_TEST_MLWH_CREATE
 
 logger = logging.getLogger(__name__)
+
 
 def create_mongo_client(config: ModuleType) -> MongoClient:
     """Create a MongoClient with the given config parameters.
@@ -38,10 +35,10 @@ def create_mongo_client(config: ModuleType) -> MongoClient:
         MongoClient -- a client used to interact with the database server
     """
     try:
-        logger.debug(f"Connecting to mongo")
+        logger.debug("Connecting to mongo")
         mongo_uri = config.MONGO_URI  # type: ignore
         return MongoClient(mongo_uri)
-    except AttributeError as e:
+    except AttributeError:
         #  there is no MONGO_URI so try each config separately
         # logger.warning(e)
 
@@ -156,6 +153,7 @@ def populate_centres_collection(
             {filter_field: document[filter_field]}, {"$set": document}, upsert=True
         )
 
+
 def create_mysql_connection(config: ModuleType, readonly=True) -> CMySQLConnection:
     """Create a CMySQLConnection with the given config parameters.
 
@@ -180,20 +178,20 @@ def create_mysql_connection(config: ModuleType, readonly=True) -> CMySQLConnecti
     mysql_conn = None
     try:
         mysql_conn = mysql.connect(
-            host = mlwh_db_host,
-            port = mlwh_db_port,
-            username = mlwh_db_username,
-            password = mlwh_db_password,
-            database = mlwh_db_db,
+            host=mlwh_db_host,
+            port=mlwh_db_port,
+            username=mlwh_db_username,
+            password=mlwh_db_password,
+            database=mlwh_db_db,
             # whether to use pure python or the C extension.
             # default is false, but specify it so more predictable
-            use_pure = False,
+            use_pure=False,
         )
         if mysql_conn is not None:
             if mysql_conn.is_connected():
-                logger.debug('MySQL Connection Successful')
+                logger.debug("MySQL Connection Successful")
             else:
-                logger.error('MySQL Connection Failed')
+                logger.error("MySQL Connection Failed")
 
     except mysql.Error as e:
         logger.error(f"Exception on connecting to MySQL database: {e}")
@@ -201,52 +199,68 @@ def create_mysql_connection(config: ModuleType, readonly=True) -> CMySQLConnecti
     return mysql_conn
 
 
-def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, values: List[Dict[str, str]]) -> None:
+def run_mysql_executemany_query(
+    mysql_conn: CMySQLConnection, sql_query: str, values: List[Dict[str, str]]
+) -> None:
     """Writes the sample testing information into the MLWH.
 
     Arguments:
         mysql_conn {CMySQLConnection} -- a client used to interact with the database server
         sql_query {str} -- the SQL query to run (see sql_queries.py)
-        values {List[Dict[str, str]]} -- array of value hashes representing documents inserted into the Mongo DB
+        values {List[Dict[str, str]]} -- array of value hashes representing documents inserted into
+        the Mongo DB
     """
-    ## fetch the cursor from the DB connection
+    # fetch the cursor from the DB connection
     cursor = mysql_conn.cursor()
 
     try:
-        ## executing the query with values
+        # executing the query with values
         num_values = len(values)
 
-        # BN. If ROWS_PER_QUERY value is too high, you may get '2006 (HY000): MySQL server has gone away' error
-        # indicating you've exceeded the max_allowed_packet size for MySQL
+        # BN. If ROWS_PER_QUERY value is too high, you may get '2006 (HY000): MySQL server has
+        # gone away' error indicating you've exceeded the max_allowed_packet size for MySQL
         ROWS_PER_QUERY = 25000
         values_index = 0
         total_rows_affected = 0
-        logger.debug(f"Attempting to insert or update {num_values} rows in the MLWH database in batches of {ROWS_PER_QUERY}")
+        logger.debug(
+            f"Attempting to insert or update {num_values} rows in the MLWH database in batches of "
+            f"{ROWS_PER_QUERY}"
+        )
 
         while values_index < num_values:
-            logger.debug(f"Inserting records between {values_index} and {values_index + ROWS_PER_QUERY}")
-            cursor.executemany(sql_query, values[values_index:values_index + ROWS_PER_QUERY])
-            logger.debug(f"{cursor.rowcount} rows affected in MLWH. (Note: each updated row increases the count by 2, instead of 1)")
+            logger.debug(
+                f"Inserting records between {values_index} and {values_index + ROWS_PER_QUERY}"
+            )
+            cursor.executemany(
+                sql_query, values[values_index : (values_index + ROWS_PER_QUERY)]  # noqa: E203
+            )
+            logger.debug(
+                f"{cursor.rowcount} rows affected in MLWH. (Note: each updated row increases the "
+                "count by 2, instead of 1)"
+            )
             total_rows_affected += cursor.rowcount
             values_index += ROWS_PER_QUERY
-            logger.debug('Committing changes to MLWH database.')
+            logger.debug("Committing changes to MLWH database.")
             mysql_conn.commit()
 
         # number of rows affected using cursor.rowcount - not easy to interpret:
         # reports 1 per inserted row,
         # 2 per updated existing row,
         # and 0 per unchanged existing row
-        logger.debug(f"A total of {total_rows_affected} rows were affected in MLWH. (Note: each updated row increases the count by 2, instead of 1)")
-    except:
-        logger.error('MLWH database executemany transaction failed')
+        logger.debug(
+            f"A total of {total_rows_affected} rows were affected in MLWH. (Note: each updated row "
+            "increases the count by 2, instead of 1)"
+        )
+    except Exception:
+        logger.error("MLWH database executemany transaction failed")
         raise
     finally:
         # close the cursor
-        logger.debug('Closing the cursor.')
+        logger.debug("Closing the cursor.")
         cursor.close()
 
         # close the connection
-        logger.debug('Closing the MLWH database connection.')
+        logger.debug("Closing the MLWH database connection.")
         mysql_conn.close()
 
 
@@ -254,7 +268,7 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
 def init_warehouse_db_command():
     """Drop and recreate required tables."""
     logger.debug("Initialising the test MySQL warehouse database")
-    config, _settings_module = get_config('crawler.config.development')
+    config, _settings_module = get_config("crawler.config.development")
     mysql_conn = create_mysql_connection(config, False)
     mysql_cursor = mysql_conn.cursor()
 
@@ -289,7 +303,14 @@ def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> Optional[p
     dart_db_db = config.DART_DB_DBNAME  # type: ignore
     dart_db_driver = config.DART_DB_DRIVER  # type: ignore
 
-    connection_string = f'DRIVER={dart_db_driver};SERVER={dart_db_host};PORT={dart_db_port};DATABASE={dart_db_db};UID={dart_db_username};PWD={dart_db_password}'
+    connection_string = (
+        f"DRIVER={dart_db_driver};"
+        f"SERVER={dart_db_host};"
+        f"PORT={dart_db_port};"
+        f"DATABASE={dart_db_db};"
+        f"UID={dart_db_username};"
+        f"PWD={dart_db_password}"
+    )
 
     logger.debug(f"Attempting to connect to {dart_db_host} on port {dart_db_port}")
 
@@ -298,41 +319,42 @@ def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> Optional[p
         sql_server_conn = pyodbc.connect(connection_string)
 
         if sql_server_conn is not None:
-            logger.debug('DART Connection Successful')
+            logger.debug("DART Connection Successful")
         else:
-            logger.error('DART Connection Failed')
+            logger.error("DART Connection Failed")
 
     except pyodbc.Error as e:
         logger.error(f"Exception on connecting to DART database: {e}")
 
     return sql_server_conn
 
+
 def get_dart_plate_state(cursor: pyodbc.Cursor, plate_barcode: str) -> str:
     """Gets the state of a DART plate.
 
-        Arguments:
-            cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
-            plate_barcode {str} -- The barcode of the plate whose state to fetch.
+    Arguments:
+        cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
+        plate_barcode {str} -- The barcode of the plate whose state to fetch.
 
-        Returns:
-            str -- The state of the plate in DART.
+    Returns:
+        str -- The state of the plate in DART.
     """
     params = (plate_barcode, DART_STATE_PROPERTY_NAME)
     cursor.execute(DART_GET_PLATE_PROPERTY_SQL, params)
     return cursor.fetchval()
 
+
 def set_dart_plate_state_pending(cursor: pyodbc.Cursor, plate_barcode: str) -> str:
     """Sets the state of a DART plate to pending.
 
-        Arguments:
-            cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
-            plate_barcode {str} -- The barcode of the plate whose state to set.
+    Arguments:
+        cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
+        plate_barcode {str} -- The barcode of the plate whose state to set.
 
-        Returns:
-            bool -- Return True if DART was updated successfully, else False.
+    Returns:
+        bool -- Return True if DART was updated successfully, else False.
     """
     params = (plate_barcode, DART_STATE_PROPERTY_NAME, DART_STATE_PENDING)
     cursor.execute(DART_SET_PLATE_PROPERTY_SQL, params)
     response = cursor.fetchval()
     return response == DART_SET_PROP_STATUS_SUCCESS
-    
