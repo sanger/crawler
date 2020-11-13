@@ -51,7 +51,7 @@ def test_update_filtered_positives_catches_error_fetching_pending_plate_barcodes
     mock_get_plate_barcodes.side_effect = ValueError("Boom!")
 
     # call the migration
-    update_filtered_positives.run()
+    update_filtered_positives.run("crawler.config.integration")
 
     # ensure no databases are updated
     mock_update_mongo.assert_not_called()
@@ -69,7 +69,7 @@ def test_update_filtered_positives_aborts_with_no_pending_plate_barcodes(
     mock_get_plate_barcodes.return_value = []
 
     # call the migration
-    update_filtered_positives.run()
+    update_filtered_positives.run("crawler.config.integration")
 
     # ensure that no databases are updated
     mock_update_mongo.assert_not_called()
@@ -88,7 +88,7 @@ def test_update_filtered_positives_catches_error_pending_positive_samples(
     mock_get_positive_samples.side_effect = NotImplementedError("Boom!")
 
     # call the migration
-    update_filtered_positives.run()
+    update_filtered_positives.run("crawler.config.integration")
 
     # ensure that no databases are updated
     mock_update_mongo.assert_not_called()
@@ -107,7 +107,7 @@ def test_update_filtered_positives_aborts_with_no_positive_samples_fetched_from_
     mock_get_positive_samples.return_value = []
 
     # call the migration
-    update_filtered_positives.run()
+    update_filtered_positives.run("crawler.config.integration")
 
     # ensure that no databases are updated
     mock_update_mongo.assert_not_called()
@@ -127,7 +127,7 @@ def test_update_filtered_positives_catches_error_determining_filtered_positive_r
     mock_update_positives.side_effect = NotImplementedError("Boom!")
 
     # call the migration
-    update_filtered_positives.run()
+    update_filtered_positives.run("crawler.config.integration")
 
     # ensure that no databases are updated
     mock_update_mongo.assert_not_called()
@@ -147,7 +147,7 @@ def test_update_filtered_positives_catches_error_updating_samples_in_mongo(
     mock_update_mongo.side_effect = NotImplementedError("Boom!")
 
     # call the migration
-    update_filtered_positives.run()
+    update_filtered_positives.run("crawler.config.integration")
 
     # ensure expected database calls
     mock_update_mongo.assert_called_once()
@@ -167,7 +167,7 @@ def test_update_filtered_positives_aborts_failing_updating_samples_in_mongo(
     mock_update_mongo.return_value = False
 
     # call the migration
-    update_filtered_positives.run()
+    update_filtered_positives.run("crawler.config.integration")
 
     # ensure expected database calls
     mock_update_mongo.assert_called_once()
@@ -188,7 +188,7 @@ def test_update_filtered_positives_catched_error_updating_samples_in_mlwh(
     mock_update_mlwh.side_effect = NotImplementedError("Boom!")
 
     # call the migration
-    update_filtered_positives.run()
+    update_filtered_positives.run("crawler.config.integration")
 
     # ensure expected database calls
     mock_update_mongo.assert_called_once()
@@ -209,7 +209,7 @@ def test_update_filtered_positives_aborts_failing_updating_samples_in_mlwh(
     mock_update_mlwh.return_value = False
 
     # call the migration
-    update_filtered_positives.run()
+    update_filtered_positives.run("crawler.config.integration")
 
     # ensure expected database calls
     mock_update_mongo.assert_called_once()
@@ -231,7 +231,7 @@ def test_update_filtered_positives_catches_error_updating_samples_in_dart(
     mock_update_dart.side_effect = NotImplementedError("Boom!")
 
     # call the migration
-    update_filtered_positives.run()
+    update_filtered_positives.run("crawler.config.integration")
 
     # ensure expected database calls
     mock_update_mongo.assert_called_once()
@@ -253,7 +253,7 @@ def test_update_filtered_positives_catches_aborts_failing_updating_samples_in_da
     mock_update_dart.return_value = False
 
     # call the migration
-    update_filtered_positives.run()
+    update_filtered_positives.run("crawler.config.integration")
 
     # ensure expected database calls
     mock_update_mongo.assert_called_once()
@@ -275,7 +275,7 @@ def test_update_filtered_positives_outputs_success(
     mock_update_dart.return_value = True
 
     # call the migration
-    update_filtered_positives.run()
+    update_filtered_positives.run("crawler.config.integration")
 
     # ensure expected database calls
     mock_update_mongo.assert_called_once()
