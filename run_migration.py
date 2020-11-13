@@ -1,4 +1,5 @@
 import logging
+import logging.config
 import sys
 
 from crawler.helpers import get_config
