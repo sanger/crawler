@@ -325,10 +325,10 @@ def test_update_mlwh_filtered_positive_fields_calls_to_update_samples(config, ml
     cursor.close()
 
     assert sample_count == 2
-    assert filtered_positive_sample[0] is True
+    assert filtered_positive_sample[0]
     assert filtered_positive_sample[1] == "v2.3"
     assert filtered_positive_sample[2] == update_timestamp
-    assert filtered_negative_sample[0] is False
+    assert not filtered_negative_sample[0]
     assert filtered_negative_sample[1] == "v2.3"
     assert filtered_negative_sample[2] == update_timestamp
 
