@@ -3,7 +3,7 @@ import csv
 from typing import Dict, List, Any, Tuple, Set, Optional
 from pymongo.errors import BulkWriteError
 from pymongo.database import Database
-from bson.objectid import ObjectId # type: ignore
+from bson.objectid import ObjectId  # type: ignore
 import pyodbc  # type: ignore
 
 from enum import Enum
@@ -86,7 +86,7 @@ from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from hashlib import md5
 from datetime import datetime
 from decimal import Decimal
-from bson.decimal128 import Decimal128 # type: ignore
+from bson.decimal128 import Decimal128  # type: ignore
 from more_itertools import groupby_transform
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 
@@ -192,8 +192,7 @@ class Centre:
         return f"{self.config.DIR_DOWNLOADED_DATA}{self.centre_config['prefix']}/"  # type: ignore
 
     def download_csv_files(self) -> None:
-        """Downloads the centre's file from the SFTP server
-        """
+        """Downloads the centre's file from the SFTP server"""
         logger.info("Downloading CSV file(s) from SFTP")
 
         logger.debug("Create download directory for centre")
@@ -262,12 +261,12 @@ class CentreFile:
     def __init__(self, file_name, centre):
         """Initialiser for the class representing the file
 
-            Arguments:
-                centre {Dict[str][str]} -- the lighthouse centre
-                file_name {str} - the file name of the file
+        Arguments:
+            centre {Dict[str][str]} -- the lighthouse centre
+            file_name {str} - the file name of the file
 
-            Returns:
-                str -- the filepath for the file
+        Returns:
+            str -- the filepath for the file
         """
         self.logging_collection = LoggingCollection()
 
@@ -282,16 +281,16 @@ class CentreFile:
     def filepath(self) -> Any:
         """Returns the filepath for the file
 
-            Returns:
-                str -- the filepath for the file
+        Returns:
+            str -- the filepath for the file
         """
         return PROJECT_ROOT.joinpath(f"{self.centre.get_download_dir()}{self.file_name}")
 
     def checksum(self) -> str:
         """Returns the checksum for the file
 
-            Returns:
-                str -- the checksum for the file
+        Returns:
+            str -- the checksum for the file
         """
         with open(self.filepath(), "rb") as f:
             file_hash = md5()
@@ -303,11 +302,11 @@ class CentreFile:
     def checksum_match(self, dir_path) -> bool:
         """Checks a directory for a file matching the checksum of this file
 
-            Arguments:
-                dir_path {str} -> the directory path to be checked
+        Arguments:
+            dir_path {str} -> the directory path to be checked
 
-            Returns:
-                boolean -- whether the file matches or not
+        Returns:
+            boolean -- whether the file matches or not
         """
         regexp = re.compile(r"^([\d]{6}_[\d]{4})_(.*)_(\w*)$")
 
@@ -339,8 +338,8 @@ class CentreFile:
     def set_state_for_file(self) -> CentreFileState:
         """Determines what state the file is in and whether it needs to be processed.
 
-              Returns:
-                  CentreFileState - enum representation of file state
+        Returns:
+            CentreFileState - enum representation of file state
         """
         # check whether file is on the blacklist and should be ignored
         centre = self.get_centre_from_db()
@@ -368,8 +367,7 @@ class CentreFile:
         return self.file_state
 
     def process_samples(self) -> None:
-        """Processes the samples extracted from the centre file.
-        """
+        """Processes the samples extracted from the centre file."""
         logger.info(f"Processing samples")
 
         # Internally traps TYPE 2: missing headers and TYPE 10 malformed files and returns docs_to_insert = []
@@ -386,7 +384,9 @@ class CentreFile:
 
         if len(mongo_ids_of_inserted) > 0:
             # filter out docs which failed to insert into mongo - we don't want to create mlwh records for these
-            docs_to_insert_mlwh = list(filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert))
+            docs_to_insert_mlwh = list(
+                filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert)
+            )
 
             self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
             self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
@@ -397,8 +397,8 @@ class CentreFile:
     def backup_filename(self) -> str:
         """Backup the file.
 
-            Returns:
-                str -- the filepath of the file backup
+        Returns:
+            str -- the filepath of the file backup
         """
         if self.logging_collection.get_count_of_all_errors_and_criticals() > 0:
             return (
@@ -416,8 +416,8 @@ class CentreFile:
     def backup_file(self) -> None:
         """Backup the file.
 
-            Returns:
-                str -- destination of the file
+        Returns:
+            str -- destination of the file
         """
         destination = self.backup_filename()
 
@@ -439,8 +439,8 @@ class CentreFile:
     def get_db(self) -> Database:
         """Fetch the mongo database.
 
-            Returns:
-                Database -- a reference to the database in mongo
+        Returns:
+            Database -- a reference to the database in mongo
         """
         client = create_mongo_client(self.config)
         db = get_mongo_db(self.config, client)
@@ -485,8 +485,8 @@ class CentreFile:
     def insert_samples_from_docs_into_mongo_db(self, docs_to_insert) -> List[ObjectId]:
         """Insert sample records into the mongo database from the parsed file information.
 
-            Arguments:
-                docs_to_insert {List[Dict[str, str]]} -- list of filtered sample information extracted from csv files
+        Arguments:
+            docs_to_insert {List[Dict[str, str]]} -- list of filtered sample information extracted from csv files
         """
         logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
@@ -517,8 +517,12 @@ class CentreFile:
             self.docs_inserted = e.details["nInserted"]
             self.add_duplication_errors(e)
 
-            errored_ids = list(map(lambda x: x['op'][FIELD_MONGODB_ID], e.details["writeErrors"]))
-            inserted_ids = [ doc[FIELD_MONGODB_ID] for doc in docs_to_insert if doc[FIELD_MONGODB_ID] not in errored_ids ]
+            errored_ids = list(map(lambda x: x["op"][FIELD_MONGODB_ID], e.details["writeErrors"]))
+            inserted_ids = [
+                doc[FIELD_MONGODB_ID]
+                for doc in docs_to_insert
+                if doc[FIELD_MONGODB_ID] not in errored_ids
+            ]
 
             return inserted_ids
         except Exception as e:
@@ -529,11 +533,11 @@ class CentreFile:
     def insert_samples_from_docs_into_mlwh(self, docs_to_insert) -> None:
         """Insert sample records into the MLWH database from the parsed file information, including the corresponding mongodb _id
 
-            Arguments:
-                docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from csv files.
-                                                         Includes the mongodb id, as the list has already been inserted into mongodb
+        Arguments:
+            docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from csv files.
+                                                     Includes the mongodb id, as the list has already been inserted into mongodb
 
-                mongo_ids {List[ObjectId]} -- list of mongodb ids in the same order as docs_to_insert, from the insert into the mongodb
+            mongo_ids {List[ObjectId]} -- list of mongodb ids in the same order as docs_to_insert, from the insert into the mongodb
         """
         values = []
         for doc in docs_to_insert:
@@ -545,7 +549,9 @@ class CentreFile:
             try:
                 run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
 
-                logger.debug(f"MLWH database inserts completed successfully for file {self.file_name}")
+                logger.debug(
+                    f"MLWH database inserts completed successfully for file {self.file_name}"
+                )
             except Exception as e:
                 self.logging_collection.add_error(
                     "TYPE 14",
@@ -558,13 +564,15 @@ class CentreFile:
                 "TYPE 15",
                 f"MLWH database inserts failed, could not connect, for file {self.file_name}",
             )
-            logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
+            logger.critical(
+                f"Error writing to MLWH for file {self.file_name}, could not create Database connection"
+            )
 
     def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert) -> None:
         """Insert plates and wells into the DART database from the parsed file information
 
-            Arguments:
-                docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from csv files.
+        Arguments:
+            docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from csv files.
         """
         sql_server_connection = create_dart_sql_server_conn(self.config, False)
 
@@ -572,23 +580,33 @@ class CentreFile:
             try:
                 cursor = sql_server_connection.cursor()
 
-                for plate_barcode, samples in groupby_transform(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]):  # type:ignore
+                for plate_barcode, samples in groupby_transform(
+                    docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]
+                ):  # type:ignore
                     try:
-                        plate_state = add_dart_plate_if_doesnt_exist(cursor, plate_barcode, self.centre_config["biomek_labware_class"])
+                        plate_state = add_dart_plate_if_doesnt_exist(
+                            cursor, plate_barcode, self.centre_config["biomek_labware_class"]
+                        )
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
-                                self.add_dart_well_properties_if_positive(cursor, sample, plate_barcode)
+                                self.add_dart_well_properties_if_positive(
+                                    cursor, sample, plate_barcode
+                                )
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(
                             "TYPE 22",
                             f"DART database inserts failed for plate {plate_barcode} in file {self.file_name}",
                         )
-                        logger.critical(f"Critical error inserting plate {plate_barcode} in file {self.file_name}: {e}")
+                        logger.critical(
+                            f"Critical error inserting plate {plate_barcode} in file {self.file_name}: {e}"
+                        )
                         logger.exception(e)
-                        cursor.rollback() # rollback statements executed since previous commit/rollback
+                        cursor.rollback()  # rollback statements executed since previous commit/rollback
 
-                logger.debug(f"DART database inserts completed successfully for file {self.file_name}")
+                logger.debug(
+                    f"DART database inserts completed successfully for file {self.file_name}"
+                )
             except Exception as e:
                 self.logging_collection.add_error(
                     "TYPE 23",
@@ -603,15 +621,19 @@ class CentreFile:
                 "TYPE 24",
                 f"DART database inserts failed, could not connect, for file {self.file_name}",
             )
-            logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
+            logger.critical(
+                f"Error writing to DART for file {self.file_name}, could not create Database connection"
+            )
 
-    def add_dart_well_properties_if_positive(self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str) -> None:
+    def add_dart_well_properties_if_positive(
+        self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str
+    ) -> None:
         """Adds well properties to DART for the specified sample if that sample is positive.
 
-            Arguments:
-                cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
-                sample {Dict[str, str]} -- The sample for which to add well properties.
-                plate_barcode {str} -- The barcode of the plate to which this sample belongs.
+        Arguments:
+            cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
+            sample {Dict[str, str]} -- The sample for which to add well properties.
+            plate_barcode {str} -- The barcode of the plate to which this sample belongs.
         """
         if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
             well_index = get_dart_well_index(sample.get(FIELD_COORDINATE, None))
@@ -619,7 +641,9 @@ class CentreFile:
                 dart_well_props = map_mongo_doc_to_dart_well_props(sample)
                 set_dart_well_properties(cursor, plate_barcode, dart_well_props, well_index)
             else:
-                raise ValueError(f'Unable to determine DART well index for sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}')
+                raise ValueError(
+                    f"Unable to determine DART well index for sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
+                )
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.
@@ -647,10 +671,10 @@ class CentreFile:
 
     def get_required_headers(self) -> Set[str]:
         """Returns the list of required headers.
-           Includes Lab ID if config flag is set.
+        Includes Lab ID if config flag is set.
 
-            Returns:
-                {set} - the set of header names
+         Returns:
+             {set} - the set of header names
         """
         required = set(self.REQUIRED_FIELDS)
         if not (self.config.ADD_LAB_ID):
@@ -661,8 +685,8 @@ class CentreFile:
     def get_channel_headers(self) -> Set[str]:
         """Returns the list of optional headers.
 
-            Returns:
-                {set} - the set of header names
+        Returns:
+            {set} - the set of header names
         """
         return set(self.CHANNEL_FIELDS)
 
@@ -719,7 +743,7 @@ class CentreFile:
                 "TYPE 9",
                 f"Wrong reg. exp. {barcode_field}, line:{line_number}, root_sample_id: {sample_id}, value: {row.get(barcode_field)}",
             )
-            return '', ''
+            return "", ""
 
         return m.group(1), m.group(2)
 
@@ -741,13 +765,13 @@ class CentreFile:
         )
 
     def filtered_row(self, row, line_number) -> Dict[str, Any]:
-        """ Filter unneeded columns and add lab id if not present and config flag set.
+        """Filter unneeded columns and add lab id if not present and config flag set.
 
-            Arguments:
-                row {Dict[str][str]} - sample row read from file
+        Arguments:
+            row {Dict[str][str]} - sample row read from file
 
-            Returns:
-                Dict[str][str] - returns a modified version of the row
+        Returns:
+            Dict[str][str] - returns a modified version of the row
         """
         modified_row: Dict[str, Any] = {}
         if self.config.ADD_LAB_ID:
@@ -893,7 +917,10 @@ class CentreFile:
 
         modified_row[FIELD_PLATE_BARCODE] = None  # type: ignore
         if modified_row.get(barcode_field) and barcode_regex:
-            modified_row[FIELD_PLATE_BARCODE], modified_row[FIELD_COORDINATE] = self.extract_plate_barcode_and_coordinate(
+            (
+                modified_row[FIELD_PLATE_BARCODE],
+                modified_row[FIELD_COORDINATE],
+            ) = self.extract_plate_barcode_and_coordinate(
                 modified_row, line_number, barcode_field, barcode_regex
             )
         if not modified_row.get(FIELD_PLATE_BARCODE):
@@ -910,8 +937,12 @@ class CentreFile:
 
         # filtered-positive calculations
         if modified_row[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
-            modified_row[FIELD_FILTERED_POSITIVE] = self.filtered_positive_identifier.is_positive(modified_row)
-            modified_row[FIELD_FILTERED_POSITIVE_VERSION] = self.filtered_positive_identifier.current_version()
+            modified_row[FIELD_FILTERED_POSITIVE] = self.filtered_positive_identifier.is_positive(
+                modified_row
+            )
+            modified_row[
+                FIELD_FILTERED_POSITIVE_VERSION
+            ] = self.filtered_positive_identifier.current_version()
             modified_row[FIELD_FILTERED_POSITIVE_TIMESTAMP] = import_timestamp
 
         # ---- store row signature to allow checking for duplicates in following rows ----
@@ -922,7 +953,7 @@ class CentreFile:
     def convert_and_validate_cq_values(self, row, line_number) -> bool:
         for fieldname in [FIELD_CH1_CQ, FIELD_CH2_CQ, FIELD_CH3_CQ, FIELD_CH4_CQ]:
             if not self.convert_and_validate_cq_value(row, fieldname, line_number):
-              return False
+                return False
 
         return True
 
@@ -941,7 +972,6 @@ class CentreFile:
             return False
 
         return True
-
 
     def row_result_value_valid(self, row, line_number) -> bool:
         """Validation to check if the row Result value is one of the expected values.
@@ -1006,7 +1036,6 @@ class CentreFile:
             return False
 
         return True
-
 
     def is_row_channel_result_valid(self, row, line_number, fieldname):
         """Is the channel result valid.

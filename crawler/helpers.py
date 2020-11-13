@@ -12,7 +12,7 @@ from importlib import import_module
 from types import ModuleType
 from enum import Enum
 from typing import Dict, Any, Tuple, Optional
-from bson.decimal128 import Decimal128 # type: ignore
+from bson.decimal128 import Decimal128  # type: ignore
 import pysftp  # type: ignore
 
 from crawler.constants import (
@@ -132,13 +132,13 @@ def get_sftp_connection(
 
 def get_config(settings_module: str) -> Tuple[ModuleType, str]:
     """Get the config for the app by importing a module named by an environmental variable. This
-        allows easy switching between environments and inheriting default config values.
+    allows easy switching between environments and inheriting default config values.
 
-        Arguments:
-            settings_module {str} -- the settings module to load
+    Arguments:
+        settings_module {str} -- the settings module to load
 
-        Returns:
-            Optional[ModuleType] -- the config module loaded and available to use via `config.<param>`
+    Returns:
+        Optional[ModuleType] -- the config module loaded and available to use via `config.<param>`
     """
     try:
         if not settings_module:
@@ -148,17 +148,20 @@ def get_config(settings_module: str) -> Tuple[ModuleType, str]:
     except KeyError as e:
         sys.exit(f"{e} required in environmental variables for config")
 
+
 def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
     """Transform common document fields into MySQL fields for MLWH.
 
-        Arguments:
-            doc {Dict[str, str]} -- Filtered information about one sample, extracted from mongodb.
+    Arguments:
+        doc {Dict[str, str]} -- Filtered information about one sample, extracted from mongodb.
 
-        Returns:
-            Dict[str, str] -- Dictionary of MySQL versions of fields
+    Returns:
+        Dict[str, str] -- Dictionary of MySQL versions of fields
     """
     return {
-        MLWH_MONGODB_ID: str(doc[FIELD_MONGODB_ID]), # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
+        MLWH_MONGODB_ID: str(
+            doc[FIELD_MONGODB_ID]
+        ),  #  hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
         MLWH_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
         MLWH_RNA_ID: doc[FIELD_RNA_ID],
         MLWH_PLATE_BARCODE: doc[FIELD_PLATE_BARCODE],
@@ -182,8 +185,9 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
         MLWH_CH4_CQ: parse_decimal128(doc.get(FIELD_CH4_CQ, None)),
         MLWH_FILTERED_POSITIVE: doc.get(FIELD_FILTERED_POSITIVE, None),
         MLWH_FILTERED_POSITIVE_VERSION: doc.get(FIELD_FILTERED_POSITIVE_VERSION, None),
-        MLWH_FILTERED_POSITIVE_TIMESTAMP: doc.get(FIELD_FILTERED_POSITIVE_TIMESTAMP, None)
+        MLWH_FILTERED_POSITIVE_TIMESTAMP: doc.get(FIELD_FILTERED_POSITIVE_TIMESTAMP, None),
     }
+
 
 # Strip any leading zeros from the coordinate
 # eg. A01 => A1
@@ -194,18 +198,19 @@ def unpad_coordinate(coordinate):
         else coordinate
     )
 
+
 def map_lh_doc_to_sql_columns(doc) -> Dict[str, Any]:
     """Transform the document fields from the parsed lighthouse file into a form suitable for the MLWH.
-       We are setting created_at and updated_at fields to current timestamp for inserts here,
-       because it would be too slow to retrieve them from MongoDB and they would be virtually the same
-       as we have only just written the mongo record.
-       We also have the mongodb id, as this is after the mongo inserts and was retrieved.
+    We are setting created_at and updated_at fields to current timestamp for inserts here,
+    because it would be too slow to retrieve them from MongoDB and they would be virtually the same
+    as we have only just written the mongo record.
+    We also have the mongodb id, as this is after the mongo inserts and was retrieved.
 
-        Arguments:
-            doc {Dict[str, str]} -- Filtered information about one sample, extracted from csv files.
+     Arguments:
+         doc {Dict[str, str]} -- Filtered information about one sample, extracted from csv files.
 
-        Returns:
-            Dict[str, str] -- Dictionary of MySQL versions of fields
+     Returns:
+         Dict[str, str] -- Dictionary of MySQL versions of fields
     """
     value = map_mongo_to_sql_common(doc)
     dt = datetime.now(timezone.utc)
@@ -213,28 +218,30 @@ def map_lh_doc_to_sql_columns(doc) -> Dict[str, Any]:
     value[MLWH_UPDATED_AT] = dt
     return value
 
+
 def map_mongo_doc_to_sql_columns(doc) -> Dict[str, Any]:
     """Transform the document fields from the parsed mongodb samples collection.
 
-        Arguments:
-            doc {Dict[str, str]} -- Filtered information about one sample, extracted from mongodb.
+    Arguments:
+        doc {Dict[str, str]} -- Filtered information about one sample, extracted from mongodb.
 
-        Returns:
-            Dict[str, str] -- Dictionary of MySQL versions of fields
+    Returns:
+        Dict[str, str] -- Dictionary of MySQL versions of fields
     """
     value = map_mongo_to_sql_common(doc)
     value[MLWH_CREATED_AT] = doc[FIELD_CREATED_AT]
     value[MLWH_UPDATED_AT] = doc[FIELD_UPDATED_AT]
     return value
 
+
 def parse_date_tested(date_string: str) -> Any:
     """Converts date tested to MySQL format string
 
-        Arguments:
-            date_string {str} -- The date string from the document
+    Arguments:
+        date_string {str} -- The date string from the document
 
-        Returns:
-            str -- The MySQL formatted string
+    Returns:
+        str -- The MySQL formatted string
     """
     try:
         date_time = datetime.strptime(date_string, f"{MYSQL_DATETIME_FORMAT} %Z")
@@ -242,20 +249,22 @@ def parse_date_tested(date_string: str) -> Any:
     except:
         return None
 
+
 def parse_decimal128(value: Decimal128) -> Any:
     """Converts Decimal128 to MySQL compatible Decimal format
 
-        Arguments:
-            value {Decimal128} -- The number from the document or None
+    Arguments:
+        value {Decimal128} -- The number from the document or None
 
-        Returns:
-            Decimal -- converted number
+    Returns:
+        Decimal -- converted number
     """
     try:
         dec = value.to_decimal()
         return dec
     except:
         return None
+
 
 def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
     """Determines a well index from a coordinate; otherwise returns None.
@@ -283,13 +292,17 @@ def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
 
     return None
 
+
 def map_mongo_doc_to_dart_well_props(doc: Dict[str, Any]) -> Dict[str, str]:
     return {
-        DART_STATE: DART_STATE_PICKABLE if doc.get(FIELD_FILTERED_POSITIVE, False) else DART_EMPTY_VALUE,
+        DART_STATE: DART_STATE_PICKABLE
+        if doc.get(FIELD_FILTERED_POSITIVE, False)
+        else DART_EMPTY_VALUE,
         DART_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
         DART_RNA_ID: doc[FIELD_RNA_ID],
         DART_LAB_ID: doc.get(FIELD_LAB_ID, DART_EMPTY_VALUE),
     }
+
 
 class ErrorLevel(Enum):
     DEBUG = 1
@@ -301,8 +314,7 @@ class ErrorLevel(Enum):
 
 
 class AggregateTypeBase:
-    """ Base class for Aggregate types. Should not be instantiated directly.
-    """
+    """Base class for Aggregate types. Should not be instantiated directly."""
 
     def __init__(self):
         self.error_level = ErrorLevel.DEBUG
@@ -314,10 +326,10 @@ class AggregateTypeBase:
 
     def add_error(self, message) -> None:
         """Adds a new error to the aggregate type. Checks max_errors to decide whether message should be appended
-            to the default message or not. Increments total counter for this type of error.
+        to the default message or not. Increments total counter for this type of error.
 
-            Arguments:
-                message {str} -- the specific message for this error e.g. with a line number or barcode
+        Arguments:
+            message {str} -- the specific message for this error e.g. with a line number or barcode
         """
         self.count_errors += 1
         if self.max_errors > 0 and self.count_errors <= self.max_errors:
@@ -436,30 +448,31 @@ class AggregateType12(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 12"
         self.error_level = ErrorLevel.ERROR
-        self.message = (
-            f"ERROR: Sample rows that do not contain a Lab ID. ({self.type_str})"
-        )
+        self.message = f"ERROR: Sample rows that do not contain a Lab ID. ({self.type_str})"
         self.max_errors = 5
         self.short_display_description = "No Lab ID"
+
 
 class AggregateType13(AggregateTypeBase):
     def __init__(self):
         super().__init__()
         self.type_str = "TYPE 13"
         self.error_level = ErrorLevel.WARNING
-        self.message = (
-            f"ERROR: Sample rows that contain unexpected columns. ({self.type_str})"
-        )
+        self.message = f"ERROR: Sample rows that contain unexpected columns. ({self.type_str})"
         self.max_errors = 5
         self.short_display_description = "Extra column(s)"
+
 
 class AggregateType14(AggregateTypeBase):
     def __init__(self):
         super().__init__()
         self.type_str = "TYPE 14"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = f"CRITICAL: Files where the MLWH database insert has failed. ({self.type_str})"
+        self.message = (
+            f"CRITICAL: Files where the MLWH database insert has failed. ({self.type_str})"
+        )
         self.short_display_description = "Failed MLWH inserts"
+
 
 class AggregateType15(AggregateTypeBase):
     def __init__(self):
@@ -469,16 +482,16 @@ class AggregateType15(AggregateTypeBase):
         self.message = f"CRITICAL: Files where the MLWH database connection could not be made. ({self.type_str})"
         self.short_display_description = "Failed MLWH connection"
 
+
 class AggregateType16(AggregateTypeBase):
     def __init__(self):
         super().__init__()
         self.type_str = "TYPE 16"
         self.error_level = ErrorLevel.ERROR
-        self.message = (
-            f"ERROR: Sample rows that have an invalid Result value. ({self.type_str})"
-        )
+        self.message = f"ERROR: Sample rows that have an invalid Result value. ({self.type_str})"
         self.max_errors = 5
         self.short_display_description = "Invalid Result value"
+
 
 class AggregateType17(AggregateTypeBase):
     def __init__(self):
@@ -491,6 +504,7 @@ class AggregateType17(AggregateTypeBase):
         self.max_errors = 5
         self.short_display_description = "Invalid CHn-Target value"
 
+
 class AggregateType18(AggregateTypeBase):
     def __init__(self):
         super().__init__()
@@ -501,6 +515,7 @@ class AggregateType18(AggregateTypeBase):
         )
         self.max_errors = 5
         self.short_display_description = "Invalid CHn-Result value"
+
 
 class AggregateType19(AggregateTypeBase):
     def __init__(self):
@@ -513,6 +528,7 @@ class AggregateType19(AggregateTypeBase):
         self.max_errors = 5
         self.short_display_description = "Invalid CHn-Cq value"
 
+
 class AggregateType20(AggregateTypeBase):
     def __init__(self):
         super().__init__()
@@ -524,40 +540,45 @@ class AggregateType20(AggregateTypeBase):
         self.max_errors = 5
         self.short_display_description = "Out of range CHn-Cq value"
 
+
 class AggregateType21(AggregateTypeBase):
     def __init__(self):
         super().__init__()
         self.type_str = "TYPE 21"
         self.error_level = ErrorLevel.ERROR
-        self.message = (
-            f"ERROR: Sample rows where a Positive Result value does not align with CT channel Results. ({self.type_str})"
-        )
+        self.message = f"ERROR: Sample rows where a Positive Result value does not align with CT channel Results. ({self.type_str})"
         self.max_errors = 5
         self.short_display_description = "Result not aligned with CHn-Results"
+
 
 class AggregateType22(AggregateTypeBase):
     def __init__(self):
         super().__init__()
-        self.type_str = 'TYPE 22'
+        self.type_str = "TYPE 22"
         self.error_level = ErrorLevel.CRITICAL
         self.message = f"CRITICAL: Files where the DART database inserts have failed for some plates. ({self.type_str})"
         self.short_display_description = "Failed DART plate inserts"
 
+
 class AggregateType23(AggregateTypeBase):
     def __init__(self):
         super().__init__()
-        self.type_str = 'TYPE 23'
+        self.type_str = "TYPE 23"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = f"CRITICAL: Files where all DART database inserts have failed. ({self.type_str})"
+        self.message = (
+            f"CRITICAL: Files where all DART database inserts have failed. ({self.type_str})"
+        )
         self.short_display_description = "Failed DART file inserts"
+
 
 class AggregateType24(AggregateTypeBase):
     def __init__(self):
         super().__init__()
-        self.type_str = 'TYPE 24'
+        self.type_str = "TYPE 24"
         self.error_level = ErrorLevel.CRITICAL
         self.message = f"CRITICAL: Files where the DART database connection could not be made. ({self.type_str})"
         self.short_display_description = "Failed DART connection"
+
 
 # Class to handle logging of errors of the various types per file
 class LoggingCollection:

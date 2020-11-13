@@ -87,7 +87,7 @@ DART_DB_RO_USER = "root"
 DART_DB_RO_PASSWORD = ""
 DART_DB_RW_USER = "root"
 DART_DB_RW_PASSWORD = ""
-DART_DB_DRIVER = '{ODBC Driver 17 for SQL Server}'
+DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
 
 # logging config
 LOGGING["loggers"]["crawler"]["level"] = "DEBUG"

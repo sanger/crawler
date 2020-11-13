@@ -47,11 +47,11 @@ FIELD_FILTERED_POSITIVE = "filtered_positive"
 # multi-lims warehouse field names
 MLWH_TABLE_NAME = "lighthouse_sample"
 MLWH_MONGODB_ID = "mongodb_id"
-MLWH_ROOT_SAMPLE_ID ="root_sample_id"
+MLWH_ROOT_SAMPLE_ID = "root_sample_id"
 MLWH_RNA_ID = "rna_id"
 MLWH_PLATE_BARCODE = "plate_barcode"
 MLWH_COORDINATE = "coordinate"
-MLWH_RESULT ="result"
+MLWH_RESULT = "result"
 MLWH_DATE_TESTED_STRING = "date_tested_string"
 MLWH_DATE_TESTED = "date_tested"
 MLWH_SOURCE = "source"
@@ -79,33 +79,33 @@ MONGO_DATETIME_FORMAT = "%y%m%d_%H%M"
 MYSQL_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # positive Result value
-POSITIVE_RESULT_VALUE = 'Positive'
+POSITIVE_RESULT_VALUE = "Positive"
 
 # allowed Result field values
-ALLOWED_RESULT_VALUES = (POSITIVE_RESULT_VALUE, 'Negative', 'limit of detection', 'Void')
+ALLOWED_RESULT_VALUES = (POSITIVE_RESULT_VALUE, "Negative", "limit of detection", "Void")
 
 # allowed CT channel CHn-Target field values (or can be null)
-ALLOWED_CH_TARGET_VALUES = ('ORF1ab', 'N gene', 'S gene', 'MS2')
+ALLOWED_CH_TARGET_VALUES = ("ORF1ab", "N gene", "S gene", "MS2")
 
 # allowed CT channel CHn-Result field values (or can be null)
-ALLOWED_CH_RESULT_VALUES = (POSITIVE_RESULT_VALUE, 'Negative', 'Inconclusive', 'Void')
+ALLOWED_CH_RESULT_VALUES = (POSITIVE_RESULT_VALUE, "Negative", "Inconclusive", "Void")
 
 # range of allowed cq values (0 .. 100, set as strings for conversion to decimals in code)
-MIN_CQ_VALUE = Decimal('0.0')
-MAX_CQ_VALUE = Decimal('100.0')
+MIN_CQ_VALUE = Decimal("0.0")
+MAX_CQ_VALUE = Decimal("100.0")
 
 # DART property names
-DART_STATE = 'state'
-DART_ROOT_SAMPLE_ID = 'root_sample_id'
-DART_RNA_ID = 'rna_id'
-DART_LAB_ID = 'lab_id'
+DART_STATE = "state"
+DART_ROOT_SAMPLE_ID = "root_sample_id"
+DART_RNA_ID = "rna_id"
+DART_LAB_ID = "lab_id"
 
 # DART property values
-DART_STATE_PENDING = 'pending'
-DART_STATE_NO_PLATE = 'NO PLATE'
-DART_STATE_NO_PROP = 'NO PROP'
-DART_STATE_PICKABLE = 'pickable'
-DART_EMPTY_VALUE = ''
+DART_STATE_PENDING = "pending"
+DART_STATE_NO_PLATE = "NO PLATE"
+DART_STATE_NO_PROP = "NO PROP"
+DART_STATE_PICKABLE = "pickable"
+DART_EMPTY_VALUE = ""
 
 # DART others
 DART_SET_PROP_STATUS_SUCCESS = 0

@@ -3,7 +3,7 @@ import pytest
 from crawler.helpers import LoggingCollection
 from unittest.mock import patch
 from decimal import Decimal
-from bson.decimal128 import Decimal128 # type: ignore
+from bson.decimal128 import Decimal128  # type: ignore
 from crawler.constants import (
     FIELD_MONGODB_ID,
     FIELD_DATE_TESTED,
@@ -57,6 +57,7 @@ from datetime import (
     timezone,
 )
 from bson.objectid import ObjectId
+
 
 def test_get_config():
     with pytest.raises(ModuleNotFoundError):
@@ -119,31 +120,38 @@ def test_logging_collection_with_multiple_errors():
     ]
     assert logging.get_aggregate_total_messages() == exptd_report_msgs
 
+
 # tests for parsing date tested
 def test_parse_date_tested(config):
-    result = parse_date_tested(date_string='2020-11-02 13:04:23 UTC')
+    result = parse_date_tested(date_string="2020-11-02 13:04:23 UTC")
     assert result == datetime(2020, 11, 2, 13, 4, 23)
+
 
 def test_parse_date_tested_none(config):
     result = parse_date_tested(date_string=None)
     assert result == None
 
+
 def test_parse_date_tested_wrong_format(config):
-    result = parse_date_tested(date_string='2nd November 2020')
+    result = parse_date_tested(date_string="2nd November 2020")
     assert result == None
+
 
 # tests for parsing Decimal128
 def test_parse_decimal128(config):
     result = parse_decimal128(None)
     assert result == None
 
-def test_parse_decimal128(config):
-    result = parse_decimal128('')
-    assert result == None
 
 def test_parse_decimal128(config):
-    result = parse_decimal128(Decimal128('23.26273818'))
-    assert result == Decimal('23.26273818')
+    result = parse_decimal128("")
+    assert result == None
+
+
+def test_parse_decimal128(config):
+    result = parse_decimal128(Decimal128("23.26273818"))
+    assert result == Decimal("23.26273818")
+
 
 # tests for unpad coordinate
 def test_unpad_coordinate_A01():
@@ -161,117 +169,131 @@ def test_unpad_coordinate_A10():
 def test_unpad_coordinate_B01010():
     assert unpad_coordinate("B01010") == "B1010"
 
+
 # tests for lighthouse doc to MLWH mapping
 def test_map_lh_doc_to_sql_columns(config):
     doc_to_transform = {
-        FIELD_MONGODB_ID: ObjectId('5f562d9931d9959b92544728'),
-        FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
-        FIELD_RNA_ID: 'TC-rna-00000029_H01',
-        FIELD_PLATE_BARCODE: 'TC-rna-00000029',
-        FIELD_COORDINATE: 'H01',
-        FIELD_RESULT: 'Negative',
-        FIELD_DATE_TESTED: '2020-04-23 14:40:08 UTC',
-        FIELD_SOURCE: 'Test Centre',
-        FIELD_LAB_ID: 'TC',
+        FIELD_MONGODB_ID: ObjectId("5f562d9931d9959b92544728"),
+        FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+        FIELD_RNA_ID: "TC-rna-00000029_H01",
+        FIELD_PLATE_BARCODE: "TC-rna-00000029",
+        FIELD_COORDINATE: "H01",
+        FIELD_RESULT: "Negative",
+        FIELD_DATE_TESTED: "2020-04-23 14:40:08 UTC",
+        FIELD_SOURCE: "Test Centre",
+        FIELD_LAB_ID: "TC",
         FIELD_FILTERED_POSITIVE: True,
-        FIELD_FILTERED_POSITIVE_VERSION: 'v2.3',
-        FIELD_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 40, 8)
+        FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
+        FIELD_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 40, 8),
     }
 
     result = map_lh_doc_to_sql_columns(doc_to_transform)
 
-    assert result[MLWH_MONGODB_ID] == '5f562d9931d9959b92544728'
-    assert result[MLWH_ROOT_SAMPLE_ID] == 'ABC00000004'
-    assert result[MLWH_RNA_ID] == 'TC-rna-00000029_H01'
-    assert result[MLWH_PLATE_BARCODE] == 'TC-rna-00000029'
-    assert result[MLWH_COORDINATE] == 'H1'
-    assert result[MLWH_RESULT] == 'Negative'
-    assert result[MLWH_DATE_TESTED_STRING] == '2020-04-23 14:40:08 UTC'
+    assert result[MLWH_MONGODB_ID] == "5f562d9931d9959b92544728"
+    assert result[MLWH_ROOT_SAMPLE_ID] == "ABC00000004"
+    assert result[MLWH_RNA_ID] == "TC-rna-00000029_H01"
+    assert result[MLWH_PLATE_BARCODE] == "TC-rna-00000029"
+    assert result[MLWH_COORDINATE] == "H1"
+    assert result[MLWH_RESULT] == "Negative"
+    assert result[MLWH_DATE_TESTED_STRING] == "2020-04-23 14:40:08 UTC"
     assert result[MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 40, 8)
-    assert result[MLWH_SOURCE] == 'Test Centre'
-    assert result[MLWH_LAB_ID] == 'TC'
+    assert result[MLWH_SOURCE] == "Test Centre"
+    assert result[MLWH_LAB_ID] == "TC"
     assert result[MLWH_FILTERED_POSITIVE] == True
-    assert result[MLWH_FILTERED_POSITIVE_VERSION] == 'v2.3'
+    assert result[MLWH_FILTERED_POSITIVE_VERSION] == "v2.3"
     assert result[MLWH_FILTERED_POSITIVE_TIMESTAMP] == datetime(2020, 4, 23, 14, 40, 8)
     assert result.get(MLWH_CREATED_AT) is not None
     assert result.get(MLWH_UPDATED_AT) is not None
 
+
 def test_map_mongo_doc_to_sql_columns(config):
     doc_to_transform = {
-        FIELD_MONGODB_ID: ObjectId('5f562d9931d9959b92544728'),
-        FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
-        FIELD_RNA_ID: 'TC-rna-00000029_H01',
-        FIELD_PLATE_BARCODE: 'TC-rna-00000029',
-        FIELD_COORDINATE: 'H01',
-        FIELD_RESULT: 'Negative',
-        FIELD_DATE_TESTED: '2020-04-23 14:40:08 UTC',
-        FIELD_SOURCE: 'Test Centre',
-        FIELD_LAB_ID: 'TC',
+        FIELD_MONGODB_ID: ObjectId("5f562d9931d9959b92544728"),
+        FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+        FIELD_RNA_ID: "TC-rna-00000029_H01",
+        FIELD_PLATE_BARCODE: "TC-rna-00000029",
+        FIELD_COORDINATE: "H01",
+        FIELD_RESULT: "Negative",
+        FIELD_DATE_TESTED: "2020-04-23 14:40:08 UTC",
+        FIELD_SOURCE: "Test Centre",
+        FIELD_LAB_ID: "TC",
         FIELD_CREATED_AT: datetime(2020, 4, 27, 5, 20, 0, tzinfo=timezone.utc),
         FIELD_UPDATED_AT: datetime(2020, 5, 13, 12, 50, 0, tzinfo=timezone.utc),
     }
 
     result = map_mongo_doc_to_sql_columns(doc_to_transform)
 
-    assert result[MLWH_MONGODB_ID] == '5f562d9931d9959b92544728'
-    assert result[MLWH_ROOT_SAMPLE_ID] == 'ABC00000004'
-    assert result[MLWH_RNA_ID] == 'TC-rna-00000029_H01'
-    assert result[MLWH_PLATE_BARCODE] == 'TC-rna-00000029'
-    assert result[MLWH_COORDINATE] == 'H1'
-    assert result[MLWH_RESULT] == 'Negative'
-    assert result[MLWH_DATE_TESTED_STRING] == '2020-04-23 14:40:08 UTC'
+    assert result[MLWH_MONGODB_ID] == "5f562d9931d9959b92544728"
+    assert result[MLWH_ROOT_SAMPLE_ID] == "ABC00000004"
+    assert result[MLWH_RNA_ID] == "TC-rna-00000029_H01"
+    assert result[MLWH_PLATE_BARCODE] == "TC-rna-00000029"
+    assert result[MLWH_COORDINATE] == "H1"
+    assert result[MLWH_RESULT] == "Negative"
+    assert result[MLWH_DATE_TESTED_STRING] == "2020-04-23 14:40:08 UTC"
     assert result[MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 40, 8)
-    assert result[MLWH_SOURCE] == 'Test Centre'
-    assert result[MLWH_LAB_ID] == 'TC'
+    assert result[MLWH_SOURCE] == "Test Centre"
+    assert result[MLWH_LAB_ID] == "TC"
     assert result[MLWH_CREATED_AT] == datetime(2020, 4, 27, 5, 20, 0, tzinfo=timezone.utc)
     assert result[MLWH_UPDATED_AT] == datetime(2020, 5, 13, 12, 50, 0, tzinfo=timezone.utc)
 
+
 def test_get_dart_well_index(config):
     coordinate = None
-    assert get_dart_well_index(coordinate) == None, "Expected to be unable to determine a well index for no sample"
+    assert (
+        get_dart_well_index(coordinate) == None
+    ), "Expected to be unable to determine a well index for no sample"
 
-    coordinate = '01A'
-    assert get_dart_well_index(coordinate) == None, "Expected to be unable to determine a well index for sample with invalid coordinate"
+    coordinate = "01A"
+    assert (
+        get_dart_well_index(coordinate) == None
+    ), "Expected to be unable to determine a well index for sample with invalid coordinate"
 
-    coordinate = 'A00'
-    assert get_dart_well_index(coordinate) == None, "Expected to be unable to determine a well index for sample with coordinate column below accepted range"
+    coordinate = "A00"
+    assert (
+        get_dart_well_index(coordinate) == None
+    ), "Expected to be unable to determine a well index for sample with coordinate column below accepted range"
 
-    coordinate = 'B15'
-    assert get_dart_well_index(coordinate) == None, "Expected to be unable to determine a well index for sample with coordinate column above accepted range"
+    coordinate = "B15"
+    assert (
+        get_dart_well_index(coordinate) == None
+    ), "Expected to be unable to determine a well index for sample with coordinate column above accepted range"
 
-    coordinate = 'Q01'
-    assert get_dart_well_index(coordinate) == None, "Expected to be unable to determine a well index for sample with coordinate row out of range"
+    coordinate = "Q01"
+    assert (
+        get_dart_well_index(coordinate) == None
+    ), "Expected to be unable to determine a well index for sample with coordinate row out of range"
 
-    coordinate = 'B7'
+    coordinate = "B7"
     assert get_dart_well_index(coordinate) == 19, "Expected well index of 19"
 
-    coordinate = 'F03'
+    coordinate = "F03"
     assert get_dart_well_index(coordinate) == 63, "Expected well index of 63"
 
-    coordinate = 'H11'
+    coordinate = "H11"
     assert get_dart_well_index(coordinate) == 95, "Expected well index of 95"
+
 
 def test_map_mongo_doc_to_dart_well_props(config):
     # all fields present, filtered positive
     doc_to_transform = {
         FIELD_FILTERED_POSITIVE: True,
-        FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
-        FIELD_RNA_ID: 'TC-rna-00000029_H01',
-        FIELD_LAB_ID: 'TC',
+        FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+        FIELD_RNA_ID: "TC-rna-00000029_H01",
+        FIELD_LAB_ID: "TC",
     }
 
     result = map_mongo_doc_to_dart_well_props(doc_to_transform)
 
     assert result[DART_STATE] == DART_STATE_PICKABLE
-    assert result[DART_ROOT_SAMPLE_ID] == 'ABC00000004'
-    assert result[DART_RNA_ID] == 'TC-rna-00000029_H01'
-    assert result[DART_LAB_ID] == 'TC'
+    assert result[DART_ROOT_SAMPLE_ID] == "ABC00000004"
+    assert result[DART_RNA_ID] == "TC-rna-00000029_H01"
+    assert result[DART_LAB_ID] == "TC"
 
     # missing lab id, not a filtered positive
     doc_to_transform = {
         FIELD_FILTERED_POSITIVE: False,
-        FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
-        FIELD_RNA_ID: 'TC-rna-00000029_H01',
+        FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+        FIELD_RNA_ID: "TC-rna-00000029_H01",
     }
 
     result = map_mongo_doc_to_dart_well_props(doc_to_transform)
@@ -281,8 +303,8 @@ def test_map_mongo_doc_to_dart_well_props(config):
 
     # missing filtered positive
     doc_to_transform = {
-        FIELD_ROOT_SAMPLE_ID: 'ABC00000004',
-        FIELD_RNA_ID: 'TC-rna-00000029_H01',
+        FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+        FIELD_RNA_ID: "TC-rna-00000029_H01",
     }
 
     result = map_mongo_doc_to_dart_well_props(doc_to_transform)

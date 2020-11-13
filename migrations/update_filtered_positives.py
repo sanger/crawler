@@ -11,11 +11,12 @@ from migrations.helpers.update_filtered_positives_helper import (
 from migrations.helpers.shared_helper import print_exception
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 
+
 def run(settings_module: str = "") -> None:
     """Updates filtered positive values for all positive samples in pending plates
 
-        Arguments:
-            config {ModuleType} -- application config specifying database details
+    Arguments:
+        config {ModuleType} -- application config specifying database details
     """
     print("-" * 80)
     print("STARTING FILTERED POSITIVES UPDATE")
@@ -37,36 +38,53 @@ def run(settings_module: str = "") -> None:
         if num_pending_plates > 0:
             # Get positive result samples from Mongo in these pending plates
             print("Selecting postive samples in pending plates from Mongo...")
-            positive_pending_samples = positive_result_samples_from_mongo(config, pending_plate_barcodes)
+            positive_pending_samples = positive_result_samples_from_mongo(
+                config, pending_plate_barcodes
+            )
             num_positive_pending_samples = len(positive_pending_samples)
-            print(f"{num_positive_pending_samples} positive samples in pending plates found in Mongo")
+            print(
+                f"{num_positive_pending_samples} positive samples in pending plates found in Mongo"
+            )
 
             if num_positive_pending_samples > 0:
                 filtered_positive_identifier = FilteredPositiveIdentifier()
                 version = filtered_positive_identifier.current_version()
                 update_timestamp = datetime.now()
                 print("Updating filtered positives...")
-                update_filtered_positive_fields(filtered_positive_identifier, positive_pending_samples, version, update_timestamp)
+                update_filtered_positive_fields(
+                    filtered_positive_identifier,
+                    positive_pending_samples,
+                    version,
+                    update_timestamp,
+                )
                 print("Updated filtered positives")
 
                 print("Updating Mongo...")
-                mongo_updated = update_mongo_filtered_positive_fields(config, positive_pending_samples, version, update_timestamp)
+                mongo_updated = update_mongo_filtered_positive_fields(
+                    config, positive_pending_samples, version, update_timestamp
+                )
                 print("Finished updating Mongo")
 
                 if mongo_updated:
                     print("Updating MLWH...")
-                    mlwh_updated = update_mlwh_filtered_positive_fields(config, positive_pending_samples)
+                    mlwh_updated = update_mlwh_filtered_positive_fields(
+                        config, positive_pending_samples
+                    )
                     print("Finished updating MLWH")
 
                     if mlwh_updated:
                         print("Updating DART...")
-                        dart_updated = update_dart_filtered_positive_fields(config, positive_pending_samples)
+                        dart_updated = update_dart_filtered_positive_fields(
+                            config, positive_pending_samples
+                        )
                         print("Finished updating DART")
             else:
-                print("No positive samples in pending plates found in Mongo, not updating any database")
+                print(
+                    "No positive samples in pending plates found in Mongo, not updating any database"
+                )
         else:
             print("No pending plates found in DART, not updating any database")
-        
+
     except Exception as e:
         print("---------- Process aborted: ----------")
         print_exception()

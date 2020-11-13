@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import (patch, MagicMock)
+from unittest.mock import patch, MagicMock
 import pytest
 
 from pymongo import MongoClient
@@ -37,6 +37,7 @@ from crawler.sql_queries import (
     SQL_DART_ADD_PLATE,
 )
 from crawler.exceptions import DartStateError
+
 
 def test_create_mongo_client(config):
     assert type(create_mongo_client(config)) == MongoClient
@@ -77,14 +78,17 @@ def test_create_import_record(freezer, mongo_database):
         assert import_doc["number_of_records"] == len(docs)
         assert import_doc["errors"] == error_collection.get_messages_for_import()
 
+
 def test_create_mysql_connection_none(config):
-    with patch('mysql.connector.connect', return_value = None):
+    with patch("mysql.connector.connect", return_value=None):
         assert create_mysql_connection(config) == None
+
 
 def test_create_mysql_connection_exception(config):
     # For example, if the credentials in the config are wrong
-    with patch('mysql.connector.connect', side_effect = mysql.Error()):
+    with patch("mysql.connector.connect", side_effect=mysql.Error()):
         assert create_mysql_connection(config) == None
+
 
 def test_run_mysql_executemany_query_success(config):
     conn = CMySQLConnection()
@@ -98,7 +102,9 @@ def test_run_mysql_executemany_query_success(config):
     cursor.executemany = MagicMock()
     cursor.close = MagicMock()
 
-    run_mysql_executemany_query(mysql_conn=conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=['test'])
+    run_mysql_executemany_query(
+        mysql_conn=conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=["test"]
+    )
 
     # check transaction is committed
     assert conn.commit.called == True
@@ -106,6 +112,7 @@ def test_run_mysql_executemany_query_success(config):
     # check connection is closed
     assert cursor.close.called == True
     assert conn.close.called == True
+
 
 def test_run_mysql_executemany_query_execute_error(config):
     conn = CMySQLConnection()
@@ -116,11 +123,13 @@ def test_run_mysql_executemany_query_execute_error(config):
     conn.close = MagicMock()
 
     cursor = conn.cursor.return_value
-    cursor.executemany = MagicMock(side_effect = Exception('Boom!'))
+    cursor.executemany = MagicMock(side_effect=Exception("Boom!"))
     cursor.close = MagicMock()
 
     with pytest.raises(Exception):
-        run_mysql_executemany_query(mysql_conn=conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=['test'])
+        run_mysql_executemany_query(
+            mysql_conn=conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=["test"]
+        )
 
         # check transaction is not committed
         assert conn.commit.called == False
@@ -129,25 +138,30 @@ def test_run_mysql_executemany_query_execute_error(config):
         assert cursor.close.called == True
         assert conn.close.called == True
 
+
 def test_create_dart_sql_server_conn_readonly(config):
-    with patch('pyodbc.connect') as mock_connect:
-        conn_string = f'DRIVER={config.DART_DB_DRIVER};SERVER={config.DART_DB_HOST};PORT={config.DART_DB_PORT};DATABASE={config.DART_DB_DBNAME};UID={config.DART_DB_RO_USER};PWD={config.DART_DB_RO_PASSWORD}'
+    with patch("pyodbc.connect") as mock_connect:
+        conn_string = f"DRIVER={config.DART_DB_DRIVER};SERVER={config.DART_DB_HOST};PORT={config.DART_DB_PORT};DATABASE={config.DART_DB_DBNAME};UID={config.DART_DB_RO_USER};PWD={config.DART_DB_RO_PASSWORD}"
         create_dart_sql_server_conn(config)
         mock_connect.assert_called_with(conn_string)
 
+
 def test_create_dart_sql_server_conn_readwrite(config):
-    with patch('pyodbc.connect') as mock_connect:
-        conn_string = f'DRIVER={config.DART_DB_DRIVER};SERVER={config.DART_DB_HOST};PORT={config.DART_DB_PORT};DATABASE={config.DART_DB_DBNAME};UID={config.DART_DB_RW_USER};PWD={config.DART_DB_RW_PASSWORD}'
+    with patch("pyodbc.connect") as mock_connect:
+        conn_string = f"DRIVER={config.DART_DB_DRIVER};SERVER={config.DART_DB_HOST};PORT={config.DART_DB_PORT};DATABASE={config.DART_DB_DBNAME};UID={config.DART_DB_RW_USER};PWD={config.DART_DB_RW_PASSWORD}"
         create_dart_sql_server_conn(config, readonly=False)
         mock_connect.assert_called_with(conn_string)
 
+
 def test_create_dart_sql_server_conn_none(config):
-    with patch('pyodbc.connect', return_value = None):
+    with patch("pyodbc.connect", return_value=None):
         assert create_dart_sql_server_conn(config) == None
 
+
 def test_create_dart_sql_server_conn_expection(config):
-    with patch('pyodbc.connect', side_effect = pyodbc.Error()):
+    with patch("pyodbc.connect", side_effect=pyodbc.Error()):
         assert create_dart_sql_server_conn(config) == None
+
 
 def test_get_dart_plate_state(config):
     with patch("pyodbc.connect") as mock_conn:
@@ -172,45 +186,57 @@ def test_set_dart_plate_state_pending(config):
             (test_plate_barcode, DART_STATE, DART_STATE_PENDING),
         )
 
+
 def test_set_dart_well_properties(config):
     with patch("pyodbc.connect") as mock_conn:
         test_plate_barcode = "AB123"
-        test_well_props = { 'prop1': 'value1', 'test prop': 'test value'}
+        test_well_props = {"prop1": "value1", "test prop": "test value"}
         test_well_index = 12
-        set_dart_well_properties(mock_conn.cursor(), test_plate_barcode, test_well_props, test_well_index)
+        set_dart_well_properties(
+            mock_conn.cursor(), test_plate_barcode, test_well_props, test_well_index
+        )
         for prop_name, prop_value in test_well_props.items():
             mock_conn.cursor().execute.assert_any_call(
                 SQL_DART_SET_WELL_PROPERTY,
-                (test_plate_barcode, prop_name, prop_value, test_well_index)
+                (test_plate_barcode, prop_name, prop_value, test_well_index),
             )
+
 
 def test_add_dart_plate_if_doesnt_exist_throws_without_state_property(config):
     with patch("pyodbc.connect") as mock_conn:
-        test_plate_barcode = 'AB123'
-        test_labclass = 'test class'
+        test_plate_barcode = "AB123"
+        test_labclass = "test class"
 
         # does not create existing plate and returns its state
-        with patch("crawler.db.get_dart_plate_state", return_value = DART_STATE_PENDING):
-            result = add_dart_plate_if_doesnt_exist(mock_conn.cursor(), test_plate_barcode, test_labclass)
+        with patch("crawler.db.get_dart_plate_state", return_value=DART_STATE_PENDING):
+            result = add_dart_plate_if_doesnt_exist(
+                mock_conn.cursor(), test_plate_barcode, test_labclass
+            )
             mock_conn.cursor().assert_not_called()
             assert result == DART_STATE_PENDING
 
         # if plate does not exist, creates new plate with pending state
-        with patch("crawler.db.get_dart_plate_state", return_value = DART_STATE_NO_PLATE):
-            with patch("crawler.db.set_dart_plate_state_pending", return_value = True):
-                result = add_dart_plate_if_doesnt_exist(mock_conn.cursor(), test_plate_barcode, test_labclass)
-                mock_conn.cursor().execute.assert_called_with(SQL_DART_ADD_PLATE, (test_plate_barcode, test_labclass, 96))
+        with patch("crawler.db.get_dart_plate_state", return_value=DART_STATE_NO_PLATE):
+            with patch("crawler.db.set_dart_plate_state_pending", return_value=True):
+                result = add_dart_plate_if_doesnt_exist(
+                    mock_conn.cursor(), test_plate_barcode, test_labclass
+                )
+                mock_conn.cursor().execute.assert_called_with(
+                    SQL_DART_ADD_PLATE, (test_plate_barcode, test_labclass, 96)
+                )
                 assert result == DART_STATE_PENDING
 
         # if plate does not exist, throws on failure adding setting new plate state to pending
-        with patch("crawler.db.get_dart_plate_state", return_value = DART_STATE_NO_PLATE):
-            with patch("crawler.db.set_dart_plate_state_pending", return_value = False):
+        with patch("crawler.db.get_dart_plate_state", return_value=DART_STATE_NO_PLATE):
+            with patch("crawler.db.set_dart_plate_state_pending", return_value=False):
                 with pytest.raises(DartStateError):
-                    add_dart_plate_if_doesnt_exist(mock_conn.cursor(), test_plate_barcode, test_labclass)
+                    add_dart_plate_if_doesnt_exist(
+                        mock_conn.cursor(), test_plate_barcode, test_labclass
+                    )
 
         # throws without state property
-        with patch("crawler.db.get_dart_plate_state", return_value = DART_STATE_NO_PROP):
+        with patch("crawler.db.get_dart_plate_state", return_value=DART_STATE_NO_PROP):
             with pytest.raises(DartStateError):
-                add_dart_plate_if_doesnt_exist(mock_conn.cursor(), test_plate_barcode, test_labclass)
-
-
+                add_dart_plate_if_doesnt_exist(
+                    mock_conn.cursor(), test_plate_barcode, test_labclass
+                )
