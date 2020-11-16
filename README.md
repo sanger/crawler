@@ -90,7 +90,7 @@ A sample is filtered positive if:
 - it is not a control (ROOT_SAMPLE_ID does not start with 'CBIQA_')
 - all of CH1_CQ, CH2_CQ and CH3_CQ are `None`, or one of these is less than or equal to 30
 
-More information on this version can be found on the confluence page _/display/PSDPUB/UAT+6th+October+2020_.
+More information on this version can be found on [this Confluence page](https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/UAT+6th+October+2020).
 
 ### Propagating Filtered Positive version changes to MongoDB, MLWH and DART
 
