@@ -95,7 +95,7 @@ More information on this version can be found on [this Confluence page](https://
 ### Propagating Filtered Positive version changes to MongoDB, MLWH and DART
 
 On changing the positive filtering version/definition, all unpicked samples stored in MongoDB, MLWH and DART need updating to determine whether they are still filtered positive under the new rules, and can therefore be picked in DART.
-In order to keep the databases in-sync, the update process for all is performed in a single manual migration (update_filtered_positives) which identifies unpicked wells, re-determines their filtered positive value, and updates the databases.
+In order to keep the databases in sync, the update process for all is performed in a single manual migration (update_filtered_positives) which identifies unpicked wells, re-determines their filtered positive value, and updates the databases.
 
 Usage (inside pipenv shell):
 
