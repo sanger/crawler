@@ -27,7 +27,7 @@ from crawler.helpers import get_config
 logger = logging.getLogger(__name__)
 
 
-def run(sftp: bool, keep_files: bool, settings_module: str = "") -> None:
+def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = "") -> None:
     try:
         start = time.time()
         config, settings_module = get_config(settings_module)
@@ -88,7 +88,7 @@ def run(sftp: bool, keep_files: bool, settings_module: str = "") -> None:
                         if sftp:
                             centre_instance.download_csv_files()
 
-                        centre_instance.process_files()
+                        centre_instance.process_files(add_to_dart)
                     except Exception as e:
                         logger.error("An exception occured")
                         logger.error(f"Error in centre {centre_instance.centre_config['name']}")

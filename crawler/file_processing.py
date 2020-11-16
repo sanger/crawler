@@ -140,9 +140,12 @@ class Centre:
         except Exception:
             logger.exception("Failed clean up")
 
-    def process_files(self) -> None:
+    def process_files(self, add_to_dart: bool) -> None:
         """Iterate through all the files for the centre, parsing any new ones into
         the mongo database and then into the unified warehouse.
+
+        Arguments:
+            add_to_dart {bool} -- whether to add the samples to DART
         """
         # iterate through each file in the centre
 
@@ -163,7 +166,7 @@ class Centre:
                 continue
             elif centre_file.file_state == CentreFileState.FILE_NOT_PROCESSED_YET:
                 # process it
-                centre_file.process_samples()
+                centre_file.process_samples(add_to_dart)
             elif centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_ERROR:
                 logger.info("File already processed as errored, skipping")
                 # next file
@@ -359,8 +362,12 @@ class CentreFile:
         self.file_state = CentreFileState.FILE_NOT_PROCESSED_YET
         return self.file_state
 
-    def process_samples(self) -> None:
-        """Processes the samples extracted from the centre file."""
+    def process_samples(self, add_to_dart: bool) -> None:
+        """Processes the samples extracted from the centre file.
+
+        Arguments:
+            add_to_dart {bool} -- whether to add the samples to DART
+        """
         logger.info("Processing samples")
 
         # Internally traps TYPE 2: missing headers and TYPE 10 malformed files and returns
@@ -384,7 +391,9 @@ class CentreFile:
             )
 
             self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
-            self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
+
+            if add_to_dart:
+                self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
 
         self.backup_file()
         self.create_import_record_for_file()

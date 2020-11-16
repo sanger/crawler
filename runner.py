@@ -30,20 +30,27 @@ if __name__ == "__main__":
         action="store_true",
         help="keeps centre csv files after runner has been executed",
     )
+    parser.add_argument(
+        "--add-to-dart",
+        dest="add_to_dart",
+        action="store_true",
+        help="keeps centre csv files after runner has been executed",
+    )
 
     parser.set_defaults(once=True)
     parser.set_defaults(sftp=False)
     parser.set_defaults(keep_files=False)
+    parser.set_defaults(add_to_dart=False)
 
     args = parser.parse_args()
 
     if args.once:
-        main.run(args.sftp, args.keep_files)
+        main.run(args.sftp, args.keep_files, args.add_to_dart)
     else:
         time_to_run = "01:00"
         print(f"Scheduled to run at {time_to_run}")
         schedule.every().day.at(time_to_run).do(
-            main.run, sftp=args.sftp, keep_files=args.keep_files
+            main.run, sftp=args.sftp, keep_files=args.keep_files, add_to_dart=args.add_to_dart
         )
 
         while True:

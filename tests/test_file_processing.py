@@ -99,12 +99,28 @@ def test_process_files(
     centre_config = config.CENTRES[0]
     centre_config["sftp_root_read"] = "tmp/files"
     centre = Centre(config, centre_config)
-    centre.process_files()
+    centre.process_files(True)
 
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
 
+    pyodbc_conn.assert_called()
+
     # # We record *all* our samples
     assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
+
+
+def test_process_files_dont_add_to_dart(
+    mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn
+):
+    _, mongo_database = mongo_database
+
+    centre_config = config.CENTRES[0]
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+    centre.process_files(False)
+
+    # assert no attempt was made to connect
+    pyodbc_conn.assert_not_called()
 
 
 # ----- tests for class CentreFile -----

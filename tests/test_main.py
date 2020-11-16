@@ -23,7 +23,7 @@ NUMBER_OF_FILES_PROCESSED = 7
 def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
     _, mongo_database = mongo_database
     with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
-        run(False, False, "crawler.config.integration")
+        run(False, False, False, "crawler.config.integration")
 
     # We expect to have three collections following import
     centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
@@ -71,7 +71,7 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     # 1) It also clears up any modified test files, which we'd otherwise need to handle
     # 2) It means we keep the tested process closer to the actual one
     with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
-        run(False, False, "crawler.config.integration")
+        run(False, False, False, "crawler.config.integration")
 
     # check number of success files after first run
     (_, _, files) = next(os.walk("tmp/backups/ALDP/successes"))
@@ -108,7 +108,7 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
 
     # Run with a different config that does not blacklist one of the files
     with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
-        run(False, False, "crawler.config.integration_with_blacklist_change")
+        run(False, False, False, "crawler.config.integration_with_blacklist_change")
 
     # We expect an additional import entry
     assert imports_collection.count_documents({}) == 8
@@ -133,7 +133,7 @@ def test_error_run(mongo_database, testing_files_for_process, pyodbc_conn):
     _, mongo_database = mongo_database
 
     with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
-        run(False, False, "crawler.config.integration")
+        run(False, False, False, "crawler.config.integration")
 
     # We expect to have three collections following import
     centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
@@ -147,7 +147,7 @@ def test_error_run(mongo_database, testing_files_for_process, pyodbc_conn):
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
     _ = shutil.copytree("tests/malformed_files", "tmp/files", dirs_exist_ok=True)
 
-    run(False, False, "crawler.config.integration")
+    run(False, False, False, "crawler.config.integration")
 
     # We still have 4 test centers
     assert centres_collection.count_documents({}) == NUMBER_CENTRES
@@ -171,7 +171,7 @@ def test_error_run_duplicates_in_imports_message(
     _ = shutil.copytree("tests/files_with_duplicate_samples", "tmp/files", dirs_exist_ok=True)
 
     with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
-        run(False, False, "crawler.config.integration")
+        run(False, False, False, "crawler.config.integration")
 
     # Fetch the imports collection, expect it to contain the additional duplicate error file record
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
