@@ -213,8 +213,7 @@ def update_dart_filtered_positive_fields(config: ModuleType, samples: List[Dict[
         raise ValueError("Unable to establish DART SQL Server connection")
 
     dart_updated_successfully = True
-    centres = config.CENTRES  # type: ignore
-    labclass_by_centre_name = biomek_labclass_by_centre_name(centres)
+    labclass_by_centre_name = biomek_labclass_by_centre_name(config.CENTRES)  # type:ignore
     try:
         cursor = sql_server_connection.cursor()
 
