@@ -147,6 +147,6 @@ LOGGING = {
     },
     "loggers": {
         "crawler": {"handlers": ["console", "slack"], "level": "INFO", "propagate": True},
-        "migrations": {"handlers": ["colored_stream"], "level": "INFO", "propagate": True}
+        "migrations": {"handlers": ["colored_stream"], "level": "INFO", "propagate": True},
     },
 }
