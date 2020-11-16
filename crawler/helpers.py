@@ -576,7 +576,7 @@ class AggregateType22(AggregateTypeBase):
     def __init__(self):
         super().__init__()
         self.type_str = "TYPE 22"
-        self.error_level = ErrorLevel.CRITICAL
+        self.error_level = ErrorLevel.ERROR
         self.message = (
             "CRITICAL: Files where the DART database inserts have failed for some plates. "
             f"({self.type_str})"
