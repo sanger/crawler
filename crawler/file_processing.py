@@ -594,7 +594,7 @@ class CentreFile:
             docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted
             from csv files.
         """
-        sql_server_connection = create_dart_sql_server_conn(self.config, False)
+        sql_server_connection = create_dart_sql_server_conn(self.config)
 
         if sql_server_connection is not None:
             try:

@@ -290,7 +290,7 @@ def init_warehouse_db_command():
     logger.debug("Done")
 
 
-def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> Optional[pyodbc.Connection]:
+def create_dart_sql_server_conn(config: ModuleType) -> Optional[pyodbc.Connection]:
     """Create a SQL Server connection to DART with the given config parameters.
 
     Arguments:
@@ -301,12 +301,8 @@ def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> Optional[p
     """
     dart_db_host = config.DART_DB_HOST  # type: ignore
     dart_db_port = config.DART_DB_PORT  # type: ignore
-    if readonly:
-        dart_db_username = config.DART_DB_RO_USER  # type: ignore
-        dart_db_password = config.DART_DB_RO_PASSWORD  # type: ignore
-    else:
-        dart_db_username = config.DART_DB_RW_USER  # type: ignore
-        dart_db_password = config.DART_DB_RW_PASSWORD  # type: ignore
+    dart_db_username = config.DART_DB_RW_USER  # type: ignore
+    dart_db_password = config.DART_DB_RW_PASSWORD  # type: ignore
     dart_db_db = config.DART_DB_DBNAME  # type: ignore
     dart_db_driver = config.DART_DB_DRIVER  # type: ignore
 

@@ -138,25 +138,14 @@ def test_run_mysql_executemany_query_execute_error(config):
         assert conn.close.called is True
 
 
-def test_create_dart_sql_server_conn_readonly(config):
-    with patch("pyodbc.connect") as mock_connect:
-        conn_string = (
-            f"DRIVER={config.DART_DB_DRIVER};SERVER={config.DART_DB_HOST};"
-            f"PORT={config.DART_DB_PORT};DATABASE={config.DART_DB_DBNAME};"
-            f"UID={config.DART_DB_RO_USER};PWD={config.DART_DB_RO_PASSWORD}"
-        )
-        create_dart_sql_server_conn(config)
-        mock_connect.assert_called_with(conn_string)
-
-
-def test_create_dart_sql_server_conn_readwrite(config):
+def test_create_dart_sql_server_conn(config):
     with patch("pyodbc.connect") as mock_connect:
         conn_string = (
             f"DRIVER={config.DART_DB_DRIVER};SERVER={config.DART_DB_HOST};"
             f"PORT={config.DART_DB_PORT};DATABASE={config.DART_DB_DBNAME};"
             f"UID={config.DART_DB_RW_USER};PWD={config.DART_DB_RW_PASSWORD}"
         )
-        create_dart_sql_server_conn(config, readonly=False)
+        create_dart_sql_server_conn(config)
         mock_connect.assert_called_with(conn_string)
 
 
