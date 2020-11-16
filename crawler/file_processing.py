@@ -619,9 +619,9 @@ class CentreFile:
                             f"DART database inserts failed for plate {plate_barcode} in file "
                             f"{self.file_name}",
                         )
-                        logger.critical(
+                        logger.error(
                             f"Critical error inserting plate {plate_barcode} in file "
-                            f"{self.file_name}: {e}"
+                            f"{self.file_name}"
                         )
                         logger.exception(e)
                         # rollback statements executed since previous commit/rollback
