@@ -48,7 +48,7 @@ def pending_plate_barcodes_from_dart(config: ModuleType):
     Returns:
         List[str] -- barcodes of pending plates
     """
-    sql_server_connection = create_dart_sql_server_conn(config, True)
+    sql_server_connection = create_dart_sql_server_conn(config, False)
     if sql_server_connection is None:
         # to be caught by calling method
         raise ValueError("Unable to establish DART SQL Server connection")
@@ -208,7 +208,7 @@ def update_dart_filtered_positive_fields(config: ModuleType, samples: List[Dict[
     Returns:
         bool -- whether the updates completed successfully
     """
-    sql_server_connection = create_dart_sql_server_conn(config, True)
+    sql_server_connection = create_dart_sql_server_conn(config, False)
     if sql_server_connection is None:
         raise ValueError("Unable to establish DART SQL Server connection")
 
