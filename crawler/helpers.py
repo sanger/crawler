@@ -262,7 +262,8 @@ def parse_decimal128(value: Decimal128) -> Any:
 
 
 def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
-    """Determines a well index from a coordinate; otherwise returns None.
+    """Determines a well index from a coordinate; otherwise returns None. Well indices are
+    determined by evaluating the row position, then column position. E.g. A04 -> 4, B04 -> 16.
 
     Arguments:
         coordinate {Optional[str]} -- The coordinate for which to determine the well index
