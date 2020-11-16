@@ -20,11 +20,13 @@ logging.config.dictConfig(config.LOGGING)  # type: ignore
 # Examples of how to run from command line:
 # python run_migration.py sample_timestamps
 # python run_migration.py update_mlwh_with_legacy_samples 200115_1200 200216_0900
+# python run_migration.py update_filtered_positives
 ##
 
 print("Migration names:")
 print("* sample_timestamps")
 print("* update_mlwh_with_legacy_samples")
+print("* update_filtered_positives")
 
 
 def migration_sample_timestamps():
