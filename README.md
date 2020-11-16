@@ -81,7 +81,7 @@ The process should not duplicate rows that are already present in MLWH, so you c
 
 This is a history of past and current rules by which positive samples are further filtered and identified as 'filtered positive'. Note that any rule change requires the `update_filtered_positives` migration be run, as outlined in the below relevant section.
 
-The implementation of the current version can be found in the [FilteredPositiveIdentifier](./crawler/filtered_positive_identifier.py), with the implementation of previous versions (if any) in the git history.
+The implementation of the current version can be found in [FilteredPositiveIdentifier](./crawler/filtered_positive_identifier.py), with the implementation of previous versions (if any) in the git history.
 
 ### Version 1 `v1` - **Current Version**
 
