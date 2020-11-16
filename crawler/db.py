@@ -400,7 +400,7 @@ def add_dart_plate_if_doesnt_exist(
             state = DART_STATE_PENDING
         else:
             raise DartStateError(
-                f"Unable to set the state of a DART plate {plate_barcode} to pending"
+                f"Unable to set the state of a DART plate {plate_barcode} to {DART_STATE_PENDING}"
             )
     elif state == DART_STATE_NO_PROP:
         raise DartStateError(f"DART plate {plate_barcode} should have a state")
