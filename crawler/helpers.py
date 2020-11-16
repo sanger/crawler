@@ -579,7 +579,7 @@ class AggregateType22(AggregateTypeBase):
         self.type_str = "TYPE 22"
         self.error_level = ErrorLevel.ERROR
         self.message = (
-            "CRITICAL: Files where the DART database inserts have failed for some plates. "
+            "ERROR: Files where the DART database inserts have failed for some plates. "
             f"({self.type_str})"
         )
         self.short_display_description = "Failed DART plate inserts"
