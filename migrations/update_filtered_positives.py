@@ -32,21 +32,19 @@ def run(settings_module: str = "") -> None:
         # Get barcodes of pending plates in DART
         print("Selecting pending plates from DART...")
         pending_plate_barcodes = pending_plate_barcodes_from_dart(config)
-        num_pending_plates = len(pending_plate_barcodes)
-        print(f"{len(pending_plate_barcodes)} pending plates found in DART")
+        if num_pending_plates := len(pending_plate_barcodes):
+            print(f"{len(pending_plate_barcodes)} pending plates found in DART")
 
-        if num_pending_plates > 0:
             # Get positive result samples from Mongo in these pending plates
             print("Selecting postive samples in pending plates from Mongo...")
             positive_pending_samples = positive_result_samples_from_mongo(
                 config, pending_plate_barcodes
             )
-            num_positive_pending_samples = len(positive_pending_samples)
-            print(
-                f"{num_positive_pending_samples} positive samples in pending plates found in Mongo"
-            )
-
-            if num_positive_pending_samples > 0:
+            if num_positive_pending_samples := len(positive_pending_samples):
+                print(
+                    f"{num_positive_pending_samples} positive samples in pending plates found in "
+                    "Mongo"
+                )
                 filtered_positive_identifier = FilteredPositiveIdentifier()
                 version = filtered_positive_identifier.current_version()
                 update_timestamp = datetime.now()
