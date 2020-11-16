@@ -39,8 +39,8 @@ from crawler.helpers import (
 )
 
 
-def pending_plate_barcodes_from_dart(config: ModuleType):
-    """Fetch the barcodes of all plates from DART that in the 'pending' state
+def pending_plate_barcodes_from_dart(config: ModuleType) -> List[str]:
+    """Fetch the barcodes of all plates from DART that are in the 'pending' state
 
     Arguments:
         config {ModuleType} -- application config specifying database details
