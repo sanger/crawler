@@ -1,7 +1,7 @@
 from datetime import datetime
+import logging
 from types import ModuleType
 from typing import List, Dict, Any
-from migrations.helpers.shared_helper import print_exception
 from more_itertools import groupby_transform
 from crawler.db import (
     create_dart_sql_server_conn,
@@ -38,6 +38,8 @@ from crawler.helpers import (
     map_mongo_doc_to_dart_well_props,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def pending_plate_barcodes_from_dart(config: ModuleType) -> List[str]:
     """Fetch the barcodes of all plates from DART that are in the 'pending' state
@@ -59,8 +61,9 @@ def pending_plate_barcodes_from_dart(config: ModuleType) -> List[str]:
     try:
         rows = cursor.execute(SQL_DART_GET_PLATE_BARCODES, DART_STATE_PENDING).fetchall()
         plate_barcodes = [row[0] for row in rows]
-    except Exception:
-        print_exception()
+    except Exception as e:
+        logger.error("Failed fetching pending plate barcodes from DART")
+        logger.exception(e)
     finally:
         sql_server_connection.close()
 
@@ -240,13 +243,14 @@ def update_dart_filtered_positive_fields(config: ModuleType, samples: List[Dict[
                             )
                 cursor.commit()
                 dart_updated_successfully &= True
-            except Exception:
-                print(f"** Failed updating DART for samples in plate {plate_barcode} **")
-                print_exception()
+            except Exception as e:
+                logger.error(f"Failed updating DART for samples in plate {plate_barcode}")
+                logger.exception(e)
                 cursor.rollback()
                 dart_updated_successfully = False
-    except Exception:
-        print_exception()
+    except Exception as e:
+        logger.error("Failed updating DART")
+        logger.exception(e)
         dart_updated_successfully = False
     finally:
         sql_server_connection.close()

@@ -145,5 +145,8 @@ LOGGING = {
             "channel_id": "",
         },
     },
-    "loggers": {"crawler": {"handlers": ["console", "slack"], "level": "INFO", "propagate": True}},
+    "loggers": {
+        "crawler": {"handlers": ["console", "slack"], "level": "INFO", "propagate": True},
+        "migrations": {"handlers": ["colored_stream"], "level": "INFO", "propagate": True}
+    },
 }
