@@ -34,7 +34,7 @@ if __name__ == "__main__":
         "--add-to-dart",
         dest="add_to_dart",
         action="store_true",
-        help="keeps centre csv files after runner has been executed",
+        help="on processing samples, also add them to DART",
     )
 
     parser.set_defaults(once=True)
