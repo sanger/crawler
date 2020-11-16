@@ -5,8 +5,9 @@ import sys
 from datetime import datetime, timezone
 from enum import Enum
 from importlib import import_module
+import string
 from types import ModuleType
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, Optional
 
 import pysftp  # type: ignore
 from bson.decimal128 import Decimal128  # type: ignore
@@ -66,6 +67,12 @@ from crawler.constants import (
     MLWH_SOURCE,
     MLWH_UPDATED_AT,
     MYSQL_DATETIME_FORMAT,
+    DART_STATE,
+    DART_ROOT_SAMPLE_ID,
+    DART_RNA_ID,
+    DART_LAB_ID,
+    DART_STATE_PICKABLE,
+    DART_EMPTY_VALUE,
 )
 
 logger = logging.getLogger(__name__)
@@ -252,6 +259,45 @@ def parse_decimal128(value: Decimal128) -> Any:
         return dec
     except Exception:
         return None
+
+
+def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
+    """Determines a well index from a coordinate; otherwise returns None. Well indices are
+    determined by evaluating the row position, then column position. E.g. A04 -> 4, B04 -> 16.
+
+    Arguments:
+        coordinate {Optional[str]} -- The coordinate for which to determine the well index
+
+    Returns:
+        int -- the well index
+    """
+    if not coordinate:
+        return None
+
+    regex = r"^([A-Z])(\d{1,2})$"
+    m = re.match(regex, coordinate)
+
+    # assumes a 96-well plate with A1 - H12 wells
+    if m is not None:
+        col_idx = int(m.group(2))
+        if 1 <= col_idx <= 12:
+            multiplier = string.ascii_lowercase.index(m.group(1).lower())
+            well_index = (multiplier * 12) + col_idx
+            if 1 <= well_index <= 96:
+                return well_index
+
+    return None
+
+
+def map_mongo_doc_to_dart_well_props(doc: Dict[str, Any]) -> Dict[str, str]:
+    return {
+        DART_STATE: DART_STATE_PICKABLE
+        if doc.get(FIELD_FILTERED_POSITIVE, False)
+        else DART_EMPTY_VALUE,
+        DART_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
+        DART_RNA_ID: doc[FIELD_RNA_ID],
+        DART_LAB_ID: doc.get(FIELD_LAB_ID, DART_EMPTY_VALUE),
+    }
 
 
 class ErrorLevel(Enum):
@@ -531,9 +577,9 @@ class AggregateType22(AggregateTypeBase):
     def __init__(self):
         super().__init__()
         self.type_str = "TYPE 22"
-        self.error_level = ErrorLevel.CRITICAL
+        self.error_level = ErrorLevel.ERROR
         self.message = (
-            "CRITICAL: Files where the DART database inserts have failed for some plates. "
+            "ERROR: Files where the DART database inserts have failed for some plates. "
             f"({self.type_str})"
         )
         self.short_display_description = "Failed DART plate inserts"

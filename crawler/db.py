@@ -12,15 +12,22 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.results import InsertOneResult
 
+from crawler.exceptions import DartStateError
 from crawler.constants import (
-    DART_GET_PLATE_PROPERTY_SQL,
-    DART_SET_PLATE_PROPERTY_SQL,
+    DART_STATE,
     DART_SET_PROP_STATUS_SUCCESS,
+    DART_STATE_NO_PLATE,
+    DART_STATE_NO_PROP,
     DART_STATE_PENDING,
-    DART_STATE_PROPERTY_NAME,
 )
 from crawler.helpers import get_config
-from crawler.sql_queries import SQL_TEST_MLWH_CREATE
+from crawler.sql_queries import (
+    SQL_DART_GET_PLATE_PROPERTY,
+    SQL_DART_SET_PLATE_PROPERTY,
+    SQL_DART_SET_WELL_PROPERTY,
+    SQL_DART_ADD_PLATE,
+    SQL_TEST_MLWH_CREATE,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -283,7 +290,7 @@ def init_warehouse_db_command():
     logger.debug("Done")
 
 
-def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> Optional[pyodbc.Connection]:
+def create_dart_sql_server_conn(config: ModuleType) -> Optional[pyodbc.Connection]:
     """Create a SQL Server connection to DART with the given config parameters.
 
     Arguments:
@@ -294,12 +301,8 @@ def create_dart_sql_server_conn(config: ModuleType, readonly=True) -> Optional[p
     """
     dart_db_host = config.DART_DB_HOST  # type: ignore
     dart_db_port = config.DART_DB_PORT  # type: ignore
-    if readonly:
-        dart_db_username = config.DART_DB_RO_USER  # type: ignore
-        dart_db_password = config.DART_DB_RO_PASSWORD  # type: ignore
-    else:
-        dart_db_username = config.DART_DB_RW_USER  # type: ignore
-        dart_db_password = config.DART_DB_RW_PASSWORD  # type: ignore
+    dart_db_username = config.DART_DB_RW_USER  # type: ignore
+    dart_db_password = config.DART_DB_RW_PASSWORD  # type: ignore
     dart_db_db = config.DART_DB_DBNAME  # type: ignore
     dart_db_driver = config.DART_DB_DRIVER  # type: ignore
 
@@ -333,14 +336,14 @@ def get_dart_plate_state(cursor: pyodbc.Cursor, plate_barcode: str) -> str:
     """Gets the state of a DART plate.
 
     Arguments:
-        cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
+        cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
         plate_barcode {str} -- The barcode of the plate whose state to fetch.
 
     Returns:
         str -- The state of the plate in DART.
     """
-    params = (plate_barcode, DART_STATE_PROPERTY_NAME)
-    cursor.execute(DART_GET_PLATE_PROPERTY_SQL, params)
+    params = (plate_barcode, DART_STATE)
+    cursor.execute(SQL_DART_GET_PLATE_PROPERTY, params)
     return cursor.fetchval()
 
 
@@ -348,13 +351,58 @@ def set_dart_plate_state_pending(cursor: pyodbc.Cursor, plate_barcode: str) -> s
     """Sets the state of a DART plate to pending.
 
     Arguments:
-        cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
+        cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
         plate_barcode {str} -- The barcode of the plate whose state to set.
 
     Returns:
         bool -- Return True if DART was updated successfully, else False.
     """
-    params = (plate_barcode, DART_STATE_PROPERTY_NAME, DART_STATE_PENDING)
-    cursor.execute(DART_SET_PLATE_PROPERTY_SQL, params)
+    params = (plate_barcode, DART_STATE, DART_STATE_PENDING)
+    cursor.execute(SQL_DART_SET_PLATE_PROPERTY, params)
     response = cursor.fetchval()
     return response == DART_SET_PROP_STATUS_SUCCESS
+
+
+def set_dart_well_properties(
+    cursor: pyodbc.Cursor, plate_barcode: str, well_props: Dict[str, str], well_index: int
+) -> None:
+    """Calls the DART stored procedure to add or update properties on a well
+
+    Arguments:
+        cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
+        plate_barcode {str} -- The barcode of the plate whose well properties to update.
+        well_props {Dict[str, str]} -- The names and values of the well properties to update.
+        well_index {int} -- The index of the well to update.
+    """
+    for prop_name, prop_value in well_props.items():
+        cursor.execute(
+            SQL_DART_SET_WELL_PROPERTY, (plate_barcode, prop_name, prop_value, well_index)
+        )
+
+
+def add_dart_plate_if_doesnt_exist(
+    cursor: pyodbc.Cursor, plate_barcode: str, biomek_labclass: str
+) -> str:
+    """Adds a plate to DART if it does not already exist. Returns the state of the plate.
+
+    Arguments:
+        cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
+        plate_barcode {str} -- The barcode of the plate to add.
+        biomek_labclass -- The biomek labware class of the plate.
+
+    Returns:
+        str -- The state of the plate in DART.
+    """
+    state = get_dart_plate_state(cursor, plate_barcode)
+    if state == DART_STATE_NO_PLATE:
+        cursor.execute(SQL_DART_ADD_PLATE, (plate_barcode, biomek_labclass, 96))
+        if set_dart_plate_state_pending(cursor, plate_barcode):
+            state = DART_STATE_PENDING
+        else:
+            raise DartStateError(
+                f"Unable to set the state of a DART plate {plate_barcode} to {DART_STATE_PENDING}"
+            )
+    elif state == DART_STATE_NO_PROP:
+        raise DartStateError(f"DART plate {plate_barcode} should have a state")
+
+    return state

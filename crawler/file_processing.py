@@ -4,12 +4,11 @@ import os
 import pathlib
 import re
 import shutil
-import string
 from csv import DictReader
 from datetime import datetime
 from enum import Enum
 from hashlib import md5
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 import pyodbc  # type: ignore
 from bson.decimal128 import Decimal128  # type: ignore
@@ -25,8 +24,6 @@ from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
-    DART_STATE_NO_PLATE,
-    DART_STATE_NO_PROP,
     DART_STATE_PENDING,
     FIELD_CH1_CQ,
     FIELD_CH1_RESULT,
@@ -64,23 +61,24 @@ from crawler.constants import (
     POSITIVE_RESULT_VALUE,
 )
 from crawler.db import (
+    add_dart_plate_if_doesnt_exist,
     create_dart_sql_server_conn,
     create_import_record,
     create_mongo_client,
     create_mysql_connection,
-    get_dart_plate_state,
     get_mongo_collection,
     get_mongo_db,
     run_mysql_executemany_query,
-    set_dart_plate_state_pending,
+    set_dart_well_properties,
 )
-from crawler.exceptions import DartStateError
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 from crawler.helpers import (
-    LoggingCollection,
     current_time,
     get_sftp_connection,
+    LoggingCollection,
     map_lh_doc_to_sql_columns,
+    get_dart_well_index,
+    map_mongo_doc_to_dart_well_props,
 )
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
@@ -142,9 +140,12 @@ class Centre:
         except Exception:
             logger.exception("Failed clean up")
 
-    def process_files(self) -> None:
+    def process_files(self, add_to_dart: bool) -> None:
         """Iterate through all the files for the centre, parsing any new ones into
         the mongo database and then into the unified warehouse.
+
+        Arguments:
+            add_to_dart {bool} -- whether to add the samples to DART
         """
         # iterate through each file in the centre
 
@@ -165,7 +166,7 @@ class Centre:
                 continue
             elif centre_file.file_state == CentreFileState.FILE_NOT_PROCESSED_YET:
                 # process it
-                centre_file.process_samples()
+                centre_file.process_samples(add_to_dart)
             elif centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_ERROR:
                 logger.info("File already processed as errored, skipping")
                 # next file
@@ -361,8 +362,12 @@ class CentreFile:
         self.file_state = CentreFileState.FILE_NOT_PROCESSED_YET
         return self.file_state
 
-    def process_samples(self) -> None:
-        """Processes the samples extracted from the centre file."""
+    def process_samples(self, add_to_dart: bool) -> None:
+        """Processes the samples extracted from the centre file.
+
+        Arguments:
+            add_to_dart {bool} -- whether to add the samples to DART
+        """
         logger.info("Processing samples")
 
         # Internally traps TYPE 2: missing headers and TYPE 10 malformed files and returns
@@ -386,7 +391,9 @@ class CentreFile:
             )
 
             self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
-            self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
+
+            if add_to_dart:
+                self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
 
         self.backup_file()
         self.create_import_record_for_file()
@@ -587,7 +594,7 @@ class CentreFile:
             docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted
             from csv files.
         """
-        sql_server_connection = create_dart_sql_server_conn(self.config, False)
+        sql_server_connection = create_dart_sql_server_conn(self.config)
 
         if sql_server_connection is not None:
             try:
@@ -597,10 +604,12 @@ class CentreFile:
                     docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]
                 ):
                     try:
-                        plate_state = self.create_dart_plate_if_doesnt_exist(cursor, plate_barcode)
+                        plate_state = add_dart_plate_if_doesnt_exist(
+                            cursor, plate_barcode, self.centre_config["biomek_labware_class"]
+                        )
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
-                                self.add_dart_well_properties_if_pickable(
+                                self.add_dart_well_properties_if_positive(
                                     cursor, sample, plate_barcode
                                 )
                         cursor.commit()
@@ -609,10 +618,6 @@ class CentreFile:
                             "TYPE 22",
                             f"DART database inserts failed for plate {plate_barcode} in file "
                             f"{self.file_name}",
-                        )
-                        logger.critical(
-                            f"Critical error inserting plate {plate_barcode} in file "
-                            f"{self.file_name}: {e}"
                         )
                         logger.exception(e)
                         # rollback statements executed since previous commit/rollback
@@ -636,70 +641,29 @@ class CentreFile:
                 f"DART database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(
-                f"Error writing to DART for file {self.file_name}, could not create Database "
-                "connection"
+                f"Error writing to DART for file {self.file_name}, "
+                "could not create Database connection"
             )
 
-    def create_dart_plate_if_doesnt_exist(self, cursor: pyodbc.Cursor, plate_barcode: str) -> str:
-        """Adds a plate to DART if it does not already exist. Returns the state of the plate.
-
-        Arguments:
-            cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
-            plate_barcode {str} -- The barcode of the plate to add.
-
-        Returns:
-            str -- The state of the plate in DART.
-        """
-        state = get_dart_plate_state(cursor, plate_barcode)
-        if state == DART_STATE_NO_PLATE:
-            cursor.execute(
-                "{CALL dbo.plDART_PlateCreate (?,?,?)}",
-                (plate_barcode, self.centre_config["biomek_labware_class"], 96),
-            )
-            if set_dart_plate_state_pending(cursor, plate_barcode):
-                state = DART_STATE_PENDING
-            else:
-                raise DartStateError(
-                    f"Unable to set the state of a DART plate {plate_barcode} to pending"
-                )
-        elif state == DART_STATE_NO_PROP:
-            raise DartStateError(f"DART plate {plate_barcode} should have a state")
-
-        return state
-
-    def add_dart_well_properties_if_pickable(
+    def add_dart_well_properties_if_positive(
         self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str
     ) -> None:
-        """Adds well properties to DART for the specified sample.
+        """Adds well properties to DART for the specified sample if that sample is positive.
 
         Arguments:
             cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
             sample {Dict[str, str]} -- The sample for which to add well properties.
             plate_barcode {str} -- The barcode of the plate to which this sample belongs.
         """
-        if sample.get(FIELD_FILTERED_POSITIVE, False):
-            well_index = self.calculate_dart_well_index(sample)
+        if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
+            well_index = get_dart_well_index(sample.get(FIELD_COORDINATE, None))
             if well_index is not None:
-                cursor.execute(
-                    "{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}",
-                    (plate_barcode, "state", "pickable", well_index),
-                )
-                cursor.execute(
-                    "{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}",
-                    (plate_barcode, "root_sample_id", sample[FIELD_ROOT_SAMPLE_ID], well_index),
-                )
-                cursor.execute(
-                    "{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}",
-                    (plate_barcode, "rna_id", sample[FIELD_RNA_ID], well_index),
-                )
-                cursor.execute(
-                    "{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}",
-                    (plate_barcode, "lab_id", sample[FIELD_LAB_ID], well_index),
-                )
+                dart_well_props = map_mongo_doc_to_dart_well_props(sample)
+                set_dart_well_properties(cursor, plate_barcode, dart_well_props, well_index)
             else:
                 raise ValueError(
-                    "Unable to determine DART well index for "
-                    f"sample {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
+                    "Unable to determine DART well index for sample "
+                    f"{sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
                 )
 
     def parse_csv(self) -> List[Dict[str, Any]]:
@@ -1315,26 +1279,3 @@ class CentreFile:
         file_timestamp = m.group(1)
 
         return datetime.strptime(file_timestamp, "%y%m%d_%H%M")
-
-    def calculate_dart_well_index(self, sample: Dict[str, str]) -> Optional[int]:
-        """Determines a well index from a sample/document to insert. Otherwise returns None.
-
-        Returns:
-            int -- the well index
-        """
-        if not sample or FIELD_COORDINATE not in sample.keys():
-            return None
-
-        regex = r"^([A-Z])(\d{1,2})$"
-        m = re.match(regex, sample[FIELD_COORDINATE])
-
-        # assumes a 96-well plate with A1 - H12 wells
-        if m is not None:
-            col_idx = int(m.group(2))
-            if 1 <= col_idx <= 12:
-                multiplier = string.ascii_lowercase.index(m.group(1).lower())
-                well_index = (multiplier * 12) + col_idx
-                if 1 <= well_index <= 96:
-                    return well_index
-
-        return None

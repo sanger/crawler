@@ -98,8 +98,6 @@ MLWH_DB_RW_PASSWORD = "root"
 DART_DB_DBNAME = "dart_test"
 DART_DB_HOST = "127.0.0.1"
 DART_DB_PORT = 1433
-DART_DB_RO_USER = "root"
-DART_DB_RO_PASSWORD = ""
 DART_DB_RW_USER = "root"
 DART_DB_RW_PASSWORD = ""
 DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
@@ -147,5 +145,8 @@ LOGGING = {
             "channel_id": "",
         },
     },
-    "loggers": {"crawler": {"handlers": ["console", "slack"], "level": "INFO", "propagate": True}},
+    "loggers": {
+        "crawler": {"handlers": ["console", "slack"], "level": "INFO", "propagate": True},
+        "migrations": {"handlers": ["colored_stream"], "level": "INFO", "propagate": True},
+    },
 }

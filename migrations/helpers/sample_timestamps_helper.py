@@ -1,9 +1,8 @@
 import datetime
 import re
-import sys
-import traceback
 
 import pymongo
+from migrations.helpers.shared_helper import print_exception
 
 CREATED_DATE_FIELD_NAME = "created_at"  # TODO: check with E & A
 BATCH_SIZE = 250000
@@ -125,12 +124,7 @@ def add_timestamps_to_samples(db):
                 )
                 print("Number samples modified: ", update_result_3.modified_count)
     except Exception:
-        print(f"An exception occurred, at {datetime.datetime.now()}")
-        e = sys.exc_info()
-        print(e[0])  # exception type
-        print(e[1])  # exception message
-        if e[2]:  # traceback
-            traceback.print_tb(e[2], limit=10)
+        print_exception()
 
 
 def map_collection_name_to_timestamp(db):

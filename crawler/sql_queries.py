@@ -109,3 +109,32 @@ UNIQUE KEY `index_lighthouse_sample_on_mongodb_id` (`mongodb_id`),
 KEY `index_lighthouse_sample_on_date_tested` (`date_tested`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 """
+
+SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE = """\
+UPDATE lighthouse_sample
+SET filtered_positive = %(filtered_positive)s, filtered_positive_version = %(filtered_positive_version)s, filtered_positive_timestamp = %(filtered_positive_timestamp)s
+WHERE mongodb_id = %(mongodb_id)s
+"""
+
+# DART SQL queries
+SQL_DART_GET_PLATE_PROPERTY = """\
+SET NOCOUNT ON
+DECLARE @output_value nvarchar(256)
+EXECUTE [dbo].[plDART_PlatePropGet] @plate_barcode = ?, @prop_name = ?, @value = @output_value OUTPUT
+SELECT @output_value
+"""
+
+SQL_DART_SET_PLATE_PROPERTY = """\
+SET NOCOUNT ON
+DECLARE @return_code int
+EXECUTE @return_code = [dbo].[plDART_PlatePropSet] @plate_barcode = ?, @prop_name = ?, @prop_value = ?
+SELECT @return_code
+"""
+
+SQL_DART_GET_PLATE_BARCODES = """\
+SELECT DISTINCT [Labware LIMS BARCODE] FROM dbo.LIMS_test_plate_status WHERE [Labware state] = ?
+"""
+
+SQL_DART_SET_WELL_PROPERTY = "{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}"
+
+SQL_DART_ADD_PLATE = "{CALL dbo.plDART_PlateCreate (?,?,?)}"

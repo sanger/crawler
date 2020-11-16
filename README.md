@@ -77,6 +77,32 @@ Where the time format is YYMMDD_HHmm. Both start and end timestamps must be pres
 
 The process should not duplicate rows that are already present in MLWH, so you can be generous with your timestamp range.
 
+## Filtered Positive Rules
+
+This is a history of past and current rules by which positive samples are further filtered and identified as 'filtered positive'. Note that any rule change requires the `update_filtered_positives` migration be run, as outlined in the below relevant section.
+
+The implementation of the current version can be found in [FilteredPositiveIdentifier](./crawler/filtered_positive_identifier.py), with the implementation of previous versions (if any) in the git history.
+
+### Version 1 `v1` - **Current Version**
+
+A sample is filtered positive if:
+- it has a positive RESULT
+- it is not a control (ROOT_SAMPLE_ID does not start with 'CBIQA_')
+- all of CH1_CQ, CH2_CQ and CH3_CQ are `None`, or one of these is less than or equal to 30
+
+More information on this version can be found on [this Confluence page](https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/UAT+6th+October+2020).
+
+### Propagating Filtered Positive version changes to MongoDB, MLWH and DART
+
+On changing the positive filtering version/definition, all unpicked samples stored in MongoDB, MLWH and DART need updating to determine whether they are still filtered positive under the new rules, and can therefore be picked in DART.
+In order to keep the databases in sync, the update process for all is performed in a single manual migration (update_filtered_positives) which identifies unpicked wells, re-determines their filtered positive value, and updates the databases.
+
+Usage (inside pipenv shell):
+
+    $ python run_migration.py update_filtered_positives
+
+The process does not duplicate any data, instead updating existing entries.
+
 ## Testing
 
 ### Testing requirements

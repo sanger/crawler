@@ -34,11 +34,19 @@ from crawler.constants import (
     MLWH_ROOT_SAMPLE_ID,
     MLWH_SOURCE,
     MLWH_UPDATED_AT,
+    DART_STATE,
+    DART_ROOT_SAMPLE_ID,
+    DART_RNA_ID,
+    DART_LAB_ID,
+    DART_STATE_PICKABLE,
+    DART_EMPTY_VALUE,
 )
 from crawler.helpers import (
     LoggingCollection,
     get_config,
+    get_dart_well_index,
     map_lh_doc_to_sql_columns,
+    map_mongo_doc_to_dart_well_props,
     map_mongo_doc_to_sql_columns,
     parse_date_tested,
     parse_decimal128,
@@ -235,3 +243,80 @@ def test_map_mongo_doc_to_sql_columns(config):
     assert result[MLWH_LAB_ID] == "TC"
     assert result[MLWH_CREATED_AT] == datetime(2020, 4, 27, 5, 20, 0, tzinfo=timezone.utc)
     assert result[MLWH_UPDATED_AT] == datetime(2020, 5, 13, 12, 50, 0, tzinfo=timezone.utc)
+
+
+def test_get_dart_well_index(config):
+    coordinate = None
+    assert (
+        get_dart_well_index(coordinate) is None
+    ), "Expected to be unable to determine a well index for no sample"
+
+    coordinate = "01A"
+    assert (
+        get_dart_well_index(coordinate) is None
+    ), "Expected to be unable to determine a well index for sample with invalid coordinate"
+
+    coordinate = "A00"
+    assert (
+        get_dart_well_index(coordinate) is None
+    ), "Expected to be unable to determine a well index for sample with coordinate column "
+    "below accepted range"
+
+    coordinate = "B15"
+    assert (
+        get_dart_well_index(coordinate) is None
+    ), "Expected to be unable to determine a well index for sample with coordinate column "
+    "above accepted range"
+
+    coordinate = "Q01"
+    assert (
+        get_dart_well_index(coordinate) is None
+    ), "Expected to be unable to determine a well index for sample with coordinate row out of range"
+
+    coordinate = "B7"
+    assert get_dart_well_index(coordinate) == 19, "Expected well index of 19"
+
+    coordinate = "F03"
+    assert get_dart_well_index(coordinate) == 63, "Expected well index of 63"
+
+    coordinate = "H11"
+    assert get_dart_well_index(coordinate) == 95, "Expected well index of 95"
+
+
+def test_map_mongo_doc_to_dart_well_props(config):
+    # all fields present, filtered positive
+    doc_to_transform = {
+        FIELD_FILTERED_POSITIVE: True,
+        FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+        FIELD_RNA_ID: "TC-rna-00000029_H01",
+        FIELD_LAB_ID: "TC",
+    }
+
+    result = map_mongo_doc_to_dart_well_props(doc_to_transform)
+
+    assert result[DART_STATE] == DART_STATE_PICKABLE
+    assert result[DART_ROOT_SAMPLE_ID] == "ABC00000004"
+    assert result[DART_RNA_ID] == "TC-rna-00000029_H01"
+    assert result[DART_LAB_ID] == "TC"
+
+    # missing lab id, not a filtered positive
+    doc_to_transform = {
+        FIELD_FILTERED_POSITIVE: False,
+        FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+        FIELD_RNA_ID: "TC-rna-00000029_H01",
+    }
+
+    result = map_mongo_doc_to_dart_well_props(doc_to_transform)
+
+    assert result[DART_STATE] == DART_EMPTY_VALUE
+    assert result[DART_LAB_ID] == DART_EMPTY_VALUE
+
+    # missing filtered positive
+    doc_to_transform = {
+        FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+        FIELD_RNA_ID: "TC-rna-00000029_H01",
+    }
+
+    result = map_mongo_doc_to_dart_well_props(doc_to_transform)
+
+    assert result[DART_STATE] == DART_EMPTY_VALUE

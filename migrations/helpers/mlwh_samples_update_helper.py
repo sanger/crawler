@@ -1,5 +1,3 @@
-import sys
-import traceback
 from datetime import datetime
 
 from crawler.constants import COLLECTION_SAMPLES, FIELD_CREATED_AT, MONGO_DATETIME_FORMAT
@@ -12,6 +10,7 @@ from crawler.db import (
 )
 from crawler.helpers import map_mongo_doc_to_sql_columns
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
+from migrations.helpers.shared_helper import print_exception
 
 
 def valid_datetime_string(s_datetime: str) -> bool:
@@ -23,15 +22,6 @@ def valid_datetime_string(s_datetime: str) -> bool:
     except Exception:
         print_exception()
         return False
-
-
-def print_exception() -> None:
-    print(f"An exception occurred, at {datetime.now()}")
-    e = sys.exc_info()
-    print(e[0])  # exception type
-    print(e[1])  # exception message
-    if e[2]:  # traceback
-        traceback.print_tb(e[2], limit=10)
 
 
 def update_mlwh_with_legacy_samples(
