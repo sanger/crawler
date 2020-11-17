@@ -18,7 +18,7 @@ CENTRES = [
         "sftp_file_regex": r"^AP_sanger_report_(\d{6}_\d{4})\.csv$",
         "sftp_root_read": "tests/files",
         "file_names_to_ignore": [],
-        "biomek_labware_class": "KingFisher 96 2ml",
+        "biomek_labware_class": "KingFisher_96_2ml",
     },
     {
         "barcode_field": FIELD_RNA_ID,  # noqa: F405
@@ -30,7 +30,7 @@ CENTRES = [
         "sftp_file_regex": r"^MK_sanger_report_(\d{6}_\d{4})\.csv$",
         "sftp_root_read": "tests/files",
         "file_names_to_ignore": [],
-        "biomek_labware_class": "KingFisher 96 2ml",
+        "biomek_labware_class": "KingFisher_96_2ml",
     },
     {
         "barcode_field": FIELD_RNA_ID,  # noqa: F405
@@ -42,7 +42,7 @@ CENTRES = [
         "sftp_file_regex": r"^TEST_sanger_report_(\d{6}_\d{4})\.csv$",
         "sftp_root_read": "tests/files",
         "file_names_to_ignore": [],
-        "biomek_labware_class": "KingFisher 96 2ml",
+        "biomek_labware_class": "KingFisher_96_2ml",
     },
     {
         "barcode_field": FIELD_RNA_ID,  # noqa: F405
@@ -54,6 +54,6 @@ CENTRES = [
         "sftp_file_regex": r"^CB_sanger_report_(\d{6}_\d{4})\.csv$",
         "sftp_root_read": "project-heron_cambridge-az",
         "file_names_to_ignore": [],
-        "biomek_labware_class": "Bio-Rad 96PCR",
+        "biomek_labware_class": "Bio-Rad_96PCR",
     },
 ]
