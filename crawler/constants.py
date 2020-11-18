@@ -39,6 +39,7 @@ FIELD_FILE_NAME_DATE = "file_name_date"
 FIELD_CREATED_AT = "created_at"
 FIELD_UPDATED_AT = "updated_at"
 FIELD_SOURCE = "source"
+FIELD_LH_SAMPLE_UUID = "lh_sample_uuid"
 
 # filtered-positive field names
 FIELD_FILTERED_POSITIVE_TIMESTAMP = "filtered_positive_timestamp"
@@ -72,6 +73,7 @@ MLWH_CH4_CQ = "ch4_cq"
 MLWH_FILTERED_POSITIVE = "filtered_positive"
 MLWH_FILTERED_POSITIVE_VERSION = "filtered_positive_version"
 MLWH_FILTERED_POSITIVE_TIMESTAMP = "filtered_positive_timestamp"
+MLWH_LH_SAMPLE_UUID = "lh_sample_uuid"
 MLWH_CREATED_AT = "created_at"
 MLWH_UPDATED_AT = "updated_at"
 
@@ -100,6 +102,7 @@ DART_STATE = "state"
 DART_ROOT_SAMPLE_ID = "root_sample_id"
 DART_RNA_ID = "rna_id"
 DART_LAB_ID = "lab_id"
+DART_LH_SAMPLE_UUID = "lh_sample_uuid"
 
 # DART property values
 DART_STATE_PENDING = "pending"
