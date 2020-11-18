@@ -2,7 +2,12 @@ import os
 import shutil
 from unittest.mock import patch
 
-from crawler.constants import COLLECTION_CENTRES, COLLECTION_IMPORTS, COLLECTION_SAMPLES
+from crawler.constants import (
+    COLLECTION_CENTRES,
+    COLLECTION_IMPORTS,
+    COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
+)
 from crawler.db import get_mongo_collection
 from crawler.main import run
 
@@ -10,6 +15,7 @@ NUMBER_CENTRES = 4
 NUMBER_VALID_SAMPLES = 14
 NUMBER_SAMPLES_ON_PARTIAL_IMPORT = 10
 NUMBER_OF_FILES_PROCESSED = 7
+NUMBER_SOURCE_PLATES = 3
 
 
 # The run method encompasses the main actions of the crawler
@@ -25,17 +31,23 @@ def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
     with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
         run(False, False, False, "crawler.config.integration")
 
-    # We expect to have three collections following import
+    # We expect to have four collections following import
     centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
 
     # We record our test centres
     assert centres_collection.count_documents({}) == NUMBER_CENTRES
     assert centres_collection.count_documents({"name": "Test Centre"}) == 1
 
-    # We record *all* our samples
+    # We record all our source plates
+    assert source_plates_collection.count_documents({}) == NUMBER_SOURCE_PLATES
+    assert source_plates_collection.count_documents({"plate_barcode": "123"}) == 1
+    assert source_plates_collection.count_documents({"plate_barcode": "456"}) == 1
+    assert source_plates_collection.count_documents({"plate_barcode": "789"}) == 1
 
+    # We record *all* our samples
     assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES, (
         f"Wrong number of samples inserted. Expected: {NUMBER_VALID_SAMPLES}, Actual: "
         f"{samples_collection.count_documents({})}"
@@ -135,10 +147,11 @@ def test_error_run(mongo_database, testing_files_for_process, pyodbc_conn):
     with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
         run(False, False, False, "crawler.config.integration")
 
-    # We expect to have three collections following import
+    # We expect to have four collections following import
     centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
 
     # we expect one file in the errors directory after the first run
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
@@ -151,6 +164,8 @@ def test_error_run(mongo_database, testing_files_for_process, pyodbc_conn):
 
     # We still have 4 test centers
     assert centres_collection.count_documents({}) == NUMBER_CENTRES
+    # The source plates count shoule be the same as before
+    assert source_plates_collection.count_documents({}) == NUMBER_SOURCE_PLATES
     # The samples count should be the same as before
     assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
 
