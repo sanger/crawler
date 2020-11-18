@@ -272,51 +272,54 @@ def test_extract_plate_barcode_and_coordinate(config):
 # tests for parsing and formatting the csv file rows
 def test_parse_and_format_file_rows(config):
     timestamp = "some timestamp"
+    uuid = "cc04cef1-2e9e-47aa-9601-cdb9c02aad72"
     centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "some file")
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
-        extra_fields_added = [
-            {
-                "Root Sample ID": "1",
-                "RNA ID": "RNA_0043_H09",
-                "plate_barcode": "RNA_0043",
-                "source": "Alderley",
-                "coordinate": "H09",
-                "line_number": 2,
-                "Result": "Positive",
-                "file_name": "some file",
-                "file_name_date": None,
-                "created_at": timestamp,
-                "updated_at": timestamp,
-                "Lab ID": None,
-                "filtered_positive": True,
-                "filtered_positive_version": "v2.3",
-                "filtered_positive_timestamp": timestamp,
-            }
-        ]
+        with patch("crawler.file_processing.uuid.uuid4", return_value=uuid):
+            extra_fields_added = [
+                {
+                    "Root Sample ID": "1",
+                    "RNA ID": "RNA_0043_H09",
+                    "plate_barcode": "RNA_0043",
+                    "source": "Alderley",
+                    "coordinate": "H09",
+                    "line_number": 2,
+                    "Result": "Positive",
+                    "file_name": "some file",
+                    "file_name_date": None,
+                    "created_at": timestamp,
+                    "updated_at": timestamp,
+                    "Lab ID": None,
+                    "filtered_positive": True,
+                    "filtered_positive_version": "v2.3",
+                    "filtered_positive_timestamp": timestamp,
+                    "lh_sample_uuid": uuid,
+                }
+            ]
 
-        with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-            fake_csv.write("1,RNA_0043_H09,Positive\n")
-            fake_csv.seek(0)
+            with StringIO() as fake_csv:
+                fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
+                fake_csv.write("1,RNA_0043_H09,Positive\n")
+                fake_csv.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv)
+                csv_to_test_reader = DictReader(fake_csv)
 
-            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
-            assert augmented_data == extra_fields_added
-            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+                augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+                assert augmented_data == extra_fields_added
+                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
-        with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-            fake_csv.write("1,RNA_0043_,Positive\n")
-            fake_csv.seek(0)
+            with StringIO() as fake_csv:
+                fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
+                fake_csv.write("1,RNA_0043_,Positive\n")
+                fake_csv.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv)
+                csv_to_test_reader = DictReader(fake_csv)
 
-            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
-            assert augmented_data == []
+                augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+                assert augmented_data == []
 
-            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
-            assert centre_file.logging_collection.aggregator_types["TYPE 9"].count_errors == 1
+                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+                assert centre_file.logging_collection.aggregator_types["TYPE 9"].count_errors == 1
 
 
 def test_filtered_row_with_extra_unrecognised_columns(config):
@@ -506,99 +509,106 @@ def test_filtered_row_with_ct_channel_columns(config):
 
 def test_parse_and_format_file_rows_to_add_file_details(config):
     timestamp = "some timestamp"
+    uuid = "cc04cef1-2e9e-47aa-9601-cdb9c02aad72"
     centre_file = centre_file_with_mocked_filtered_postitive_identifier(
         config, "ASDF_200507_1340.csv"
     )
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
+        with patch("crawler.file_processing.uuid.uuid4", return_value=uuid):
 
-        extra_fields_added = [
-            {
-                "Root Sample ID": "1",
-                "RNA ID": "RNA_0043_H09",
-                "plate_barcode": "RNA_0043",
-                "source": "Alderley",
-                "coordinate": "H09",
-                "line_number": 2,
-                "file_name": "ASDF_200507_1340.csv",
-                "file_name_date": datetime(2020, 5, 7, 13, 40),
-                "created_at": timestamp,
-                "updated_at": timestamp,
-                "Result": "Positive",
-                "Lab ID": None,
-                "filtered_positive": True,
-                "filtered_positive_version": "v2.3",
-                "filtered_positive_timestamp": timestamp,
-            },
-            {
-                "Root Sample ID": "2",
-                "RNA ID": "RNA_0043_B08",
-                "plate_barcode": "RNA_0043",
-                "source": "Alderley",
-                "coordinate": "B08",
-                "line_number": 3,
-                "file_name": "ASDF_200507_1340.csv",
-                "file_name_date": datetime(2020, 5, 7, 13, 40),
-                "created_at": timestamp,
-                "updated_at": timestamp,
-                "Result": "Negative",
-                "Lab ID": None,
-            },
-        ]
+            extra_fields_added = [
+                {
+                    "Root Sample ID": "1",
+                    "RNA ID": "RNA_0043_H09",
+                    "plate_barcode": "RNA_0043",
+                    "source": "Alderley",
+                    "coordinate": "H09",
+                    "line_number": 2,
+                    "file_name": "ASDF_200507_1340.csv",
+                    "file_name_date": datetime(2020, 5, 7, 13, 40),
+                    "created_at": timestamp,
+                    "updated_at": timestamp,
+                    "Result": "Positive",
+                    "Lab ID": None,
+                    "filtered_positive": True,
+                    "filtered_positive_version": "v2.3",
+                    "filtered_positive_timestamp": timestamp,
+                    "lh_sample_uuid": uuid,
+                },
+                {
+                    "Root Sample ID": "2",
+                    "RNA ID": "RNA_0043_B08",
+                    "plate_barcode": "RNA_0043",
+                    "source": "Alderley",
+                    "coordinate": "B08",
+                    "line_number": 3,
+                    "file_name": "ASDF_200507_1340.csv",
+                    "file_name_date": datetime(2020, 5, 7, 13, 40),
+                    "created_at": timestamp,
+                    "updated_at": timestamp,
+                    "Result": "Negative",
+                    "Lab ID": None,
+                    "lh_sample_uuid": uuid,
+                },
+            ]
 
-        with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-            fake_csv.write("1,RNA_0043_H09,Positive\n")
-            fake_csv.write("2,RNA_0043_B08,Negative\n")
-            fake_csv.seek(0)
+            with StringIO() as fake_csv:
+                fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
+                fake_csv.write("1,RNA_0043_H09,Positive\n")
+                fake_csv.write("2,RNA_0043_B08,Negative\n")
+                fake_csv.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv)
+                csv_to_test_reader = DictReader(fake_csv)
 
-            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+                augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
-            assert augmented_data == extra_fields_added
-            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+                assert augmented_data == extra_fields_added
+                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
 def test_parse_and_format_file_rows_detects_duplicates(config):
     timestamp = "some timestamp"
+    uuid = "cc04cef1-2e9e-47aa-9601-cdb9c02aad72"
     centre_file = centre_file_with_mocked_filtered_postitive_identifier(
         config, "ASDF_200507_1340.csv"
     )
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
+        with patch("crawler.file_processing.uuid.uuid4", return_value=uuid):
 
-        extra_fields_added = [
-            {
-                "Root Sample ID": "1",
-                "RNA ID": "RNA_0043_H09",
-                "plate_barcode": "RNA_0043",
-                "source": "Alderley",
-                "coordinate": "H09",
-                "line_number": 2,
-                "file_name": "ASDF_200507_1340.csv",
-                "file_name_date": datetime(2020, 5, 7, 13, 40),
-                "created_at": timestamp,
-                "updated_at": timestamp,
-                "Result": "Positive",
-                "Lab ID": "Val",
-                "filtered_positive": True,
-                "filtered_positive_version": "v2.3",
-                "filtered_positive_timestamp": timestamp,
-            },
-        ]
+            extra_fields_added = [
+                {
+                    "Root Sample ID": "1",
+                    "RNA ID": "RNA_0043_H09",
+                    "plate_barcode": "RNA_0043",
+                    "source": "Alderley",
+                    "coordinate": "H09",
+                    "line_number": 2,
+                    "file_name": "ASDF_200507_1340.csv",
+                    "file_name_date": datetime(2020, 5, 7, 13, 40),
+                    "created_at": timestamp,
+                    "updated_at": timestamp,
+                    "Result": "Positive",
+                    "Lab ID": "Val",
+                    "filtered_positive": True,
+                    "filtered_positive_version": "v2.3",
+                    "filtered_positive_timestamp": timestamp,
+                    "lh_sample_uuid": uuid,
+                },
+            ]
 
-        with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-            fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
-            fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
-            fake_csv.seek(0)
+            with StringIO() as fake_csv:
+                fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
+                fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
+                fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
+                fake_csv.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv)
+                csv_to_test_reader = DictReader(fake_csv)
 
-            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
-            assert augmented_data == extra_fields_added
+                augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+                assert augmented_data == extra_fields_added
 
-            assert centre_file.logging_collection.aggregator_types["TYPE 5"].count_errors == 1
-            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+                assert centre_file.logging_collection.aggregator_types["TYPE 5"].count_errors == 1
+                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
 def test_where_result_has_unexpected_value(config):

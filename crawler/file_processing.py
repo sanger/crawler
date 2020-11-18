@@ -4,6 +4,7 @@ import os
 import pathlib
 import re
 import shutil
+import uuid
 from csv import DictReader
 from datetime import datetime
 from enum import Enum
@@ -56,6 +57,7 @@ from crawler.constants import (
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
+    FIELD_LH_SAMPLE_UUID,
     MAX_CQ_VALUE,
     MIN_CQ_VALUE,
     POSITIVE_RESULT_VALUE,
@@ -971,6 +973,9 @@ class CentreFile:
                 FIELD_FILTERED_POSITIVE_VERSION
             ] = self.filtered_positive_identifier.current_version()
             modified_row[FIELD_FILTERED_POSITIVE_TIMESTAMP] = import_timestamp
+
+        # add lh sample uuid
+        modified_row[FIELD_LH_SAMPLE_UUID] = uuid.uuid4()
 
         # ---- store row signature to allow checking for duplicates in following rows ----
         seen_rows.add(row_signature)
