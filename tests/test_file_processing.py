@@ -4,6 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from io import StringIO
 from unittest.mock import MagicMock, patch
+import uuid
 
 from bson.decimal128 import Decimal128  # type: ignore
 from bson.objectid import ObjectId
@@ -272,10 +273,10 @@ def test_extract_plate_barcode_and_coordinate(config):
 # tests for parsing and formatting the csv file rows
 def test_parse_and_format_file_rows(config):
     timestamp = "some timestamp"
-    uuid = "cc04cef1-2e9e-47aa-9601-cdb9c02aad72"
+    test_uuid = uuid.uuid4()
     centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "some file")
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
-        with patch("crawler.file_processing.uuid.uuid4", return_value=uuid):
+        with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
             extra_fields_added = [
                 {
                     "Root Sample ID": "1",
@@ -293,7 +294,7 @@ def test_parse_and_format_file_rows(config):
                     "filtered_positive": True,
                     "filtered_positive_version": "v2.3",
                     "filtered_positive_timestamp": timestamp,
-                    "lh_sample_uuid": uuid,
+                    "lh_sample_uuid": str(test_uuid),
                 }
             ]
 
@@ -509,12 +510,12 @@ def test_filtered_row_with_ct_channel_columns(config):
 
 def test_parse_and_format_file_rows_to_add_file_details(config):
     timestamp = "some timestamp"
-    uuid = "cc04cef1-2e9e-47aa-9601-cdb9c02aad72"
+    test_uuid = uuid.uuid4()
     centre_file = centre_file_with_mocked_filtered_postitive_identifier(
         config, "ASDF_200507_1340.csv"
     )
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
-        with patch("crawler.file_processing.uuid.uuid4", return_value=uuid):
+        with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
 
             extra_fields_added = [
                 {
@@ -533,7 +534,7 @@ def test_parse_and_format_file_rows_to_add_file_details(config):
                     "filtered_positive": True,
                     "filtered_positive_version": "v2.3",
                     "filtered_positive_timestamp": timestamp,
-                    "lh_sample_uuid": uuid,
+                    "lh_sample_uuid": str(test_uuid),
                 },
                 {
                     "Root Sample ID": "2",
@@ -548,7 +549,7 @@ def test_parse_and_format_file_rows_to_add_file_details(config):
                     "updated_at": timestamp,
                     "Result": "Negative",
                     "Lab ID": None,
-                    "lh_sample_uuid": uuid,
+                    "lh_sample_uuid": str(test_uuid),
                 },
             ]
 
@@ -568,12 +569,12 @@ def test_parse_and_format_file_rows_to_add_file_details(config):
 
 def test_parse_and_format_file_rows_detects_duplicates(config):
     timestamp = "some timestamp"
-    uuid = "cc04cef1-2e9e-47aa-9601-cdb9c02aad72"
+    test_uuid = uuid.uuid4()
     centre_file = centre_file_with_mocked_filtered_postitive_identifier(
         config, "ASDF_200507_1340.csv"
     )
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
-        with patch("crawler.file_processing.uuid.uuid4", return_value=uuid):
+        with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
 
             extra_fields_added = [
                 {
@@ -592,7 +593,7 @@ def test_parse_and_format_file_rows_detects_duplicates(config):
                     "filtered_positive": True,
                     "filtered_positive_version": "v2.3",
                     "filtered_positive_timestamp": timestamp,
-                    "lh_sample_uuid": uuid,
+                    "lh_sample_uuid": str(test_uuid),
                 },
             ]
 

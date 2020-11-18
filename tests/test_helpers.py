@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from decimal import Decimal
+import uuid
 
 import pytest
 from bson.decimal128 import Decimal128  # type: ignore
@@ -183,6 +184,7 @@ def test_unpad_coordinate_B01010():
 
 # tests for lighthouse doc to MLWH mapping
 def test_map_lh_doc_to_sql_columns(config):
+    test_uuid = str(uuid.uuid4())
     doc_to_transform = {
         FIELD_MONGODB_ID: ObjectId("5f562d9931d9959b92544728"),
         FIELD_ROOT_SAMPLE_ID: "ABC00000004",
@@ -196,7 +198,7 @@ def test_map_lh_doc_to_sql_columns(config):
         FIELD_FILTERED_POSITIVE: True,
         FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
         FIELD_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 40, 8),
-        FIELD_LH_SAMPLE_UUID: "cc04cef1-2e9e-47aa-9601-cdb9c02aad72",
+        FIELD_LH_SAMPLE_UUID: test_uuid,
     }
 
     result = map_lh_doc_to_sql_columns(doc_to_transform)
@@ -214,7 +216,7 @@ def test_map_lh_doc_to_sql_columns(config):
     assert result[MLWH_FILTERED_POSITIVE] is True
     assert result[MLWH_FILTERED_POSITIVE_VERSION] == "v2.3"
     assert result[MLWH_FILTERED_POSITIVE_TIMESTAMP] == datetime(2020, 4, 23, 14, 40, 8)
-    assert result[MLWH_LH_SAMPLE_UUID] == "cc04cef1-2e9e-47aa-9601-cdb9c02aad72"
+    assert result[MLWH_LH_SAMPLE_UUID] == test_uuid
     assert result.get(MLWH_CREATED_AT) is not None
     assert result.get(MLWH_UPDATED_AT) is not None
 
@@ -289,13 +291,15 @@ def test_get_dart_well_index(config):
 
 
 def test_map_mongo_doc_to_dart_well_props(config):
+    test_uuid = str(uuid.uuid4())
+
     # all fields present, filtered positive
     doc_to_transform = {
         FIELD_FILTERED_POSITIVE: True,
         FIELD_ROOT_SAMPLE_ID: "ABC00000004",
         FIELD_RNA_ID: "TC-rna-00000029_H01",
         FIELD_LAB_ID: "TC",
-        FIELD_LH_SAMPLE_UUID: "cc04cef1-2e9e-47aa-9601-cdb9c02aad72",
+        FIELD_LH_SAMPLE_UUID: test_uuid,
     }
 
     result = map_mongo_doc_to_dart_well_props(doc_to_transform)
@@ -304,7 +308,7 @@ def test_map_mongo_doc_to_dart_well_props(config):
     assert result[DART_ROOT_SAMPLE_ID] == "ABC00000004"
     assert result[DART_RNA_ID] == "TC-rna-00000029_H01"
     assert result[DART_LAB_ID] == "TC"
-    assert result[DART_LH_SAMPLE_UUID] == "cc04cef1-2e9e-47aa-9601-cdb9c02aad72"
+    assert result[DART_LH_SAMPLE_UUID] == test_uuid
 
     # missing lab id and sample uuid, not a filtered positive
     doc_to_transform = {
