@@ -6,6 +6,7 @@ COLLECTION_CENTRES = "centres"
 COLLECTION_IMPORTS = "imports"
 COLLECTION_SAMPLES = "samples"
 COLLECTION_SAMPLES_HISTORY = "samples_history"
+COLLECTION_SOURCE_PLATES = "source_plates"
 
 # file column names
 FIELD_ROOT_SAMPLE_ID = "Root Sample ID"
@@ -40,6 +41,7 @@ FIELD_CREATED_AT = "created_at"
 FIELD_UPDATED_AT = "updated_at"
 FIELD_SOURCE = "source"
 FIELD_LH_SAMPLE_UUID = "lh_sample_uuid"
+FIELD_LH_SOURCE_PLATE_UUID = "lh_source_plate_uuid"
 
 # filtered-positive field names
 FIELD_FILTERED_POSITIVE_TIMESTAMP = "filtered_positive_timestamp"
