@@ -40,6 +40,7 @@ from crawler.constants import (
     DART_ROOT_SAMPLE_ID,
     DART_RNA_ID,
     DART_LAB_ID,
+    DART_LH_SAMPLE_UUID,
     DART_STATE_PICKABLE,
     DART_EMPTY_VALUE,
 )
@@ -294,6 +295,7 @@ def test_map_mongo_doc_to_dart_well_props(config):
         FIELD_ROOT_SAMPLE_ID: "ABC00000004",
         FIELD_RNA_ID: "TC-rna-00000029_H01",
         FIELD_LAB_ID: "TC",
+        FIELD_LH_SAMPLE_UUID: "cc04cef1-2e9e-47aa-9601-cdb9c02aad72",
     }
 
     result = map_mongo_doc_to_dart_well_props(doc_to_transform)
@@ -302,8 +304,9 @@ def test_map_mongo_doc_to_dart_well_props(config):
     assert result[DART_ROOT_SAMPLE_ID] == "ABC00000004"
     assert result[DART_RNA_ID] == "TC-rna-00000029_H01"
     assert result[DART_LAB_ID] == "TC"
+    assert result[DART_LH_SAMPLE_UUID] == "cc04cef1-2e9e-47aa-9601-cdb9c02aad72"
 
-    # missing lab id, not a filtered positive
+    # missing lab id and sample uuid, not a filtered positive
     doc_to_transform = {
         FIELD_FILTERED_POSITIVE: False,
         FIELD_ROOT_SAMPLE_ID: "ABC00000004",
@@ -314,6 +317,7 @@ def test_map_mongo_doc_to_dart_well_props(config):
 
     assert result[DART_STATE] == DART_EMPTY_VALUE
     assert result[DART_LAB_ID] == DART_EMPTY_VALUE
+    assert result[DART_LH_SAMPLE_UUID] == DART_EMPTY_VALUE
 
     # missing filtered positive
     doc_to_transform = {

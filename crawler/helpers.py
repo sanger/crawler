@@ -73,6 +73,7 @@ from crawler.constants import (
     DART_ROOT_SAMPLE_ID,
     DART_RNA_ID,
     DART_LAB_ID,
+    DART_LH_SAMPLE_UUID,
     DART_STATE_PICKABLE,
     DART_EMPTY_VALUE,
 )
@@ -300,6 +301,7 @@ def map_mongo_doc_to_dart_well_props(doc: Dict[str, Any]) -> Dict[str, str]:
         DART_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
         DART_RNA_ID: doc[FIELD_RNA_ID],
         DART_LAB_ID: doc.get(FIELD_LAB_ID, DART_EMPTY_VALUE),
+        DART_LH_SAMPLE_UUID: doc.get(FIELD_LH_SAMPLE_UUID, DART_EMPTY_VALUE),
     }
 
 
