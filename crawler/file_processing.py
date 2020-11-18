@@ -975,7 +975,7 @@ class CentreFile:
             modified_row[FIELD_FILTERED_POSITIVE_TIMESTAMP] = import_timestamp
 
         # add lh sample uuid
-        modified_row[FIELD_LH_SAMPLE_UUID] = uuid.uuid4()
+        modified_row[FIELD_LH_SAMPLE_UUID] = str(uuid.uuid4())
 
         # ---- store row signature to allow checking for duplicates in following rows ----
         seen_rows.add(row_signature)
