@@ -37,6 +37,7 @@ from crawler.constants import (
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
+    FIELD_LH_SAMPLE_UUID,
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     MLWH_CH1_CQ,
@@ -66,6 +67,7 @@ from crawler.constants import (
     MLWH_ROOT_SAMPLE_ID,
     MLWH_SOURCE,
     MLWH_UPDATED_AT,
+    MLWH_LH_SAMPLE_UUID,
     MYSQL_DATETIME_FORMAT,
     DART_STATE,
     DART_ROOT_SAMPLE_ID,
@@ -181,6 +183,7 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
         MLWH_FILTERED_POSITIVE: doc.get(FIELD_FILTERED_POSITIVE, None),
         MLWH_FILTERED_POSITIVE_VERSION: doc.get(FIELD_FILTERED_POSITIVE_VERSION, None),
         MLWH_FILTERED_POSITIVE_TIMESTAMP: doc.get(FIELD_FILTERED_POSITIVE_TIMESTAMP, None),
+        MLWH_LH_SAMPLE_UUID: doc.get(FIELD_LH_SAMPLE_UUID, None),
     }
 
 

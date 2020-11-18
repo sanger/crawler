@@ -17,6 +17,7 @@ from crawler.constants import (
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
+    FIELD_LH_SAMPLE_UUID,
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     MLWH_COORDINATE,
@@ -34,6 +35,7 @@ from crawler.constants import (
     MLWH_ROOT_SAMPLE_ID,
     MLWH_SOURCE,
     MLWH_UPDATED_AT,
+    MLWH_LH_SAMPLE_UUID,
     DART_STATE,
     DART_ROOT_SAMPLE_ID,
     DART_RNA_ID,
@@ -193,6 +195,7 @@ def test_map_lh_doc_to_sql_columns(config):
         FIELD_FILTERED_POSITIVE: True,
         FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
         FIELD_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 40, 8),
+        FIELD_LH_SAMPLE_UUID: "cc04cef1-2e9e-47aa-9601-cdb9c02aad72",
     }
 
     result = map_lh_doc_to_sql_columns(doc_to_transform)
@@ -210,6 +213,7 @@ def test_map_lh_doc_to_sql_columns(config):
     assert result[MLWH_FILTERED_POSITIVE] is True
     assert result[MLWH_FILTERED_POSITIVE_VERSION] == "v2.3"
     assert result[MLWH_FILTERED_POSITIVE_TIMESTAMP] == datetime(2020, 4, 23, 14, 40, 8)
+    assert result[MLWH_LH_SAMPLE_UUID] == "cc04cef1-2e9e-47aa-9601-cdb9c02aad72"
     assert result.get(MLWH_CREATED_AT) is not None
     assert result.get(MLWH_UPDATED_AT) is not None
 
