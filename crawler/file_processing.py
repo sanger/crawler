@@ -25,6 +25,7 @@ from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
     DART_STATE_PENDING,
     FIELD_CH1_CQ,
     FIELD_CH1_RESULT,
@@ -58,6 +59,8 @@ from crawler.constants import (
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
     FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_BARCODE,
     MAX_CQ_VALUE,
     MIN_CQ_VALUE,
     POSITIVE_RESULT_VALUE,
@@ -381,6 +384,9 @@ class CentreFile:
         else:
             logger.info(f"File {self.file_name} is valid")
 
+        # Internally traps TYPE 26 failed assigning source plate UUIDs error and returns []
+        docs_to_insert = self.docs_to_insert_updated_with_source_plate_uuids(docs_to_insert)
+
         mongo_ids_of_inserted = []
         if len(docs_to_insert) > 0:
             mongo_ids_of_inserted = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
@@ -494,6 +500,81 @@ class CentreFile:
                     )
         except Exception as e:
             logger.critical(f"Unknown error with file {self.file_name}: {e}")
+
+    def docs_to_insert_updated_with_source_plate_uuids(
+        self, docs_to_insert
+    ) -> List[Dict[str, Any]]:
+        """Updates sample records with source plate uuids, returning only those for which a source
+        plate uuid could be determined. Adds any new source plates to mongo.
+
+        Arguments:
+            docs_to_insert {List[Dict[str, Any]]} -- the sample records to update
+
+        Returns:
+            List[Dict[str, Any]] -- the updated, filtered samples
+        """
+        logger.debug(f"Attempting to update docs with source plate uuids")
+        updated_docs = []
+
+        def update_doc_from_source_plate(doc, existing_plate, skip_lab_check=False) -> None:
+            if skip_lab_check or doc[FIELD_LAB_ID] == existing_plate[FIELD_LAB_ID]:
+                doc[FIELD_LH_SOURCE_PLATE_UUID] = existing_plate[FIELD_LH_SOURCE_PLATE_UUID]
+                updated_docs.append(doc)
+            else:
+                self.logging_collection.add_error(
+                    "TYPE 25",
+                    f"Source plate barcode {doc[FIELD_PLATE_BARCODE]} in file {self.file_name} "
+                    f"already exists with different lab_id {existing_plate[FIELD_LAB_ID]}",
+                )
+                logger.error(
+                    f"Source plate barcode {doc[FIELD_PLATE_BARCODE]} in file {self.file_name} "
+                    f"already exists with different lab_id {existing_plate[FIELD_LAB_ID]}"
+                )
+
+        try:
+            new_plates = []  # type:ignore
+            source_plates_collection = get_mongo_collection(self.get_db(), COLLECTION_SOURCE_PLATES)
+
+            for doc in docs_to_insert:
+                plate_barcode = doc[FIELD_PLATE_BARCODE]
+
+                # first attempt an update from new plates (added for other samples in this file)
+                existing_new_plate = next(
+                    (x for x in new_plates if x[FIELD_BARCODE] == plate_barcode), None
+                )
+                if existing_new_plate is not None:
+                    update_doc_from_source_plate(doc, existing_new_plate)
+                    continue
+
+                # then attempt an update from plates that exist in mongo
+                existing_mongo_plate = source_plates_collection.find_one(
+                    {FIELD_BARCODE: plate_barcode}
+                )
+                if existing_mongo_plate is not None:
+                    update_doc_from_source_plate(doc, existing_mongo_plate)
+                    continue
+
+                # then add a new plate
+                new_plate = self.new_mongo_source_plate(plate_barcode, doc[FIELD_LAB_ID])
+                new_plates.append(new_plate)
+                update_doc_from_source_plate(doc, new_plate, True)
+
+            logger.debug(f"Attempting to insert {len(new_plates)} new source plates")
+            if len(new_plates) > 0:
+                source_plates_collection.insert_many(new_plates, ordered=False)
+
+        except Exception as e:
+            self.logging_collection.add_error(
+                "TYPE 26",
+                f"Failed assigning source plate UUIDs to samples in file {self.file_name}",
+            )
+            logger.critical(
+                "Error assigning source plate UUIDs to samples in file " f"{self.file_name}: {e}"
+            )
+            logger.exception(e)
+            updated_docs = []
+
+        return updated_docs
 
     def insert_samples_from_docs_into_mongo_db(self, docs_to_insert) -> List[ObjectId]:
         """Insert sample records into the mongo database from the parsed file information.
@@ -1284,3 +1365,22 @@ class CentreFile:
         file_timestamp = m.group(1)
 
         return datetime.strptime(file_timestamp, "%y%m%d_%H%M")
+
+    def new_mongo_source_plate(self, plate_barcode: str, lab_id: str) -> Dict[str, Any]:
+        """Creates a new mongo source plate document.
+
+        Arguments:
+            plate_barcode {str} -- The plate barcode to assign to the new source plate.
+            lab_id {str} -- The lab id to assign to the new source plate.
+
+        Returns:
+            Dict[str, Any] -- The new mongo source plate doc.
+        """
+        timestamp = self.get_now_timestamp()
+        return {
+            FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4()),
+            FIELD_BARCODE: plate_barcode,
+            FIELD_LAB_ID: lab_id,
+            FIELD_UPDATED_AT: timestamp,
+            FIELD_CREATED_AT: timestamp,
+        }
