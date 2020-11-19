@@ -77,6 +77,7 @@ MLWH_FILTERED_POSITIVE = "filtered_positive"
 MLWH_FILTERED_POSITIVE_VERSION = "filtered_positive_version"
 MLWH_FILTERED_POSITIVE_TIMESTAMP = "filtered_positive_timestamp"
 MLWH_LH_SAMPLE_UUID = "lh_sample_uuid"
+MLWH_LH_SOURCE_PLATE_UUID = "lh_source_plate_uuid"
 MLWH_CREATED_AT = "created_at"
 MLWH_UPDATED_AT = "updated_at"
 
