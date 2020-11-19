@@ -294,6 +294,14 @@ def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
 
 
 def map_mongo_doc_to_dart_well_props(doc: Dict[str, Any]) -> Dict[str, str]:
+    """Transform a mongo sample doc into DART well properties.
+
+     Arguments:
+         doc {Dict[str, str]} -- A mongo sample doc.
+
+     Returns:
+         Dict[str, str] -- Dictionary of DART property names and values.
+    """
     return {
         DART_STATE: DART_STATE_PICKABLE
         if doc.get(FIELD_FILTERED_POSITIVE, False)
