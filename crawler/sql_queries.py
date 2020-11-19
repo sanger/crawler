@@ -28,6 +28,7 @@ filtered_positive,
 filtered_positive_version,
 filtered_positive_timestamp,
 lh_sample_uuid,
+lh_source_plate_uuid,
 created_at,
 updated_at
 )
@@ -58,6 +59,7 @@ VALUES (
 %(filtered_positive_version)s,
 %(filtered_positive_timestamp)s,
 %(lh_sample_uuid)s,
+%(lh_source_plate_uuid)s,
 %(created_at)s,
 %(updated_at)s
 )
