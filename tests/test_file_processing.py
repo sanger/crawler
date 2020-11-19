@@ -107,7 +107,7 @@ def test_process_files(
     pyodbc_conn.assert_called()
 
     # # We record *all* our samples
-    assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
+    assert samples_collection.count_documents({"RNA ID": "AP123_B09", "source": "Alderley"}) == 1
 
 
 def test_process_files_dont_add_to_dart(
@@ -167,7 +167,7 @@ def test_checksum_match(config, tmpdir):
         list_files = create_checksum_files_for(
             f"{config.CENTRES[0]['backups_folder']}/successes/",
             "AP_sanger_report_200503_2338.csv",
-            ["adfsadf", "5c11524df6fd623ae3d687d66152be28"],
+            ["adfsadf", "d204bd7747d9ad505eee901830448578"],
             "200601_1414",
         )
 
