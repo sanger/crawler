@@ -106,6 +106,7 @@ CREATE TABLE `unified_warehouse_test`.`lighthouse_sample` (
 `filtered_positive_version` varchar(255) DEFAULT NULL COMMENT 'Filtered positive version',
 `filtered_positive_timestamp` datetime DEFAULT NULL COMMENT 'Filtered positive timestamp',
 `lh_sample_uuid` varchar(36) DEFAULT NULL COMMENT 'Lighthouse sample unique identifier',
+`lh_source_plate_uuid` varchar(36) DEFAULT NULL COMMENT 'Lighthouse source plate unique identifier',
 `created_at` datetime DEFAULT NULL COMMENT 'When this record was inserted',
 `updated_at` datetime DEFAULT NULL COMMENT 'When this record was last updated',
 PRIMARY KEY (`id`),
