@@ -19,6 +19,7 @@ from crawler.constants import (
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     MLWH_COORDINATE,
@@ -37,6 +38,7 @@ from crawler.constants import (
     MLWH_SOURCE,
     MLWH_UPDATED_AT,
     MLWH_LH_SAMPLE_UUID,
+    MLWH_LH_SOURCE_PLATE_UUID,
     DART_STATE,
     DART_ROOT_SAMPLE_ID,
     DART_RNA_ID,
@@ -184,7 +186,6 @@ def test_unpad_coordinate_B01010():
 
 # tests for lighthouse doc to MLWH mapping
 def test_map_lh_doc_to_sql_columns(config):
-    test_uuid = str(uuid.uuid4())
     doc_to_transform = {
         FIELD_MONGODB_ID: ObjectId("5f562d9931d9959b92544728"),
         FIELD_ROOT_SAMPLE_ID: "ABC00000004",
@@ -198,7 +199,8 @@ def test_map_lh_doc_to_sql_columns(config):
         FIELD_FILTERED_POSITIVE: True,
         FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
         FIELD_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 40, 8),
-        FIELD_LH_SAMPLE_UUID: test_uuid,
+        FIELD_LH_SAMPLE_UUID: "7512638d-f25e-4ef0-85f0-d921d5263449",
+        FIELD_LH_SOURCE_PLATE_UUID: "88ed5139-9e0c-4118-8cc8-20413b9ffa01",
     }
 
     result = map_lh_doc_to_sql_columns(doc_to_transform)
@@ -216,7 +218,8 @@ def test_map_lh_doc_to_sql_columns(config):
     assert result[MLWH_FILTERED_POSITIVE] is True
     assert result[MLWH_FILTERED_POSITIVE_VERSION] == "v2.3"
     assert result[MLWH_FILTERED_POSITIVE_TIMESTAMP] == datetime(2020, 4, 23, 14, 40, 8)
-    assert result[MLWH_LH_SAMPLE_UUID] == test_uuid
+    assert result[MLWH_LH_SAMPLE_UUID] == "7512638d-f25e-4ef0-85f0-d921d5263449"
+    assert result[MLWH_LH_SOURCE_PLATE_UUID] == "88ed5139-9e0c-4118-8cc8-20413b9ffa01"
     assert result.get(MLWH_CREATED_AT) is not None
     assert result.get(MLWH_UPDATED_AT) is not None
 
@@ -248,6 +251,8 @@ def test_map_mongo_doc_to_sql_columns(config):
     assert result[MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 40, 8)
     assert result[MLWH_SOURCE] == "Test Centre"
     assert result[MLWH_LAB_ID] == "TC"
+    assert result[MLWH_LH_SAMPLE_UUID] is None
+    assert result[MLWH_LH_SOURCE_PLATE_UUID] is None
     assert result[MLWH_CREATED_AT] == datetime(2020, 4, 27, 5, 20, 0, tzinfo=timezone.utc)
     assert result[MLWH_UPDATED_AT] == datetime(2020, 5, 13, 12, 50, 0, tzinfo=timezone.utc)
 
