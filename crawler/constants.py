@@ -42,6 +42,7 @@ FIELD_UPDATED_AT = "updated_at"
 FIELD_SOURCE = "source"
 FIELD_LH_SAMPLE_UUID = "lh_sample_uuid"
 FIELD_LH_SOURCE_PLATE_UUID = "lh_source_plate_uuid"
+FIELD_BARCODE = "barcode"
 
 # filtered-positive field names
 FIELD_FILTERED_POSITIVE_TIMESTAMP = "filtered_positive_timestamp"

@@ -15,6 +15,7 @@ from crawler.constants import (
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_BARCODE,
 )
 from crawler.db import (
     create_mongo_client,
@@ -58,9 +59,9 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
             source_plates_collection = get_mongo_collection(db, COLLECTION_SOURCE_PLATES)
 
             logger.debug(
-                f"Creating index '{FIELD_PLATE_BARCODE}' on '{source_plates_collection.full_name}'"
+                f"Creating index '{FIELD_BARCODE}' on '{source_plates_collection.full_name}'"
             )
-            source_plates_collection.create_index(FIELD_PLATE_BARCODE, unique=True)
+            source_plates_collection.create_index(FIELD_BARCODE, unique=True)
             
             logger.debug(
                 f"Creating index '{FIELD_LH_SOURCE_PLATE_UUID}' on "
