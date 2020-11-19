@@ -55,7 +55,9 @@ def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
         f"{samples_collection.count_documents({})}"
     )
     assert samples_collection.count_documents({"RNA ID": "AP123_B09", "source": "Alderley"}) == 1
-    assert samples_collection.count_documents({"RNA ID": "MK123_H09", "source": "UK Biocentre"}) == 1
+    assert (
+        samples_collection.count_documents({"RNA ID": "MK123_H09", "source": "UK Biocentre"}) == 1
+    )
 
     # We get one import per centre
     assert imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED, (
@@ -209,4 +211,36 @@ def test_error_run_duplicates_in_imports_message(
     assert (
         "WARNING: Duplicates detected within the file. (TYPE 5) (e.g. Duplicated, line: 3, "
         "root_sample_id: 16)"
+    ) in test_centre_imports["errors"][1]
+
+
+def test_error_run_duplicates_plate_barcodes_from_different_labs_message(
+    mongo_database, testing_files_for_process, pyodbc_conn
+):
+    _, mongo_database = mongo_database
+
+    # copy an additional file with duplicates
+    _ = shutil.copytree("tests/files_with_duplicate_barcodes", "tmp/files", dirs_exist_ok=True)
+
+    with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
+        run(False, False, False, "crawler.config.integration")
+
+    # Fetch the imports collection, expect it to contain the additional duplicate error file record
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    assert imports_collection.count_documents({}) == 8
+
+    # Fetch the Test centre record
+    test_centre_imports = imports_collection.find_one({"centre_name": "Test Centre"})
+
+    # We expect 2 errors for this file, type 5 (duplicates) errors, 1 message and 1 aggregate count
+    assert len(test_centre_imports["errors"]) == 2
+
+    # We expect errors to contain messages for type 24 duplicates, an aggregate total and a message
+    # line
+    assert (
+        "Total number of Duplicate source plate barcodes from different labs errors (TYPE 25): 2"
+        in test_centre_imports["errors"][0]
+    )
+    assert (
+        "ERROR: Found duplicate source plate barcodes from different labs (TYPE 25)"
     ) in test_centre_imports["errors"][1]
