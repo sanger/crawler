@@ -15,7 +15,7 @@ NUMBER_CENTRES = 4
 NUMBER_VALID_SAMPLES = 14
 NUMBER_SAMPLES_ON_PARTIAL_IMPORT = 10
 NUMBER_OF_FILES_PROCESSED = 7
-NUMBER_SOURCE_PLATES = 3
+NUMBER_SOURCE_PLATES = 5
 
 
 # The run method encompasses the main actions of the crawler
@@ -43,17 +43,19 @@ def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
 
     # We record all our source plates
     assert source_plates_collection.count_documents({}) == NUMBER_SOURCE_PLATES
-    assert source_plates_collection.count_documents({"plate_barcode": "123"}) == 1
-    assert source_plates_collection.count_documents({"plate_barcode": "456"}) == 1
-    assert source_plates_collection.count_documents({"plate_barcode": "789"}) == 1
+    assert source_plates_collection.count_documents({"barcode": "AP123"}) == 1
+    assert source_plates_collection.count_documents({"barcode": "CB123"}) == 1
+    assert source_plates_collection.count_documents({"barcode": "MK123"}) == 1
+    assert source_plates_collection.count_documents({"barcode": "MK456"}) == 1
+    assert source_plates_collection.count_documents({"barcode": "TS789"}) == 1
 
     # We record *all* our samples
     assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES, (
         f"Wrong number of samples inserted. Expected: {NUMBER_VALID_SAMPLES}, Actual: "
         f"{samples_collection.count_documents({})}"
     )
-    assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
-    assert samples_collection.count_documents({"RNA ID": "123_H09", "source": "UK Biocentre"}) == 1
+    assert samples_collection.count_documents({"RNA ID": "AP123_B09", "source": "Alderley"}) == 1
+    assert samples_collection.count_documents({"RNA ID": "MK123_H09", "source": "UK Biocentre"}) == 1
 
     # We get one import per centre
     assert imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED, (
