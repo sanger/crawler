@@ -62,7 +62,7 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                 f"Creating index '{FIELD_BARCODE}' on '{source_plates_collection.full_name}'"
             )
             source_plates_collection.create_index(FIELD_BARCODE, unique=True)
-            
+
             logger.debug(
                 f"Creating index '{FIELD_LH_SOURCE_PLATE_UUID}' on "
                 f"'{source_plates_collection.full_name}'"
