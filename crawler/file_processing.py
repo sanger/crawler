@@ -502,7 +502,7 @@ class CentreFile:
             logger.critical(f"Unknown error with file {self.file_name}: {e}")
 
     def docs_to_insert_updated_with_source_plate_uuids(
-        self, docs_to_insert
+        self, docs_to_insert: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """Updates sample records with source plate uuids, returning only those for which a source
         plate uuid could be determined. Adds any new source plates to mongo.
@@ -513,7 +513,7 @@ class CentreFile:
         Returns:
             List[Dict[str, Any]] -- the updated, filtered samples
         """
-        logger.debug(f"Attempting to update docs with source plate uuids")
+        logger.debug("Attempting to update docs with source plate uuids")
         updated_docs = []
 
         def update_doc_from_source_plate(doc, existing_plate, skip_lab_check=False) -> None:
