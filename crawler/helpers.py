@@ -613,6 +613,29 @@ class AggregateType24(AggregateTypeBase):
         self.short_display_description = "Failed DART connection"
 
 
+class AggregateType25(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 25"
+        self.error_level = ErrorLevel.ERROR
+        self.message = (
+            f"ERROR: Found duplicate source plate barcodes from different labs ({self.type_str})"
+        )
+        self.short_display_description = "Duplicate source plate barcodes from different labs"
+
+
+class AggregateType26(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 26"
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = (
+            "CRITICAL: Files where source plate UUIDs could not be assigned to any sample "
+            f"({self.type_str})"
+        )
+        self.short_display_description = "Failed assigning source plate UUIDs"
+
+
 # Class to handle logging of errors of the various types per file
 class LoggingCollection:
     def __init__(self):
@@ -639,6 +662,8 @@ class LoggingCollection:
             "TYPE 22": AggregateType22(),
             "TYPE 23": AggregateType23(),
             "TYPE 24": AggregateType24(),
+            "TYPE 25": AggregateType25(),
+            "TYPE 26": AggregateType26(),
         }
 
     def add_error(self, aggregate_error_type, message):
