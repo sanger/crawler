@@ -27,6 +27,8 @@ ch4_cq,
 filtered_positive,
 filtered_positive_version,
 filtered_positive_timestamp,
+lh_sample_uuid,
+lh_source_plate_uuid,
 created_at,
 updated_at
 )
@@ -56,6 +58,8 @@ VALUES (
 %(filtered_positive)s,
 %(filtered_positive_version)s,
 %(filtered_positive_timestamp)s,
+%(lh_sample_uuid)s,
+%(lh_source_plate_uuid)s,
 %(created_at)s,
 %(updated_at)s
 )
@@ -101,11 +105,14 @@ CREATE TABLE `unified_warehouse_test`.`lighthouse_sample` (
 `filtered_positive` boolean DEFAULT NULL COMMENT 'Filtered positive result value',
 `filtered_positive_version` varchar(255) DEFAULT NULL COMMENT 'Filtered positive version',
 `filtered_positive_timestamp` datetime DEFAULT NULL COMMENT 'Filtered positive timestamp',
+`lh_sample_uuid` varchar(36) DEFAULT NULL COMMENT 'Lighthouse sample unique identifier',
+`lh_source_plate_uuid` varchar(36) DEFAULT NULL COMMENT 'Lighthouse source plate unique identifier',
 `created_at` datetime DEFAULT NULL COMMENT 'When this record was inserted',
 `updated_at` datetime DEFAULT NULL COMMENT 'When this record was last updated',
 PRIMARY KEY (`id`),
 UNIQUE KEY `index_lighthouse_sample_on_root_sample_id_and_rna_id_and_result` (`root_sample_id`,`rna_id`,`result`),
 UNIQUE KEY `index_lighthouse_sample_on_mongodb_id` (`mongodb_id`),
+UNIQUE KEY `index_lighthouse_sample_on_lh_sample_uuid` (`lh_sample_uuid`),
 KEY `index_lighthouse_sample_on_date_tested` (`date_tested`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 """

@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from decimal import Decimal
+import uuid
 
 import pytest
 from bson.decimal128 import Decimal128  # type: ignore
@@ -17,6 +18,8 @@ from crawler.constants import (
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
+    FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     MLWH_COORDINATE,
@@ -34,10 +37,13 @@ from crawler.constants import (
     MLWH_ROOT_SAMPLE_ID,
     MLWH_SOURCE,
     MLWH_UPDATED_AT,
+    MLWH_LH_SAMPLE_UUID,
+    MLWH_LH_SOURCE_PLATE_UUID,
     DART_STATE,
     DART_ROOT_SAMPLE_ID,
     DART_RNA_ID,
     DART_LAB_ID,
+    DART_LH_SAMPLE_UUID,
     DART_STATE_PICKABLE,
     DART_EMPTY_VALUE,
 )
@@ -193,6 +199,8 @@ def test_map_lh_doc_to_sql_columns(config):
         FIELD_FILTERED_POSITIVE: True,
         FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
         FIELD_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 40, 8),
+        FIELD_LH_SAMPLE_UUID: "7512638d-f25e-4ef0-85f0-d921d5263449",
+        FIELD_LH_SOURCE_PLATE_UUID: "88ed5139-9e0c-4118-8cc8-20413b9ffa01",
     }
 
     result = map_lh_doc_to_sql_columns(doc_to_transform)
@@ -210,6 +218,8 @@ def test_map_lh_doc_to_sql_columns(config):
     assert result[MLWH_FILTERED_POSITIVE] is True
     assert result[MLWH_FILTERED_POSITIVE_VERSION] == "v2.3"
     assert result[MLWH_FILTERED_POSITIVE_TIMESTAMP] == datetime(2020, 4, 23, 14, 40, 8)
+    assert result[MLWH_LH_SAMPLE_UUID] == "7512638d-f25e-4ef0-85f0-d921d5263449"
+    assert result[MLWH_LH_SOURCE_PLATE_UUID] == "88ed5139-9e0c-4118-8cc8-20413b9ffa01"
     assert result.get(MLWH_CREATED_AT) is not None
     assert result.get(MLWH_UPDATED_AT) is not None
 
@@ -241,6 +251,8 @@ def test_map_mongo_doc_to_sql_columns(config):
     assert result[MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 40, 8)
     assert result[MLWH_SOURCE] == "Test Centre"
     assert result[MLWH_LAB_ID] == "TC"
+    assert result[MLWH_LH_SAMPLE_UUID] is None
+    assert result[MLWH_LH_SOURCE_PLATE_UUID] is None
     assert result[MLWH_CREATED_AT] == datetime(2020, 4, 27, 5, 20, 0, tzinfo=timezone.utc)
     assert result[MLWH_UPDATED_AT] == datetime(2020, 5, 13, 12, 50, 0, tzinfo=timezone.utc)
 
@@ -284,12 +296,15 @@ def test_get_dart_well_index(config):
 
 
 def test_map_mongo_doc_to_dart_well_props(config):
+    test_uuid = str(uuid.uuid4())
+
     # all fields present, filtered positive
     doc_to_transform = {
         FIELD_FILTERED_POSITIVE: True,
         FIELD_ROOT_SAMPLE_ID: "ABC00000004",
         FIELD_RNA_ID: "TC-rna-00000029_H01",
         FIELD_LAB_ID: "TC",
+        FIELD_LH_SAMPLE_UUID: test_uuid,
     }
 
     result = map_mongo_doc_to_dart_well_props(doc_to_transform)
@@ -298,8 +313,9 @@ def test_map_mongo_doc_to_dart_well_props(config):
     assert result[DART_ROOT_SAMPLE_ID] == "ABC00000004"
     assert result[DART_RNA_ID] == "TC-rna-00000029_H01"
     assert result[DART_LAB_ID] == "TC"
+    assert result[DART_LH_SAMPLE_UUID] == test_uuid
 
-    # missing lab id, not a filtered positive
+    # missing lab id and sample uuid, not a filtered positive
     doc_to_transform = {
         FIELD_FILTERED_POSITIVE: False,
         FIELD_ROOT_SAMPLE_ID: "ABC00000004",
@@ -310,6 +326,7 @@ def test_map_mongo_doc_to_dart_well_props(config):
 
     assert result[DART_STATE] == DART_EMPTY_VALUE
     assert result[DART_LAB_ID] == DART_EMPTY_VALUE
+    assert result[DART_LH_SAMPLE_UUID] == DART_EMPTY_VALUE
 
     # missing filtered positive
     doc_to_transform = {

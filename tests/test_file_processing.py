@@ -4,11 +4,13 @@ from datetime import datetime
 from decimal import Decimal
 from io import StringIO
 from unittest.mock import MagicMock, patch
+import uuid
 
 from bson.decimal128 import Decimal128  # type: ignore
 from bson.objectid import ObjectId
 from crawler.constants import (
     COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
     DART_STATE_PENDING,
     FIELD_CH1_CQ,
     FIELD_CH1_RESULT,
@@ -35,6 +37,10 @@ from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
     FIELD_VIRAL_PREP_ID,
+    FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_BARCODE,
+    FIELD_UPDATED_AT,
+    FIELD_CREATED_AT,
     MLWH_CH1_CQ,
     MLWH_CH1_RESULT,
     MLWH_CH1_TARGET,
@@ -102,11 +108,13 @@ def test_process_files(
     centre.process_files(True)
 
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
 
     pyodbc_conn.assert_called()
 
     # # We record *all* our samples
-    assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
+    assert samples_collection.count_documents({"RNA ID": "AP123_B09", "source": "Alderley"}) == 1
+    assert source_plates_collection.count_documents({"barcode": "AP123"}) == 1
 
 
 def test_process_files_dont_add_to_dart(
@@ -166,7 +174,7 @@ def test_checksum_match(config, tmpdir):
         list_files = create_checksum_files_for(
             f"{config.CENTRES[0]['backups_folder']}/successes/",
             "AP_sanger_report_200503_2338.csv",
-            ["adfsadf", "5c11524df6fd623ae3d687d66152be28"],
+            ["adfsadf", "d204bd7747d9ad505eee901830448578"],
             "200601_1414",
         )
 
@@ -272,51 +280,54 @@ def test_extract_plate_barcode_and_coordinate(config):
 # tests for parsing and formatting the csv file rows
 def test_parse_and_format_file_rows(config):
     timestamp = "some timestamp"
+    test_uuid = uuid.uuid4()
     centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "some file")
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
-        extra_fields_added = [
-            {
-                "Root Sample ID": "1",
-                "RNA ID": "RNA_0043_H09",
-                "plate_barcode": "RNA_0043",
-                "source": "Alderley",
-                "coordinate": "H09",
-                "line_number": 2,
-                "Result": "Positive",
-                "file_name": "some file",
-                "file_name_date": None,
-                "created_at": timestamp,
-                "updated_at": timestamp,
-                "Lab ID": None,
-                "filtered_positive": True,
-                "filtered_positive_version": "v2.3",
-                "filtered_positive_timestamp": timestamp,
-            }
-        ]
+        with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
+            extra_fields_added = [
+                {
+                    "Root Sample ID": "1",
+                    "RNA ID": "RNA_0043_H09",
+                    "plate_barcode": "RNA_0043",
+                    "source": "Alderley",
+                    "coordinate": "H09",
+                    "line_number": 2,
+                    "Result": "Positive",
+                    "file_name": "some file",
+                    "file_name_date": None,
+                    "created_at": timestamp,
+                    "updated_at": timestamp,
+                    "Lab ID": None,
+                    "filtered_positive": True,
+                    "filtered_positive_version": "v2.3",
+                    "filtered_positive_timestamp": timestamp,
+                    "lh_sample_uuid": str(test_uuid),
+                }
+            ]
 
-        with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-            fake_csv.write("1,RNA_0043_H09,Positive\n")
-            fake_csv.seek(0)
+            with StringIO() as fake_csv:
+                fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
+                fake_csv.write("1,RNA_0043_H09,Positive\n")
+                fake_csv.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv)
+                csv_to_test_reader = DictReader(fake_csv)
 
-            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
-            assert augmented_data == extra_fields_added
-            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+                augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+                assert augmented_data == extra_fields_added
+                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
-        with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-            fake_csv.write("1,RNA_0043_,Positive\n")
-            fake_csv.seek(0)
+            with StringIO() as fake_csv:
+                fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
+                fake_csv.write("1,RNA_0043_,Positive\n")
+                fake_csv.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv)
+                csv_to_test_reader = DictReader(fake_csv)
 
-            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
-            assert augmented_data == []
+                augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+                assert augmented_data == []
 
-            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
-            assert centre_file.logging_collection.aggregator_types["TYPE 9"].count_errors == 1
+                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+                assert centre_file.logging_collection.aggregator_types["TYPE 9"].count_errors == 1
 
 
 def test_filtered_row_with_extra_unrecognised_columns(config):
@@ -506,99 +517,106 @@ def test_filtered_row_with_ct_channel_columns(config):
 
 def test_parse_and_format_file_rows_to_add_file_details(config):
     timestamp = "some timestamp"
+    test_uuid = uuid.uuid4()
     centre_file = centre_file_with_mocked_filtered_postitive_identifier(
         config, "ASDF_200507_1340.csv"
     )
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
+        with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
 
-        extra_fields_added = [
-            {
-                "Root Sample ID": "1",
-                "RNA ID": "RNA_0043_H09",
-                "plate_barcode": "RNA_0043",
-                "source": "Alderley",
-                "coordinate": "H09",
-                "line_number": 2,
-                "file_name": "ASDF_200507_1340.csv",
-                "file_name_date": datetime(2020, 5, 7, 13, 40),
-                "created_at": timestamp,
-                "updated_at": timestamp,
-                "Result": "Positive",
-                "Lab ID": None,
-                "filtered_positive": True,
-                "filtered_positive_version": "v2.3",
-                "filtered_positive_timestamp": timestamp,
-            },
-            {
-                "Root Sample ID": "2",
-                "RNA ID": "RNA_0043_B08",
-                "plate_barcode": "RNA_0043",
-                "source": "Alderley",
-                "coordinate": "B08",
-                "line_number": 3,
-                "file_name": "ASDF_200507_1340.csv",
-                "file_name_date": datetime(2020, 5, 7, 13, 40),
-                "created_at": timestamp,
-                "updated_at": timestamp,
-                "Result": "Negative",
-                "Lab ID": None,
-            },
-        ]
+            extra_fields_added = [
+                {
+                    "Root Sample ID": "1",
+                    "RNA ID": "RNA_0043_H09",
+                    "plate_barcode": "RNA_0043",
+                    "source": "Alderley",
+                    "coordinate": "H09",
+                    "line_number": 2,
+                    "file_name": "ASDF_200507_1340.csv",
+                    "file_name_date": datetime(2020, 5, 7, 13, 40),
+                    "created_at": timestamp,
+                    "updated_at": timestamp,
+                    "Result": "Positive",
+                    "Lab ID": None,
+                    "filtered_positive": True,
+                    "filtered_positive_version": "v2.3",
+                    "filtered_positive_timestamp": timestamp,
+                    "lh_sample_uuid": str(test_uuid),
+                },
+                {
+                    "Root Sample ID": "2",
+                    "RNA ID": "RNA_0043_B08",
+                    "plate_barcode": "RNA_0043",
+                    "source": "Alderley",
+                    "coordinate": "B08",
+                    "line_number": 3,
+                    "file_name": "ASDF_200507_1340.csv",
+                    "file_name_date": datetime(2020, 5, 7, 13, 40),
+                    "created_at": timestamp,
+                    "updated_at": timestamp,
+                    "Result": "Negative",
+                    "Lab ID": None,
+                    "lh_sample_uuid": str(test_uuid),
+                },
+            ]
 
-        with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-            fake_csv.write("1,RNA_0043_H09,Positive\n")
-            fake_csv.write("2,RNA_0043_B08,Negative\n")
-            fake_csv.seek(0)
+            with StringIO() as fake_csv:
+                fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
+                fake_csv.write("1,RNA_0043_H09,Positive\n")
+                fake_csv.write("2,RNA_0043_B08,Negative\n")
+                fake_csv.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv)
+                csv_to_test_reader = DictReader(fake_csv)
 
-            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+                augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
-            assert augmented_data == extra_fields_added
-            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+                assert augmented_data == extra_fields_added
+                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
 def test_parse_and_format_file_rows_detects_duplicates(config):
     timestamp = "some timestamp"
+    test_uuid = uuid.uuid4()
     centre_file = centre_file_with_mocked_filtered_postitive_identifier(
         config, "ASDF_200507_1340.csv"
     )
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
+        with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
 
-        extra_fields_added = [
-            {
-                "Root Sample ID": "1",
-                "RNA ID": "RNA_0043_H09",
-                "plate_barcode": "RNA_0043",
-                "source": "Alderley",
-                "coordinate": "H09",
-                "line_number": 2,
-                "file_name": "ASDF_200507_1340.csv",
-                "file_name_date": datetime(2020, 5, 7, 13, 40),
-                "created_at": timestamp,
-                "updated_at": timestamp,
-                "Result": "Positive",
-                "Lab ID": "Val",
-                "filtered_positive": True,
-                "filtered_positive_version": "v2.3",
-                "filtered_positive_timestamp": timestamp,
-            },
-        ]
+            extra_fields_added = [
+                {
+                    "Root Sample ID": "1",
+                    "RNA ID": "RNA_0043_H09",
+                    "plate_barcode": "RNA_0043",
+                    "source": "Alderley",
+                    "coordinate": "H09",
+                    "line_number": 2,
+                    "file_name": "ASDF_200507_1340.csv",
+                    "file_name_date": datetime(2020, 5, 7, 13, 40),
+                    "created_at": timestamp,
+                    "updated_at": timestamp,
+                    "Result": "Positive",
+                    "Lab ID": "Val",
+                    "filtered_positive": True,
+                    "filtered_positive_version": "v2.3",
+                    "filtered_positive_timestamp": timestamp,
+                    "lh_sample_uuid": str(test_uuid),
+                },
+            ]
 
-        with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-            fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
-            fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
-            fake_csv.seek(0)
+            with StringIO() as fake_csv:
+                fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
+                fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
+                fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
+                fake_csv.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv)
+                csv_to_test_reader = DictReader(fake_csv)
 
-            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
-            assert augmented_data == extra_fields_added
+                augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+                assert augmented_data == extra_fields_added
 
-            assert centre_file.logging_collection.aggregator_types["TYPE 5"].count_errors == 1
-            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+                assert centre_file.logging_collection.aggregator_types["TYPE 5"].count_errors == 1
+                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
 def test_where_result_has_unexpected_value(config):
@@ -1479,3 +1497,163 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
                         mock_conn().cursor().rollback.assert_not_called()
                         assert mock_conn().cursor().commit.call_count == 1
                         mock_conn().close.assert_called_once()
+
+
+# tests for updating docs with source plate uuids
+def test_new_mongo_source_plate(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some file", centre)
+    timestamp = datetime.now()
+    test_uuid = uuid.uuid4()
+    with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
+        with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
+            plate_barcode = "abc123"
+            lab_id = "AP"
+            source_plate = centre_file.new_mongo_source_plate(plate_barcode, lab_id)
+
+            assert source_plate[FIELD_LH_SOURCE_PLATE_UUID] == str(test_uuid)
+            assert source_plate[FIELD_BARCODE] == plate_barcode
+            assert source_plate[FIELD_LAB_ID] == lab_id
+            assert source_plate[FIELD_UPDATED_AT] == timestamp
+            assert source_plate[FIELD_CREATED_AT] == timestamp
+
+
+def test_docs_to_insert_updated_with_source_plate_uuids_handles_mongo_collection_error(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some file", centre)
+    with patch("crawler.file_processing.get_mongo_collection", side_effect=ValueError("Boom!")):
+        result = centre_file.docs_to_insert_updated_with_source_plate_uuids([])
+
+        assert result == []
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+        assert centre_file.logging_collection.aggregator_types["TYPE 26"].count_errors == 1
+
+
+def test_docs_to_insert_updated_with_source_plate_uuids_adds_new_plates(config, mongo_database):
+    _, mongo_database = mongo_database
+    docs_to_insert = [
+        {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "AP"},
+        {FIELD_PLATE_BARCODE: "456", FIELD_LAB_ID: "MK"},
+        {FIELD_PLATE_BARCODE: "456", FIELD_LAB_ID: "MK"},
+        {FIELD_PLATE_BARCODE: "789", FIELD_LAB_ID: "CB"},
+    ]
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some file", centre)
+    updated_docs = centre_file.docs_to_insert_updated_with_source_plate_uuids(docs_to_insert)
+    assert len(updated_docs) == 4
+
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+    assert source_plates_collection.count_documents({}) == 3
+
+    for doc in updated_docs:
+        source_plate = source_plates_collection.find_one({FIELD_BARCODE: doc[FIELD_PLATE_BARCODE]})
+        assert source_plate is not None
+        assert source_plate[FIELD_LH_SOURCE_PLATE_UUID] is not None
+        assert doc[FIELD_LH_SOURCE_PLATE_UUID] == source_plate[FIELD_LH_SOURCE_PLATE_UUID]
+
+    assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+
+
+def test_docs_to_insert_updated_with_source_plate_uuids_uses_existing_plates(
+    config, mongo_database
+):
+    _, mongo_database = mongo_database
+    source_plates = [
+        {FIELD_BARCODE: "123", FIELD_LAB_ID: "AP", FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4())},
+        {FIELD_BARCODE: "456", FIELD_LAB_ID: "MK", FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4())},
+        {FIELD_BARCODE: "789", FIELD_LAB_ID: "CB", FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4())},
+    ]
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+    source_plates_collection.insert_many(source_plates)
+    assert source_plates_collection.count_documents({}) == 3  # sanity check
+
+    docs_to_insert = [
+        {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "AP"},
+        {FIELD_PLATE_BARCODE: "456", FIELD_LAB_ID: "MK"},
+        {FIELD_PLATE_BARCODE: "456", FIELD_LAB_ID: "MK"},
+        {FIELD_PLATE_BARCODE: "789", FIELD_LAB_ID: "CB"},
+    ]
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some file", centre)
+    updated_docs = centre_file.docs_to_insert_updated_with_source_plate_uuids(docs_to_insert)
+    assert len(updated_docs) == 4
+
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+    assert source_plates_collection.count_documents({}) == 3
+
+    for doc in updated_docs:
+        source_plate = source_plates_collection.find_one({FIELD_BARCODE: doc[FIELD_PLATE_BARCODE]})
+        assert source_plate is not None
+        assert source_plate[FIELD_LH_SOURCE_PLATE_UUID] is not None
+        assert doc[FIELD_LH_SOURCE_PLATE_UUID] == source_plate[FIELD_LH_SOURCE_PLATE_UUID]
+
+    assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+
+
+def test_docs_to_insert_updated_with_source_plate_handles_duplicate_new_barcodes_from_different_lab(
+    config, mongo_database
+):
+    # set up input sample docs to have duplicate plate barcodes from different labs
+    _, mongo_database = mongo_database
+    docs = [
+        {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "AP"},
+        {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "MK"},  # we expect this one to be rejected
+        {FIELD_PLATE_BARCODE: "456", FIELD_LAB_ID: "MK"},
+        {FIELD_PLATE_BARCODE: "789", FIELD_LAB_ID: "CB"},
+    ]
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some file", centre)
+    updated_docs = centre_file.docs_to_insert_updated_with_source_plate_uuids(docs)
+    assert len(updated_docs) == 3
+    assert sum(doc[FIELD_PLATE_BARCODE] == "123" and doc[FIELD_LAB_ID] == "AP" for doc in docs) == 1
+    assert sum(doc[FIELD_PLATE_BARCODE] == "456" and doc[FIELD_LAB_ID] == "MK" for doc in docs) == 1
+    assert sum(doc[FIELD_PLATE_BARCODE] == "789" and doc[FIELD_LAB_ID] == "CB" for doc in docs) == 1
+
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+    assert source_plates_collection.count_documents({}) == 3
+
+    for doc in updated_docs:
+        source_plate = source_plates_collection.find_one({FIELD_BARCODE: doc[FIELD_PLATE_BARCODE]})
+        assert source_plate is not None
+        assert source_plate[FIELD_LH_SOURCE_PLATE_UUID] is not None
+        assert doc[FIELD_LH_SOURCE_PLATE_UUID] == source_plate[FIELD_LH_SOURCE_PLATE_UUID]
+
+    assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+    assert centre_file.logging_collection.aggregator_types["TYPE 25"].count_errors == 1
+
+
+def test_docs_to_insert_updated_with_source_plate_handles_duplicate_existing_barcodes_from_diff_lab(
+    config, mongo_database
+):
+    # set up input sample docs to have a plate from a different lab to one already in mongo
+    _, mongo_database = mongo_database
+    source_plates = [
+        {FIELD_BARCODE: "123", FIELD_LAB_ID: "MK", FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4())},
+    ]
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+    source_plates_collection.insert_many(source_plates)
+    assert source_plates_collection.count_documents({}) == 1  # sanity check
+
+    docs = [
+        {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "AP"},  # we expect this one to be rejected
+        {FIELD_PLATE_BARCODE: "456", FIELD_LAB_ID: "MK"},
+        {FIELD_PLATE_BARCODE: "789", FIELD_LAB_ID: "CB"},
+    ]
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some file", centre)
+    updated_docs = centre_file.docs_to_insert_updated_with_source_plate_uuids(docs)
+    assert len(updated_docs) == 2
+    assert sum(doc[FIELD_PLATE_BARCODE] == "456" and doc[FIELD_LAB_ID] == "MK" for doc in docs) == 1
+    assert sum(doc[FIELD_PLATE_BARCODE] == "789" and doc[FIELD_LAB_ID] == "CB" for doc in docs) == 1
+
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+    assert source_plates_collection.count_documents({}) == 3
+
+    for doc in updated_docs:
+        source_plate = source_plates_collection.find_one({FIELD_BARCODE: doc[FIELD_PLATE_BARCODE]})
+        assert source_plate is not None
+        assert source_plate[FIELD_LH_SOURCE_PLATE_UUID] is not None
+        assert doc[FIELD_LH_SOURCE_PLATE_UUID] == source_plate[FIELD_LH_SOURCE_PLATE_UUID]
+
+    assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+    assert centre_file.logging_collection.aggregator_types["TYPE 25"].count_errors == 1
