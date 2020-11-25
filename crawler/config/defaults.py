@@ -76,6 +76,17 @@ CENTRES = [
         "file_names_to_ignore": ["CB_sanger_report_200714_0001_master.csv"],
         "biomek_labware_class": "Bio-Rad_96PCR",
     },
+    {
+        "barcode_field": FIELD_RNA_ID,
+        "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
+        "name": "Randox",
+        "prefix": "RAND",
+        "lab_id_default": "RX", # made up
+        "backups_folder": "data/backups/RAND",
+        "sftp_file_regex": r"^RX_sanger_report_(\d{6}_\d{4}).*\.csv$",
+        "sftp_root_read": "project-heron_randox", # made up
+        "biomek_labware_class": "KingFisher_96_2ml", # find out
+    },
 ]
 
 # mongo details
