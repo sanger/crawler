@@ -2,7 +2,7 @@ import logging
 import logging.config
 import sys
 
-from crawler.helpers import get_config
+from crawler.helpers.general_helpers import get_config
 from migrations import (
     sample_timestamps,
     update_mlwh_with_legacy_samples,

@@ -9,7 +9,7 @@ from csv import DictReader
 from datetime import datetime
 from enum import Enum
 from hashlib import md5
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple, Union
 
 import pyodbc  # type: ignore
 from bson.decimal128 import Decimal128  # type: ignore
@@ -27,6 +27,7 @@ from crawler.constants import (
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
     DART_STATE_PENDING,
+    FIELD_BARCODE,
     FIELD_CH1_CQ,
     FIELD_CH1_RESULT,
     FIELD_CH1_TARGET,
@@ -48,6 +49,8 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_LAB_ID,
+    FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_LINE_NUMBER,
     FIELD_MONGODB_ID,
     FIELD_PLATE_BARCODE,
@@ -58,9 +61,6 @@ from crawler.constants import (
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
-    FIELD_LH_SAMPLE_UUID,
-    FIELD_LH_SOURCE_PLATE_UUID,
-    FIELD_BARCODE,
     MAX_CQ_VALUE,
     MIN_CQ_VALUE,
     POSITIVE_RESULT_VALUE,
@@ -77,14 +77,14 @@ from crawler.db import (
     set_dart_well_properties,
 )
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
-from crawler.helpers import (
+from crawler.helpers.general_helpers import (
     current_time,
-    get_sftp_connection,
-    LoggingCollection,
-    map_lh_doc_to_sql_columns,
     get_dart_well_index,
+    get_sftp_connection,
+    map_lh_doc_to_sql_columns,
     map_mongo_doc_to_dart_well_props,
 )
+from crawler.helpers.logging_helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 logger = logging.getLogger(__name__)
@@ -516,20 +516,17 @@ class CentreFile:
         logger.debug("Attempting to update docs with source plate uuids")
         updated_docs = []
 
-        def update_doc_from_source_plate(doc, existing_plate, skip_lab_check=False) -> None:
+        def update_doc_from_source_plate(doc, existing_plate, skip_lab_check: bool = False) -> None:
             if skip_lab_check or doc[FIELD_LAB_ID] == existing_plate[FIELD_LAB_ID]:
                 doc[FIELD_LH_SOURCE_PLATE_UUID] = existing_plate[FIELD_LH_SOURCE_PLATE_UUID]
                 updated_docs.append(doc)
             else:
-                self.logging_collection.add_error(
-                    "TYPE 25",
+                error_message = (
                     f"Source plate barcode {doc[FIELD_PLATE_BARCODE]} in file {self.file_name} "
                     f"already exists with different lab_id {existing_plate[FIELD_LAB_ID]}",
                 )
-                logger.error(
-                    f"Source plate barcode {doc[FIELD_PLATE_BARCODE]} in file {self.file_name} "
-                    f"already exists with different lab_id {existing_plate[FIELD_LAB_ID]}"
-                )
+                self.logging_collection.add_error("TYPE 25", error_message)
+                logger.error(error_message)
 
         try:
             new_plates = []  # type:ignore
@@ -852,7 +849,7 @@ class CentreFile:
 
         return m.group(1), m.group(2)
 
-    def get_now_timestamp(self):
+    def get_now_timestamp(self) -> datetime:
         return datetime.now()
 
     def get_row_signature(self, row):
@@ -1366,7 +1363,9 @@ class CentreFile:
 
         return datetime.strptime(file_timestamp, "%y%m%d_%H%M")
 
-    def new_mongo_source_plate(self, plate_barcode: str, lab_id: str) -> Dict[str, Any]:
+    def new_mongo_source_plate(
+        self, plate_barcode: str, lab_id: str
+    ) -> Dict[str, Union[str, datetime]]:
         """Creates a new mongo source plate document.
 
         Arguments:
