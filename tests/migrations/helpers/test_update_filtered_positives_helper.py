@@ -1,40 +1,38 @@
-from unittest.mock import patch
-import pytest
 from datetime import datetime
+from unittest.mock import patch
 
-from migrations.helpers.update_filtered_positives_helper import (
-    pending_plate_barcodes_from_dart,
-    positive_result_samples_from_mongo,
-    update_filtered_positive_fields,
-    update_mongo_filtered_positive_fields,
-    update_mlwh_filtered_positive_fields,
-    biomek_labclass_by_centre_name,
-    update_dart_filtered_positive_fields,
-)
+import pytest
 from crawler.constants import (
+    DART_STATE_PENDING,
+    FIELD_COORDINATE,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
+    FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_MONGODB_ID,
     FIELD_PLATE_BARCODE,
-    POSITIVE_RESULT_VALUE,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    DART_STATE_PENDING,
-    FIELD_ROOT_SAMPLE_ID,
     FIELD_RNA_ID,
-    FIELD_COORDINATE,
+    FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
-    MLWH_MONGODB_ID,
-    MLWH_ROOT_SAMPLE_ID,
-    MLWH_PLATE_BARCODE,
-    MLWH_RNA_ID,
     MLWH_COORDINATE,
-    MLWH_RESULT,
     MLWH_FILTERED_POSITIVE,
-    MLWH_FILTERED_POSITIVE_VERSION,
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
+    MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_MONGODB_ID,
+    MLWH_PLATE_BARCODE,
+    MLWH_RESULT,
+    MLWH_RNA_ID,
+    MLWH_ROOT_SAMPLE_ID,
+    POSITIVE_RESULT_VALUE,
 )
-from crawler.sql_queries import (
-    SQL_DART_GET_PLATE_BARCODES,
+from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES
+from migrations.helpers.update_filtered_positives_helper import (
+    biomek_labclass_by_centre_name,
+    pending_plate_barcodes_from_dart,
+    positive_result_samples_from_mongo,
+    update_dart_filtered_positive_fields,
+    update_filtered_positive_fields,
+    update_mlwh_filtered_positive_fields,
+    update_mongo_filtered_positive_fields,
 )
 
 # ----- test fixture helpers -----
@@ -199,7 +197,7 @@ def test_update_mongo_filtered_positive_fields_updates_expected_samples(
     result = update_mongo_filtered_positive_fields(config, updated_samples, version, timestamp)
     assert result is True
 
-    assert samples_collection_accessor.count() == len(testing_samples)
+    assert samples_collection_accessor.count_documents({}) == len(testing_samples)
     # ensure samples in mongo are updated as expected
     for sample in samples_collection_accessor.find(
         {FIELD_MONGODB_ID: updated_samples[0][FIELD_MONGODB_ID]}
