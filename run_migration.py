@@ -44,10 +44,7 @@ def migration_update_mlwh_with_legacy_samples():
 
     s_start_datetime = sys.argv[2]
     s_end_datetime = sys.argv[3]
-    print("Running update_mlwh_with_legacy_samples migration")
-    update_mlwh_with_legacy_samples.run(
-        config, s_start_datetime=s_start_datetime, s_end_datetime=s_end_datetime
-    )
+    update_dart_with_legacy_samples.run(config, s_start_datetime=s_start_datetime, s_end_datetime=s_end_datetime)
 
 
 def migration_update_filtered_positives():
