@@ -40,33 +40,25 @@ from migrations.helpers.update_filtered_positives_helper import (
 
 @pytest.fixture
 def mock_dart_conn():
-    with patch(
-        "migrations.helpers.update_filtered_positives_helper.create_dart_sql_server_conn"
-    ) as mock_connect:
+    with patch("migrations.helpers.update_filtered_positives_helper.create_dart_sql_server_conn") as mock_connect:
         yield mock_connect
 
 
 @pytest.fixture
 def mock_mongo_client():
-    with patch(
-        "migrations.helpers.update_filtered_positives_helper.create_mongo_client"
-    ) as mock_client:
+    with patch("migrations.helpers.update_filtered_positives_helper.create_mongo_client") as mock_client:
         yield mock_client
 
 
 @pytest.fixture
 def mock_mongo_collection():
-    with patch(
-        "migrations.helpers.update_filtered_positives_helper.get_mongo_collection"
-    ) as mock_collection:
+    with patch("migrations.helpers.update_filtered_positives_helper.get_mongo_collection") as mock_collection:
         yield mock_collection
 
 
 @pytest.fixture
 def mock_positive_identifier():
-    with patch(
-        "migrations.helpers.update_filtered_positives_helper.FilteredPositiveIdentifier"
-    ) as mock_identifier:
+    with patch("migrations.helpers.update_filtered_positives_helper.FilteredPositiveIdentifier") as mock_identifier:
         mock_identifier.is_positive.return_value = True
         mock_identifier.current_version.return_value = "v2.3"
         yield mock_identifier
@@ -75,9 +67,7 @@ def mock_positive_identifier():
 # ----- test pending_plate_barcodes_from_dart method -----
 
 
-def test_pending_plate_barcodes_from_dart_throws_for_error_generating_connection(
-    config, mock_dart_conn
-):
+def test_pending_plate_barcodes_from_dart_throws_for_error_generating_connection(config, mock_dart_conn):
     mock_dart_conn.side_effect = Exception("Boom!")
     with pytest.raises(Exception):
         pending_plate_barcodes_from_dart(config)
@@ -89,9 +79,7 @@ def test_pending_plate_barcodes_from_dart_throws_for_no_connection(config, mock_
         pending_plate_barcodes_from_dart(config)
 
 
-def test_pending_plate_barcodes_from_dart_throws_for_error_generating_cursor(
-    config, mock_dart_conn
-):
+def test_pending_plate_barcodes_from_dart_throws_for_error_generating_cursor(config, mock_dart_conn):
     mock_dart_conn().cursor.side_effect = NotImplementedError("Boom!")
     with pytest.raises(NotImplementedError):
         pending_plate_barcodes_from_dart(config)
@@ -107,18 +95,14 @@ def test_pending_plate_barcodes_from_dart_returns_expected_plate_barcodes(config
     mock_dart_conn().cursor().execute().fetchall.return_value = expected_rows
     result = pending_plate_barcodes_from_dart(config)
 
-    mock_dart_conn().cursor().execute.assert_called_with(
-        SQL_DART_GET_PLATE_BARCODES, DART_STATE_PENDING
-    )
+    mock_dart_conn().cursor().execute.assert_called_with(SQL_DART_GET_PLATE_BARCODES, DART_STATE_PENDING)
     assert result == ["ABC123", "123ABC", "abcdef"]
 
 
 # ----- test positive_result_samples_from_mongo method -----
 
 
-def test_positive_result_samples_from_mongo_throws_for_errors_creating_client(
-    config, mock_mongo_client
-):
+def test_positive_result_samples_from_mongo_throws_for_errors_creating_client(config, mock_mongo_client):
     mock_mongo_client.side_effect = Exception("Boom!")
     with pytest.raises(Exception):
         positive_result_samples_from_mongo(config, [])
@@ -131,17 +115,13 @@ def test_positive_result_samples_from_mongo_throws_for_error_creating_db(config)
             positive_result_samples_from_mongo(config, [])
 
 
-def test_positive_result_samples_from_mongo_throws_for_error_getting_collection(
-    config, mock_mongo_collection
-):
+def test_positive_result_samples_from_mongo_throws_for_error_getting_collection(config, mock_mongo_collection):
     mock_mongo_collection.side_effect = ValueError("Boom!")
     with pytest.raises(ValueError):
         positive_result_samples_from_mongo(config, [])
 
 
-def test_positive_result_samples_from_mongo_throws_for_error_finding_samples(
-    config, mock_mongo_collection
-):
+def test_positive_result_samples_from_mongo_throws_for_error_finding_samples(config, mock_mongo_collection):
     mock_mongo_collection().find.side_effect = Exception("Boom!")
     with pytest.raises(Exception):
         positive_result_samples_from_mongo(config, [])
@@ -149,9 +129,7 @@ def test_positive_result_samples_from_mongo_throws_for_error_finding_samples(
 
 def test_positive_result_samples_from_mongo_returns_expected_samples(config, testing_samples):
     plate_barcodes = ["123"]
-    expected_samples = testing_samples[
-        :1
-    ]  # only the first sample is positive, with matching plate barcode
+    expected_samples = testing_samples[:1]  # only the first sample is positive, with matching plate barcode
     result = positive_result_samples_from_mongo(config, plate_barcodes)
     assert result == expected_samples
 
@@ -176,9 +154,7 @@ def test_update_filtered_positive_fields_assigns_expected_filtered_positive_fiel
 # ----- test update_mongo_filtered_positive_fields method -----
 
 
-def test_update_mongo_filtered_positive_fields_raises_with_error_updating_mongo(
-    config, mock_mongo_collection
-):
+def test_update_mongo_filtered_positive_fields_raises_with_error_updating_mongo(config, mock_mongo_collection):
     mock_mongo_collection().update_many.side_effect = ValueError("Boom!")
     with pytest.raises(ValueError):
         update_mongo_filtered_positive_fields(config, [], "v2.3", None)
@@ -199,19 +175,13 @@ def test_update_mongo_filtered_positive_fields_updates_expected_samples(
 
     assert samples_collection_accessor.count_documents({}) == len(testing_samples)
     # ensure samples in mongo are updated as expected
-    for sample in samples_collection_accessor.find(
-        {FIELD_MONGODB_ID: updated_samples[0][FIELD_MONGODB_ID]}
-    ):
+    for sample in samples_collection_accessor.find({FIELD_MONGODB_ID: updated_samples[0][FIELD_MONGODB_ID]}):
         assert sample[FIELD_FILTERED_POSITIVE] is True
         assert sample[FIELD_FILTERED_POSITIVE_VERSION] == version
         assert sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] is not None
 
     for sample in samples_collection_accessor.find(
-        {
-            FIELD_MONGODB_ID: {
-                "$in": [updated_samples[1][FIELD_MONGODB_ID], updated_samples[2][FIELD_MONGODB_ID]]
-            }
-        }
+        {FIELD_MONGODB_ID: {"$in": [updated_samples[1][FIELD_MONGODB_ID], updated_samples[2][FIELD_MONGODB_ID]]}}
     ):
         assert sample[FIELD_FILTERED_POSITIVE] is False
         assert sample[FIELD_FILTERED_POSITIVE_VERSION] == version
@@ -222,17 +192,13 @@ def test_update_mongo_filtered_positive_fields_updates_expected_samples(
 
 
 def test_update_mlwh_filtered_positive_fields_return_false_with_no_connection(config):
-    with patch(
-        "migrations.helpers.update_filtered_positives_helper.create_mysql_connection"
-    ) as mock_connection:
+    with patch("migrations.helpers.update_filtered_positives_helper.create_mysql_connection") as mock_connection:
         mock_connection().is_connected.return_value = False
         result = update_mlwh_filtered_positive_fields(config, [])
         assert result is False
 
 
-def test_update_mlwh_filtered_positive_fields_raises_with_error_updating_mlwh(
-    config, mlwh_connection
-):
+def test_update_mlwh_filtered_positive_fields_raises_with_error_updating_mlwh(config, mlwh_connection):
     with patch(
         "migrations.helpers.update_filtered_positives_helper.run_mysql_executemany_query",
         side_effect=NotImplementedError("Boom!"),
@@ -349,9 +315,7 @@ def test_biomek_labclass_by_centre_name(config):
 # ----- test update_dart_filtered_positive_fields method -----
 
 
-def test_update_dart_filtered_positive_fields_throws_with_error_connecting_to_dart(
-    config, mock_dart_conn
-):
+def test_update_dart_filtered_positive_fields_throws_with_error_connecting_to_dart(config, mock_dart_conn):
     mock_dart_conn.side_effect = NotImplementedError("Boom!")
     with pytest.raises(Exception):
         update_dart_filtered_positive_fields(config, [])
@@ -363,17 +327,13 @@ def test_update_dart_filtered_positive_fields_throws_no_dart_connection(config, 
         update_dart_filtered_positive_fields(config, [])
 
 
-def test_update_dart_filtered_positive_fields_returns_false_with_error_creating_cursor(
-    config, mock_dart_conn
-):
+def test_update_dart_filtered_positive_fields_returns_false_with_error_creating_cursor(config, mock_dart_conn):
     mock_dart_conn().cursor.side_effect = NotImplementedError("Boom!")
     result = update_dart_filtered_positive_fields(config, [])
     assert result is False
 
 
-def test_update_dart_filtered_positive_fields_returns_false_error_adding_plate(
-    config, mock_dart_conn
-):
+def test_update_dart_filtered_positive_fields_returns_false_error_adding_plate(config, mock_dart_conn):
     with patch(
         "migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist",
         side_effect=Exception("Boom!"),
@@ -383,9 +343,7 @@ def test_update_dart_filtered_positive_fields_returns_false_error_adding_plate(
         assert result is False
 
 
-def test_update_dart_filtered_positive_fields_non_pending_plate_does_not_update_wells(
-    config, mock_dart_conn
-):
+def test_update_dart_filtered_positive_fields_non_pending_plate_does_not_update_wells(config, mock_dart_conn):
     with patch(
         "migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist",
         return_value="not pending",
@@ -401,9 +359,7 @@ def test_update_dart_filtered_positive_fields_non_pending_plate_does_not_update_
             assert result is True
 
 
-def test_update_dart_filtered_positive_fields_returns_false_unable_to_determine_well_index(
-    config, mock_dart_conn
-):
+def test_update_dart_filtered_positive_fields_returns_false_unable_to_determine_well_index(config, mock_dart_conn):
     with patch(
         "migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist",
         return_value=DART_STATE_PENDING,
@@ -423,9 +379,7 @@ def test_update_dart_filtered_positive_fields_returns_false_unable_to_determine_
                 assert result is False
 
 
-def test_update_dart_filtered_positive_fields_returns_false_error_mapping_to_well_props(
-    config, mock_dart_conn
-):
+def test_update_dart_filtered_positive_fields_returns_false_error_mapping_to_well_props(config, mock_dart_conn):
     with patch(
         "migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist",
         return_value=DART_STATE_PENDING,
@@ -441,9 +395,7 @@ def test_update_dart_filtered_positive_fields_returns_false_error_mapping_to_wel
                 with patch(
                     "migrations.helpers.update_filtered_positives_helper.set_dart_well_properties"
                 ) as mock_update_well_props:
-                    samples = [
-                        {FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0]["name"]}
-                    ]
+                    samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0]["name"]}]
                     result = update_dart_filtered_positive_fields(config, samples)
 
                     mock_dart_conn().cursor().rollback.assert_called_once()
@@ -451,9 +403,7 @@ def test_update_dart_filtered_positive_fields_returns_false_error_mapping_to_wel
                     assert result is False
 
 
-def test_update_dart_filtered_positive_fields_returns_false_error_adding_well_properties(
-    config, mock_dart_conn
-):
+def test_update_dart_filtered_positive_fields_returns_false_error_adding_well_properties(config, mock_dart_conn):
     with patch(
         "migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist",
         return_value=DART_STATE_PENDING,
@@ -469,25 +419,17 @@ def test_update_dart_filtered_positive_fields_returns_false_error_adding_well_pr
                     "migrations.helpers.update_filtered_positives_helper.set_dart_well_properties",
                     side_effect=NotImplementedError("Boom!"),
                 ):
-                    samples = [
-                        {FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0]["name"]}
-                    ]
+                    samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0]["name"]}]
                     result = update_dart_filtered_positive_fields(config, samples)
 
                     mock_dart_conn().cursor().rollback.assert_called_once()
                     assert result is False
 
 
-def test_update_dart_filtered_positive_fields_returns_true_multiple_new_plates(
-    config, mock_dart_conn
-):
-    with patch(
-        "migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist"
-    ) as mock_add_plate:
+def test_update_dart_filtered_positive_fields_returns_true_multiple_new_plates(config, mock_dart_conn):
+    with patch("migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist") as mock_add_plate:
         mock_add_plate.return_value = DART_STATE_PENDING
-        with patch(
-            "migrations.helpers.update_filtered_positives_helper.get_dart_well_index"
-        ) as mock_get_well_index:
+        with patch("migrations.helpers.update_filtered_positives_helper.get_dart_well_index") as mock_get_well_index:
             test_well_index = 12
             mock_get_well_index.return_value = test_well_index
             with patch(
@@ -543,16 +485,10 @@ def test_update_dart_filtered_positive_fields_returns_true_multiple_new_plates(
                     assert result is True
 
 
-def test_update_dart_filtered_positive_fields_returns_true_single_new_plate_multiple_wells(
-    config, mock_dart_conn
-):
-    with patch(
-        "migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist"
-    ) as mock_add_plate:
+def test_update_dart_filtered_positive_fields_returns_true_single_new_plate_multiple_wells(config, mock_dart_conn):
+    with patch("migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist") as mock_add_plate:
         mock_add_plate.return_value = DART_STATE_PENDING
-        with patch(
-            "migrations.helpers.update_filtered_positives_helper.get_dart_well_index"
-        ) as mock_get_well_index:
+        with patch("migrations.helpers.update_filtered_positives_helper.get_dart_well_index") as mock_get_well_index:
             test_well_index = 12
             mock_get_well_index.return_value = test_well_index
             with patch(

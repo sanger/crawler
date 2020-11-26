@@ -93,9 +93,7 @@ def current_time() -> str:
     return datetime.now().strftime("%y%m%d_%H%M")
 
 
-def get_sftp_connection(
-    config: ModuleType, username: str = None, password: str = None
-) -> pysftp.Connection:
+def get_sftp_connection(config: ModuleType, username: str = None, password: str = None) -> pysftp.Connection:
     """Get a connection to the SFTP server as a context manager. The READ credentials are used by
     default but a username and password provided will override these.
 
@@ -193,11 +191,7 @@ def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
 # Strip any leading zeros from the coordinate
 # eg. A01 => A1
 def unpad_coordinate(coordinate):
-    return (
-        re.sub(r"0(\d+)$", r"\1", coordinate)
-        if (coordinate and isinstance(coordinate, str))
-        else coordinate
-    )
+    return re.sub(r"0(\d+)$", r"\1", coordinate) if (coordinate and isinstance(coordinate, str)) else coordinate
 
 
 def map_lh_doc_to_sql_columns(doc) -> Dict[str, Any]:
@@ -305,9 +299,7 @@ def map_mongo_doc_to_dart_well_props(doc: Dict[str, Any]) -> Dict[str, str]:
         Dict[str, str] -- Dictionary of DART property names and values.
     """
     return {
-        DART_STATE: DART_STATE_PICKABLE
-        if doc.get(FIELD_FILTERED_POSITIVE, False)
-        else DART_EMPTY_VALUE,
+        DART_STATE: DART_STATE_PICKABLE if doc.get(FIELD_FILTERED_POSITIVE, False) else DART_EMPTY_VALUE,
         DART_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
         DART_RNA_ID: doc[FIELD_RNA_ID],
         DART_LAB_ID: doc.get(FIELD_LAB_ID, DART_EMPTY_VALUE),

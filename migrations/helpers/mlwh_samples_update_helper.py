@@ -24,9 +24,7 @@ def valid_datetime_string(s_datetime: str) -> bool:
         return False
 
 
-def update_mlwh_with_legacy_samples(
-    config, s_start_datetime: str = "", s_end_datetime: str = ""
-) -> None:
+def update_mlwh_with_legacy_samples(config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
     if not valid_datetime_string(s_start_datetime):
         print("Aborting run: Expected format of Start datetime is YYMMDD_HHmm")
         return
@@ -42,10 +40,7 @@ def update_mlwh_with_legacy_samples(
         print("Aborting run: End datetime must be greater than Start datetime")
         return
 
-    print(
-        f"Starting MLWH update process with Start datetime {start_datetime} and End datetime "
-        f"{end_datetime}"
-    )
+    print(f"Starting MLWH update process with Start datetime {start_datetime} and End datetime {end_datetime}")
 
     try:
         mongo_docs_for_sql = []
@@ -62,15 +57,10 @@ def update_mlwh_with_legacy_samples(
             # this should take everything from the cursor find into RAM memory (assuming you have
             # enough memory)
             mongo_docs = list(
-                samples_collection.find(
-                    {FIELD_CREATED_AT: {"$gte": start_datetime, "$lte": end_datetime}}
-                )
+                samples_collection.find({FIELD_CREATED_AT: {"$gte": start_datetime, "$lte": end_datetime}})
             )
             number_docs_found = len(mongo_docs)
-            print(
-                f"{number_docs_found} documents found in the mongo database between these "
-                "timestamps"
-            )
+            print(f"{number_docs_found} documents found in the mongo database between these timestamps")
 
             # convert mongo field values into MySQL format
             for doc in mongo_docs:
@@ -84,9 +74,7 @@ def update_mlwh_with_legacy_samples(
                 # execute sql query to insert/update timestamps into MLWH
                 run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
         else:
-            print(
-                "No documents found for this timestamp range, nothing to insert or update in MLWH"
-            )
+            print("No documents found for this timestamp range, nothing to insert or update in MLWH")
 
     except Exception:
         print_exception()

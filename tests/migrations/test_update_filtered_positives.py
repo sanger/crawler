@@ -7,9 +7,7 @@ from migrations import update_filtered_positives
 
 @pytest.fixture
 def mock_helper_imports():
-    with patch(
-        "migrations.update_filtered_positives.pending_plate_barcodes_from_dart"
-    ) as mock_get_plate_barcodes:
+    with patch("migrations.update_filtered_positives.pending_plate_barcodes_from_dart") as mock_get_plate_barcodes:
         with patch(
             "migrations.update_filtered_positives.positive_result_samples_from_mongo"
         ) as mock_get_positive_samples:
@@ -18,23 +16,15 @@ def mock_helper_imports():
 
 @pytest.fixture
 def mock_update_positives():
-    with patch(
-        "migrations.update_filtered_positives.update_filtered_positive_fields"
-    ) as mock_udpate:
+    with patch("migrations.update_filtered_positives.update_filtered_positive_fields") as mock_udpate:
         yield mock_udpate
 
 
 @pytest.fixture
 def mock_helper_database_updates():
-    with patch(
-        "migrations.update_filtered_positives.update_mongo_filtered_positive_fields"
-    ) as mock_update_mongo:
-        with patch(
-            "migrations.update_filtered_positives.update_mlwh_filtered_positive_fields"
-        ) as mock_update_mlwh:
-            with patch(
-                "migrations.update_filtered_positives.update_dart_filtered_positive_fields"
-            ) as mock_update_dart:
+    with patch("migrations.update_filtered_positives.update_mongo_filtered_positive_fields") as mock_update_mongo:
+        with patch("migrations.update_filtered_positives.update_mlwh_filtered_positive_fields") as mock_update_mlwh:
+            with patch("migrations.update_filtered_positives.update_dart_filtered_positive_fields") as mock_update_dart:
                 yield mock_update_mongo, mock_update_mlwh, mock_update_dart
 
 

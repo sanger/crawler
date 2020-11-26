@@ -49,31 +49,22 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
             # centres collection
             centres_collection = get_mongo_collection(db, COLLECTION_CENTRES)
 
-            logger.debug(
-                f"Creating index '{FIELD_CENTRE_NAME}' on '{centres_collection.full_name}'"
-            )
+            logger.debug(f"Creating index '{FIELD_CENTRE_NAME}' on '{centres_collection.full_name}'")
             centres_collection.create_index(FIELD_CENTRE_NAME, unique=True)
             populate_centres_collection(centres_collection, centres, FIELD_CENTRE_NAME)
 
             # source plates collection
             source_plates_collection = get_mongo_collection(db, COLLECTION_SOURCE_PLATES)
 
-            logger.debug(
-                f"Creating index '{FIELD_BARCODE}' on '{source_plates_collection.full_name}'"
-            )
+            logger.debug(f"Creating index '{FIELD_BARCODE}' on '{source_plates_collection.full_name}'")
             source_plates_collection.create_index(FIELD_BARCODE, unique=True)
 
-            logger.debug(
-                f"Creating index '{FIELD_LH_SOURCE_PLATE_UUID}' on "
-                f"'{source_plates_collection.full_name}'"
-            )
+            logger.debug(f"Creating index '{FIELD_LH_SOURCE_PLATE_UUID}' on '{source_plates_collection.full_name}'")
             source_plates_collection.create_index(FIELD_LH_SOURCE_PLATE_UUID, unique=True)
 
             with samples_collection_accessor(db, COLLECTION_SAMPLES) as samples_collection:
                 # Index on plate barcode to make it easier to select based on plate barcode
-                logger.debug(
-                    f"Creating index '{FIELD_PLATE_BARCODE}' on '{samples_collection.full_name}'"
-                )
+                logger.debug(f"Creating index '{FIELD_PLATE_BARCODE}' on '{samples_collection.full_name}'")
                 samples_collection.create_index(FIELD_PLATE_BARCODE)
 
                 # Index on result column to make it easier to select the positives

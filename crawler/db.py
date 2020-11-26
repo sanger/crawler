@@ -140,9 +140,7 @@ def create_import_record(
     return import_collection.insert_one(status_doc)
 
 
-def populate_centres_collection(
-    collection: Collection, documents: List[Dict[str, str]], filter_field: str
-) -> None:
+def populate_centres_collection(collection: Collection, documents: List[Dict[str, str]], filter_field: str) -> None:
     """Populates a collection using the given documents. It uses the filter_field to replace any
     documents that match the filter and adds any new documents.
 
@@ -151,14 +149,10 @@ def populate_centres_collection(
         documents {List[Dict[str, str]]} -- documents to populate the collection with
         filter_field {str} -- filter to search for matching documents
     """
-    logger.debug(
-        f"Populating/updating '{collection.full_name}' using '{filter_field}' as the filter"
-    )
+    logger.debug(f"Populating/updating '{collection.full_name}' using '{filter_field}' as the filter")
 
     for document in documents:
-        _ = collection.find_one_and_update(
-            {filter_field: document[filter_field]}, {"$set": document}, upsert=True
-        )
+        _ = collection.find_one_and_update({filter_field: document[filter_field]}, {"$set": document}, upsert=True)
 
 
 def create_mysql_connection(config: ModuleType, readonly=True) -> CMySQLConnection:
@@ -206,9 +200,7 @@ def create_mysql_connection(config: ModuleType, readonly=True) -> CMySQLConnecti
     return mysql_conn
 
 
-def run_mysql_executemany_query(
-    mysql_conn: CMySQLConnection, sql_query: str, values: List[Dict[str, str]]
-) -> None:
+def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, values: List[Dict[str, str]]) -> None:
     """Writes the sample testing information into the MLWH.
 
     Arguments:
@@ -230,17 +222,12 @@ def run_mysql_executemany_query(
         values_index = 0
         total_rows_affected = 0
         logger.debug(
-            f"Attempting to insert or update {num_values} rows in the MLWH database in batches of "
-            f"{ROWS_PER_QUERY}"
+            f"Attempting to insert or update {num_values} rows in the MLWH database in batches of {ROWS_PER_QUERY}"
         )
 
         while values_index < num_values:
-            logger.debug(
-                f"Inserting records between {values_index} and {values_index + ROWS_PER_QUERY}"
-            )
-            cursor.executemany(
-                sql_query, values[values_index : (values_index + ROWS_PER_QUERY)]  # noqa: E203
-            )
+            logger.debug(f"Inserting records between {values_index} and {values_index + ROWS_PER_QUERY}")
+            cursor.executemany(sql_query, values[values_index : (values_index + ROWS_PER_QUERY)])  # noqa: E203
             logger.debug(
                 f"{cursor.rowcount} rows affected in MLWH. (Note: each updated row increases the "
                 "count by 2, instead of 1)"
@@ -375,14 +362,10 @@ def set_dart_well_properties(
         well_index {int} -- The index of the well to update.
     """
     for prop_name, prop_value in well_props.items():
-        cursor.execute(
-            SQL_DART_SET_WELL_PROPERTY, (plate_barcode, prop_name, prop_value, well_index)
-        )
+        cursor.execute(SQL_DART_SET_WELL_PROPERTY, (plate_barcode, prop_name, prop_value, well_index))
 
 
-def add_dart_plate_if_doesnt_exist(
-    cursor: pyodbc.Cursor, plate_barcode: str, biomek_labclass: str
-) -> str:
+def add_dart_plate_if_doesnt_exist(cursor: pyodbc.Cursor, plate_barcode: str, biomek_labclass: str) -> str:
     """Adds a plate to DART if it does not already exist. Returns the state of the plate.
 
     Arguments:
@@ -399,9 +382,7 @@ def add_dart_plate_if_doesnt_exist(
         if set_dart_plate_state_pending(cursor, plate_barcode):
             state = DART_STATE_PENDING
         else:
-            raise DartStateError(
-                f"Unable to set the state of a DART plate {plate_barcode} to {DART_STATE_PENDING}"
-            )
+            raise DartStateError(f"Unable to set the state of a DART plate {plate_barcode} to {DART_STATE_PENDING}")
     elif state == DART_STATE_NO_PROP:
         raise DartStateError(f"DART plate {plate_barcode} should have a state")
 

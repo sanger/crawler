@@ -71,9 +71,7 @@ def test_logging_collection_with_a_single_error():
     aggregator = logging.aggregator_types["TYPE 3"]
     assert aggregator.count_errors == 1
     assert aggregator.max_errors == 5
-    assert (
-        aggregator.get_report_message() == "Total number of Only root sample id errors (TYPE 3): 1"
-    )
+    assert aggregator.get_report_message() == "Total number of Only root sample id errors (TYPE 3): 1"
     exptd_msgs = (
         "WARNING: Sample rows that have Root Sample ID value but no other information. (TYPE 3) "
         "(e.g. This is a testing message)"
@@ -81,9 +79,7 @@ def test_logging_collection_with_a_single_error():
     assert aggregator.get_message() == exptd_msgs
     assert logging.get_aggregate_messages() == [exptd_msgs]
     assert logging.get_count_of_all_errors_and_criticals() == 0
-    assert logging.get_aggregate_total_messages() == [
-        "Total number of Only root sample id errors (TYPE 3): 1"
-    ]
+    assert logging.get_aggregate_total_messages() == ["Total number of Only root sample id errors (TYPE 3): 1"]
 
 
 def test_logging_collection_with_multiple_errors():
@@ -259,9 +255,7 @@ def test_map_mongo_doc_to_sql_columns(config):
 
 def test_get_dart_well_index(config):
     coordinate = None
-    assert (
-        get_dart_well_index(coordinate) is None
-    ), "Expected to be unable to determine a well index for no sample"
+    assert get_dart_well_index(coordinate) is None, "Expected to be unable to determine a well index for no sample"
 
     coordinate = "01A"
     assert (

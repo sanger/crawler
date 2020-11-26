@@ -74,9 +74,7 @@ def test_basic_usage(mongo_database, mlwh_connection):
         pytest.fail("Exception running update method")
 
     # query for selecting rows from MLWH (it was emptied before so select * is fine for this)
-    sql_query = (
-        f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} ORDER BY {MLWH_CREATED_AT} ASC"
-    )
+    sql_query = f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} ORDER BY {MLWH_CREATED_AT} ASC"
 
     try:
         # run the query and fetch the results
@@ -117,9 +115,7 @@ def test_when_no_rows_match_timestamp_range(mongo_database, mlwh_connection):
     update_mlwh_with_legacy_samples(config, s_start_datetime, s_end_datetime)
 
     # query for selecting rows from MLWH (it was emptied before so select * is fine for this)
-    sql_query = (
-        f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} ORDER BY {MLWH_CREATED_AT} ASC"
-    )
+    sql_query = f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} ORDER BY {MLWH_CREATED_AT} ASC"
 
     try:
         # run the query and fetch the results

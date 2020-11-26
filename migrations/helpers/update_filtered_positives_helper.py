@@ -71,9 +71,7 @@ def pending_plate_barcodes_from_dart(config: ModuleType) -> List[str]:
     return plate_barcodes
 
 
-def positive_result_samples_from_mongo(
-    config: ModuleType, plate_barcodes: List[str]
-) -> List[Dict[str, Any]]:
+def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[str]) -> List[Dict[str, Any]]:
     """Fetch positive samples from Mongo contained within specified plates.
 
     Arguments:
@@ -148,12 +146,9 @@ def update_mongo_filtered_positive_fields(
         # get ids of those that are filtered positive, and those that aren't
         all_ids = [sample[FIELD_MONGODB_ID] for sample in samples]
         filtered_positive_ids = [
-            sample[FIELD_MONGODB_ID]
-            for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] is True, samples))
+            sample[FIELD_MONGODB_ID] for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] is True, samples))
         ]
-        filtered_negative_ids = [
-            mongo_id for mongo_id in all_ids if mongo_id not in filtered_positive_ids
-        ]
+        filtered_negative_ids = [mongo_id for mongo_id in all_ids if mongo_id not in filtered_positive_ids]
 
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
         samples_collection.update_many(
@@ -194,9 +189,7 @@ def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Dict[
 
     if mysql_conn is not None and mysql_conn.is_connected():
         mlwh_samples = [map_mongo_to_sql_common(sample) for sample in samples]
-        run_mysql_executemany_query(
-            mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE, mlwh_samples
-        )
+        run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE, mlwh_samples)
         return True
     else:
         return False
