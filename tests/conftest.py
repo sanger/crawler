@@ -1,7 +1,7 @@
 import logging
 import logging.config
 import shutil
-from typing import Dict, List
+from typing import Dict, List, Union
 from unittest.mock import patch
 
 import pytest
@@ -22,7 +22,7 @@ from crawler.db import (
     get_mongo_collection,
     get_mongo_db,
 )
-from crawler.helpers import get_config
+from crawler.helpers.general_helpers import get_config
 
 logger = logging.getLogger(__name__)
 CONFIG, _ = get_config("crawler.config.test")
@@ -96,7 +96,7 @@ def testing_files_for_process(cleanup_backups):
         # (_, _, files) = next(os.walk("tmp/files"))
 
 
-TESTING_SAMPLES: List[Dict[str, str]] = [
+TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
     {
         FIELD_COORDINATE: "A01",
         FIELD_SOURCE: "test1",

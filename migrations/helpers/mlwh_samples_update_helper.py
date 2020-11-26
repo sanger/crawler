@@ -8,7 +8,7 @@ from crawler.db import (
     get_mongo_db,
     run_mysql_executemany_query,
 )
-from crawler.helpers import map_mongo_doc_to_sql_columns
+from crawler.helpers.general_helpers import map_mongo_doc_to_sql_columns
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from migrations.helpers.shared_helper import print_exception
 

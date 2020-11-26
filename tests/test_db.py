@@ -6,9 +6,9 @@ import pyodbc
 import pytest
 from crawler.constants import (
     DART_STATE,
-    DART_STATE_PENDING,
-    DART_STATE_NO_PROP,
     DART_STATE_NO_PLATE,
+    DART_STATE_NO_PROP,
+    DART_STATE_PENDING,
 )
 from crawler.db import (
     add_dart_plate_if_doesnt_exist,
@@ -24,12 +24,12 @@ from crawler.db import (
     set_dart_well_properties,
 )
 from crawler.exceptions import DartStateError
-from crawler.helpers import LoggingCollection
+from crawler.helpers.logging_helpers import LoggingCollection
 from crawler.sql_queries import (
+    SQL_DART_ADD_PLATE,
     SQL_DART_GET_PLATE_PROPERTY,
     SQL_DART_SET_PLATE_PROPERTY,
     SQL_DART_SET_WELL_PROPERTY,
-    SQL_DART_ADD_PLATE,
     SQL_MLWH_MULTIPLE_INSERT,
 )
 from mysql.connector.connection_cext import CMySQLConnection
