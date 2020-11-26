@@ -1,5 +1,5 @@
 from crawler.db import create_mongo_client, get_mongo_db
-from crawler.helpers import get_config
+from crawler.helpers.general_helpers import get_config
 
 from migrations.helpers import sample_timestamps_helper
 
