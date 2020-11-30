@@ -12,6 +12,7 @@ from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
     POSITIVE_RESULT_VALUE,
 )
+from crawler.types import Sample
 
 
 class FilteredPositiveIdentifier:
@@ -32,7 +33,7 @@ class FilteredPositiveIdentifier:
         """
         return self.versions[-1]
 
-    def is_positive(self, sample: Dict[str, Any]) -> bool:
+    def is_positive(self, sample: Sample) -> bool:
         """Determines whether a sample is a filtered positive.
 
         Arguments:

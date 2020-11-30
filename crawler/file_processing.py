@@ -89,6 +89,8 @@ from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 logger = logging.getLogger(__name__)
 
+from crawler.types import Sample, SourcePlate
+
 PROJECT_ROOT = pathlib.Path(__file__).parent.parent
 REGEX_FIELD = "sftp_file_regex"
 ERRORS_DIR = "errors"
@@ -492,17 +494,15 @@ class CentreFile:
         except Exception as e:
             logger.critical(f"Unknown error with file {self.file_name}: {e}")
 
-    def docs_to_insert_updated_with_source_plate_uuids(
-        self, docs_to_insert: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    def docs_to_insert_updated_with_source_plate_uuids(self, docs_to_insert: List[Sample]) -> List[Sample]:
         """Updates sample records with source plate uuids, returning only those for which a source
         plate uuid could be determined. Adds any new source plates to mongo.
 
         Arguments:
-            docs_to_insert {List[Dict[str, Any]]} -- the sample records to update
+            docs_to_insert {List[Sample]} -- the sample records to update
 
         Returns:
-            List[Dict[str, Any]] -- the updated, filtered samples
+            List[Sample] -- the updated, filtered samples
         """
         logger.debug("Attempting to update docs with source plate uuids")
         updated_docs = []
@@ -520,7 +520,7 @@ class CentreFile:
                 logger.error(error_message)
 
         try:
-            new_plates = []  # type:ignore
+            new_plates: List[SourcePlate] = []
             source_plates_collection = get_mongo_collection(self.get_db(), COLLECTION_SOURCE_PLATES)
 
             for doc in docs_to_insert:
@@ -1319,7 +1319,7 @@ class CentreFile:
 
         return datetime.strptime(file_timestamp, "%y%m%d_%H%M")
 
-    def new_mongo_source_plate(self, plate_barcode: str, lab_id: str) -> Dict[str, Union[str, datetime]]:
+    def new_mongo_source_plate(self, plate_barcode: str, lab_id: str) -> SourcePlate:
         """Creates a new mongo source plate document.
 
         Arguments:
@@ -1327,7 +1327,7 @@ class CentreFile:
             lab_id {str} -- The lab id to assign to the new source plate.
 
         Returns:
-            Dict[str, Any] -- The new mongo source plate doc.
+            SourcePlate -- The new mongo source plate doc.
         """
         timestamp = self.get_now_timestamp()
         return {

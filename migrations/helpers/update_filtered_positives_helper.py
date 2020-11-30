@@ -33,10 +33,8 @@ from crawler.helpers.general_helpers import (
     map_mongo_doc_to_dart_well_props,
     map_mongo_to_sql_common,
 )
-from crawler.sql_queries import (
-    SQL_DART_GET_PLATE_BARCODES,
-    SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE,
-)
+from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE
+from crawler.types import Sample
 from more_itertools import groupby_transform
 
 logger = logging.getLogger(__name__)
@@ -71,7 +69,7 @@ def pending_plate_barcodes_from_dart(config: ModuleType) -> List[str]:
     return plate_barcodes
 
 
-def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[str]) -> List[Dict[str, Any]]:
+def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[str]) -> List[Sample]:
     """Fetch positive samples from Mongo contained within specified plates.
 
     Arguments:
@@ -100,7 +98,7 @@ def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[
 
 def update_filtered_positive_fields(
     filtered_positive_identifier: FilteredPositiveIdentifier,
-    samples: List[Dict[str, Any]],
+    samples: List[Sample],
     version: str,
     update_timestamp: datetime,
 ) -> None:
@@ -125,7 +123,7 @@ def update_filtered_positive_fields(
 
 
 def update_mongo_filtered_positive_fields(
-    config: ModuleType, samples: List[Dict[str, Any]], version: str, update_timestamp: datetime
+    config: ModuleType, samples: List[Sample], version: str, update_timestamp: datetime
 ) -> bool:
     """Bulk updates sample filtered positive fields in the Mongo database
 
@@ -174,7 +172,7 @@ def update_mongo_filtered_positive_fields(
     return True
 
 
-def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Dict[str, Any]]) -> bool:
+def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Sample]) -> bool:
     """Bulk updates sample filtered positive fields in the MLWH database
 
     Arguments:
@@ -195,7 +193,7 @@ def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Dict[
         return False
 
 
-def update_dart_filtered_positive_fields(config: ModuleType, samples: List[Dict[str, Any]]) -> bool:
+def update_dart_filtered_positive_fields(config: ModuleType, samples: List[Sample]) -> bool:
     """Updates DART plates and wells following updates to the filtered positive fields
 
     Arguments:

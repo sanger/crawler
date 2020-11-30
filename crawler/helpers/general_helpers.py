@@ -78,6 +78,7 @@ from crawler.constants import (
     MLWH_UPDATED_AT,
     MYSQL_DATETIME_FORMAT,
 )
+from crawler.types import DartWellProp, Sample
 
 logger = logging.getLogger(__name__)
 
@@ -145,52 +146,52 @@ def get_config(settings_module: str) -> Tuple[ModuleType, str]:
         sys.exit(f"{e} required in environmental variables for config")
 
 
-def map_mongo_to_sql_common(doc) -> Dict[str, Any]:
+def map_mongo_to_sql_common(sample: Sample) -> Dict[str, Any]:
     """Transform common document fields into MySQL fields for MLWH.
 
     Arguments:
-        doc {Dict[str, str]} -- Filtered information about one sample, extracted from mongodb.
+        doc {Sample} -- Filtered information about one sample, extracted from mongodb.
 
     Returns:
-        Dict[str, str] -- Dictionary of MySQL versions of fields
+        Dict[str, Any] -- Dictionary of MySQL versions of fields
     """
     return {
         MLWH_MONGODB_ID: str(
-            doc[FIELD_MONGODB_ID]
+            sample[FIELD_MONGODB_ID]
         ),  #  hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn
         # it back
-        MLWH_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
-        MLWH_RNA_ID: doc[FIELD_RNA_ID],
-        MLWH_PLATE_BARCODE: doc[FIELD_PLATE_BARCODE],
-        MLWH_COORDINATE: unpad_coordinate(doc.get(FIELD_COORDINATE, None)),
-        MLWH_RESULT: doc.get(FIELD_RESULT, None),
-        MLWH_DATE_TESTED_STRING: doc.get(FIELD_DATE_TESTED, None),
-        MLWH_DATE_TESTED: parse_date_tested(doc.get(FIELD_DATE_TESTED, None)),
-        MLWH_SOURCE: doc.get(FIELD_SOURCE, None),
-        MLWH_LAB_ID: doc.get(FIELD_LAB_ID, None),
-        MLWH_CH1_TARGET: doc.get(FIELD_CH1_TARGET, None),
-        MLWH_CH1_RESULT: doc.get(FIELD_CH1_RESULT, None),
-        MLWH_CH1_CQ: parse_decimal128(doc.get(FIELD_CH1_CQ, None)),
-        MLWH_CH2_TARGET: doc.get(FIELD_CH2_TARGET, None),
-        MLWH_CH2_RESULT: doc.get(FIELD_CH2_RESULT, None),
-        MLWH_CH2_CQ: parse_decimal128(doc.get(FIELD_CH2_CQ, None)),
-        MLWH_CH3_TARGET: doc.get(FIELD_CH3_TARGET, None),
-        MLWH_CH3_RESULT: doc.get(FIELD_CH3_RESULT, None),
-        MLWH_CH3_CQ: parse_decimal128(doc.get(FIELD_CH3_CQ, None)),
-        MLWH_CH4_TARGET: doc.get(FIELD_CH4_TARGET, None),
-        MLWH_CH4_RESULT: doc.get(FIELD_CH4_RESULT, None),
-        MLWH_CH4_CQ: parse_decimal128(doc.get(FIELD_CH4_CQ, None)),
-        MLWH_FILTERED_POSITIVE: doc.get(FIELD_FILTERED_POSITIVE, None),
-        MLWH_FILTERED_POSITIVE_VERSION: doc.get(FIELD_FILTERED_POSITIVE_VERSION, None),
-        MLWH_FILTERED_POSITIVE_TIMESTAMP: doc.get(FIELD_FILTERED_POSITIVE_TIMESTAMP, None),
-        MLWH_LH_SAMPLE_UUID: doc.get(FIELD_LH_SAMPLE_UUID, None),
-        MLWH_LH_SOURCE_PLATE_UUID: doc.get(FIELD_LH_SOURCE_PLATE_UUID, None),
+        MLWH_ROOT_SAMPLE_ID: sample[FIELD_ROOT_SAMPLE_ID],
+        MLWH_RNA_ID: sample[FIELD_RNA_ID],
+        MLWH_PLATE_BARCODE: sample[FIELD_PLATE_BARCODE],
+        MLWH_COORDINATE: unpad_coordinate(sample.get(FIELD_COORDINATE, None)),
+        MLWH_RESULT: sample.get(FIELD_RESULT, None),
+        MLWH_DATE_TESTED_STRING: sample.get(FIELD_DATE_TESTED, None),
+        MLWH_DATE_TESTED: parse_date_tested(sample.get(FIELD_DATE_TESTED, None)),
+        MLWH_SOURCE: sample.get(FIELD_SOURCE, None),
+        MLWH_LAB_ID: sample.get(FIELD_LAB_ID, None),
+        MLWH_CH1_TARGET: sample.get(FIELD_CH1_TARGET, None),
+        MLWH_CH1_RESULT: sample.get(FIELD_CH1_RESULT, None),
+        MLWH_CH1_CQ: parse_decimal128(sample.get(FIELD_CH1_CQ, None)),
+        MLWH_CH2_TARGET: sample.get(FIELD_CH2_TARGET, None),
+        MLWH_CH2_RESULT: sample.get(FIELD_CH2_RESULT, None),
+        MLWH_CH2_CQ: parse_decimal128(sample.get(FIELD_CH2_CQ, None)),
+        MLWH_CH3_TARGET: sample.get(FIELD_CH3_TARGET, None),
+        MLWH_CH3_RESULT: sample.get(FIELD_CH3_RESULT, None),
+        MLWH_CH3_CQ: parse_decimal128(sample.get(FIELD_CH3_CQ, None)),
+        MLWH_CH4_TARGET: sample.get(FIELD_CH4_TARGET, None),
+        MLWH_CH4_RESULT: sample.get(FIELD_CH4_RESULT, None),
+        MLWH_CH4_CQ: parse_decimal128(sample.get(FIELD_CH4_CQ, None)),
+        MLWH_FILTERED_POSITIVE: sample.get(FIELD_FILTERED_POSITIVE, None),
+        MLWH_FILTERED_POSITIVE_VERSION: sample.get(FIELD_FILTERED_POSITIVE_VERSION, None),
+        MLWH_FILTERED_POSITIVE_TIMESTAMP: sample.get(FIELD_FILTERED_POSITIVE_TIMESTAMP, None),
+        MLWH_LH_SAMPLE_UUID: sample.get(FIELD_LH_SAMPLE_UUID, None),
+        MLWH_LH_SOURCE_PLATE_UUID: sample.get(FIELD_LH_SOURCE_PLATE_UUID, None),
     }
 
 
 # Strip any leading zeros from the coordinate
 # eg. A01 => A1
-def unpad_coordinate(coordinate):
+def unpad_coordinate(coordinate: str):
     return re.sub(r"0(\d+)$", r"\1", coordinate) if (coordinate and isinstance(coordinate, str)) else coordinate
 
 
@@ -214,7 +215,7 @@ def map_lh_doc_to_sql_columns(doc) -> Dict[str, Any]:
     return value
 
 
-def map_mongo_doc_to_sql_columns(doc) -> Dict[str, Any]:
+def map_mongo_doc_to_sql_columns(doc: Sample) -> Dict[str, Any]:
     """Transform the document fields from the parsed mongodb samples collection.
 
     Arguments:
@@ -289,19 +290,19 @@ def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
     return None
 
 
-def map_mongo_doc_to_dart_well_props(doc: Dict[str, Any]) -> Dict[str, str]:
+def map_mongo_doc_to_dart_well_props(sample: Sample) -> DartWellProp:
     """Transform a mongo sample doc into DART well properties.
 
     Arguments:
-        doc {Dict[str, str]} -- A mongo sample doc.
+        doc {Sample} -- A mongo sample doc.
 
     Returns:
         Dict[str, str] -- Dictionary of DART property names and values.
     """
     return {
-        DART_STATE: DART_STATE_PICKABLE if doc.get(FIELD_FILTERED_POSITIVE, False) else DART_EMPTY_VALUE,
-        DART_ROOT_SAMPLE_ID: doc[FIELD_ROOT_SAMPLE_ID],
-        DART_RNA_ID: doc[FIELD_RNA_ID],
-        DART_LAB_ID: doc.get(FIELD_LAB_ID, DART_EMPTY_VALUE),
-        DART_LH_SAMPLE_UUID: doc.get(FIELD_LH_SAMPLE_UUID, DART_EMPTY_VALUE),
+        DART_STATE: DART_STATE_PICKABLE if sample.get(FIELD_FILTERED_POSITIVE, False) else DART_EMPTY_VALUE,
+        DART_ROOT_SAMPLE_ID: sample[FIELD_ROOT_SAMPLE_ID],
+        DART_RNA_ID: sample[FIELD_RNA_ID],
+        DART_LAB_ID: sample.get(FIELD_LAB_ID, DART_EMPTY_VALUE),
+        DART_LH_SAMPLE_UUID: sample.get(FIELD_LH_SAMPLE_UUID, DART_EMPTY_VALUE),
     }
