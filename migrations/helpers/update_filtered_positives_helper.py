@@ -102,15 +102,13 @@ def update_filtered_positive_fields(
     version: str,
     update_timestamp: datetime,
 ) -> None:
-    """Updates filtered positive fields on all passed-in samples
+    """Updates filtered positive fields on all passed-in sample documents - this method does not save the updates to
+    the mongo database.
 
     Arguments:
-        filtered_positive_identifier {FilteredPositiveIdentifier} -- the identifier through which
-        to pass samples to determine whether they are filtered positive
-
-        samples {List[Dict[str, str]]} -- the list of samples for which to re-determine filtered
-        positive values
-
+        filtered_positive_identifier {FilteredPositiveIdentifier} -- the identifier through which to pass samples to,
+        to determine whether they are filtered positive
+        samples {List[Sample]} -- the list of samples for which to re-determine filtered positive values
         version {str} -- the filtered positive identifier version used
         update_timestamp {datetime} -- the timestamp at which the update was performed
     """
@@ -129,9 +127,7 @@ def update_mongo_filtered_positive_fields(
 
     Arguments:
         config {ModuleType} -- application config specifying database details
-        samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields
-        should be updated
-
+        samples {List[Sample]} -- the list of samples whose filtered positive fields should be updated
         version {str} -- the filtered positive identifier version used
         update_timestamp {datetime} -- the timestamp at which the update was performed
 
@@ -142,8 +138,8 @@ def update_mongo_filtered_positive_fields(
         mongo_db = get_mongo_db(config, client)
 
         # get ids of those that are filtered positive, and those that aren't
-        all_ids = [sample[FIELD_MONGODB_ID] for sample in samples]
-        filtered_positive_ids = [
+        all_ids: List[str] = [sample[FIELD_MONGODB_ID] for sample in samples]
+        filtered_positive_ids: List[str] = [
             sample[FIELD_MONGODB_ID] for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] is True, samples))
         ]
         filtered_negative_ids = [mongo_id for mongo_id in all_ids if mongo_id not in filtered_positive_ids]

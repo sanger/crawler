@@ -4,6 +4,7 @@ import re
 import string
 import sys
 from datetime import datetime, timezone
+from decimal import Decimal
 from enum import Enum
 from importlib import import_module
 from types import ModuleType
@@ -84,9 +85,8 @@ logger = logging.getLogger(__name__)
 
 
 def current_time() -> str:
-    """Generates a String containing a current timestamp in the format
-    yymmdd_hhmm
-    eg. 12:30 1st February 2019 becomes 190201_1230
+    """Generates a String containing a current timestamp in the format yymmdd_hhmm eg. 12:30 1st February 2019 becomes
+    190201_1230
 
     Returns:
         str -- A string with the current timestamp
@@ -95,8 +95,8 @@ def current_time() -> str:
 
 
 def get_sftp_connection(config: ModuleType, username: str = None, password: str = None) -> pysftp.Connection:
-    """Get a connection to the SFTP server as a context manager. The READ credentials are used by
-    default but a username and password provided will override these.
+    """Get a connection to the SFTP server as a context manager. The READ credentials are used by default but a username
+    and password provided will override these.
 
     Arguments:
         config {ModuleType} -- application config
@@ -191,11 +191,11 @@ def map_mongo_to_sql_common(sample: Sample) -> Dict[str, Any]:
 
 # Strip any leading zeros from the coordinate
 # eg. A01 => A1
-def unpad_coordinate(coordinate: str):
+def unpad_coordinate(coordinate: str) -> str:
     return re.sub(r"0(\d+)$", r"\1", coordinate) if (coordinate and isinstance(coordinate, str)) else coordinate
 
 
-def map_lh_doc_to_sql_columns(doc) -> Dict[str, Any]:
+def map_lh_doc_to_sql_columns(doc: Dict[str, str]) -> Dict[str, Any]:
     """Transform the document fields from the parsed lighthouse file into a form suitable for the MLWH.
     We are setting created_at and updated_at fields to current timestamp for inserts here,
     because it would be too slow to retrieve them from MongoDB and they would be virtually the same
@@ -206,7 +206,7 @@ def map_lh_doc_to_sql_columns(doc) -> Dict[str, Any]:
          doc {Dict[str, str]} -- Filtered information about one sample, extracted from csv files.
 
      Returns:
-         Dict[str, str] -- Dictionary of MySQL versions of fields
+         Dict[str, Any] -- Dictionary of MySQL versions of fields
     """
     value = map_mongo_to_sql_common(doc)
     dt = datetime.now(timezone.utc)
@@ -230,23 +230,22 @@ def map_mongo_doc_to_sql_columns(doc: Sample) -> Dict[str, Any]:
     return value
 
 
-def parse_date_tested(date_string: str) -> Any:
-    """Converts date tested to MySQL format string
+def parse_date_tested(date_string: str) -> Optional[datetime]:
+    """Converts date tested to MySQL format datetime
 
     Arguments:
         date_string {str} -- The date string from the document
 
     Returns:
-        str -- The MySQL formatted string
+        datetime -- The MySQL formatted datetime
     """
     try:
-        date_time = datetime.strptime(date_string, f"{MYSQL_DATETIME_FORMAT} %Z")
-        return date_time
+        return datetime.strptime(date_string, f"{MYSQL_DATETIME_FORMAT} %Z")
     except Exception:
         return None
 
 
-def parse_decimal128(value: Decimal128) -> Any:
+def parse_decimal128(value: Decimal128) -> Optional[Decimal]:
     """Converts Decimal128 to MySQL compatible Decimal format
 
     Arguments:
@@ -256,15 +255,14 @@ def parse_decimal128(value: Decimal128) -> Any:
         Decimal -- converted number
     """
     try:
-        dec = value.to_decimal()
-        return dec
+        return value.to_decimal()
     except Exception:
         return None
 
 
 def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
-    """Determines a well index from a coordinate; otherwise returns None. Well indices are
-    determined by evaluating the row position, then column position. E.g. A04 -> 4, B04 -> 16.
+    """Determines a well index from a coordinate; otherwise returns None. Well indices are determined by evaluating the
+    row position, then column position. E.g. A04 -> 4, B04 -> 16.
 
     Arguments:
         coordinate {Optional[str]} -- The coordinate for which to determine the well index
@@ -297,7 +295,7 @@ def map_mongo_doc_to_dart_well_props(sample: Sample) -> DartWellProp:
         doc {Sample} -- A mongo sample doc.
 
     Returns:
-        Dict[str, str] -- Dictionary of DART property names and values.
+        DartWellProp -- Dictionary of DART property names and values.
     """
     return {
         DART_STATE: DART_STATE_PICKABLE if sample.get(FIELD_FILTERED_POSITIVE, False) else DART_EMPTY_VALUE,

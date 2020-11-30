@@ -37,8 +37,7 @@ class FilteredPositiveIdentifier:
         """Determines whether a sample is a filtered positive.
 
         Arguments:
-            sample {Dict[str, str]} -- information on a single sample extracted from CSV
-            files
+            sample {Sample} -- information on a single sample
 
         Returns:
             {bool} -- whether the sample is a filtered positive

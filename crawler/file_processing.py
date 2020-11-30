@@ -9,6 +9,7 @@ from csv import DictReader
 from datetime import datetime
 from enum import Enum
 from hashlib import md5
+from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple, Union
 
 import pyodbc  # type: ignore
@@ -107,12 +108,8 @@ class Centre:
         os.makedirs(f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}", exist_ok=True)
 
     def get_files_in_download_dir(self) -> List[str]:
-        """Get all the files in the download directory for this centre and filter the file names using
-        the regex described in the centre's 'regex_field'.
-
-        Arguments:
-            centre {Dict[str, str]} -- the centre in question
-            regex_field {str} -- the field name where the regex is found to filter the files by
+        """Get all the files in the download directory for this centre and filter the file names using the regex
+        described in the centre's 'regex_field'.
 
         Returns:
             List[str] -- all the file names in the download directory after filtering
@@ -154,9 +151,9 @@ class Centre:
         Arguments:
             add_to_dart {bool} -- whether to add the samples to DART
         """
-        # iterate through each file in the centre
-
         self.centre_files = sorted(self.get_files_in_download_dir())
+
+        # iterate through each file in the centre
         for file_name in self.centre_files:
             logger.info(f"Checking file {file_name}")
 
@@ -301,7 +298,7 @@ class CentreFile:
 
         return file_hash.hexdigest()
 
-    def checksum_match(self, dir_path) -> bool:
+    def checksum_match(self, dir_path: str) -> bool:
         """Checks a directory for a file matching the checksum of this file
 
         Arguments:
@@ -417,23 +414,19 @@ class CentreFile:
         else:
             return f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}/{self.timestamped_filename()}"
 
-    def timestamped_filename(self):
+    def timestamped_filename(self) -> str:
         return f"{current_time()}_{self.file_name}_{self.checksum()}"
 
-    def full_path_to_file(self):
+    def full_path_to_file(self) -> Path:
         return PROJECT_ROOT.joinpath(self.centre.get_download_dir(), self.file_name)
 
     def backup_file(self) -> None:
-        """Backup the file.
-
-        Returns:
-            str -- destination of the file
-        """
+        """Backup the file."""
         destination = self.backup_filename()
 
         shutil.copyfile(self.full_path_to_file(), destination)
 
-    def create_import_record_for_file(self):
+    def create_import_record_for_file(self) -> None:
         logger.info(f"{self.docs_inserted} documents inserted")
 
         # write status record
@@ -454,10 +447,15 @@ class CentreFile:
         """
         client = create_mongo_client(self.config)
         db = get_mongo_db(self.config, client)
+
         return db
 
-    # Database clash
-    def add_duplication_errors(self, exception):
+    def add_duplication_errors(self, exception: BulkWriteError) -> None:
+        """Database clash
+
+        Args:
+            exception ([type]): [description]
+        """
         try:
             wrong_instances = [write_error["op"] for write_error in exception.details["writeErrors"]]
             samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
@@ -495,8 +493,8 @@ class CentreFile:
             logger.critical(f"Unknown error with file {self.file_name}: {e}")
 
     def docs_to_insert_updated_with_source_plate_uuids(self, docs_to_insert: List[Sample]) -> List[Sample]:
-        """Updates sample records with source plate uuids, returning only those for which a source
-        plate uuid could be determined. Adds any new source plates to mongo.
+        """Updates sample records with source plate uuids, returning only those for which a source plate UUID could
+        be determined. Adds any new source plates to mongo.
 
         Arguments:
             docs_to_insert {List[Sample]} -- the sample records to update
@@ -504,10 +502,12 @@ class CentreFile:
         Returns:
             List[Sample] -- the updated, filtered samples
         """
-        logger.debug("Attempting to update docs with source plate uuids")
-        updated_docs = []
+        logger.debug("Attempting to update docs with source plate UUIDs")
+        updated_docs: List[Sample] = []
 
-        def update_doc_from_source_plate(doc, existing_plate, skip_lab_check: bool = False) -> None:
+        def update_doc_from_source_plate(
+            doc: Sample, existing_plate: SourcePlate, skip_lab_check: bool = False
+        ) -> None:
             if skip_lab_check or doc[FIELD_LAB_ID] == existing_plate[FIELD_LAB_ID]:
                 doc[FIELD_LH_SOURCE_PLATE_UUID] = existing_plate[FIELD_LH_SOURCE_PLATE_UUID]
                 updated_docs.append(doc)
@@ -558,12 +558,11 @@ class CentreFile:
 
         return updated_docs
 
-    def insert_samples_from_docs_into_mongo_db(self, docs_to_insert) -> List[ObjectId]:
+    def insert_samples_from_docs_into_mongo_db(self, docs_to_insert: List[Dict[str, str]]) -> List[Any]:
         """Insert sample records into the mongo database from the parsed file information.
 
         Arguments:
-            docs_to_insert {List[Dict[str, str]]} -- list of filtered sample information extracted
-            from csv files
+            docs_to_insert {List[Dict[str, str]]} -- list of filtered sample information extracted from CSV files
         """
         logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
@@ -587,9 +586,9 @@ class CentreFile:
             # e.details["writeErrors"]
             filtered_errors = list(filter(lambda x: x["code"] != 11000, e.details["writeErrors"]))
 
-            if len(filtered_errors) > 0:
+            if (num_filtered_errors := len(filtered_errors)) > 0:
                 logger.info(
-                    f"Number of exceptions left after filtering out duplicates = {len(filtered_errors)}. Example:"
+                    f"Number of exceptions left after filtering out duplicates = {num_filtered_errors}. Example:"
                 )
                 logger.info(filtered_errors[0])
 
@@ -605,19 +604,17 @@ class CentreFile:
             logger.exception(e)
             return []
 
-    def insert_samples_from_docs_into_mlwh(self, docs_to_insert) -> None:
-        """Insert sample records into the MLWH database from the parsed file information, including
-        the corresponding mongodb _id
+    def insert_samples_from_docs_into_mlwh(self, docs_to_insert: List[Dict[str, str]]) -> None:
+        """Insert sample records into the MLWH database from the parsed file information, including the corresponding
+        mongodb _id
 
         Arguments:
-            docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted
-            from csv files.
-            Includes the mongodb id, as the list has already been inserted into mongodb
-
-            mongo_ids {List[ObjectId]} -- list of mongodb ids in the same order as docs_to_insert,
-            from the insert into the mongodb
+            docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from CSV files.
+            Includes the mongodb _id, as the list has already been inserted into mongodb
+            mongo_ids {List[Any]} -- list of mongodb _ids in the same order as docs_to_insert, from the insert into the
+            mongodb
         """
-        values = []
+        values: List[Dict[str, Any]] = []
         for doc in docs_to_insert:
             values.append(map_lh_doc_to_sql_columns(doc))
 
@@ -642,12 +639,11 @@ class CentreFile:
             )
             logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
 
-    def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert) -> None:
+    def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[Dict[str, str]]) -> None:
         """Insert plates and wells into the DART database from the parsed file information
 
         Arguments:
-            docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted
-            from csv files.
+            docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from CSV files.
         """
         sql_server_connection = create_dart_sql_server_conn(self.config)
 
@@ -655,9 +651,7 @@ class CentreFile:
             try:
                 cursor = sql_server_connection.cursor()
 
-                for plate_barcode, samples in groupby_transform(  # type:ignore
-                    docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]
-                ):
+                for plate_barcode, samples in groupby_transform(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]):
                     try:
                         plate_state = add_dart_plate_if_doesnt_exist(
                             cursor, plate_barcode, self.centre_config["biomek_labware_class"]
@@ -692,14 +686,12 @@ class CentreFile:
             )
             logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
 
-    def add_dart_well_properties_if_positive(
-        self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str
-    ) -> None:
+    def add_dart_well_properties_if_positive(self, cursor: pyodbc.Cursor, sample: Sample, plate_barcode: str) -> None:
         """Adds well properties to DART for the specified sample if that sample is positive.
 
         Arguments:
             cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
-            sample {Dict[str, str]} -- The sample for which to add well properties.
+            sample {Sample} -- The sample for which to add well properties.
             plate_barcode {str} -- The barcode of the plate to which this sample belongs.
         """
         if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
@@ -717,7 +709,7 @@ class CentreFile:
         """Parses the CSV file of the centre.
 
         Returns:
-            List[str, str] -- the augmented data
+            List[Dict[str, Any] -- the augmented data
         """
         csvfile_path = self.filepath()
 
