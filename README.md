@@ -8,17 +8,24 @@
 This micro service saves sample information from external LIMS into a mongodb instance for easy
 querying.
 
+## Table of contents
+
 <!-- toc -->
 
-- [Requirements](#requirements)
-- [Running](#running)
-- [Updating the MLWH lighthouse_sample table](#updating-the-mlwh-lighthouse_sample-table)
-- [Testing](#testing)
-  - [Testing requirements](#testing-requirements)
-  - [Running tests](#running-tests)
-- [Mypy](#mypy)
-- [Miscellaneous](#miscellaneous)
-  - [Naming conventions](#naming-conventions)
+* [Requirements](#requirements)
+* [Running](#running)
+* [Migrations](#migrations)
+  * [Updating the MLWH lighthouse_sample table](#updating-the-mlwh-lighthouse_sample-table)
+  * [Filtered Positive Rules](#filtered-positive-rules)
+    * [Version 1 `v1` - **Current Version**](#version-1-v1---current-version)
+    * [Propagating Filtered Positive version changes to MongoDB, MLWH and DART](#propagating-filtered-positive-version-changes-to-mongodb-mlwh-and-dart)
+* [Testing](#testing)
+  * [Testing requirements](#testing-requirements)
+  * [Running tests](#running-tests)
+* [Formatting, type checking and linting](#formatting-type-checking-and-linting)
+* [Miscellaneous](#miscellaneous)
+  * [Naming conventions](#naming-conventions)
+  * [Updating the table of contents](#updating-the-table-of-contents)
 
 <!-- tocstop -->
 
@@ -50,7 +57,7 @@ Once all the required packages are installed, enter the virtual environment with
 
 The following runtime flags are available:
 
-    $ SETTINGS_MODULE=crawler.config.development python runner.py --help
+    SETTINGS_MODULE=crawler.config.development python runner.py --help
 
     usage: runner.py [-h] [--sftp] [--scheduled]
 
@@ -63,7 +70,9 @@ The following runtime flags are available:
     --keep-files  keeps centre csv files after runner has been executed
     --add-to-dart add samples to DART, by default they are not
 
-## Updating the MLWH lighthouse_sample table
+## Migrations
+
+### Updating the MLWH lighthouse_sample table
 
 When the crawler process runs nightly it should be updating the MLWH lighthouse_sample table as it goes with records for all rows that are inserted into MongoDB.
 If that MLWH insert process fails you should see a critical exception for the file in Lighthouse-UI. This may be after records inserted correctly into MongoDB, and re-running the file will not re-attempt the MLWH inserts in that situation.
@@ -78,29 +87,30 @@ Where the time format is YYMMDD_HHmm. Both start and end timestamps must be pres
 
 The process should not duplicate rows that are already present in MLWH, so you can be generous with your timestamp range.
 
-## Filtered Positive Rules
+### Filtered Positive Rules
 
 This is a history of past and current rules by which positive samples are further filtered and identified as 'filtered positive'. Note that any rule change requires the `update_filtered_positives` migration be run, as outlined in the below relevant section.
 
 The implementation of the current version can be found in [FilteredPositiveIdentifier](./crawler/filtered_positive_identifier.py), with the implementation of previous versions (if any) in the git history.
 
-### Version 1 `v1` - **Current Version**
+#### Version 1 `v1` - **Current Version**
 
 A sample is filtered positive if:
+
 - it has a positive RESULT
 - it is not a control (ROOT_SAMPLE_ID does not start with 'CBIQA_')
 - all of CH1_CQ, CH2_CQ and CH3_CQ are `None`, or one of these is less than or equal to 30
 
 More information on this version can be found on [this Confluence page](https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/UAT+6th+October+2020).
 
-### Propagating Filtered Positive version changes to MongoDB, MLWH and DART
+#### Propagating Filtered Positive version changes to MongoDB, MLWH and DART
 
 On changing the positive filtering version/definition, all unpicked samples stored in MongoDB, MLWH and DART need updating to determine whether they are still filtered positive under the new rules, and can therefore be picked in DART.
 In order to keep the databases in sync, the update process for all is performed in a single manual migration (update_filtered_positives) which identifies unpicked wells, re-determines their filtered positive value, and updates the databases.
 
 Usage (inside pipenv shell):
 
-    $ python run_migration.py update_filtered_positives
+    python run_migration.py update_filtered_positives
 
 The process does not duplicate any data, instead updating existing entries.
 
@@ -123,14 +133,27 @@ To run the tests, execute:
 
     python -m pytest -vs
 
-## Mypy
+## Formatting, type checking and linting
+
+Black is used as a formatter, to format code before commiting:
+
+    black .
 
 Mypy is used as a type checker, to execute:
 
-    python -m mypy crawler
+    mypy .
+
+Flake8 is used for linting, to execute:
+
+    pipenv run flake8a
+    pipenv run flake8b
 
 ## Miscellaneous
 
 ### Naming conventions
 
 [This](https://stackoverflow.com/a/45335909) post was used for the naming conventions within mongo.
+
+### Updating the table of contents
+
+    npx markdown-toc -i README.md
