@@ -5,7 +5,6 @@ import string
 import sys
 from datetime import datetime, timezone
 from decimal import Decimal
-from enum import Enum
 from importlib import import_module
 from types import ModuleType
 from typing import Any, Dict, Optional, Tuple

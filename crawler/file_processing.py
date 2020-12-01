@@ -10,11 +10,10 @@ from datetime import datetime
 from enum import Enum
 from hashlib import md5
 from pathlib import Path
-from typing import Any, Dict, List, Set, Tuple, Union
+from typing import Any, Dict, List, Set, Tuple
 
 import pyodbc  # type: ignore
 from bson.decimal128 import Decimal128  # type: ignore
-from bson.objectid import ObjectId  # type: ignore
 from more_itertools import groupby_transform
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
@@ -87,10 +86,10 @@ from crawler.helpers.general_helpers import (
 )
 from crawler.helpers.logging_helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
+from crawler.types import Sample, SourcePlate
 
 logger = logging.getLogger(__name__)
 
-from crawler.types import Sample, SourcePlate
 
 PROJECT_ROOT = pathlib.Path(__file__).parent.parent
 REGEX_FIELD = "sftp_file_regex"
@@ -651,14 +650,16 @@ class CentreFile:
             try:
                 cursor = sql_server_connection.cursor()
 
-                for plate_barcode, samples in groupby_transform(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]):
+                for plate_barcode, samples in groupby_transform(  # type: ignore
+                    docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]
+                ):
                     try:
                         plate_state = add_dart_plate_if_doesnt_exist(
-                            cursor, plate_barcode, self.centre_config["biomek_labware_class"]
+                            cursor, plate_barcode, self.centre_config["biomek_labware_class"]  # type: ignore
                         )
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
-                                self.add_dart_well_properties_if_positive(cursor, sample, plate_barcode)
+                                self.add_dart_well_properties_if_positive(cursor, sample, plate_barcode)  # type: ignore
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(

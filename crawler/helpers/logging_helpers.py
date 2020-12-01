@@ -49,7 +49,7 @@ class AggregateType1(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 1"
         self.error_level = ErrorLevel.DEBUG
-        self.message = f"{self.error_level} Blank rows in files. ({self.type_str})"
+        self.message = f"{self.error_level.name}: Blank rows in files. ({self.type_str})"
         self.short_display_description = "Blank row"
 
 
@@ -59,7 +59,7 @@ class AggregateType2(AggregateTypeBase):
         self.type_str = "TYPE 2"
         self.error_level = ErrorLevel.CRITICAL
         self.message = (
-            f"{self.error_level} Files where we do not have the expected main column headers of "
+            f"{self.error_level.name}: Files where we do not have the expected main column headers of "
             f"Root Sample ID, RNA ID and Result. ({self.type_str})"
         )
         self.short_display_description = "Missing header column"
@@ -71,7 +71,7 @@ class AggregateType3(AggregateTypeBase):
         self.type_str = "TYPE 3"
         self.error_level = ErrorLevel.WARNING
         self.message = (
-            f"{self.error_level} Sample rows that have Root Sample ID value but no other "
+            f"{self.error_level.name}: Sample rows that have Root Sample ID value but no other "
             f"information. ({self.type_str})"
         )
         self.max_errors = 5
@@ -84,7 +84,7 @@ class AggregateType4(AggregateTypeBase):
         self.type_str = "TYPE 4"
         self.error_level = ErrorLevel.ERROR
         self.message = (
-            f"{self.error_level} Sample rows that have Root Sample ID and Result values but no "
+            f"{self.error_level.name}: Sample rows that have Root Sample ID and Result values but no "
             f"RNA ID (no plate barcode). ({self.type_str})"
         )
         self.max_errors = 5
@@ -96,7 +96,7 @@ class AggregateType5(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 5"
         self.error_level = ErrorLevel.WARNING
-        self.message = f"{self.error_level} Duplicates detected within the file. ({self.type_str})"
+        self.message = f"{self.error_level.name}: Duplicates detected within the file. ({self.type_str})"
         self.max_errors = 5
         self.short_display_description = "Duplicates within file"
 
@@ -106,7 +106,9 @@ class AggregateType6(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 6"
         self.error_level = ErrorLevel.WARNING
-        self.message = f"{self.error_level} Duplicates detected matching rows in previous files. ({self.type_str})"
+        self.message = (
+            f"{self.error_level.name}: Duplicates detected matching rows in previous files. ({self.type_str})"
+        )
         self.max_errors = 5
         self.short_display_description = "Duplicates to previous files"
 
@@ -117,7 +119,7 @@ class AggregateType7(AggregateTypeBase):
         self.type_str = "TYPE 7"
         self.error_level = ErrorLevel.WARNING
         self.message = (
-            f"{self.error_level} Samples rows matching previously uploaded rows but with "
+            f"{self.error_level.name}: Samples rows matching previously uploaded rows but with "
             f"different test date. ({self.type_str})"
         )
         self.max_errors = 5
@@ -133,7 +135,7 @@ class AggregateType9(AggregateTypeBase):
         self.type_str = "TYPE 9"
         self.error_level = ErrorLevel.CRITICAL
         self.message = (
-            f"{self.error_level} Sample rows failing to match expected format (regex) for "
+            f"{self.error_level.name}: Sample rows failing to match expected format (regex) for "
             f"RNA ID field. ({self.type_str})"
         )
         self.max_errors = 5
@@ -145,7 +147,7 @@ class AggregateType10(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 10"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = f"{self.error_level} File is unexpected type and cannot be processed. ({self.type_str})"
+        self.message = f"{self.error_level.name}: File is unexpected type and cannot be processed. ({self.type_str})"
         self.max_errors = -1
         self.short_display_description = "File wrong type"
 
@@ -158,7 +160,7 @@ class AggregateType12(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 12"
         self.error_level = ErrorLevel.ERROR
-        self.message = f"{self.error_level} Sample rows that do not contain a Lab ID. ({self.type_str})"
+        self.message = f"{self.error_level.name}: Sample rows that do not contain a Lab ID. ({self.type_str})"
         self.max_errors = 5
         self.short_display_description = "No Lab ID"
 
@@ -168,7 +170,7 @@ class AggregateType13(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 13"
         self.error_level = ErrorLevel.WARNING
-        self.message = f"{self.error_level} Sample rows that contain unexpected columns. ({self.type_str})"
+        self.message = f"{self.error_level.name}: Sample rows that contain unexpected columns. ({self.type_str})"
         self.max_errors = 5
         self.short_display_description = "Extra column(s)"
 
@@ -178,7 +180,7 @@ class AggregateType14(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 14"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = f"{self.error_level} Files where the MLWH database insert has failed. ({self.type_str})"
+        self.message = f"{self.error_level.name}: Files where the MLWH database insert has failed. ({self.type_str})"
         self.short_display_description = "Failed MLWH inserts"
 
 
@@ -188,7 +190,7 @@ class AggregateType15(AggregateTypeBase):
         self.type_str = "TYPE 15"
         self.error_level = ErrorLevel.CRITICAL
         self.message = (
-            f"{self.error_level} Files where the MLWH database connection could not be made. ({self.type_str})"
+            f"{self.error_level.name}: Files where the MLWH database connection could not be made. ({self.type_str})"
         )
         self.short_display_description = "Failed MLWH connection"
 
@@ -198,7 +200,7 @@ class AggregateType16(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 16"
         self.error_level = ErrorLevel.ERROR
-        self.message = f"{self.error_level} Sample rows that have an invalid Result value. ({self.type_str})"
+        self.message = f"{self.error_level.name}: Sample rows that have an invalid Result value. ({self.type_str})"
         self.max_errors = 5
         self.short_display_description = "Invalid Result value"
 
@@ -208,7 +210,9 @@ class AggregateType17(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 17"
         self.error_level = ErrorLevel.ERROR
-        self.message = f"{self.error_level} Sample rows that have an invalid CT channel Target value. ({self.type_str})"
+        self.message = (
+            f"{self.error_level.name}: Sample rows that have an invalid CT channel Target value. ({self.type_str})"
+        )
         self.max_errors = 5
         self.short_display_description = "Invalid CHn-Target value"
 
@@ -218,7 +222,9 @@ class AggregateType18(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 18"
         self.error_level = ErrorLevel.ERROR
-        self.message = f"{self.error_level} Sample rows that have an invalid CT channel Result value. ({self.type_str})"
+        self.message = (
+            f"{self.error_level.name}: Sample rows that have an invalid CT channel Result value. ({self.type_str})"
+        )
         self.max_errors = 5
         self.short_display_description = "Invalid CHn-Result value"
 
@@ -228,7 +234,9 @@ class AggregateType19(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 19"
         self.error_level = ErrorLevel.ERROR
-        self.message = f"{self.error_level} Sample rows that have an invalid CT channel Cq value. ({self.type_str})"
+        self.message = (
+            f"{self.error_level.name}: Sample rows that have an invalid CT channel Cq value. ({self.type_str})"
+        )
         self.max_errors = 5
         self.short_display_description = "Invalid CHn-Cq value"
 
@@ -239,7 +247,8 @@ class AggregateType20(AggregateTypeBase):
         self.type_str = "TYPE 20"
         self.error_level = ErrorLevel.ERROR
         self.message = (
-            f"{self.error_level} Sample rows that have a CHn-Cq value " f"out of range (0..100). ({self.type_str})"
+            f"{self.error_level.name}: Sample rows that have a CHn-Cq value "
+            f"out of range (0..100). ({self.type_str})"
         )
         self.max_errors = 5
         self.short_display_description = "Out of range CHn-Cq value"
@@ -251,7 +260,7 @@ class AggregateType21(AggregateTypeBase):
         self.type_str = "TYPE 21"
         self.error_level = ErrorLevel.ERROR
         self.message = (
-            f"{self.error_level} Sample rows where a Positive Result value does not align with CT channel "
+            f"{self.error_level.name}: Sample rows where a Positive Result value does not align with CT channel "
             f"Results. ({self.type_str})"
         )
         self.max_errors = 5
@@ -264,7 +273,7 @@ class AggregateType22(AggregateTypeBase):
         self.type_str = "TYPE 22"
         self.error_level = ErrorLevel.ERROR
         self.message = (
-            "{self.error_level} Files where the DART database inserts have failed for some plates. "
+            "{self.error_level.name}: Files where the DART database inserts have failed for some plates. "
             f"({self.type_str})"
         )
         self.short_display_description = "Failed DART plate inserts"
@@ -275,7 +284,7 @@ class AggregateType23(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 23"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = f"{self.error_level} Files where all DART database inserts have failed. ({self.type_str})"
+        self.message = f"{self.error_level.name}: Files where all DART database inserts have failed. ({self.type_str})"
         self.short_display_description = "Failed DART file inserts"
 
 
@@ -285,7 +294,7 @@ class AggregateType24(AggregateTypeBase):
         self.type_str = "TYPE 24"
         self.error_level = ErrorLevel.CRITICAL
         self.message = (
-            f"{self.error_level} Files where the DART database connection could not be made. ({self.type_str})"
+            f"{self.error_level.name}: Files where the DART database connection could not be made. ({self.type_str})"
         )
         self.short_display_description = "Failed DART connection"
 
@@ -295,7 +304,9 @@ class AggregateType25(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 25"
         self.error_level = ErrorLevel.ERROR
-        self.message = f"{self.error_level} Found duplicate source plate barcodes from different labs ({self.type_str})"
+        self.message = (
+            f"{self.error_level.name}: Found duplicate source plate barcodes from different labs ({self.type_str})"
+        )
         self.short_display_description = "Duplicate source plate barcodes from different labs"
 
 
@@ -305,7 +316,7 @@ class AggregateType26(AggregateTypeBase):
         self.type_str = "TYPE 26"
         self.error_level = ErrorLevel.CRITICAL
         self.message = (
-            f"{self.error_level} Files where source plate UUIDs could not be assigned to any sample "
+            f"{self.error_level.name}: Files where source plate UUIDs could not be assigned to any sample "
             f"({self.type_str})"
         )
         self.short_display_description = "Failed assigning source plate UUIDs"

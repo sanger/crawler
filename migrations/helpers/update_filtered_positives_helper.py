@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from types import ModuleType
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from crawler.constants import (
     COLLECTION_SAMPLES,

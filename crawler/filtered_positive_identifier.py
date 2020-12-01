@@ -1,6 +1,5 @@
 import decimal
 import re
-from typing import Any, Dict
 
 from bson.decimal128 import create_decimal128_context  # type: ignore
 

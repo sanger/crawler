@@ -1,0 +1,387 @@
+import uuid
+from datetime import datetime
+from types import ModuleType
+from typing import List, Optional, Set
+
+import pandas as pd  # type: ignore
+import sqlalchemy  # type: ignore
+from crawler.constants import (
+    COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
+    FIELD_BARCODE,
+    FIELD_COORDINATE,
+    FIELD_CREATED_AT,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_LAB_ID,
+    FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_UPDATED_AT,
+    MONGO_DATETIME_FORMAT,
+)
+from crawler.db import (
+    create_mongo_client,
+    create_mysql_connection,
+    get_mongo_collection,
+    get_mongo_db,
+    run_mysql_executemany_query,
+)
+from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
+from crawler.helpers.general_helpers import map_mongo_doc_to_sql_columns
+from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
+from crawler.types import Sample, SourcePlate
+from migrations.helpers.shared_helper import print_exception
+from migrations.helpers.update_filtered_positives_helper import (
+    update_dart_filtered_positive_fields,
+    update_filtered_positive_fields,
+)
+from pandas import DataFrame
+
+##
+# Requirements:
+# * Do not add samples to DART which have already been cherry-picked
+# * Only add positive samples to DART
+####
+# 1. get samples from mongo between these time ranges that are positive
+# 2. of these, find which have been cherry-picked and remove them from the list
+# 3. add the relevant filtered positive fields if not present
+# 4. add the UUID fields if not present
+# 5. update samples in mongo updated in either of the above two steps (would expect the same set of samples from both
+#       steps)
+# 6. update the MLWH (should be an idempotent operation)
+# 7. add all plates to DART, but only RESULT=Positive samples (update existing migration helper method)
+
+
+def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
+    if not valid_datetime_string(s_start_datetime):
+        print("Aborting run: Expected format of Start datetime is YYMMDD_HHmm")
+        return
+
+    if not valid_datetime_string(s_end_datetime):
+        print("Aborting run: Expected format of End datetime is YYMMDD_HHmm")
+        return
+
+    start_datetime = datetime.strptime(s_start_datetime, MONGO_DATETIME_FORMAT)
+    end_datetime = datetime.strptime(s_end_datetime, MONGO_DATETIME_FORMAT)
+
+    if start_datetime > end_datetime:
+        print("Aborting run: End datetime must be greater than Start datetime")
+        return
+
+    print(f"Starting DART update process with Start datetime {start_datetime} and End datetime " f"{end_datetime}")
+
+    try:
+        mongo_docs_for_sql = []
+        number_docs_found = 0
+
+        # open connection to mongo
+        with create_mongo_client(config) as client:
+            mongo_db = get_mongo_db(config, client)
+
+            samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
+
+            print(f"Selecting positive samples between {s_start_datetime} and {s_end_datetime}")
+
+            # 1. get samples from mongo between these time ranges that are positive
+            first_match = {
+                "$match": {
+                    # 1. First filter by the start and end dates
+                    FIELD_CREATED_AT: {"$gte": start_datetime, "$lte": end_datetime},
+                    FIELD_RESULT: {"$regex": "^positive", "$options": "i"},
+                    FIELD_ROOT_SAMPLE_ID: {"$not": {"$regex": "^CBIQA_"}},
+                }
+            }
+
+            pipeline = [first_match]
+
+            results = samples_collection.aggregate(pipeline)
+
+            num_docs = 0
+
+            root_sample_ids = []
+            plate_barcodes = set()
+
+            for doc in results:
+                root_sample_ids.append(doc[FIELD_ROOT_SAMPLE_ID])
+                plate_barcodes.add(doc[FIELD_PLATE_BARCODE])
+
+                num_docs += 1
+
+            print(f"{num_docs} to process")
+            print(f"{len(plate_barcodes)} unique plate barcodes")
+
+            # 2. of these, find which have been cherry-picked and remove them from the list
+            cp_samples_df = get_cherrypicked_samples(config, root_sample_ids, plate_barcodes)
+
+            # create a second match for the pipeline
+            second_match = {
+                "$match": {
+                    FIELD_ROOT_SAMPLE_ID: {"$nin": cp_samples_df[FIELD_ROOT_SAMPLE_ID].to_list()},  # type: ignore
+                }
+            }
+
+            pipeline.append(second_match)  # type: ignore
+
+            # get the samples between those dates minus the cherry-picked ones
+            results = samples_collection.aggregate(pipeline)
+            samples = list(results)
+
+            print(
+                f"{len(samples)} documents found in the mongo database between these timestamps and not cherry-picked"
+            )
+
+            # 3. add the relevant filtered positive fields if not present
+            filtered_positive_identifier = FilteredPositiveIdentifier()
+            version = filtered_positive_identifier.current_version()
+            update_timestamp = datetime.now()
+
+            print("Updating filtered positives...")
+
+            update_filtered_positive_fields(
+                filtered_positive_identifier,
+                samples,
+                version,
+                update_timestamp,
+            )
+
+            print("Updated filtered positives")
+
+            # 4. add the UUID fields if not present
+            add_sample_uuid_field(samples)
+
+            samples_updated_with_source_plate_uuids(mongo_db, samples)
+
+            # 5. update samples in mongo updated in either of the above two steps (would expect the same set of samples
+            #       from both steps)
+            print("Updating Mongo...")
+            _ = update_mongo_fields(mongo_db, samples, version, update_timestamp)
+            print("Finished updating Mongo")
+
+        # 6. update the MLWH (should be an idempotent operation)
+        # convert mongo field values into MySQL format
+        for sample in samples:
+            mongo_docs_for_sql.append(map_mongo_doc_to_sql_columns(sample))
+
+        if number_docs_found > 0:
+            print(f"Updating MLWH database for {len(mongo_docs_for_sql)} sample documents")
+            # create connection to the MLWH database
+            with create_mysql_connection(config, False) as mlwh_conn:
+
+                # execute sql query to insert/update timestamps into MLWH
+                run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
+        else:
+            print("No documents found for this timestamp range, nothing to insert or update in MLWH")
+
+        # 7. add all plates to DART, but only RESULT=Positive samples
+        update_dart_filtered_positive_fields(config, samples)
+    except Exception as e:
+        print(e)
+
+
+def add_sample_uuid_field(samples: List[Sample]) -> List[Sample]:
+    # add lh sample uuid
+    for sample in samples:
+        if FIELD_LH_SAMPLE_UUID not in [*sample]:
+            sample[FIELD_LH_SAMPLE_UUID] = str(uuid.uuid4())
+
+    return samples
+
+
+def update_mongo_fields(mongo_db, samples: List[Sample], version: str, update_timestamp: datetime) -> bool:
+    """Bulk updates sample filtered positive fields in the Mongo database
+
+    Arguments:
+        config {ModuleType} -- application config specifying database details
+        samples {List[Sample]} -- the list of samples whose filtered positive fields should be updated
+        version {str} -- the filtered positive identifier version used
+        update_timestamp {datetime} -- the timestamp at which the update was performed
+
+    Returns:
+        bool -- whether the updates completed successfully
+    """
+    # get ids of those that are filtered positive, and those that aren't
+    all_ids: List[str] = [sample[FIELD_MONGODB_ID] for sample in samples]
+    filtered_positive_ids: List[str] = [
+        sample[FIELD_MONGODB_ID] for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] is True, samples))
+    ]
+    filtered_negative_ids = [mongo_id for mongo_id in all_ids if mongo_id not in filtered_positive_ids]
+
+    samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
+    samples_collection.update_many(
+        {FIELD_MONGODB_ID: {"$in": filtered_positive_ids}},
+        {
+            "$set": {
+                FIELD_FILTERED_POSITIVE: True,
+                FIELD_FILTERED_POSITIVE_VERSION: version,
+                FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
+            }
+        },
+    )
+    samples_collection.update_many(
+        {FIELD_MONGODB_ID: {"$in": filtered_negative_ids}},
+        {
+            "$set": {
+                FIELD_FILTERED_POSITIVE: False,
+                FIELD_FILTERED_POSITIVE_VERSION: version,
+                FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
+            }
+        },
+    )
+    return True
+
+
+def samples_updated_with_source_plate_uuids(mongo_db, samples: List[Sample]) -> List[Sample]:
+    print("Attempting to update docs with source plate UUIDs")
+
+    updated_samples: List[Sample] = []
+
+    def update_doc_from_source_plate(sample: Sample, existing_plate: SourcePlate, skip_lab_check: bool = False) -> None:
+        if skip_lab_check or sample[FIELD_LAB_ID] == existing_plate[FIELD_LAB_ID]:
+            sample[FIELD_LH_SOURCE_PLATE_UUID] = existing_plate[FIELD_LH_SOURCE_PLATE_UUID]
+            updated_samples.append(sample)
+        else:
+            print(
+                f"ERROR: Source plate barcode {sample[FIELD_PLATE_BARCODE]} already exists with different lab_id "
+                f"{existing_plate[FIELD_LAB_ID]}",
+            )
+
+    try:
+        new_plates: List[SourcePlate] = []
+        source_plates_collection = get_mongo_collection(mongo_db, COLLECTION_SOURCE_PLATES)
+
+        for sample in samples:
+            plate_barcode = sample[FIELD_PLATE_BARCODE]
+
+            # attempt an update from plates that exist in mongo
+            existing_mongo_plate = source_plates_collection.find_one({FIELD_BARCODE: plate_barcode})
+            if existing_mongo_plate is not None:
+                update_doc_from_source_plate(sample, existing_mongo_plate)
+                continue
+
+            # then add a new plate
+            new_plate = new_mongo_source_plate(plate_barcode, sample[FIELD_LAB_ID])
+            new_plates.append(new_plate)
+            update_doc_from_source_plate(sample, new_plate, True)
+
+        print(f"Attempting to insert {len(new_plates)} new source plates")
+        if len(new_plates) > 0:
+            source_plates_collection.insert_many(new_plates, ordered=False)
+
+    except Exception as e:
+        print(f"{e} Failed assigning source plate UUIDs to samples.")
+        updated_samples = []
+
+    return updated_samples
+
+
+def new_mongo_source_plate(plate_barcode: str, lab_id: str) -> SourcePlate:
+    """Creates a new mongo source plate document.
+
+    Arguments:
+        plate_barcode {str} -- The plate barcode to assign to the new source plate.
+        lab_id {str} -- The lab id to assign to the new source plate.
+
+    Returns:
+        SourcePlate -- The new mongo source plate doc.
+    """
+    timestamp = datetime.now()
+    return {
+        FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4()),
+        FIELD_BARCODE: plate_barcode,
+        FIELD_LAB_ID: lab_id,
+        FIELD_UPDATED_AT: timestamp,
+        FIELD_CREATED_AT: timestamp,
+    }
+
+
+def get_cherrypicked_samples(
+    config: ModuleType,
+    root_sample_ids: List[str],
+    plate_barcodes: Set[str],
+    chunk_size: int = 50000,
+) -> Optional[DataFrame]:
+    """Find which samples have been cherrypicked using MLWH & Events warehouse.
+    Returns dataframe with 4 columns: those needed to uniquely identify the sample resulting
+    dataframe only contains those samples that have been cherrypicked (those that have an entry
+    for the relevant event type in the event warehouse)
+
+    Args:
+        root_sample_ids (List[str]): [description]
+        plate_barcodes (List[str]): [description]
+        chunk_size (int, optional): [description]. Defaults to 50000.
+
+    Returns:
+        DataFrame: [description]
+    """
+    try:
+        # Create an empty DataFrame to merge into
+        concat_frame = pd.DataFrame()
+
+        chunk_root_sample_ids = [
+            root_sample_ids[x : (x + chunk_size)] for x in range(0, len(root_sample_ids), chunk_size)  # noqa:E203
+        ]
+
+        sql_engine = sqlalchemy.create_engine(
+            (
+                f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}"  # type: ignore
+                f"@{config.MLWH_DB_HOST}"  # type: ignore
+            ),
+            pool_recycle=3600,
+        )
+        db_connection = sql_engine.connect()
+
+        ml_wh_db = config.MLWH_DB_DBNAME  # type: ignore
+        events_wh_db = config.EVENTS_WH_DB  # type: ignore
+
+        for chunk_root_sample_id in chunk_root_sample_ids:
+            sql = (
+                f"SELECT mlwh_sample.description as `{FIELD_ROOT_SAMPLE_ID}`, mlwh_stock_resource.labware_human_barcode as `{FIELD_PLATE_BARCODE}`"  # noqa: E501
+                f",mlwh_sample.phenotype as `Result_lower`, mlwh_stock_resource.labware_coordinate as `{FIELD_COORDINATE}`"  # noqa: E501
+                f" FROM {ml_wh_db}.sample as mlwh_sample"
+                f" JOIN {ml_wh_db}.stock_resource mlwh_stock_resource ON (mlwh_sample.id_sample_tmp = mlwh_stock_resource.id_sample_tmp)"  # noqa: E501
+                f" JOIN {events_wh_db}.subjects mlwh_events_subjects ON (mlwh_events_subjects.friendly_name = sanger_sample_id)"  # noqa: E501
+                f" JOIN {events_wh_db}.roles mlwh_events_roles ON (mlwh_events_roles.subject_id = mlwh_events_subjects.id)"  # noqa: E501
+                f" JOIN {events_wh_db}.events mlwh_events_events ON (mlwh_events_roles.event_id = mlwh_events_events.id)"  # noqa: E501
+                f" JOIN {events_wh_db}.event_types mlwh_events_event_types ON (mlwh_events_events.event_type_id = mlwh_events_event_types.id)"  # noqa: E501
+                f" WHERE mlwh_sample.description IN %(root_sample_ids)s"
+                f" AND mlwh_stock_resource.labware_human_barcode IN %(plate_barcodes)s"
+                " AND mlwh_events_event_types.key = 'cherrypick_layout_set'"
+                " GROUP BY mlwh_sample.description, mlwh_stock_resource.labware_human_barcode, mlwh_sample.phenotype, mlwh_stock_resource.labware_coordinate"  # noqa: E501
+            )
+
+            frame = pd.read_sql(
+                sql,
+                db_connection,
+                params={
+                    "root_sample_ids": tuple(chunk_root_sample_id),
+                    "plate_barcodes": tuple(plate_barcodes),
+                },
+            )
+
+            # drop_duplicates is needed because the same 'root sample id' could pop up in two different batches,
+            # and then it would retrieve the same rows for that root sample id twice
+            # do reset_index after dropping duplicates to make sure the rows are numbered in a way that makes sense
+            concat_frame = concat_frame.append(frame).drop_duplicates().reset_index(drop=True)
+
+        return concat_frame
+    except Exception as e:
+        print("Error while connecting to MySQL", e)
+        return None
+    finally:
+        db_connection.close()
+
+
+def valid_datetime_string(s_datetime: str) -> bool:
+    try:
+        dt = datetime.strptime(s_datetime, MONGO_DATETIME_FORMAT)
+        if dt is None:
+            return False
+        return True
+    except Exception:
+        print_exception()
+        return False
