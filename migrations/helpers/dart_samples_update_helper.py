@@ -41,6 +41,7 @@ from migrations.helpers.update_filtered_positives_helper import (
     update_filtered_positive_fields,
 )
 from pandas import DataFrame
+from pymongo.collection import Collection
 
 ##
 # Requirements:
@@ -88,52 +89,26 @@ def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") ->
             print(f"Selecting positive samples between {s_start_datetime} and {s_end_datetime}")
 
             # 1. get samples from mongo between these time ranges that are positive
-            first_match = {
-                "$match": {
-                    # 1. First filter by the start and end dates
-                    FIELD_CREATED_AT: {"$gte": start_datetime, "$lte": end_datetime},
-                    FIELD_RESULT: {"$regex": "^positive", "$options": "i"},
-                    FIELD_ROOT_SAMPLE_ID: {"$not": {"$regex": "^CBIQA_"}},
-                }
-            }
+            samples = get_positive_samples(samples_collection, start_datetime, end_datetime)
 
-            pipeline = [first_match]
+            print(f"{len(samples)} to process")
 
-            results = samples_collection.aggregate(pipeline)
-
-            num_docs = 0
-
-            root_sample_ids = []
+            root_sample_ids: List[str] = []
             plate_barcodes = set()
 
-            for doc in results:
-                root_sample_ids.append(doc[FIELD_ROOT_SAMPLE_ID])
-                plate_barcodes.add(doc[FIELD_PLATE_BARCODE])
+            for sample in samples:
+                root_sample_ids.append(sample[FIELD_ROOT_SAMPLE_ID])
+                plate_barcodes.add(sample[FIELD_PLATE_BARCODE])
 
-                num_docs += 1
-
-            print(f"{num_docs} to process")
             print(f"{len(plate_barcodes)} unique plate barcodes")
 
             # 2. of these, find which have been cherry-picked and remove them from the list
             cp_samples_df = get_cherrypicked_samples(config, root_sample_ids, plate_barcodes)
 
-            # create a second match for the pipeline
-            second_match = {
-                "$match": {
-                    FIELD_ROOT_SAMPLE_ID: {"$nin": cp_samples_df[FIELD_ROOT_SAMPLE_ID].to_list()},  # type: ignore
-                }
-            }
-
-            pipeline.append(second_match)  # type: ignore
-
             # get the samples between those dates minus the cherry-picked ones
-            results = samples_collection.aggregate(pipeline)
-            samples = list(results)
+            samples = remove_cherrypicked_samples(samples, cp_samples_df[FIELD_ROOT_SAMPLE_ID].to_list())
 
-            print(
-                f"{len(samples)} documents found in the mongo database between these timestamps and not cherry-picked"
-            )
+            print(f"{len(samples)} samples between these timestamps and not cherry-picked")
 
             # 3. add the relevant filtered positive fields if not present
             filtered_positive_identifier = FilteredPositiveIdentifier()
@@ -183,8 +158,25 @@ def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") ->
         print(e)
 
 
+def get_positive_samples(
+    samples_collection: Collection, start_datetime: datetime, end_datetime: datetime
+) -> List[Sample]:
+    match = {
+        "$match": {
+            # 1. First filter by the start and end dates
+            FIELD_CREATED_AT: {"$gte": start_datetime, "$lte": end_datetime},
+            FIELD_RESULT: {"$regex": "^positive", "$options": "i"},
+            FIELD_ROOT_SAMPLE_ID: {"$not": {"$regex": "^CBIQA_"}},
+        }
+    }
+    return list(samples_collection.aggregate([match]))
+
+
+def remove_cherrypicked_samples(samples: List[Sample], cherry_picked_ids: List[str]) -> List[Sample]:
+    return list(filter(lambda sample: sample[FIELD_ROOT_SAMPLE_ID] not in cherry_picked_ids, samples))
+
+
 def add_sample_uuid_field(samples: List[Sample]) -> List[Sample]:
-    # add lh sample uuid
     for sample in samples:
         if FIELD_LH_SAMPLE_UUID not in [*sample]:
             sample[FIELD_LH_SAMPLE_UUID] = str(uuid.uuid4())

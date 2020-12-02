@@ -453,7 +453,7 @@ class CentreFile:
         """Database clash
 
         Args:
-            exception ([type]): [description]
+            exception (BulkWriteError): [description]
         """
         try:
             wrong_instances = [write_error["op"] for write_error in exception.details["writeErrors"]]

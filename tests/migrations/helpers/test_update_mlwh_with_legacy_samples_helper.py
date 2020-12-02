@@ -15,11 +15,7 @@ from crawler.constants import (
     MLWH_TABLE_NAME,
     MONGO_DATETIME_FORMAT,
 )
-
-from migrations.helpers.mlwh_samples_update_helper import (
-    update_mlwh_with_legacy_samples,
-    valid_datetime_string,
-)
+from migrations.helpers.mlwh_samples_update_helper import update_mlwh_with_legacy_samples, valid_datetime_string
 
 
 def generate_example_samples(range, start_datetime):
@@ -61,8 +57,7 @@ def test_basic_usage(mongo_database, mlwh_connection):
     test_samples = generate_example_samples(range(0, 6), start_datetime)
     mongo_db.samples.insert_many(test_samples)
 
-    total_samples = mongo_db.samples.count_documents({})
-    assert total_samples == 6
+    assert mongo_db.samples.count_documents({}) == 6
 
     s_start_datetime = datetime.strftime(start_datetime, MONGO_DATETIME_FORMAT)
     s_end_datetime = datetime.strftime(start_datetime + timedelta(days=3), MONGO_DATETIME_FORMAT)
@@ -104,8 +99,7 @@ def test_when_no_rows_match_timestamp_range(mongo_database, mlwh_connection):
     test_samples = generate_example_samples(range(0, 6), start_datetime)
     mongo_db.samples.insert_many(test_samples)
 
-    total_samples = mongo_db.samples.count_documents({})
-    assert total_samples == 6
+    assert mongo_db.samples.count_documents({}) == 6
 
     # use timestamps such that no rows qualify
     s_start_datetime = datetime.strftime(start_datetime + timedelta(days=6), MONGO_DATETIME_FORMAT)

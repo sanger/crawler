@@ -1,9 +1,6 @@
-from migrations.helpers.sample_timestamps_helper import (
-    add_timestamps_to_samples,
-    CREATED_DATE_FIELD_NAME,
-)
-
 import datetime
+
+from migrations.helpers.sample_timestamps_helper import CREATED_DATE_FIELD_NAME, add_timestamps_to_samples
 
 
 def generate_example_samples(range):
@@ -56,7 +53,6 @@ def generate_example_samples_fields_missing(range):
     return samples
 
 
-# TODO: DeprecationWarning: count is deprecated. Use Collection.count_documents instead.
 def test_basic(mongo_database):
     _, db = mongo_database
 
