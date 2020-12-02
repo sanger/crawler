@@ -4,4 +4,3 @@ line-length = 120
 [tool.coverage.run]
 branch = true
 source = ['crawler']
-omit = ['crawler/constants.py', 'crawler/config/*']
