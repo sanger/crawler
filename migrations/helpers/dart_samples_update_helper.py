@@ -33,13 +33,10 @@ from crawler.db import (
 )
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 from crawler.helpers.general_helpers import map_mongo_doc_to_sql_columns
-from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
+from crawler.sql_queries import SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_AND_UUID_UPDATE
 from crawler.types import Sample, SourcePlate
 from migrations.helpers.shared_helper import print_exception
-from migrations.helpers.update_filtered_positives_helper import (
-    update_dart_filtered_positive_fields,
-    update_filtered_positive_fields,
-)
+from migrations.helpers.update_filtered_positives_helper import update_dart_fields, update_filtered_positive_fields
 from pandas import DataFrame
 from pymongo.collection import Collection
 
@@ -55,7 +52,7 @@ from pymongo.collection import Collection
 # 5. update samples in mongo updated in either of the above two steps (would expect the same set of samples from both
 #       steps)
 # 6. update the MLWH (should be an idempotent operation)
-# 7. add all plates to DART, but only RESULT=Positive samples (update existing migration helper method)
+# 7. add all the plates of the positive samples we've selected in step 1 above, to DART
 
 
 def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
@@ -74,7 +71,7 @@ def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") ->
         print("Aborting run: End datetime must be greater than Start datetime")
         return
 
-    print(f"Starting DART update process with Start datetime {start_datetime} and End datetime " f"{end_datetime}")
+    print(f"Starting DART update process with Start datetime {start_datetime} and End datetime {end_datetime}")
 
     try:
         mongo_docs_for_sql = []
@@ -93,20 +90,21 @@ def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") ->
 
             print(f"{len(samples)} to process")
 
-            root_sample_ids: List[str] = []
+            root_sample_ids = set()
             plate_barcodes = set()
 
             for sample in samples:
-                root_sample_ids.append(sample[FIELD_ROOT_SAMPLE_ID])
+                root_sample_ids.add(sample[FIELD_ROOT_SAMPLE_ID])
                 plate_barcodes.add(sample[FIELD_PLATE_BARCODE])
 
             print(f"{len(plate_barcodes)} unique plate barcodes")
 
             # 2. of these, find which have been cherry-picked and remove them from the list
-            cp_samples_df = get_cherrypicked_samples(config, root_sample_ids, plate_barcodes)
+            cp_samples_df = get_cherrypicked_samples(config, list(root_sample_ids), plate_barcodes)
 
             # get the samples between those dates minus the cherry-picked ones
-            samples = remove_cherrypicked_samples(samples, cp_samples_df[FIELD_ROOT_SAMPLE_ID].to_list())
+            if cp_samples_df:
+                samples = remove_cherrypicked_samples(samples, cp_samples_df[FIELD_ROOT_SAMPLE_ID].to_list())
 
             print(f"{len(samples)} samples between these timestamps and not cherry-picked")
 
@@ -117,6 +115,19 @@ def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") ->
 
             print("Updating filtered positives...")
 
+            """
+            This will update the filtered positive fields on all samples. This should be fine as long as any pending
+            filtered positive rule change migration is run first. If not, one situation in which it might not be okay is
+            for a sample currently being cherrypicked, but not actually picked: you could update this sample to be not
+            eligible for cherrypicking in mongo and MLWH, but this wouldn't go to DART as the sample's plate would be
+            'started'.
+
+            The safest way to do this would be to add filtered positive info if none existed on the sample (e.g. one of
+            the three expected fields doesn't exist), as you know that sample won't be in the process of being
+            cherrypicked. Although I can't think of a non-rare set of circumstances in which this will manifest as a
+            problem, and the one I can think of isn't that much of a problem (picking a sample that has just been
+            updated so it shouldn't be picked).
+            """
             update_filtered_positive_fields(
                 filtered_positive_identifier,
                 samples,
@@ -147,13 +158,15 @@ def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") ->
             # create connection to the MLWH database
             with create_mysql_connection(config, False) as mlwh_conn:
 
-                # execute sql query to insert/update timestamps into MLWH
-                run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
+                # execute SQL query to update filtered positive and UUID fields
+                run_mysql_executemany_query(
+                    mlwh_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_AND_UUID_UPDATE, mongo_docs_for_sql
+                )
         else:
             print("No documents found for this timestamp range, nothing to insert or update in MLWH")
 
-        # 7. add all plates to DART, but only RESULT=Positive samples
-        update_dart_filtered_positive_fields(config, samples)
+        # 7. add all the plates of the positive samples we've selected in step 1 above, to DART
+        update_dart_fields(config, samples)
     except Exception as e:
         print(e)
 

@@ -11,7 +11,6 @@ from crawler.constants import (
     FIELD_RESULT,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_UPDATED_AT,
-    MONGO_DATETIME_FORMAT,
 )
 from migrations.helpers.dart_samples_update_helper import (
     add_sample_uuid_field,

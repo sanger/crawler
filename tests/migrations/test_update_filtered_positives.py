@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from migrations import update_filtered_positives
 
 # ----- test fixture helpers -----
@@ -24,7 +26,7 @@ def mock_update_positives():
 def mock_helper_database_updates():
     with patch("migrations.update_filtered_positives.update_mongo_filtered_positive_fields") as mock_update_mongo:
         with patch("migrations.update_filtered_positives.update_mlwh_filtered_positive_fields") as mock_update_mlwh:
-            with patch("migrations.update_filtered_positives.update_dart_filtered_positive_fields") as mock_update_dart:
+            with patch("migrations.update_filtered_positives.update_dart_fields") as mock_update_dart:
                 yield mock_update_mongo, mock_update_mlwh, mock_update_dart
 
 

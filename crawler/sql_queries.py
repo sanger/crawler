@@ -119,7 +119,21 @@ KEY `index_lighthouse_sample_on_date_tested` (`date_tested`)
 
 SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE = """\
 UPDATE lighthouse_sample
-SET filtered_positive = %(filtered_positive)s, filtered_positive_version = %(filtered_positive_version)s, filtered_positive_timestamp = %(filtered_positive_timestamp)s
+SET
+filtered_positive = %(filtered_positive)s,
+filtered_positive_version = %(filtered_positive_version)s,
+filtered_positive_timestamp = %(filtered_positive_timestamp)s
+WHERE mongodb_id = %(mongodb_id)s
+"""
+
+SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_AND_UUID_UPDATE = """\
+UPDATE lighthouse_sample
+SET
+filtered_positive = %(filtered_positive)s,
+filtered_positive_version = %(filtered_positive_version)s,
+filtered_positive_timestamp = %(filtered_positive_timestamp)s,
+lh_sample_uuid = %(lh_sample_uuid)s,
+lh_source_plate_uuid = %(lh_source_plate_uuid)s
 WHERE mongodb_id = %(mongodb_id)s
 """
 

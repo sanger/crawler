@@ -189,7 +189,7 @@ def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Sampl
         return False
 
 
-def update_dart_filtered_positive_fields(config: ModuleType, samples: List[Sample]) -> bool:
+def update_dart_fields(config: ModuleType, samples: List[Sample]) -> bool:
     """Updates DART plates and wells following updates to the filtered positive fields
 
     Arguments:

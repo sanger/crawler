@@ -29,7 +29,7 @@ from migrations.helpers.update_filtered_positives_helper import (
     biomek_labclass_by_centre_name,
     pending_plate_barcodes_from_dart,
     positive_result_samples_from_mongo,
-    update_dart_filtered_positive_fields,
+    update_dart_fields,
     update_filtered_positive_fields,
     update_mlwh_filtered_positive_fields,
     update_mongo_filtered_positive_fields,
@@ -318,18 +318,18 @@ def test_biomek_labclass_by_centre_name(config):
 def test_update_dart_filtered_positive_fields_throws_with_error_connecting_to_dart(config, mock_dart_conn):
     mock_dart_conn.side_effect = NotImplementedError("Boom!")
     with pytest.raises(Exception):
-        update_dart_filtered_positive_fields(config, [])
+        update_dart_fields(config, [])
 
 
 def test_update_dart_filtered_positive_fields_throws_no_dart_connection(config, mock_dart_conn):
     mock_dart_conn.return_value = None
     with pytest.raises(ValueError):
-        update_dart_filtered_positive_fields(config, [])
+        update_dart_fields(config, [])
 
 
 def test_update_dart_filtered_positive_fields_returns_false_with_error_creating_cursor(config, mock_dart_conn):
     mock_dart_conn().cursor.side_effect = NotImplementedError("Boom!")
-    result = update_dart_filtered_positive_fields(config, [])
+    result = update_dart_fields(config, [])
     assert result is False
 
 
@@ -339,7 +339,7 @@ def test_update_dart_filtered_positive_fields_returns_false_error_adding_plate(c
         side_effect=Exception("Boom!"),
     ):
         samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0]["name"]}]
-        result = update_dart_filtered_positive_fields(config, samples)
+        result = update_dart_fields(config, samples)
         assert result is False
 
 
@@ -352,7 +352,7 @@ def test_update_dart_filtered_positive_fields_non_pending_plate_does_not_update_
             "migrations.helpers.update_filtered_positives_helper.set_dart_well_properties"
         ) as mock_update_well_props:
             samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0]["name"]}]
-            result = update_dart_filtered_positive_fields(config, samples)
+            result = update_dart_fields(config, samples)
 
             mock_dart_conn().cursor().commit.assert_called_once()
             mock_update_well_props.assert_not_called()
@@ -372,7 +372,7 @@ def test_update_dart_filtered_positive_fields_returns_false_unable_to_determine_
                 "migrations.helpers.update_filtered_positives_helper.set_dart_well_properties"
             ) as mock_update_well_props:
                 samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0]["name"]}]
-                result = update_dart_filtered_positive_fields(config, samples)
+                result = update_dart_fields(config, samples)
 
                 mock_dart_conn().cursor().rollback.assert_called_once()
                 mock_update_well_props.assert_not_called()
@@ -396,7 +396,7 @@ def test_update_dart_filtered_positive_fields_returns_false_error_mapping_to_wel
                     "migrations.helpers.update_filtered_positives_helper.set_dart_well_properties"
                 ) as mock_update_well_props:
                     samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0]["name"]}]
-                    result = update_dart_filtered_positive_fields(config, samples)
+                    result = update_dart_fields(config, samples)
 
                     mock_dart_conn().cursor().rollback.assert_called_once()
                     mock_update_well_props.assert_not_called()
@@ -420,7 +420,7 @@ def test_update_dart_filtered_positive_fields_returns_false_error_adding_well_pr
                     side_effect=NotImplementedError("Boom!"),
                 ):
                     samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0]["name"]}]
-                    result = update_dart_filtered_positive_fields(config, samples)
+                    result = update_dart_fields(config, samples)
 
                     mock_dart_conn().cursor().rollback.assert_called_once()
                     assert result is False
@@ -460,7 +460,7 @@ def test_update_dart_filtered_positive_fields_returns_true_multiple_new_plates(c
                         },
                     ]
 
-                    result = update_dart_filtered_positive_fields(config, samples)
+                    result = update_dart_fields(config, samples)
 
                     num_samples = len(samples)
                     assert mock_add_plate.call_count == num_samples
@@ -520,7 +520,7 @@ def test_update_dart_filtered_positive_fields_returns_true_single_new_plate_mult
                         },
                     ]
 
-                    result = update_dart_filtered_positive_fields(config, samples)
+                    result = update_dart_fields(config, samples)
 
                     mock_add_plate.assert_called_once_with(
                         mock_dart_conn().cursor(), test_plate_barcode, test_labware_class
