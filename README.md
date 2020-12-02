@@ -145,8 +145,7 @@ Mypy is used as a type checker, to execute:
 
 Flake8 is used for linting, to execute:
 
-    pipenv run flake8a
-    pipenv run flake8b
+    flake8
 
 ## Miscellaneous
 
