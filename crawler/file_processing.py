@@ -398,9 +398,9 @@ class CentreFile:
                 filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert)
             )
 
-            self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
+            mlwh_success = self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
-            if add_to_dart:
+            if add_to_dart and mlwh_success:
                 self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
 
         self.backup_file()

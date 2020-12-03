@@ -117,7 +117,7 @@ def test_process_files(
     assert source_plates_collection.count_documents({"barcode": "AP123"}) == 1
 
 
-def test_process_files_dont_add_to_dart(
+def test_process_files_dont_add_to_dart_flag_not_set(
     mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn
 ):
     _, mongo_database = mongo_database
@@ -129,6 +129,23 @@ def test_process_files_dont_add_to_dart(
 
     # assert no attempt was made to connect
     pyodbc_conn.assert_not_called()
+
+
+def test_process_files_dont_add_to_dart_mlwh_failed(
+    mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn
+):
+    with patch(
+        "crawler.file_processing.run_mysql_executemany_query", side_effect=Exception("Boom!")
+    ):
+        _, mongo_database = mongo_database
+
+        centre_config = config.CENTRES[0]
+        centre_config["sftp_root_read"] = "tmp/files"
+        centre = Centre(config, centre_config)
+        centre.process_files(True)
+
+        # assert no attempt was made to connect
+        pyodbc_conn.assert_not_called()
 
 
 # ----- tests for class CentreFile -----
