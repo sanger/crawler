@@ -628,7 +628,7 @@ class CentreFile:
             logger.exception(e)
             return []
 
-    def insert_samples_from_docs_into_mlwh(self, docs_to_insert) -> None:
+    def insert_samples_from_docs_into_mlwh(self, docs_to_insert) -> bool:
         """Insert sample records into the MLWH database from the parsed file information, including
         the corresponding mongodb _id
 
@@ -639,6 +639,9 @@ class CentreFile:
 
             mongo_ids {List[ObjectId]} -- list of mongodb ids in the same order as docs_to_insert,
             from the insert into the mongodb
+
+        Returns:
+            {bool} -- True if the insert was successful; otherwise False
         """
         values = []
         for doc in docs_to_insert:
@@ -653,6 +656,7 @@ class CentreFile:
                 logger.debug(
                     f"MLWH database inserts completed successfully for file {self.file_name}"
                 )
+                return True
             except Exception as e:
                 self.logging_collection.add_error(
                     "TYPE 14",
@@ -669,6 +673,8 @@ class CentreFile:
                 f"Error writing to MLWH for file {self.file_name}, could not create Database "
                 "connection"
             )
+
+        return False
 
     def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert) -> None:
         """Insert plates and wells into the DART database from the parsed file information
