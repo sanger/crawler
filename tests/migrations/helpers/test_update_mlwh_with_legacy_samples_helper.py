@@ -15,7 +15,8 @@ from crawler.constants import (
     MLWH_TABLE_NAME,
     MONGO_DATETIME_FORMAT,
 )
-from migrations.helpers.mlwh_samples_update_helper import update_mlwh_with_legacy_samples, valid_datetime_string
+from migrations.helpers.mlwh_samples_update_helper import update_mlwh_with_legacy_samples
+from migrations.helpers.shared_helper import valid_datetime_string
 
 
 def generate_example_samples(range, start_datetime):

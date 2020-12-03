@@ -400,14 +400,3 @@ def get_cherrypicked_samples(
         return None
     finally:
         db_connection.close()
-
-
-def valid_datetime_string(s_datetime: str) -> bool:
-    try:
-        dt = datetime.strptime(s_datetime, MONGO_DATETIME_FORMAT)
-        if dt is None:
-            return False
-        return True
-    except Exception:
-        print_exception()
-        return False

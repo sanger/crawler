@@ -10,18 +10,7 @@ from crawler.db import (
 )
 from crawler.helpers.general_helpers import map_mongo_doc_to_sql_columns
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
-from migrations.helpers.shared_helper import print_exception
-
-
-def valid_datetime_string(s_datetime: str) -> bool:
-    try:
-        dt = datetime.strptime(s_datetime, MONGO_DATETIME_FORMAT)
-        if dt is None:
-            return False
-        return True
-    except Exception:
-        print_exception()
-        return False
+from migrations.helpers.shared_helper import print_exception, valid_datetime_string
 
 
 def update_mlwh_with_legacy_samples(config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
