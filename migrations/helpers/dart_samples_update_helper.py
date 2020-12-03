@@ -33,7 +33,7 @@ from crawler.db import (
 )
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 from crawler.helpers.general_helpers import map_mongo_doc_to_sql_columns
-from crawler.sql_queries import SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_AND_UUID_UPDATE
+from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from crawler.types import Sample, SourcePlate
 from migrations.helpers.shared_helper import print_exception
 from migrations.helpers.update_filtered_positives_helper import update_dart_fields, update_filtered_positive_fields
@@ -158,10 +158,10 @@ def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") ->
             # create connection to the MLWH database
             with create_mysql_connection(config, False) as mlwh_conn:
 
-                # execute SQL query to update filtered positive and UUID fields
-                run_mysql_executemany_query(
-                    mlwh_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_AND_UUID_UPDATE, mongo_docs_for_sql
-                )
+                # TODO: make sure DART is not updated if this fails (https://github.com/sanger/crawler/issues/162)
+                # execute SQL query to update filtered positive and UUID fields, it does this using the insert
+                #   and performs an update when a duplicate key is found
+                run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
         else:
             print("No documents found for this timestamp range, nothing to insert or update in MLWH")
 

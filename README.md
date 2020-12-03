@@ -134,6 +134,10 @@ The process does not duplicate any data, instead updates existing entries.
 When the Beckman robots come online, we need to populate the DART database with the filtered positive samples that are
 available physically. This can be achieved using the 'update_dart' migration.
 
+This can also be used similarly to the existing MLWH migration: if a DART insert process fails, you will see a critical
+exception for the file in the Lighthouse-UI. After addressing reason for failure, run between relevant timestamps to
+re-insert/update data into DART.
+
 In short, this migration performs the following steps:
 
 1. Get the `RESULT = positive` samples (which are not controls) from mongo between a start and end date
