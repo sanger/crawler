@@ -5,38 +5,26 @@ from typing import List, Optional, Set
 
 import pandas as pd  # type: ignore
 import sqlalchemy  # type: ignore
-from crawler.constants import (
-    COLLECTION_SAMPLES,
-    COLLECTION_SOURCE_PLATES,
-    FIELD_BARCODE,
-    FIELD_COORDINATE,
-    FIELD_CREATED_AT,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_LAB_ID,
-    FIELD_LH_SAMPLE_UUID,
-    FIELD_LH_SOURCE_PLATE_UUID,
-    FIELD_MONGODB_ID,
-    FIELD_PLATE_BARCODE,
-    FIELD_RESULT,
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_UPDATED_AT,
-    MONGO_DATETIME_FORMAT,
-)
-from crawler.db import (
-    create_mongo_client,
-    create_mysql_connection,
-    get_mongo_collection,
-    get_mongo_db,
-    run_mysql_executemany_query,
-)
+from crawler.constants import (COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES,
+                               FIELD_BARCODE, FIELD_COORDINATE,
+                               FIELD_CREATED_AT, FIELD_FILTERED_POSITIVE,
+                               FIELD_FILTERED_POSITIVE_TIMESTAMP,
+                               FIELD_FILTERED_POSITIVE_VERSION, FIELD_LAB_ID,
+                               FIELD_LH_SAMPLE_UUID,
+                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_MONGODB_ID,
+                               FIELD_PLATE_BARCODE, FIELD_RESULT,
+                               FIELD_ROOT_SAMPLE_ID, FIELD_UPDATED_AT,
+                               MONGO_DATETIME_FORMAT)
+from crawler.db import (create_mongo_client, create_mysql_connection,
+                        get_mongo_collection, get_mongo_db,
+                        run_mysql_executemany_query)
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 from crawler.helpers.general_helpers import map_mongo_doc_to_sql_columns
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from crawler.types import Sample, SourcePlate
 from migrations.helpers.shared_helper import print_exception
-from migrations.helpers.update_filtered_positives_helper import update_dart_fields, update_filtered_positive_fields
+from migrations.helpers.update_filtered_positives_helper import (
+    update_dart_fields, update_filtered_positive_fields)
 from pandas import DataFrame
 from pymongo.collection import Collection
 
@@ -104,7 +92,10 @@ def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") ->
 
             # get the samples between those dates minus the cherry-picked ones
             if cp_samples_df:
-                samples = remove_cherrypicked_samples(samples, cp_samples_df[FIELD_ROOT_SAMPLE_ID].to_list())
+                # we need a list of cherry-picked samples with their respective plate barcodes
+                cp_samples = cp_samples_df[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()
+
+                samples = remove_cherrypicked_samples(samples, cp_samples)
 
             print(f"{len(samples)} samples between these timestamps and not cherry-picked")
 
@@ -185,8 +176,26 @@ def get_positive_samples(
     return list(samples_collection.aggregate([match]))
 
 
-def remove_cherrypicked_samples(samples: List[Sample], cherry_picked_ids: List[str]) -> List[Sample]:
-    return list(filter(lambda sample: sample[FIELD_ROOT_SAMPLE_ID] not in cherry_picked_ids, samples))
+def remove_cherrypicked_samples(samples: List[Sample], cherry_picked_samples: List[List[str]]) -> List[Sample]:
+    """Remove samples that have been cherry-picked. We need to check on (root sample id, plate barcode) combo rather
+    than just root sample id. As multiple samples can exist with the same root sample id, with the potential for one
+    being cherry-picked, and one not.
+
+    Args:
+        samples (List[Sample]): List of samples in the shape of mongo documents
+        cherry_picked_samples (List[List[str]]): 2 dimensional list of cherry-picked samples with root sample id and
+        plate barcodes for each.
+
+    Returns:
+        List[Sample]: The original list of samples minus the cherry-picked samples.
+    """
+    cherry_picked_sets = [{cp_sample[0], cp_sample[1]} for cp_sample in cherry_picked_samples]
+    return list(
+        filter(
+            lambda sample: {sample[FIELD_ROOT_SAMPLE_ID], sample[FIELD_PLATE_BARCODE]} not in cherry_picked_sets,
+            samples,
+        )
+    )
 
 
 def add_sample_uuid_field(samples: List[Sample]) -> List[Sample]:

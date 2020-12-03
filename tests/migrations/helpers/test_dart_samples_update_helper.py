@@ -86,11 +86,11 @@ def test_add_sample_uuid_field():
 
 def test_remove_cherrypicked_samples():
     test_samples = generate_example_samples(range(0, 6), datetime.now())
-    mock_cherry_picked_id = test_samples[0][FIELD_ROOT_SAMPLE_ID]
+    mock_cherry_picked_sample = [test_samples[0][FIELD_ROOT_SAMPLE_ID], test_samples[0][FIELD_PLATE_BARCODE]]
 
-    samples = remove_cherrypicked_samples(test_samples, [mock_cherry_picked_id])
+    samples = remove_cherrypicked_samples(test_samples, [mock_cherry_picked_sample])
     assert len(samples) == 7
-    assert mock_cherry_picked_id not in [sample[FIELD_ROOT_SAMPLE_ID] for sample in samples]
+    assert mock_cherry_picked_sample[0] not in [sample[FIELD_ROOT_SAMPLE_ID] for sample in samples]
 
 
 def test_new_mongo_source_plate(freezer):

@@ -61,12 +61,7 @@ VALUES (
 %(lh_sample_uuid)s,
 %(lh_source_plate_uuid)s,
 %(created_at)s,
-%(updated_at)s,
-%(filtered_positive)s,
-%(filtered_positive_version)s,
-%(filtered_positive_timestamp)s,
-%(lh_sample_uuid)s,
-%(lh_source_plate_uuid)s
+%(updated_at)s
 )
 ON DUPLICATE KEY UPDATE
 plate_barcode=VALUES(plate_barcode),
