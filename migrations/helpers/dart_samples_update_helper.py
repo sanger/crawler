@@ -35,7 +35,7 @@ from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 from crawler.helpers.general_helpers import map_mongo_doc_to_sql_columns
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from crawler.types import Sample, SourcePlate
-from migrations.helpers.shared_helper import print_exception
+from migrations.helpers.shared_helper import valid_datetime_string
 from migrations.helpers.update_filtered_positives_helper import update_dart_fields, update_filtered_positive_fields
 from pandas import DataFrame
 from pymongo.collection import Collection
