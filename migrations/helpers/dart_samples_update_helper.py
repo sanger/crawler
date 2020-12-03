@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+import logging
 from types import ModuleType
 from typing import List, Optional, Set
 
@@ -55,20 +56,23 @@ from pymongo.collection import Collection
 # 7. add all the plates of the positive samples we've selected in step 1 above, to DART
 
 
+logger = logging.getLogger(__name__)
+
+
 def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
     if not valid_datetime_string(s_start_datetime):
-        print("Aborting run: Expected format of Start datetime is YYMMDD_HHmm")
+        logger.error("Aborting run: Expected format of Start datetime is YYMMDD_HHmm")
         return
 
     if not valid_datetime_string(s_end_datetime):
-        print("Aborting run: Expected format of End datetime is YYMMDD_HHmm")
+        logger.error("Aborting run: Expected format of End datetime is YYMMDD_HHmm")
         return
 
     start_datetime = datetime.strptime(s_start_datetime, MONGO_DATETIME_FORMAT)
     end_datetime = datetime.strptime(s_end_datetime, MONGO_DATETIME_FORMAT)
 
     if start_datetime > end_datetime:
-        print("Aborting run: End datetime must be greater than Start datetime")
+        logger.error("Aborting run: End datetime must be greater than Start datetime")
         return
 
     print(f"Starting DART update process with Start datetime {start_datetime} and End datetime {end_datetime}")
