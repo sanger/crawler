@@ -9,11 +9,11 @@ from csv import DictReader
 from datetime import datetime
 from enum import Enum
 from hashlib import md5
+from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple
 
 import pyodbc  # type: ignore
 from bson.decimal128 import Decimal128  # type: ignore
-from bson.objectid import ObjectId  # type: ignore
 from more_itertools import groupby_transform
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
@@ -27,6 +27,7 @@ from crawler.constants import (
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
     DART_STATE_PENDING,
+    FIELD_BARCODE,
     FIELD_CH1_CQ,
     FIELD_CH1_RESULT,
     FIELD_CH1_TARGET,
@@ -48,6 +49,8 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_LAB_ID,
+    FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_LINE_NUMBER,
     FIELD_MONGODB_ID,
     FIELD_PLATE_BARCODE,
@@ -58,9 +61,6 @@ from crawler.constants import (
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
-    FIELD_LH_SAMPLE_UUID,
-    FIELD_LH_SOURCE_PLATE_UUID,
-    FIELD_BARCODE,
     MAX_CQ_VALUE,
     MIN_CQ_VALUE,
     POSITIVE_RESULT_VALUE,
@@ -77,17 +77,19 @@ from crawler.db import (
     set_dart_well_properties,
 )
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
-from crawler.helpers import (
+from crawler.helpers.general_helpers import (
     current_time,
-    get_sftp_connection,
-    LoggingCollection,
-    map_lh_doc_to_sql_columns,
     get_dart_well_index,
+    get_sftp_connection,
+    map_lh_doc_to_sql_columns,
     map_mongo_doc_to_dart_well_props,
 )
+from crawler.helpers.logging_helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
+from crawler.types import Sample, SourcePlate
 
 logger = logging.getLogger(__name__)
+
 
 PROJECT_ROOT = pathlib.Path(__file__).parent.parent
 REGEX_FIELD = "sftp_file_regex"
@@ -105,12 +107,8 @@ class Centre:
         os.makedirs(f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}", exist_ok=True)
 
     def get_files_in_download_dir(self) -> List[str]:
-        """Get all the files in the download directory for this centre and filter the file names using
-        the regex described in the centre's 'regex_field'.
-
-        Arguments:
-            centre {Dict[str, str]} -- the centre in question
-            regex_field {str} -- the field name where the regex is found to filter the files by
+        """Get all the files in the download directory for this centre and filter the file names using the regex
+        described in the centre's 'regex_field'.
 
         Returns:
             List[str] -- all the file names in the download directory after filtering
@@ -152,9 +150,9 @@ class Centre:
         Arguments:
             add_to_dart {bool} -- whether to add the samples to DART
         """
-        # iterate through each file in the centre
-
         self.centre_files = sorted(self.get_files_in_download_dir())
+
+        # iterate through each file in the centre
         for file_name in self.centre_files:
             logger.info(f"Checking file {file_name}")
 
@@ -299,7 +297,7 @@ class CentreFile:
 
         return file_hash.hexdigest()
 
-    def checksum_match(self, dir_path) -> bool:
+    def checksum_match(self, dir_path: str) -> bool:
         """Checks a directory for a file matching the checksum of this file
 
         Arguments:
@@ -394,9 +392,7 @@ class CentreFile:
         if len(mongo_ids_of_inserted) > 0:
             # filter out docs which failed to insert into mongo - we don't want to create mlwh
             # records for these
-            docs_to_insert_mlwh = list(
-                filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert)
-            )
+            docs_to_insert_mlwh = list(filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert))
 
             self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
@@ -413,32 +409,23 @@ class CentreFile:
             str -- the filepath of the file backup
         """
         if self.logging_collection.get_count_of_all_errors_and_criticals() > 0:
-            return (
-                f"{self.centre_config['backups_folder']}/{ERRORS_DIR}/{self.timestamped_filename()}"
-            )
+            return f"{self.centre_config['backups_folder']}/{ERRORS_DIR}/{self.timestamped_filename()}"
         else:
-            return (
-                f"{self.centre_config['backups_folder']}/"
-                f"{SUCCESSES_DIR}/{self.timestamped_filename()}"
-            )
+            return f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}/{self.timestamped_filename()}"
 
-    def timestamped_filename(self):
+    def timestamped_filename(self) -> str:
         return f"{current_time()}_{self.file_name}_{self.checksum()}"
 
-    def full_path_to_file(self):
+    def full_path_to_file(self) -> Path:
         return PROJECT_ROOT.joinpath(self.centre.get_download_dir(), self.file_name)
 
     def backup_file(self) -> None:
-        """Backup the file.
-
-        Returns:
-            str -- destination of the file
-        """
+        """Backup the file."""
         destination = self.backup_filename()
 
         shutil.copyfile(self.full_path_to_file(), destination)
 
-    def create_import_record_for_file(self):
+    def create_import_record_for_file(self) -> None:
         logger.info(f"{self.docs_inserted} documents inserted")
 
         # write status record
@@ -459,14 +446,17 @@ class CentreFile:
         """
         client = create_mongo_client(self.config)
         db = get_mongo_db(self.config, client)
+
         return db
 
-    # Database clash
-    def add_duplication_errors(self, exception):
+    def add_duplication_errors(self, exception: BulkWriteError) -> None:
+        """Database clash
+
+        Args:
+            exception (BulkWriteError): [description]
+        """
         try:
-            wrong_instances = [
-                write_error["op"] for write_error in exception.details["writeErrors"]
-            ]
+            wrong_instances = [write_error["op"] for write_error in exception.details["writeErrors"]]
             samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
             for wrong_instance in wrong_instances:
                 # To identify TYPE 7 we need to do a search for
@@ -501,55 +491,48 @@ class CentreFile:
         except Exception as e:
             logger.critical(f"Unknown error with file {self.file_name}: {e}")
 
-    def docs_to_insert_updated_with_source_plate_uuids(
-        self, docs_to_insert: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
-        """Updates sample records with source plate uuids, returning only those for which a source
-        plate uuid could be determined. Adds any new source plates to mongo.
+    def docs_to_insert_updated_with_source_plate_uuids(self, docs_to_insert: List[Sample]) -> List[Sample]:
+        """Updates sample records with source plate UUIDs, returning only those for which a source plate UUID could
+        be determined. Adds any new source plates to mongo.
 
         Arguments:
-            docs_to_insert {List[Dict[str, Any]]} -- the sample records to update
+            docs_to_insert {List[Sample]} -- the sample records to update
 
         Returns:
-            List[Dict[str, Any]] -- the updated, filtered samples
+            List[Sample] -- the updated, filtered samples
         """
-        logger.debug("Attempting to update docs with source plate uuids")
-        updated_docs = []
+        logger.debug("Attempting to update docs with source plate UUIDs")
+        updated_docs: List[Sample] = []
 
-        def update_doc_from_source_plate(doc, existing_plate, skip_lab_check=False) -> None:
+        def update_doc_from_source_plate(
+            doc: Sample, existing_plate: SourcePlate, skip_lab_check: bool = False
+        ) -> None:
             if skip_lab_check or doc[FIELD_LAB_ID] == existing_plate[FIELD_LAB_ID]:
                 doc[FIELD_LH_SOURCE_PLATE_UUID] = existing_plate[FIELD_LH_SOURCE_PLATE_UUID]
                 updated_docs.append(doc)
             else:
-                self.logging_collection.add_error(
-                    "TYPE 25",
+                error_message = (
                     f"Source plate barcode {doc[FIELD_PLATE_BARCODE]} in file {self.file_name} "
                     f"already exists with different lab_id {existing_plate[FIELD_LAB_ID]}",
                 )
-                logger.error(
-                    f"Source plate barcode {doc[FIELD_PLATE_BARCODE]} in file {self.file_name} "
-                    f"already exists with different lab_id {existing_plate[FIELD_LAB_ID]}"
-                )
+                self.logging_collection.add_error("TYPE 25", error_message)
+                logger.error(error_message)
 
         try:
-            new_plates = []  # type:ignore
+            new_plates: List[SourcePlate] = []
             source_plates_collection = get_mongo_collection(self.get_db(), COLLECTION_SOURCE_PLATES)
 
             for doc in docs_to_insert:
                 plate_barcode = doc[FIELD_PLATE_BARCODE]
 
                 # first attempt an update from new plates (added for other samples in this file)
-                existing_new_plate = next(
-                    (x for x in new_plates if x[FIELD_BARCODE] == plate_barcode), None
-                )
+                existing_new_plate = next((x for x in new_plates if x[FIELD_BARCODE] == plate_barcode), None)
                 if existing_new_plate is not None:
                     update_doc_from_source_plate(doc, existing_new_plate)
                     continue
 
                 # then attempt an update from plates that exist in mongo
-                existing_mongo_plate = source_plates_collection.find_one(
-                    {FIELD_BARCODE: plate_barcode}
-                )
+                existing_mongo_plate = source_plates_collection.find_one({FIELD_BARCODE: plate_barcode})
                 if existing_mongo_plate is not None:
                     update_doc_from_source_plate(doc, existing_mongo_plate)
                     continue
@@ -568,20 +551,17 @@ class CentreFile:
                 "TYPE 26",
                 f"Failed assigning source plate UUIDs to samples in file {self.file_name}",
             )
-            logger.critical(
-                "Error assigning source plate UUIDs to samples in file " f"{self.file_name}: {e}"
-            )
+            logger.critical("Error assigning source plate UUIDs to samples in file " f"{self.file_name}: {e}")
             logger.exception(e)
             updated_docs = []
 
         return updated_docs
 
-    def insert_samples_from_docs_into_mongo_db(self, docs_to_insert) -> List[ObjectId]:
+    def insert_samples_from_docs_into_mongo_db(self, docs_to_insert: List[Dict[str, str]]) -> List[Any]:
         """Insert sample records into the mongo database from the parsed file information.
 
         Arguments:
-            docs_to_insert {List[Dict[str, str]]} -- list of filtered sample information extracted
-            from csv files
+            docs_to_insert {List[Dict[str, str]]} -- list of filtered sample information extracted from CSV files
         """
         logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
@@ -605,10 +585,9 @@ class CentreFile:
             # e.details["writeErrors"]
             filtered_errors = list(filter(lambda x: x["code"] != 11000, e.details["writeErrors"]))
 
-            if len(filtered_errors) > 0:
+            if (num_filtered_errors := len(filtered_errors)) > 0:
                 logger.info(
-                    f"Number of exceptions left after filtering out "
-                    f"duplicates = {len(filtered_errors)}. Example:"
+                    f"Number of exceptions left after filtering out duplicates = {num_filtered_errors}. Example:"
                 )
                 logger.info(filtered_errors[0])
 
@@ -616,11 +595,7 @@ class CentreFile:
             self.add_duplication_errors(e)
 
             errored_ids = list(map(lambda x: x["op"][FIELD_MONGODB_ID], e.details["writeErrors"]))
-            inserted_ids = [
-                doc[FIELD_MONGODB_ID]
-                for doc in docs_to_insert
-                if doc[FIELD_MONGODB_ID] not in errored_ids
-            ]
+            inserted_ids = [doc[FIELD_MONGODB_ID] for doc in docs_to_insert if doc[FIELD_MONGODB_ID] not in errored_ids]
 
             return inserted_ids
         except Exception as e:
@@ -628,19 +603,17 @@ class CentreFile:
             logger.exception(e)
             return []
 
-    def insert_samples_from_docs_into_mlwh(self, docs_to_insert) -> None:
-        """Insert sample records into the MLWH database from the parsed file information, including
-        the corresponding mongodb _id
+    def insert_samples_from_docs_into_mlwh(self, docs_to_insert: List[Dict[str, str]]) -> None:
+        """Insert sample records into the MLWH database from the parsed file information, including the corresponding
+        mongodb _id
 
         Arguments:
-            docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted
-            from csv files.
-            Includes the mongodb id, as the list has already been inserted into mongodb
-
-            mongo_ids {List[ObjectId]} -- list of mongodb ids in the same order as docs_to_insert,
-            from the insert into the mongodb
+            docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from CSV files.
+            Includes the mongodb _id, as the list has already been inserted into mongodb
+            mongo_ids {List[Any]} -- list of mongodb _ids in the same order as docs_to_insert, from the insert into the
+            mongodb
         """
-        values = []
+        values: List[Dict[str, Any]] = []
         for doc in docs_to_insert:
             values.append(map_lh_doc_to_sql_columns(doc))
 
@@ -650,9 +623,7 @@ class CentreFile:
             try:
                 run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
 
-                logger.debug(
-                    f"MLWH database inserts completed successfully for file {self.file_name}"
-                )
+                logger.debug(f"MLWH database inserts completed successfully for file {self.file_name}")
             except Exception as e:
                 self.logging_collection.add_error(
                     "TYPE 14",
@@ -665,17 +636,13 @@ class CentreFile:
                 "TYPE 15",
                 f"MLWH database inserts failed, could not connect, for file {self.file_name}",
             )
-            logger.critical(
-                f"Error writing to MLWH for file {self.file_name}, could not create Database "
-                "connection"
-            )
+            logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
 
-    def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert) -> None:
+    def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[Dict[str, str]]) -> None:
         """Insert plates and wells into the DART database from the parsed file information
 
         Arguments:
-            docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted
-            from csv files.
+            docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from CSV files.
         """
         sql_server_connection = create_dart_sql_server_conn(self.config)
 
@@ -683,32 +650,27 @@ class CentreFile:
             try:
                 cursor = sql_server_connection.cursor()
 
-                for plate_barcode, samples in groupby_transform(  # type:ignore
+                for plate_barcode, samples in groupby_transform(  # type: ignore
                     docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]
                 ):
                     try:
                         plate_state = add_dart_plate_if_doesnt_exist(
-                            cursor, plate_barcode, self.centre_config["biomek_labware_class"]
+                            cursor, plate_barcode, self.centre_config["biomek_labware_class"]  # type: ignore
                         )
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
-                                self.add_dart_well_properties_if_positive(
-                                    cursor, sample, plate_barcode
-                                )
+                                self.add_dart_well_properties_if_positive(cursor, sample, plate_barcode)  # type: ignore
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(
                             "TYPE 22",
-                            f"DART database inserts failed for plate {plate_barcode} in file "
-                            f"{self.file_name}",
+                            f"DART database inserts failed for plate {plate_barcode} in file {self.file_name}",
                         )
                         logger.exception(e)
                         # rollback statements executed since previous commit/rollback
                         cursor.rollback()
 
-                logger.debug(
-                    f"DART database inserts completed successfully for file {self.file_name}"
-                )
+                logger.debug(f"DART database inserts completed successfully for file {self.file_name}")
             except Exception as e:
                 self.logging_collection.add_error(
                     "TYPE 23",
@@ -723,19 +685,14 @@ class CentreFile:
                 "TYPE 24",
                 f"DART database inserts failed, could not connect, for file {self.file_name}",
             )
-            logger.critical(
-                f"Error writing to DART for file {self.file_name}, "
-                "could not create Database connection"
-            )
+            logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
 
-    def add_dart_well_properties_if_positive(
-        self, cursor: pyodbc.Cursor, sample: Dict[str, str], plate_barcode: str
-    ) -> None:
+    def add_dart_well_properties_if_positive(self, cursor: pyodbc.Cursor, sample: Sample, plate_barcode: str) -> None:
         """Adds well properties to DART for the specified sample if that sample is positive.
 
         Arguments:
             cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
-            sample {Dict[str, str]} -- The sample for which to add well properties.
+            sample {Sample} -- The sample for which to add well properties.
             plate_barcode {str} -- The barcode of the plate to which this sample belongs.
         """
         if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
@@ -753,7 +710,7 @@ class CentreFile:
         """Parses the CSV file of the centre.
 
         Returns:
-            List[str, str] -- the augmented data
+            List[Dict[str, Any] -- the augmented data
         """
         csvfile_path = self.filepath()
 
@@ -852,7 +809,7 @@ class CentreFile:
 
         return m.group(1), m.group(2)
 
-    def get_now_timestamp(self):
+    def get_now_timestamp(self) -> datetime:
         return datetime.now()
 
     def get_row_signature(self, row):
@@ -890,8 +847,7 @@ class CentreFile:
                 else:
                     if row.get(FIELD_LAB_ID) != self.centre_config["lab_id_default"]:
                         logger.warning(
-                            "Different lab id setting: "
-                            f"{row[FIELD_LAB_ID]}!={self.centre_config['lab_id_default']}"
+                            "Different lab id setting: {row[FIELD_LAB_ID]}!={self.centre_config['lab_id_default']}"
                         )
                     modified_row[FIELD_LAB_ID] = row.get(FIELD_LAB_ID)
             else:
@@ -992,8 +948,7 @@ class CentreFile:
             logger.debug(f"Skipping {row_signature}: duplicate")
             self.logging_collection.add_error(
                 "TYPE 5",
-                f"Duplicated, line: {line_number}, "
-                f"root_sample_id: {modified_row[FIELD_ROOT_SAMPLE_ID]}",
+                f"Duplicated, line: {line_number}, root_sample_id: {modified_row[FIELD_ROOT_SAMPLE_ID]}",
             )
             return None
 
@@ -1030,9 +985,7 @@ class CentreFile:
             (
                 modified_row[FIELD_PLATE_BARCODE],
                 modified_row[FIELD_COORDINATE],
-            ) = self.extract_plate_barcode_and_coordinate(
-                modified_row, line_number, barcode_field, barcode_regex
-            )
+            ) = self.extract_plate_barcode_and_coordinate(modified_row, line_number, barcode_field, barcode_regex)
         if not modified_row.get(FIELD_PLATE_BARCODE):
             return None
 
@@ -1047,12 +1000,8 @@ class CentreFile:
 
         # filtered-positive calculations
         if modified_row[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
-            modified_row[FIELD_FILTERED_POSITIVE] = self.filtered_positive_identifier.is_positive(
-                modified_row
-            )
-            modified_row[
-                FIELD_FILTERED_POSITIVE_VERSION
-            ] = self.filtered_positive_identifier.current_version()
+            modified_row[FIELD_FILTERED_POSITIVE] = self.filtered_positive_identifier.is_positive(modified_row)
+            modified_row[FIELD_FILTERED_POSITIVE_VERSION] = self.filtered_positive_identifier.current_version()
             modified_row[FIELD_FILTERED_POSITIVE_TIMESTAMP] = import_timestamp
 
         # add lh sample uuid
@@ -1302,8 +1251,7 @@ class CentreFile:
         if ch_results_positive == 0:
             self.logging_collection.add_error(
                 "TYPE 21",
-                "Positive Result does not match to CT Channel Results (none are positive), "
-                f"line: {line_number}",
+                "Positive Result does not match to CT Channel Results (none are positive), line: {line_number}",
             )
             return False
 
@@ -1327,9 +1275,7 @@ class CentreFile:
 
         if not row.get(FIELD_ROOT_SAMPLE_ID):
             # filter out row as Root Sample ID is missing
-            self.logging_collection.add_error(
-                "TYPE 3", f"Root Sample ID missing, line: {line_number}"
-            )
+            self.logging_collection.add_error("TYPE 3", f"Root Sample ID missing, line: {line_number}")
             logger.warning(f"We found line: {line_number} missing sample id but is not blank")
             return False
 
@@ -1366,7 +1312,7 @@ class CentreFile:
 
         return datetime.strptime(file_timestamp, "%y%m%d_%H%M")
 
-    def new_mongo_source_plate(self, plate_barcode: str, lab_id: str) -> Dict[str, Any]:
+    def new_mongo_source_plate(self, plate_barcode: str, lab_id: str) -> SourcePlate:
         """Creates a new mongo source plate document.
 
         Arguments:
@@ -1374,7 +1320,7 @@ class CentreFile:
             lab_id {str} -- The lab id to assign to the new source plate.
 
         Returns:
-            Dict[str, Any] -- The new mongo source plate doc.
+            SourcePlate -- The new mongo source plate doc.
         """
         timestamp = self.get_now_timestamp()
         return {

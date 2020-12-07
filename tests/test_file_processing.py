@@ -1,10 +1,10 @@
 import os
+import uuid
 from csv import DictReader
 from datetime import datetime
 from decimal import Decimal
 from io import StringIO
 from unittest.mock import MagicMock, patch
-import uuid
 
 from bson.decimal128 import Decimal128  # type: ignore
 from bson.objectid import ObjectId
@@ -12,6 +12,7 @@ from crawler.constants import (
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
     DART_STATE_PENDING,
+    FIELD_BARCODE,
     FIELD_CH1_CQ,
     FIELD_CH1_RESULT,
     FIELD_CH1_TARGET,
@@ -25,22 +26,21 @@ from crawler.constants import (
     FIELD_CH4_RESULT,
     FIELD_CH4_TARGET,
     FIELD_COORDINATE,
+    FIELD_CREATED_AT,
     FIELD_DATE_TESTED,
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_LAB_ID,
+    FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_PLATE_BARCODE,
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_RNA_PCR_ID,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
-    FIELD_VIRAL_PREP_ID,
-    FIELD_LH_SOURCE_PLATE_UUID,
-    FIELD_BARCODE,
     FIELD_UPDATED_AT,
-    FIELD_CREATED_AT,
+    FIELD_VIRAL_PREP_ID,
     MLWH_CH1_CQ,
     MLWH_CH1_RESULT,
     MLWH_CH1_TARGET,
@@ -92,14 +92,10 @@ def test_get_download_dir(config):
     for centre_config in config.CENTRES:
         centre = Centre(config, centre_config)
 
-        assert (
-            centre.get_download_dir() == f"{config.DIR_DOWNLOADED_DATA}{centre_config['prefix']}/"
-        )
+        assert centre.get_download_dir() == f"{config.DIR_DOWNLOADED_DATA}{centre_config['prefix']}/"
 
 
-def test_process_files(
-    mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn
-):
+def test_process_files(mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn):
     _, mongo_database = mongo_database
 
     centre_config = config.CENTRES[0]
@@ -342,8 +338,7 @@ def test_filtered_row_with_extra_unrecognised_columns(config):
             "extra_col_2,extra_col_3\n"
         )
         fake_csv_with_extra_columns.write(
-            "1,RNA_0043,Positive,today,AP,ORF1ab,Positive,23.12345678,extra_value_1,extra_value_2,"
-            "extra_value_3\n"
+            "1,RNA_0043,Positive,today,AP,ORF1ab,Positive,23.12345678,extra_value_1,extra_value_2,extra_value_3\n"
         )
         fake_csv_with_extra_columns.seek(0)
 
@@ -374,9 +369,7 @@ def test_filtered_row_with_blank_lab_id(config):
         centre_file = CentreFile("some_file.csv", centre)
 
         with StringIO() as fake_csv_without_lab_id:
-            fake_csv_without_lab_id.write(
-                f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED}\n"
-            )
+            fake_csv_without_lab_id.write(f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED}\n")
             fake_csv_without_lab_id.write("1,RNA_0043,Positive,today\n")
             fake_csv_without_lab_id.seek(0)
 
@@ -406,8 +399,7 @@ def test_filtered_row_with_lab_id_present(config):
 
         with StringIO() as fake_csv_without_lab_id:
             fake_csv_without_lab_id.write(
-                f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},"
-                f"{FIELD_LAB_ID}\n"
+                f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},{FIELD_LAB_ID}\n"
             )
             fake_csv_without_lab_id.write("1,RNA_0043,Positive,today,RealLabID\n")
             fake_csv_without_lab_id.seek(0)
@@ -518,9 +510,7 @@ def test_filtered_row_with_ct_channel_columns(config):
 def test_parse_and_format_file_rows_to_add_file_details(config):
     timestamp = "some timestamp"
     test_uuid = uuid.uuid4()
-    centre_file = centre_file_with_mocked_filtered_postitive_identifier(
-        config, "ASDF_200507_1340.csv"
-    )
+    centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "ASDF_200507_1340.csv")
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
         with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
 
@@ -577,9 +567,7 @@ def test_parse_and_format_file_rows_to_add_file_details(config):
 def test_parse_and_format_file_rows_detects_duplicates(config):
     timestamp = "some timestamp"
     test_uuid = uuid.uuid4()
-    centre_file = centre_file_with_mocked_filtered_postitive_identifier(
-        config, "ASDF_200507_1340.csv"
-    )
+    centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "ASDF_200507_1340.csv")
     with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
         with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
 
@@ -710,9 +698,7 @@ def test_changes_ct_channel_cq_value_data_type(config):
         with StringIO() as fake_csv:
             fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Cq,CH2-Cq,CH3-Cq,CH4-Cq\n")
 
-            fake_csv.write(
-                "1,RNA_0043_H09,Positive,Val,24.012833772,25.012833772,26.012833772,27.012833772\n"
-            )
+            fake_csv.write("1,RNA_0043_H09,Positive,Val,24.012833772,25.012833772,26.012833772,27.012833772\n")
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
@@ -754,26 +740,12 @@ def test_is_within_cq_range(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
 
-    assert (
-        centre_file.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("0.0")) is True
-    )
-    assert (
-        centre_file.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("100.0"))
-        is True
-    )
-    assert (
-        centre_file.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("27.019291283"))
-        is True
-    )
+    assert centre_file.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("0.0")) is True
+    assert centre_file.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("100.0")) is True
+    assert centre_file.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("27.019291283")) is True
 
-    assert (
-        centre_file.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("-0.00000001"))
-        is False
-    )
-    assert (
-        centre_file.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("100.00000001"))
-        is False
-    )
+    assert centre_file.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("-0.00000001")) is False
+    assert centre_file.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("100.00000001")) is False
 
 
 def test_where_ct_channel_cq_value_is_not_within_range(config):
@@ -811,9 +783,7 @@ def test_where_positive_result_does_not_align_with_ct_channel_results(config):
 
     with patch.object(centre_file, "get_now_timestamp", return_value="some timestamp"):
         with StringIO() as fake_csv:
-            fake_csv.write(
-                "Root Sample ID,RNA ID,Result,Lab ID,CH1-Result,CH2-Result,CH3-Result,CH4-Result\n"
-            )
+            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Result,CH2-Result,CH3-Result,CH4-Result\n")
 
             # row where no values for channel results - should pass
             fake_csv.write("1,RNA_0043_H09,Positive,Val,,,,\n")
@@ -909,9 +879,7 @@ def test_check_for_required_headers(config):
                 f"{FIELD_ROOT_SAMPLE_ID},{FIELD_VIRAL_PREP_ID},{FIELD_RNA_ID},{FIELD_RNA_PCR_ID},"
                 f"{FIELD_RESULT},{FIELD_DATE_TESTED}\n"
             )
-            fake_csv_without_lab_id.write(
-                "1,0100000859NBC_B07,RNA_0043,CF06BAO5_B07,Positive,today\n"
-            )
+            fake_csv_without_lab_id.write("1,0100000859NBC_B07,RNA_0043,CF06BAO5_B07,Positive,today\n")
             fake_csv_without_lab_id.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv_without_lab_id)
@@ -1084,10 +1052,9 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
 
         error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
         error_messages = centre_file.logging_collection.get_aggregate_messages()
-        assert error_count == 0, (
-            f"Should not be any errors. Actual number errors: {error_count}. Error details: "
-            f"{error_messages}"
-        )
+        assert (
+            error_count == 0
+        ), f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
 
         cursor = mlwh_connection.cursor(dictionary=True)
         cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
@@ -1173,10 +1140,9 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_con
 
         error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
         error_messages = centre_file.logging_collection.get_aggregate_messages()
-        assert error_count == 0, (
-            f"Should not be any errors. Actual number errors: {error_count}. Error details: "
-            f"{error_messages}"
-        )
+        assert (
+            error_count == 0
+        ), f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
 
         cursor = mlwh_connection.cursor(dictionary=True)
         cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
@@ -1209,10 +1175,9 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_blank(config, mlwh_conne
 
         error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
         error_messages = centre_file.logging_collection.get_aggregate_messages()
-        assert error_count == 0, (
-            f"Should not be any errors. Actual number errors: {error_count}. Error details: "
-            f"{error_messages}"
-        )
+        assert (
+            error_count == 0
+        ), f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
 
         cursor = mlwh_connection.cursor(dictionary=True)
         cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
@@ -1265,9 +1230,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_failure_adding_new_plate(co
     ]
 
     with patch("crawler.file_processing.create_dart_sql_server_conn") as mock_conn:
-        with patch(
-            "crawler.file_processing.add_dart_plate_if_doesnt_exist", side_effect=Exception("Boom!")
-        ):
+        with patch("crawler.file_processing.add_dart_plate_if_doesnt_exist", side_effect=Exception("Boom!")):
             centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
             # logs error and rolls back on exception calling a stored procedure
@@ -1296,9 +1259,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_non_pending_plate_does_not_
     ]
 
     with patch("crawler.file_processing.create_dart_sql_server_conn") as mock_conn:
-        with patch(
-            "crawler.file_processing.add_dart_plate_if_doesnt_exist", return_value="not pending"
-        ):
+        with patch("crawler.file_processing.add_dart_plate_if_doesnt_exist", return_value="not pending"):
             centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
             # does not call any stored procedure
@@ -1380,15 +1341,10 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
                 with patch("crawler.file_processing.map_mongo_doc_to_dart_well_props") as mock_map:
                     test_well_props = {"prop1": "value1", "test prop": "test value"}
                     mock_map.return_value = test_well_props
-                    with patch(
-                        "crawler.file_processing.set_dart_well_properties"
-                    ) as mock_set_well_props:
+                    with patch("crawler.file_processing.set_dart_well_properties") as mock_set_well_props:
                         centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
-                        assert (
-                            centre_file.logging_collection.get_count_of_all_errors_and_criticals()
-                            == 0
-                        )
+                        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
                         # creates all plates
                         assert mock_add_plate.call_count == 3
@@ -1462,15 +1418,10 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
                 with patch("crawler.file_processing.map_mongo_doc_to_dart_well_props") as mock_map:
                     test_well_props = {"prop1": "value1", "test prop": "test value"}
                     mock_map.return_value = test_well_props
-                    with patch(
-                        "crawler.file_processing.set_dart_well_properties"
-                    ) as mock_set_well_props:
+                    with patch("crawler.file_processing.set_dart_well_properties") as mock_set_well_props:
                         centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
-                        assert (
-                            centre_file.logging_collection.get_count_of_all_errors_and_criticals()
-                            == 0
-                        )
+                        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
                         # adds a single plate
                         assert mock_add_plate.call_count == 1
@@ -1554,9 +1505,7 @@ def test_docs_to_insert_updated_with_source_plate_uuids_adds_new_plates(config, 
     assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
-def test_docs_to_insert_updated_with_source_plate_uuids_uses_existing_plates(
-    config, mongo_database
-):
+def test_docs_to_insert_updated_with_source_plate_uuids_uses_existing_plates(config, mongo_database):
     _, mongo_database = mongo_database
     source_plates = [
         {FIELD_BARCODE: "123", FIELD_LAB_ID: "AP", FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4())},
