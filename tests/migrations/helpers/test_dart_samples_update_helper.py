@@ -178,10 +178,10 @@ def test_update_mongo_fields(mongo_database):
     assert mongo_db.SAMPLES_COLLECTION.count_documents({FIELD_FILTERED_POSITIVE: False}) == 7
 
 
-# ----- update_dart tests -----
+# ----- migrate_all_dbs tests -----
 
 
-def test_update_dart_returns_early_invalid_start_datetime(
+def test_migrate_all_dbs_returns_early_invalid_start_datetime(
     config, mock_mongo_client, mock_mysql_connection, mock_update_dart
 ):
     start_datetime = "not a real datetime"
@@ -195,7 +195,7 @@ def test_update_dart_returns_early_invalid_start_datetime(
         mock_update_dart.assert_not_called()
 
 
-def test_update_dart_returns_early_invalid_end_datetime(
+def test_migrate_all_dbs_returns_early_invalid_end_datetime(
     config, mock_mongo_client, mock_mysql_connection, mock_update_dart
 ):
     start_datetime = "201016_1600"
@@ -209,7 +209,7 @@ def test_update_dart_returns_early_invalid_end_datetime(
         mock_update_dart.assert_not_called()
 
 
-def test_update_dart_returns_early_start_datetime_after_end_datetime(
+def test_migrate_all_dbs_returns_early_start_datetime_after_end_datetime(
     config, mock_mongo_client, mock_mysql_connection, mock_update_dart
 ):
     start_datetime = "201017_1200"
@@ -222,7 +222,7 @@ def test_update_dart_returns_early_start_datetime_after_end_datetime(
     mock_update_dart.assert_not_called()
 
 
-def test_update_dart_return_early_no_samples(config, mock_mongo_client, mock_mysql_connection, mock_update_dart):
+def test_migrate_all_dbs_return_early_no_samples(config, mock_mongo_client, mock_mysql_connection, mock_update_dart):
     start_datetime = "201016_1600"
     end_datetime = "201017_1200"
     with patch("migrations.helpers.dart_samples_update_helper.get_positive_samples", side_effect=[]):
@@ -234,7 +234,7 @@ def test_update_dart_return_early_no_samples(config, mock_mongo_client, mock_mys
         mock_update_dart.assert_not_called()
 
 
-def test_update_dart_get_cherrypicked_samples_mocked(config, mongo_database, mock_mysql_connection, mock_update_dart):
+def test_migrate_all_dbs_with_no_cherry_picked_samples(config, mongo_database, mock_mysql_connection, mock_update_dart):
     _, mongo_db = mongo_database
 
     start_datetime = datetime(year=2020, month=5, day=10, hour=15, minute=10)
@@ -258,7 +258,7 @@ def test_update_dart_get_cherrypicked_samples_mocked(config, mongo_database, moc
         mock_get_cherrypicked_samples.assert_called_once_with(config, list(root_sample_ids), list(plate_barcodes))
 
 
-def test_update_dart_get_cherrypicked_samples_mocked_with_samples(
+def test_migrate_all_dbs_with_cherry_picked_samples_mocked(
     config, mongo_database, mock_mysql_connection, mock_update_dart
 ):
     _, mongo_db = mongo_database
@@ -294,7 +294,7 @@ def test_update_dart_get_cherrypicked_samples_mocked_with_samples(
             )
 
 
-def test_update_dart_remove_cherrypicked_samples(config, mongo_database, mock_update_dart):
+def test_migrate_all_dbs_remove_cherrypicked_samples(config, mongo_database, mock_update_dart):
     _, mongo_db = mongo_database
 
     start_datetime = datetime(year=2020, month=5, day=10, hour=15, minute=10)
