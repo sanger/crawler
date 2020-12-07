@@ -112,7 +112,10 @@ def update_filtered_positive_fields(
         version {str} -- the filtered positive identifier version used
         update_timestamp {datetime} -- the timestamp at which the update was performed
     """
+    logger.debug("Updating filtered positive fields")
+
     version = filtered_positive_identifier.current_version()
+
     # Expect all samples to be passed into here to have a positive result
     for sample in samples:
         sample[FIELD_FILTERED_POSITIVE] = filtered_positive_identifier.is_positive(sample)

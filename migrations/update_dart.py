@@ -9,7 +9,7 @@ def run(config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
     print("STARTING LEGACY DART UPDATE")
     print(f"Time start: {datetime.now()}")
 
-    dart_samples_update_helper.update_dart(config, s_start_datetime, s_end_datetime)
+    dart_samples_update_helper.migrate_all_dbs(config, s_start_datetime, s_end_datetime)
 
     print(f"Time finished: {datetime.now()}")
     print("=" * 80)

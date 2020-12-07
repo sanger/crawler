@@ -1,8 +1,8 @@
+import logging
 import uuid
 from datetime import datetime
-import logging
 from types import ModuleType
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Tuple
 
 import pandas as pd  # type: ignore
 import sqlalchemy  # type: ignore
@@ -59,7 +59,11 @@ from pymongo.collection import Collection
 logger = logging.getLogger(__name__)
 
 
-def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
+def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
+    if not config:
+        logger.error("Aborting run: Config required")
+        return
+
     if not valid_datetime_string(s_start_datetime):
         logger.error("Aborting run: Expected format of Start datetime is YYMMDD_HHmm")
         return
@@ -75,7 +79,7 @@ def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") ->
         logger.error("Aborting run: End datetime must be greater than Start datetime")
         return
 
-    print(f"Starting DART update process with Start datetime {start_datetime} and End datetime {end_datetime}")
+    logger.info(f"Starting DART update process with Start datetime {start_datetime} and End datetime {end_datetime}")
 
     try:
         mongo_docs_for_sql = []
@@ -87,40 +91,39 @@ def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") ->
 
             samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-            print(f"Selecting positive samples between {s_start_datetime} and {s_end_datetime}")
-
             # 1. get samples from mongo between these time ranges that are positive
             samples = get_positive_samples(samples_collection, start_datetime, end_datetime)
 
-            print(f"{len(samples)} to process")
+            if not samples:
+                logger.info("No samples in this time range.")
+                return
 
-            root_sample_ids = set()
-            plate_barcodes = set()
+            logger.debug(f"{len(samples)} samples to process")
 
-            for sample in samples:
-                root_sample_ids.add(sample[FIELD_ROOT_SAMPLE_ID])
-                plate_barcodes.add(sample[FIELD_PLATE_BARCODE])
+            root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
 
-            print(f"{len(plate_barcodes)} unique plate barcodes")
+            logger.debug(f"{len(plate_barcodes)} unique plate barcodes")
 
             # 2. of these, find which have been cherry-picked and remove them from the list
-            cp_samples_df = get_cherrypicked_samples(config, list(root_sample_ids), plate_barcodes)
+            cp_samples_df = get_cherrypicked_samples(config, list(root_sample_ids), list(plate_barcodes))
 
             # get the samples between those dates minus the cherry-picked ones
-            if cp_samples_df:
+            if cp_samples_df is not None and not cp_samples_df.empty:
                 # we need a list of cherry-picked samples with their respective plate barcodes
                 cp_samples = cp_samples_df[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()
 
-                samples = remove_cherrypicked_samples(samples, cp_samples)
+                logger.debug(f"{len(cp_samples)} cherry-picked samples in this timeframe")
 
-            print(f"{len(samples)} samples between these timestamps and not cherry-picked")
+                samples = remove_cherrypicked_samples(samples, cp_samples)
+            else:
+                logger.debug("No cherry-picked samples in this timeframe")
+
+            logger.info(f"{len(samples)} samples between these timestamps and not cherry-picked")
 
             # 3. add the relevant filtered positive fields if not present
             filtered_positive_identifier = FilteredPositiveIdentifier()
             version = filtered_positive_identifier.current_version()
             update_timestamp = datetime.now()
-
-            print("Updating filtered positives...")
 
             """
             This will update the filtered positive fields on all samples. This should be fine as long as any pending
@@ -142,18 +145,17 @@ def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") ->
                 update_timestamp,
             )
 
-            print("Updated filtered positives")
-
             # 4. add the UUID fields if not present
             add_sample_uuid_field(samples)
 
+            # update the samples with source plate UUIDs
             samples_updated_with_source_plate_uuids(mongo_db, samples)
 
             # 5. update samples in mongo updated in either of the above two steps (would expect the same set of samples
             #       from both steps)
-            print("Updating Mongo...")
+            logger.info("Updating Mongo...")
             _ = update_mongo_fields(mongo_db, samples, version, update_timestamp)
-            print("Finished updating Mongo")
+            logger.info("Finished updating Mongo")
 
         # 6. update the MLWH (should be an idempotent operation)
         # convert mongo field values into MySQL format
@@ -161,7 +163,7 @@ def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") ->
             mongo_docs_for_sql.append(map_mongo_doc_to_sql_columns(sample))
 
         if number_docs_found > 0:
-            print(f"Updating MLWH database for {len(mongo_docs_for_sql)} sample documents")
+            logger.info(f"Updating MLWH database for {len(mongo_docs_for_sql)} sample documents")
             # create connection to the MLWH database
             with create_mysql_connection(config, False) as mlwh_conn:
 
@@ -170,17 +172,31 @@ def update_dart(config, s_start_datetime: str = "", s_end_datetime: str = "") ->
                 #   and performs an update when a duplicate key is found
                 run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
         else:
-            print("No documents found for this timestamp range, nothing to insert or update in MLWH")
+            logger.info("No documents found for this timestamp range, nothing to insert or update in MLWH")
 
         # 7. add all the plates of the positive samples we've selected in step 1 above, to DART
         update_dart_fields(config, samples)
     except Exception as e:
-        print(e)
+        logger.error("Error while attempting to migrate all DBs")
+        logger.exception(e)
+
+
+def extract_required_cp_info(samples: List[Sample]) -> Tuple[Set[str], Set[str]]:
+    root_sample_ids = set()
+    plate_barcodes = set()
+
+    for sample in samples:
+        root_sample_ids.add(sample[FIELD_ROOT_SAMPLE_ID])
+        plate_barcodes.add(sample[FIELD_PLATE_BARCODE])
+
+    return root_sample_ids, plate_barcodes
 
 
 def get_positive_samples(
     samples_collection: Collection, start_datetime: datetime, end_datetime: datetime
 ) -> List[Sample]:
+    logger.debug(f"Selecting positive samples between {start_datetime} and {end_datetime}")
+
     match = {
         "$match": {
             # 1. First filter by the start and end dates
@@ -189,6 +205,7 @@ def get_positive_samples(
             FIELD_ROOT_SAMPLE_ID: {"$not": {"$regex": "^CBIQA_"}},
         }
     }
+
     return list(samples_collection.aggregate([match]))
 
 
@@ -266,7 +283,7 @@ def update_mongo_fields(mongo_db, samples: List[Sample], version: str, update_ti
 
 
 def samples_updated_with_source_plate_uuids(mongo_db, samples: List[Sample]) -> List[Sample]:
-    print("Attempting to update docs with source plate UUIDs")
+    logger.debug("Attempting to update docs with source plate UUIDs")
 
     updated_samples: List[Sample] = []
 
@@ -275,7 +292,7 @@ def samples_updated_with_source_plate_uuids(mongo_db, samples: List[Sample]) -> 
             sample[FIELD_LH_SOURCE_PLATE_UUID] = existing_plate[FIELD_LH_SOURCE_PLATE_UUID]
             updated_samples.append(sample)
         else:
-            print(
+            logger.error(
                 f"ERROR: Source plate barcode {sample[FIELD_PLATE_BARCODE]} already exists with different lab_id "
                 f"{existing_plate[FIELD_LAB_ID]}",
             )
@@ -298,12 +315,13 @@ def samples_updated_with_source_plate_uuids(mongo_db, samples: List[Sample]) -> 
             new_plates.append(new_plate)
             update_doc_from_source_plate(sample, new_plate, True)
 
-        print(f"Attempting to insert {len(new_plates)} new source plates")
+        logger.debug(f"Attempting to insert {len(new_plates)} new source plates")
         if len(new_plates) > 0:
             source_plates_collection.insert_many(new_plates, ordered=False)
 
     except Exception as e:
-        print(f"{e} Failed assigning source plate UUIDs to samples.")
+        logger.error("Failed assigning source plate UUIDs to samples.")
+        logger.exception(e)
         updated_samples = []
 
     return updated_samples
@@ -332,7 +350,7 @@ def new_mongo_source_plate(plate_barcode: str, lab_id: str) -> SourcePlate:
 def get_cherrypicked_samples(
     config: ModuleType,
     root_sample_ids: List[str],
-    plate_barcodes: Set[str],
+    plate_barcodes: List[str],
     chunk_size: int = 50000,
 ) -> Optional[DataFrame]:
     """Find which samples have been cherrypicked using MLWH & Events warehouse.
@@ -349,6 +367,8 @@ def get_cherrypicked_samples(
         DataFrame: [description]
     """
     try:
+        logger.debug("Getting cherry-picked samples from MLWH")
+
         # Create an empty DataFrame to merge into
         concat_frame = pd.DataFrame()
 
@@ -400,7 +420,8 @@ def get_cherrypicked_samples(
 
         return concat_frame
     except Exception as e:
-        print("Error while connecting to MySQL", e)
+        logger.error("Error while connecting to MySQL")
+        logger.exception(e)
         return None
     finally:
         db_connection.close()

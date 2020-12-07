@@ -16,12 +16,7 @@ from crawler.constants import (
     FIELD_SOURCE,
     MLWH_TABLE_NAME,
 )
-from crawler.db import (
-    create_mongo_client,
-    create_mysql_connection,
-    get_mongo_collection,
-    get_mongo_db,
-)
+from crawler.db import create_mongo_client, create_mysql_connection, get_mongo_collection, get_mongo_db
 from crawler.helpers.general_helpers import get_config
 
 logger = logging.getLogger(__name__)

@@ -184,6 +184,10 @@ Flake8 is used for linting, to execute:
 
     flake8
 
+A little convenience script can be used to run the formatting, type checking and linting:
+
+    ./forlint.sh
+
 ## Miscellaneous
 
 ### Naming conventions
