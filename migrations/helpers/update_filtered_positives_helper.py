@@ -268,3 +268,19 @@ def biomek_labclass_by_centre_name(centres: List[Dict[str, str]]) -> Dict[str, s
         Dict[str, str] -- biomek labware class by centre name
     """
     return {centre["name"]: centre["biomek_labware_class"] for centre in centres}
+
+
+def filtered_positive_fields_exist(config: ModuleType):
+    """Determines whether filtered positive fields exist in database
+
+    Arguments:
+        None
+    
+    Returns:
+        Boolean -- Filtered positive fields exist
+    """
+    with create_mongo_client(config) as client:
+        mongo_db = get_mongo_db(config, client)
+        samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
+
+        return samples_collection.find({ FIELD_FILTERED_POSITIVE : {"$exists": True}})
