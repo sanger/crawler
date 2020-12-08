@@ -394,9 +394,9 @@ class CentreFile:
             # records for these
             docs_to_insert_mlwh = list(filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert))
 
-            self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
+            mlwh_success = self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
-            if add_to_dart:
+            if add_to_dart and mlwh_success:
                 self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
 
         self.backup_file()
@@ -603,7 +603,7 @@ class CentreFile:
             logger.exception(e)
             return []
 
-    def insert_samples_from_docs_into_mlwh(self, docs_to_insert: List[Dict[str, str]]) -> None:
+    def insert_samples_from_docs_into_mlwh(self, docs_to_insert) -> bool:
         """Insert sample records into the MLWH database from the parsed file information, including the corresponding
         mongodb _id
 
@@ -612,6 +612,9 @@ class CentreFile:
             Includes the mongodb _id, as the list has already been inserted into mongodb
             mongo_ids {List[Any]} -- list of mongodb _ids in the same order as docs_to_insert, from the insert into the
             mongodb
+
+        Returns:
+            {bool} -- True if the insert was successful; otherwise False
         """
         values: List[Dict[str, Any]] = []
         for doc in docs_to_insert:
@@ -624,6 +627,7 @@ class CentreFile:
                 run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
 
                 logger.debug(f"MLWH database inserts completed successfully for file {self.file_name}")
+                return True
             except Exception as e:
                 self.logging_collection.add_error(
                     "TYPE 14",
@@ -637,6 +641,8 @@ class CentreFile:
                 f"MLWH database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
+
+        return False
 
     def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[Dict[str, str]]) -> None:
         """Insert plates and wells into the DART database from the parsed file information
