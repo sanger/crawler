@@ -283,4 +283,10 @@ def filtered_positive_fields_exist(config: ModuleType):
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-        return samples_collection.find({ FIELD_FILTERED_POSITIVE : {"$exists": True}})
+        return list(samples_collection.find({
+            "$or" : [
+                { FIELD_FILTERED_POSITIVE : {"$exists": True} },
+                { FIELD_FILTERED_POSITIVE_VERSION : {"$exists": True} },
+                { FIELD_FILTERED_POSITIVE_TIMESTAMP : {"$exists": True} }
+            ]
+        }))
