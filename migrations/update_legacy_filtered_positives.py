@@ -2,7 +2,7 @@ import logging
 import logging.config
 from datetime import datetime
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
-from crawler.helpers import get_config
+from crawler.helpers.general_helpers import get_config
 from migrations.helpers.update_filtered_positives_helper import (
     update_filtered_positive_fields,
     update_mlwh_filtered_positive_fields,
@@ -49,8 +49,6 @@ def run(settings_module: str = "") -> None:
             mongo_updated = update_mongo_filtered_positive_fields(
                     config, samples, version, update_timestamp
                 )
-            
-
 
         else:
             logger.warning("Filtered positive fields already exist in MongoDB")
