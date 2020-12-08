@@ -1,16 +1,18 @@
 import logging
 import logging.config
-from crawler.helpers import get_config
 from datetime import datetime
+
+from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
+from crawler.helpers.general_helpers import get_config
+
 from migrations.helpers.update_filtered_positives_helper import (
     pending_plate_barcodes_from_dart,
     positive_result_samples_from_mongo,
+    update_dart_fields,
     update_filtered_positive_fields,
-    update_mongo_filtered_positive_fields,
     update_mlwh_filtered_positive_fields,
-    update_dart_filtered_positive_fields,
+    update_mongo_filtered_positive_fields,
 )
-from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 
 logger = logging.getLogger(__name__)
 
@@ -42,14 +44,9 @@ def run(settings_module: str = "") -> None:
 
             # Get positive result samples from Mongo in these pending plates
             logger.info("Selecting postive samples in pending plates from Mongo...")
-            positive_pending_samples = positive_result_samples_from_mongo(
-                config, pending_plate_barcodes
-            )
+            positive_pending_samples = positive_result_samples_from_mongo(config, pending_plate_barcodes)
             if num_positive_pending_samples := len(positive_pending_samples):
-                logger.info(
-                    f"{num_positive_pending_samples} positive samples in pending plates found in "
-                    "Mongo"
-                )
+                logger.info(f"{num_positive_pending_samples} positive samples in pending plates found in Mongo")
                 filtered_positive_identifier = FilteredPositiveIdentifier()
                 version = filtered_positive_identifier.current_version()
                 update_timestamp = datetime.now()
@@ -70,22 +67,15 @@ def run(settings_module: str = "") -> None:
 
                 if mongo_updated:
                     logger.info("Updating MLWH...")
-                    mlwh_updated = update_mlwh_filtered_positive_fields(
-                        config, positive_pending_samples
-                    )
+                    mlwh_updated = update_mlwh_filtered_positive_fields(config, positive_pending_samples)
                     logger.info("Finished updating MLWH")
 
                     if mlwh_updated:
                         logger.info("Updating DART...")
-                        dart_updated = update_dart_filtered_positive_fields(
-                            config, positive_pending_samples
-                        )
+                        dart_updated = update_dart_fields(config, positive_pending_samples)
                         logger.info("Finished updating DART")
             else:
-                logger.warning(
-                    "No positive samples in pending plates found in Mongo, "
-                    "not updating any database"
-                )
+                logger.warning("No positive samples in pending plates found in Mongo, not updating any database")
         else:
             logger.warning("No pending plates found in DART, not updating any database")
 
