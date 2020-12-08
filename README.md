@@ -150,7 +150,9 @@ In short, this migration performs the following steps:
 
 To run the migration:
 
-    python run_migration.py update_mlwh_and_dart_with_legacy_samples
+    python run_migration.py update_mlwh_and_dart_with_legacy_samples 200115_1200 200116_1600
+
+Where the time format is YYMMDD_HHmm. Both start and end timestamps must be present.
 
 ## Testing
 
