@@ -122,13 +122,9 @@ LOGGING = {
     "formatters": {
         "colored": {
             "()": "colorlog.ColoredFormatter",
-            "format": (
-                "%(asctime)-15s %(name)-25s:%(lineno)-3s %(log_color)s%(levelname)-7s %(message)s"
-            ),
+            "format": ("%(asctime)-15s %(name)-25s:%(lineno)-3s %(log_color)s%(levelname)-7s %(message)s"),
         },
-        "verbose": {
-            "format": "%(asctime)-15s %(name)-25s:%(lineno)-3s %(levelname)-7s %(message)s"
-        },
+        "verbose": {"format": "%(asctime)-15s %(name)-25s:%(lineno)-3s %(levelname)-7s %(message)s"},
     },
     "handlers": {
         "colored_stream": {
@@ -147,6 +143,6 @@ LOGGING = {
     },
     "loggers": {
         "crawler": {"handlers": ["console", "slack"], "level": "INFO", "propagate": True},
-        "migrations": {"handlers": ["colored_stream"], "level": "INFO", "propagate": True},
+        "migrations": {"handlers": ["colored_stream"], "level": "DEBUG", "propagate": True},
     },
 }

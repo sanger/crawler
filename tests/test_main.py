@@ -2,12 +2,7 @@ import os
 import shutil
 from unittest.mock import patch
 
-from crawler.constants import (
-    COLLECTION_CENTRES,
-    COLLECTION_IMPORTS,
-    COLLECTION_SAMPLES,
-    COLLECTION_SOURCE_PLATES,
-)
+from crawler.constants import COLLECTION_CENTRES, COLLECTION_IMPORTS, COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES
 from crawler.db import get_mongo_collection
 from crawler.main import run
 
@@ -55,9 +50,7 @@ def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
         f"{samples_collection.count_documents({})}"
     )
     assert samples_collection.count_documents({"RNA ID": "AP123_B09", "source": "Alderley"}) == 1
-    assert (
-        samples_collection.count_documents({"RNA ID": "MK123_H09", "source": "UK Biocentre"}) == 1
-    )
+    assert samples_collection.count_documents({"RNA ID": "MK123_H09", "source": "UK Biocentre"}) == 1
 
     # We get one import per centre
     assert imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED, (
@@ -74,9 +67,7 @@ def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
 
     # check the code cleaned up the temporary files
     (_, subfolders, files) = next(os.walk("tmp/files/"))
-    assert 0 == len(
-        subfolders
-    ), f"Wrong number of subfolders. Expected: 0, Actual: {len(subfolders)}"
+    assert 0 == len(subfolders), f"Wrong number of subfolders. Expected: 0, Actual: {len(subfolders)}"
 
 
 def test_run_creates_right_files_backups(mongo_database, testing_files_for_process, pyodbc_conn):
@@ -181,9 +172,7 @@ def test_error_run(mongo_database, testing_files_for_process, pyodbc_conn):
     assert imports_collection.count_documents({}) == 8
 
 
-def test_error_run_duplicates_in_imports_message(
-    mongo_database, testing_files_for_process, pyodbc_conn
-):
+def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_for_process, pyodbc_conn):
     _, mongo_database = mongo_database
 
     # copy an additional file with duplicates
@@ -204,13 +193,9 @@ def test_error_run_duplicates_in_imports_message(
 
     # We expect errors to contain messages for type 5 duplicates, an aggregate total and a message
     # line
+    assert "Total number of Duplicates within file errors (TYPE 5): 1" in test_centre_imports["errors"][0]
     assert (
-        "Total number of Duplicates within file errors (TYPE 5): 1"
-        in test_centre_imports["errors"][0]
-    )
-    assert (
-        "WARNING: Duplicates detected within the file. (TYPE 5) (e.g. Duplicated, line: 3, "
-        "root_sample_id: 16)"
+        "WARNING: Duplicates detected within the file. (TYPE 5) (e.g. Duplicated, line: 3, root_sample_id: 16)"
     ) in test_centre_imports["errors"][1]
 
 
@@ -241,6 +226,6 @@ def test_error_run_duplicates_plate_barcodes_from_different_labs_message(
         "Total number of Duplicate source plate barcodes from different labs errors (TYPE 25): 2"
         in test_centre_imports["errors"][0]
     )
-    assert (
-        "ERROR: Found duplicate source plate barcodes from different labs (TYPE 25)"
-    ) in test_centre_imports["errors"][1]
+    assert ("ERROR: Found duplicate source plate barcodes from different labs (TYPE 25)") in test_centre_imports[
+        "errors"
+    ][1]
