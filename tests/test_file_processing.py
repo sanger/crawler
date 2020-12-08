@@ -130,9 +130,7 @@ def test_process_files_dont_add_to_dart_flag_not_set(
 def test_process_files_dont_add_to_dart_mlwh_failed(
     mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn
 ):
-    with patch(
-        "crawler.file_processing.run_mysql_executemany_query", side_effect=Exception("Boom!")
-    ):
+    with patch("crawler.file_processing.run_mysql_executemany_query", side_effect=Exception("Boom!")):
         _, mongo_database = mongo_database
 
         centre_config = config.CENTRES[0]
@@ -1256,9 +1254,7 @@ def test_insert_samples_from_docs_into_mlwh_returns_false_not_connected(config, 
 
 def test_insert_samples_from_docs_into_mlwh_returns_failure_executing(config, mlwh_connection):
     with patch("crawler.file_processing.create_mysql_connection"):
-        with patch(
-            "crawler.file_processing.run_mysql_executemany_query", side_effect=Exception("Boom!")
-        ):
+        with patch("crawler.file_processing.run_mysql_executemany_query", side_effect=Exception("Boom!")):
             centre = Centre(config, config.CENTRES[0])
             centre_file = CentreFile("some file", centre)
 
