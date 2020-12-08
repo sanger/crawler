@@ -8,13 +8,14 @@ from migrations.helpers.update_filtered_positives_helper import (
     update_mlwh_filtered_positive_fields,
     update_mongo_filtered_positive_fields,
     filtered_positive_fields_exist,
+    all_mongo_samples,
 )
 
 logger = logging.getLogger(__name__)
 
 
 def run(settings_module: str = "") -> None:
-    """Migrating the existing samples to have the filtered positive values. Should only be run once.
+    """Migrate the existing samples to have the filtered positive values. Should only be run once.
 
     Arguments:
         config {ModuleType} -- application config specifying database details
@@ -32,12 +33,28 @@ def run(settings_module: str = "") -> None:
         if not filtered_positive_fields_exist(config):
             # Get all samples from Mongo
             logger.info("Selecting all samples from Mongo...")
+            samples = all_mongo_samples(config)
+
             filtered_positive_identifier = FilteredPositiveIdentifier()
             version = filtered_positive_identifier.current_version()
             update_timestamp = datetime.now()
-        else:
-            logger.warning("Filtered positive field already exists in MongoDB")
 
+            update_filtered_positive_fields(
+                filtered_positive_identifier,
+                samples,
+                version,
+                update_timestamp,
+            )
+
+            mongo_updated = update_mongo_filtered_positive_fields(
+                    config, samples, version, update_timestamp
+                )
+            
+
+
+        else:
+            logger.warning("Filtered positive fields already exist in MongoDB")
+            raise
     except Exception as e:
         logger.error("---------- Process aborted: ----------")
         logger.error(f"An exception occurred, at {datetime.now()}")
