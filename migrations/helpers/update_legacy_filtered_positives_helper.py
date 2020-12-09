@@ -1,4 +1,6 @@
 from types import ModuleType
+from typing import List, Optional, Set, Tuple
+from pandas import DataFrame
 from crawler.constants import (
     COLLECTION_SAMPLES,
 )
@@ -7,6 +9,9 @@ from crawler.db import (
     get_mongo_collection,
     get_mongo_db,
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 def filtered_positive_fields_exist(config: ModuleType):
     """Determines whether filtered positive fields exist in database
@@ -91,6 +96,7 @@ def get_cherrypicked_samples(
             sql = (
                 f"SELECT mlwh_sample.description as `{FIELD_ROOT_SAMPLE_ID}`, mlwh_stock_resource.labware_human_barcode as `{FIELD_PLATE_BARCODE}`"  # noqa: E501
                 f",mlwh_sample.phenotype as `Result_lower`, mlwh_stock_resource.labware_coordinate as `{FIELD_COORDINATE}`"  # noqa: E501
+                f",mlwh_sample.created as `LIMS_created_date`"
                 f" FROM {ml_wh_db}.sample as mlwh_sample"
                 f" JOIN {ml_wh_db}.stock_resource mlwh_stock_resource ON (mlwh_sample.id_sample_tmp = mlwh_stock_resource.id_sample_tmp)"  # noqa: E501
                 f" JOIN {events_wh_db}.subjects mlwh_events_subjects ON (mlwh_events_subjects.friendly_name = sanger_sample_id)"  # noqa: E501
