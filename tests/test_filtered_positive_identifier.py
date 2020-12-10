@@ -251,7 +251,6 @@ def test_v2_is_positive_returns_false_result_not_positive():
     assert identifier.is_positive(sample) is False
 
 
-
 def test_v2_is_positive_returns_false_control_sample():
     identifier = FilteredPositiveIdentifierV2()
 
