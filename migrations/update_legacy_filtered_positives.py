@@ -40,12 +40,11 @@ def run(settings_module: str = "") -> None:
 
         # If v0 version has been set on any samples, migration has likely been run before - do not want to run again in this case
         if v0_version_set(config) is False:
-            samples = all_mongo_samples(config)
+            samples = unmigrated_mongo_samples(config)
 
             root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
             cp_samples_df = get_cherrypicked_samples(config, list(root_sample_ids), list(plate_barcodes))
 
-            cp_samples_before_cutoff_migrated = get_migrated_cp_samples_before_cutoff(cp_samples_df)
             filtered_positive_identifier = FilteredPositiveIdentifier()
             version = filtered_positive_identifier.current_version()
             update_timestamp = datetime.now()

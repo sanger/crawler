@@ -4,7 +4,9 @@ from pandas import DataFrame
 from crawler.types import Sample
 from crawler.constants import (
     COLLECTION_SAMPLES,
+    FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
 )
 from crawler.db import (
     create_mongo_client,
@@ -36,22 +38,27 @@ def filtered_positive_fields_exist(config: ModuleType):
             ]
         }))
 
-logger = logging.getLogger(__name__)
 
-def all_mongo_samples(config: ModuleType):
-    """Gets all samples from Mongo
+def unmigrated_mongo_samples(config: ModuleType):
+    """Gets all samples from Mongo which have not had the filtered positive field set
 
     Arguments:
         None
     
     Returns:
-        List[Dict] -- All samples from Mongo
+        List[Dict] -- All unmigrated samples from Mongo
     """
     with create_mongo_client(config) as client:
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-        return list(samples_collection.find({}))
+        return list(samples_collection.find({
+            "$and" : [
+                { FIELD_FILTERED_POSITIVE : {"$exists": False} },
+                { FIELD_FILTERED_POSITIVE_VERSION : {"$exists": False} },
+                { FIELD_FILTERED_POSITIVE_TIMESTAMP : {"$exists": False} }
+            ]
+        }))
 
 
 def get_cherrypicked_samples(
