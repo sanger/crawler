@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import decimal
 import re
 
@@ -21,8 +22,14 @@ FILTERED_POSITIVE_VERSION_1 = "v1"  # initial implementation, as per GPL-669
 FILTERED_POSITIVE_VERSION_2 = "v2"  # updated as per GPL-699 and GPL-740
 
 
-class FilteredPositiveIdentifier:
-    pass
+class FilteredPositiveIdentifier(ABC):
+    @abstractmethod
+    def version(self) -> str:
+        pass
+
+    @abstractmethod
+    def is_positive(self, sample: Sample) -> bool:
+        pass
 
 
 def current_filtered_positive_identifier() -> FilteredPositiveIdentifier:
@@ -131,4 +138,3 @@ class FilteredPositiveIdentifierV2(FilteredPositiveIdentifier):
                 return True
             else:
                 return False
-
