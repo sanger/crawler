@@ -60,7 +60,7 @@ def mock_mongo_collection():
 def mock_positive_identifier():
     with patch("migrations.helpers.update_filtered_positives_helper.FilteredPositiveIdentifier") as mock_identifier:
         mock_identifier.is_positive.return_value = True
-        mock_identifier.current_version.return_value = "v2.3"
+        mock_identifier.version.return_value = "v2.3"
         yield mock_identifier
 
 

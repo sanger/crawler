@@ -114,7 +114,7 @@ def update_filtered_positive_fields(
     """
     logger.debug("Updating filtered positive fields")
 
-    version = filtered_positive_identifier.current_version()
+    version = filtered_positive_identifier.version()
 
     # Expect all samples to be passed into here to have a positive result
     for sample in samples:

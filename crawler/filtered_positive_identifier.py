@@ -15,24 +15,19 @@ from crawler.constants import (
 from crawler.types import Sample
 
 
+# record/reference all versions and definitions here
+FILTERED_POSITIVE_VERSION_1 = "v1"  # initial implementation, as per GPL-669
+FILTERED_POSITIVE_VERSION_2 = "v2"  # updated as per GPL-699 and GPL-740
+
+
 class FilteredPositiveIdentifier:
-    # record/reference all versions and definitions here
-    versions = [
-        "v1",  # initial implementation, as per GPL-669
-        "v2",  # updated as per GPL-699 and GPL-740
-    ]
     result_regex = re.compile(f"^(?:{POSITIVE_RESULT_VALUE}|{LIMIT_OF_DETECTION_RESULT_VALUE})", re.IGNORECASE)
     root_sample_id_control_regex = re.compile("^(?:CBIQA_|QC0|ZZA000)")
     ct_value_limit = decimal.Decimal(30)
     d128_context = create_decimal128_context()
 
-    def current_version(self) -> str:
-        """Returns the current version of the identifier.
-
-        Returns:
-            {str} - the version number
-        """
-        return self.versions[-1]
+    def version(self) -> str:
+        return FILTERED_POSITIVE_VERSION_2
 
     def is_positive(self, sample: Sample) -> bool:
         """Determines whether a sample is a filtered positive.

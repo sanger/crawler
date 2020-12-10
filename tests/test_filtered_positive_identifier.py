@@ -8,7 +8,10 @@ from crawler.constants import (
     POSITIVE_RESULT_VALUE,
     LIMIT_OF_DETECTION_RESULT_VALUE,
 )
-from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
+from crawler.filtered_positive_identifier import (
+    FilteredPositiveIdentifier,
+    FILTERED_POSITIVE_VERSION_2,
+)
 
 # ----- test helpers -----
 
@@ -25,11 +28,11 @@ def positive_sample():
     }
 
 
-# ----- tests for current_version() -----
+# ----- tests for version() -----
 
 
-def test_current_version_is_latest():
-    assert identifier.current_version() == identifier.versions[-1]
+def test_version():
+    assert identifier.version() == FILTERED_POSITIVE_VERSION_2
 
 
 # ----- tests for is_positive() -----

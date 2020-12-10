@@ -122,7 +122,7 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
 
             # 3. add the relevant filtered positive fields if not present
             filtered_positive_identifier = FilteredPositiveIdentifier()
-            version = filtered_positive_identifier.current_version()
+            version = filtered_positive_identifier.version()
             update_timestamp = datetime.now()
 
             """
