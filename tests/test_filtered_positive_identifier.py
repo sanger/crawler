@@ -99,6 +99,14 @@ def test_is_positive_returns_false_control_sample():
     sample[FIELD_ROOT_SAMPLE_ID] = "CBIQA_MCM001"
     assert identifier.is_positive(sample) is False
 
+    sample = positive_sample()
+    sample[FIELD_ROOT_SAMPLE_ID] = "QC0_MCM001"
+    assert identifier.is_positive(sample) is False
+
+    sample = positive_sample()
+    sample[FIELD_ROOT_SAMPLE_ID] = "ZZA000_MCM001"
+    assert identifier.is_positive(sample) is False
+
 
 def test_is_positive_returns_false_all_ct_values_greater_than_30():
     sample = positive_sample()
