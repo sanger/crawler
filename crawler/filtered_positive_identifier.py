@@ -10,6 +10,7 @@ from crawler.constants import (
     FIELD_RESULT,
     FIELD_ROOT_SAMPLE_ID,
     POSITIVE_RESULT_VALUE,
+    LIMIT_OF_DETECTION_RESULT_VALUE,
 )
 from crawler.types import Sample
 
@@ -19,7 +20,7 @@ class FilteredPositiveIdentifier:
     versions = [
         "v1",  # initial implementation, as per GPL-669
     ]
-    result_regex = re.compile(f"^{POSITIVE_RESULT_VALUE}", re.IGNORECASE)
+    result_regex = re.compile(f"^(?:{POSITIVE_RESULT_VALUE}|{LIMIT_OF_DETECTION_RESULT_VALUE})", re.IGNORECASE)
     root_sample_id_control_regex = re.compile("^(?:CBIQA_|QC0|ZZA000)")
     ct_value_limit = decimal.Decimal(30)
     d128_context = create_decimal128_context()

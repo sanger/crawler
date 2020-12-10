@@ -6,6 +6,7 @@ from crawler.constants import (
     FIELD_RESULT,
     FIELD_ROOT_SAMPLE_ID,
     POSITIVE_RESULT_VALUE,
+    LIMIT_OF_DETECTION_RESULT_VALUE,
 )
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 
@@ -44,6 +45,16 @@ def test_is_positive_returns_true_matching_criteria():
     sample[FIELD_RESULT] = "POSITIVE"
     assert identifier.is_positive(sample) is True
 
+    # 'limit of detection' result
+    sample = positive_sample()
+    sample[FIELD_RESULT] = LIMIT_OF_DETECTION_RESULT_VALUE
+    assert identifier.is_positive(sample) is True
+
+    # case invariant 'limit of detection' result
+    sample = positive_sample()
+    sample[FIELD_RESULT] = "LIMIT OF DETECTION"
+    assert identifier.is_positive(sample) is True
+
     # 3x mix of ct values
     sample = positive_sample()
     sample[FIELD_CH2_CQ] = Decimal128("41.12345678")
@@ -72,7 +83,7 @@ def test_is_positive_returns_true_matching_criteria():
     assert identifier.is_positive(sample) is True
 
 
-def test_is_positive_returns_false_result_not_postive():
+def test_is_positive_returns_false_result_not_positive():
     # does not conform to regex
     sample = positive_sample()
     sample[FIELD_RESULT] = "  positive"
@@ -86,11 +97,6 @@ def test_is_positive_returns_false_result_not_postive():
     # void result
     sample = positive_sample()
     sample[FIELD_RESULT] = "Void"
-    assert identifier.is_positive(sample) is False
-
-    # 'limit of detection' result
-    sample = positive_sample()
-    sample[FIELD_RESULT] = "limit of detection"
     assert identifier.is_positive(sample) is False
 
 
