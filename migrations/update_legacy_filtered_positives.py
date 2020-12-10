@@ -10,7 +10,7 @@ from migrations.helpers.update_filtered_positives_helper import (
 )
 from migrations.helpers.update_legacy_filtered_positives_helper import (
     unmigrated_mongo_samples,
-    get_cherrypicked_samples,
+    get_v0_cherrypicked_samples,
     v0_version_set,
 )
 from migrations.helpers.dart_samples_update_helper import extract_required_cp_info
@@ -41,8 +41,12 @@ def run(settings_module: str = "") -> None:
             logger.info("Selecting unmigrated samples from Mongo...")
             samples = unmigrated_mongo_samples(config)
 
+            if samples is None:
+                logger.info("All samples have filtered positive fields set, migration not needed.")
+                raise Exception()
+
             root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
-            cp_samples_df = get_cherrypicked_samples(config, list(root_sample_ids), list(plate_barcodes))
+            cp_samples_df = get_v0_cherrypicked_samples(config, list(root_sample_ids), list(plate_barcodes))
 
             filtered_positive_identifier = FilteredPositiveIdentifier()
             version = filtered_positive_identifier.current_version()
