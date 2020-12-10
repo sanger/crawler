@@ -89,3 +89,14 @@ DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
 # logging config
 LOGGING["loggers"]["crawler"]["level"] = "DEBUG"  # noqa: F405
 LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]  # noqa: F405
+
+# Event warehouse database details
+EVENT_WH_SUBJECTS_TABLE = "subjects"
+EVENT_WH_ROLES_TABLE = "roles"
+EVENT_WH_EVENTS_TABLE = "events"
+EVENT_WH_EVENT_TYPES_TABLE = "event_types"
+EVENT_WH_SUBJECT_TYPES_TABLE = "subject_types"
+EVENT_WH_ROLE_TYPES_TABLE = "role_types"
+
+WAREHOUSES_RW_CONN_STRING = "root@localhost"
+EVENTS_WH_DB = "event_warehouse_test"

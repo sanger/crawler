@@ -1,8 +1,11 @@
 import logging
 import logging.config
 import shutil
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Any
 from unittest.mock import patch
+import sqlalchemy  # type: ignore
+from sqlalchemy.engine.base import Engine  # type: ignore
+from sqlalchemy import MetaData  # type: ignore
 
 import pytest
 from crawler.constants import (
@@ -164,6 +167,54 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
 ]
 
 
+EVENT_WH_DATA: Dict[str, Any] = {
+    "subjects": [
+        {"id": 1, "uuid": "1".encode("utf-8"), "friendly_name": "ss1", "subject_type_id": 1},
+        {"id": 2, "uuid": "2".encode("utf-8"), "friendly_name": "ss2", "subject_type_id": 1},
+    ],
+    "roles": [
+        {"id": 1, "event_id": 1, "subject_id": 1, "role_type_id": 1},
+        {"id": 2, "event_id": 2, "subject_id": 2, "role_type_id": 1},
+    ],
+    "events": [
+        {
+            "id": 1,
+            "lims_id": "SQSCP",
+            "uuid": "1".encode("utf-8"),
+            "event_type_id": 1,
+            "occured_at": "2020-09-25 11:35:30", #
+            "user_identifier": "test@example.com",
+        },
+        {
+            "id": 2,
+            "lims_id": "SQSCP",
+            "uuid": "2".encode("utf-8"),
+            "event_type_id": 1,
+            "occured_at": "2020-10-25 11:35:30",
+            "user_identifier": "test@example.com",
+        },
+        {
+            "id": 3,
+            "lims_id": "SQSCP",
+            "uuid": "3".encode("utf-8"),
+            "event_type_id": 1,
+            "occured_at": "2020-10-15 16:35:30",
+            "user_identifier": "test@example.com",
+        },
+        {
+            "id": 4,
+            "lims_id": "SQSCP",
+            "uuid": "4".encode("utf-8"),
+            "event_type_id": 1,
+            "occured_at": "2020-10-15 16:35:30",
+            "user_identifier": "test@example.com",
+        }
+    ],
+    "event_types": [{"id": 1, "key": "cherrypick_layout_set", "description": "stuff"}],
+    "subject_types": [{"id": 1, "key": "sample", "description": "stuff"}],
+    "role_types": [{"id": 1, "key": "sample", "description": "stuff"}],
+}
+
 @pytest.fixture
 def samples_collection_accessor(mongo_database):
     return get_mongo_collection(mongo_database[1], COLLECTION_SAMPLES)
@@ -210,6 +261,48 @@ def v1_filtered_positive_testing_samples(samples_collection_accessor):
         yield samples
     finally:
         samples_collection_accessor.delete_many({})
+
+
+@pytest.fixture
+def event_wh_data(config):
+    insert_data_into_events_warehouse_tables(config, EVENT_WH_DATA, event_wh_sql_engine(config))
+
+
+def insert_data_into_events_warehouse_tables(config, data, event_wh_sql_engine):
+    subjects_table = get_table(event_wh_sql_engine, config.EVENT_WH_SUBJECTS_TABLE)
+    roles_table = get_table(event_wh_sql_engine, config.EVENT_WH_ROLES_TABLE)
+    events_table = get_table(event_wh_sql_engine, config.EVENT_WH_EVENTS_TABLE)
+    event_types_table = get_table(event_wh_sql_engine, config.EVENT_WH_EVENT_TYPES_TABLE)
+    subject_types_table = get_table(event_wh_sql_engine, config.EVENT_WH_SUBJECT_TYPES_TABLE)
+    role_types_table = get_table(event_wh_sql_engine, config.EVENT_WH_ROLE_TYPES_TABLE)
+
+    with event_wh_sql_engine.begin() as connection:
+        # delete all rows from each table
+        connection.execute(roles_table.delete())
+        connection.execute(subjects_table.delete())
+        connection.execute(events_table.delete())
+        connection.execute(event_types_table.delete())
+        connection.execute(subject_types_table.delete())
+        connection.execute(role_types_table.delete())
+
+        print("Inserting Events Warehouse test data")
+        connection.execute(role_types_table.insert(), data["role_types"])
+        connection.execute(event_types_table.insert(), data["event_types"])
+        connection.execute(subject_types_table.insert(), data["subject_types"])
+        connection.execute(subjects_table.insert(), data["subjects"])
+        connection.execute(events_table.insert(), data["events"])
+        connection.execute(roles_table.insert(), data["roles"])
+
+
+def get_table(sql_engine: Engine, table_name: str):
+    metadata = MetaData(sql_engine)
+    metadata.reflect()
+    return metadata.tables[table_name]
+
+
+def event_wh_sql_engine(config):
+    create_engine_string = f"mysql+pymysql://{config.WAREHOUSES_RW_CONN_STRING}/{config.EVENTS_WH_DB}"
+    return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
 
 
 @pytest.fixture

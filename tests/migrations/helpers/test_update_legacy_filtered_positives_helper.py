@@ -20,5 +20,9 @@ def test_v0_version_set_returns_false_with_no_v0_samples(config, v1_filtered_pos
     assert v0_version_set(config) == False
 
 
-def test_v0_version_set_returns_true_with_no_version_fields(config, testing_samples):
+def test_v0_version_set_returns_false_with_no_version_fields(config, testing_samples):
     assert v0_version_set(config) == False
+
+
+def test_get_v0_cherrypicked_samples_returns_expected(event_wh_data):
+    

@@ -46,6 +46,7 @@ def run(settings_module: str = "") -> None:
                 raise Exception()
 
             root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
+
             cp_samples_df = get_v0_cherrypicked_samples(config, list(root_sample_ids), list(plate_barcodes))
 
             filtered_positive_identifier = FilteredPositiveIdentifier()
