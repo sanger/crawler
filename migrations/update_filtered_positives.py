@@ -48,7 +48,7 @@ def run(settings_module: str = "") -> None:
             if num_positive_pending_samples := len(positive_pending_samples):
                 logger.info(f"{num_positive_pending_samples} positive samples in pending plates found in Mongo")
                 filtered_positive_identifier = current_filtered_positive_identifier()
-                version = filtered_positive_identifier.version()
+                version = filtered_positive_identifier.version
                 update_timestamp = datetime.now()
                 logger.info("Updating filtered positives...")
                 update_filtered_positive_fields(

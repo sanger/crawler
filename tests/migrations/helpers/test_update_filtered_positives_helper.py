@@ -135,7 +135,7 @@ def test_update_filtered_positive_fields_assigns_expected_filtered_positive_fiel
     version = "v2.3"
     mock_positive_identifier = MagicMock()
     mock_positive_identifier.is_positive.return_value = True
-    mock_positive_identifier.version.return_value = version
+    mock_positive_identifier.version = version
 
     update_filtered_positive_fields(mock_positive_identifier, samples, version, timestamp)
     for sample in samples:
