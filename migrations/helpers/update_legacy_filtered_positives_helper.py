@@ -1,8 +1,10 @@
 from types import ModuleType
 from typing import List, Optional, Set, Tuple
 from pandas import DataFrame
+from crawler.types import Sample
 from crawler.constants import (
     COLLECTION_SAMPLES,
+    FIELD_FILTERED_POSITIVE_VERSION,
 )
 from crawler.db import (
     create_mongo_client,
@@ -34,6 +36,7 @@ def filtered_positive_fields_exist(config: ModuleType):
             ]
         }))
 
+logger = logging.getLogger(__name__)
 
 def all_mongo_samples(config: ModuleType):
     """Gets all samples from Mongo
@@ -130,3 +133,29 @@ def get_cherrypicked_samples(
         return None
     finally:
         db_connection.close()
+
+
+def v0_version_set(config: ModuleType):
+    """Find if v0 version has been set in any of the samples. This would indicate that the legacy migration has already been run.
+
+    Args:
+        samples {List[Dict]} -- List of samples from Mongo
+
+    Returns:
+        Boolean -- v0 version set in samples
+    """
+    with create_mongo_client(config) as client:
+        mongo_db = get_mongo_db(config, client)
+        samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
+
+        v0_samples = list(samples_collection.find({
+            "$and": [
+                { FIELD_FILTERED_POSITIVE_VERSION : {"$exists": True} },
+                {"filtered_positive_version": "v0"}
+            ]
+        }))
+
+        if len(v0_samples) > 0:
+            return True
+        else:
+            return False
