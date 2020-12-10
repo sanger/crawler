@@ -561,6 +561,9 @@ def test_parse_and_format_file_rows_to_add_file_details(config):
                     "updated_at": timestamp,
                     "Result": "Negative",
                     "Lab ID": None,
+                    "filtered_positive": True,
+                    "filtered_positive_version": "v2.3",
+                    "filtered_positive_timestamp": timestamp,
                     "lh_sample_uuid": str(test_uuid),
                 },
             ]
