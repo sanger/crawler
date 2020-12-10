@@ -16,8 +16,6 @@ from crawler.filtered_positive_identifier import (
 
 # ----- test helpers -----
 
-identifier = FilteredPositiveIdentifierV2()
-
 
 def positive_sample():
     return {
@@ -37,17 +35,17 @@ def test_current_filtered_positive_identifier():
     assert identifier.version() == FILTERED_POSITIVE_VERSION_2
 
 
-# ----- tests for FilteredPositiveIdentifier.version() -----
+# ----- tests for FilteredPositiveIdentifierV2 -----
 
 
-def test_version():
+def test_v2_version():
+    identifier = FilteredPositiveIdentifierV2()
     assert identifier.version() == FILTERED_POSITIVE_VERSION_2
 
 
-# ----- tests for FilteredPositiveIdentifier.is_positive() -----
+def test_v2_is_positive_returns_true_matching_criteria():
+    identifier = FilteredPositiveIdentifierV2()
 
-
-def test_is_positive_returns_true_matching_criteria():
     # expected positive match
     sample = positive_sample()
     assert identifier.is_positive(sample) is True
@@ -95,7 +93,9 @@ def test_is_positive_returns_true_matching_criteria():
     assert identifier.is_positive(sample) is True
 
 
-def test_is_positive_returns_false_result_not_positive():
+def test_v2_is_positive_returns_false_result_not_positive():
+    identifier = FilteredPositiveIdentifierV2()
+
     # does not conform to regex
     sample = positive_sample()
     sample[FIELD_RESULT] = "  positive"
@@ -112,7 +112,9 @@ def test_is_positive_returns_false_result_not_positive():
     assert identifier.is_positive(sample) is False
 
 
-def test_is_positive_returns_false_control_sample():
+def test_v2_is_positive_returns_false_control_sample():
+    identifier = FilteredPositiveIdentifierV2()
+
     sample = positive_sample()
     sample[FIELD_ROOT_SAMPLE_ID] = "CBIQA_MCM001"
     assert identifier.is_positive(sample) is False
@@ -126,7 +128,9 @@ def test_is_positive_returns_false_control_sample():
     assert identifier.is_positive(sample) is False
 
 
-def test_is_positive_returns_false_all_ct_values_greater_than_30():
+def test_v2_is_positive_returns_false_all_ct_values_greater_than_30():
+    identifier = FilteredPositiveIdentifierV2()
+    
     sample = positive_sample()
     sample[FIELD_CH1_CQ] = Decimal128("40.12345678")
     sample[FIELD_CH2_CQ] = Decimal128("41.12345678")
