@@ -18,7 +18,7 @@ from crawler.constants import (
 NUMBER_CENTRES = 4
 NUMBER_VALID_SAMPLES = 14
 NUMBER_SAMPLES_ON_PARTIAL_IMPORT = 10
-NUMBER_OF_FILES_PROCESSED = 7
+NUMBER_OF_FILES_PROCESSED = 8
 
 from crawler.db import get_mongo_collection
 
@@ -51,6 +51,9 @@ def test_run(mongo_database, testing_files_for_process):
     ), f"Wrong number of samples inserted. Expected: {NUMBER_VALID_SAMPLES}, Actual: {samples_collection.count_documents({})}"
     assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
     assert samples_collection.count_documents({"RNA ID": "123_H09", "source": "UK Biocentre"}) == 1
+
+    for i in imports_collection.find():
+        print(f"import: {i}")
 
     # We get one import per centre
     assert (
@@ -102,10 +105,10 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     assert 0 == len(files), "Fail success TEST"
 
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
-    assert 1 == len(files)
+    assert 2 == len(files)
 
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
-    assert imports_collection.count_documents({}) == 7
+    assert imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED
 
     # Second run to test that already processed files are skipped
     # and that a file previously in the blacklist is now processed
@@ -117,7 +120,7 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
         run(False, False, "crawler.config.integration_with_blacklist_change")
 
     # We expect an additional import entry
-    assert imports_collection.count_documents({}) == 8
+    assert imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED + 1
 
     # We expect the previously blacklisted file to now be processed
     (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
@@ -125,7 +128,7 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
 
     # We expect the previous blacklisted file to still be in the errors directory as well
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
-    assert 1 == len(files)
+    assert 2 == len(files)
 
     # check the code cleaned up the temporary files
     (_, subfolders, files) = next(os.walk("tmp/files/"))
@@ -145,7 +148,7 @@ def test_error_run(mongo_database, testing_files_for_process):
 
     # we expect one file in the errors directory after the first run
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
-    assert 1 == len(files)
+    assert 2 == len(files)
 
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
     _ = shutil.copytree("tests/malformed_files", "tmp/files", dirs_exist_ok=True)
@@ -159,10 +162,10 @@ def test_error_run(mongo_database, testing_files_for_process):
 
     # We expect an additional file in the errors directory after the second run
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
-    assert 2 == len(files)
+    assert 3 == len(files)
 
     # We get an additional imports
-    assert imports_collection.count_documents({}) == 8
+    assert imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED + 1
 
 
 def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_for_process):
@@ -176,7 +179,7 @@ def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_f
 
     # Fetch the imports collection, expect it to contain the additional duplicate error file record
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
-    assert imports_collection.count_documents({}) == 8
+    assert imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED + 1
 
     # Fetch the Test centre record
     test_centre_imports = imports_collection.find_one({"centre_name": "Test Centre"})
