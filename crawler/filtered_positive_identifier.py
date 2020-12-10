@@ -19,6 +19,7 @@ class FilteredPositiveIdentifier:
     # record/reference all versions and definitions here
     versions = [
         "v1",  # initial implementation, as per GPL-669
+        "v2",  # updated as per GPL-699 and GPL-740
     ]
     result_regex = re.compile(f"^(?:{POSITIVE_RESULT_VALUE}|{LIMIT_OF_DETECTION_RESULT_VALUE})", re.IGNORECASE)
     root_sample_id_control_regex = re.compile("^(?:CBIQA_|QC0|ZZA000)")
