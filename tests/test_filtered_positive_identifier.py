@@ -10,13 +10,13 @@ from crawler.constants import (
 )
 from crawler.filtered_positive_identifier import (
     current_filtered_positive_identifier,
-    FilteredPositiveIdentifier,
+    FilteredPositiveIdentifierV2,
     FILTERED_POSITIVE_VERSION_2,
 )
 
 # ----- test helpers -----
 
-identifier = FilteredPositiveIdentifier()
+identifier = FilteredPositiveIdentifierV2()
 
 
 def positive_sample():

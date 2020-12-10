@@ -1,6 +1,5 @@
 import decimal
 import re
-from typing import Any
 
 from bson.decimal128 import create_decimal128_context  # type: ignore
 
@@ -21,11 +20,15 @@ FILTERED_POSITIVE_VERSION_1 = "v1"  # initial implementation, as per GPL-669
 FILTERED_POSITIVE_VERSION_2 = "v2"  # updated as per GPL-699 and GPL-740
 
 
-def current_filtered_positive_identifier() -> Any:
-    return FilteredPositiveIdentifier()
-
-
 class FilteredPositiveIdentifier:
+    pass
+
+
+def current_filtered_positive_identifier() -> FilteredPositiveIdentifier:
+    return FilteredPositiveIdentifierV2()
+
+
+class FilteredPositiveIdentifierV2(FilteredPositiveIdentifier):
     result_regex = re.compile(f"^(?:{POSITIVE_RESULT_VALUE}|{LIMIT_OF_DETECTION_RESULT_VALUE})", re.IGNORECASE)
     root_sample_id_control_regex = re.compile("^(?:CBIQA_|QC0|ZZA000)")
     ct_value_limit = decimal.Decimal(30)
@@ -66,3 +69,4 @@ class FilteredPositiveIdentifier:
                 return True
             else:
                 return False
+
