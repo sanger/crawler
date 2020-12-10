@@ -1,5 +1,6 @@
 import decimal
 import re
+from typing import Any
 
 from bson.decimal128 import create_decimal128_context  # type: ignore
 
@@ -18,6 +19,10 @@ from crawler.types import Sample
 # record/reference all versions and definitions here
 FILTERED_POSITIVE_VERSION_1 = "v1"  # initial implementation, as per GPL-669
 FILTERED_POSITIVE_VERSION_2 = "v2"  # updated as per GPL-699 and GPL-740
+
+
+def current_filtered_positive_identifier() -> Any:
+    return FilteredPositiveIdentifier()
 
 
 class FilteredPositiveIdentifier:
