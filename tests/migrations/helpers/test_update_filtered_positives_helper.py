@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from crawler.constants import (
@@ -54,14 +54,6 @@ def mock_mongo_client():
 def mock_mongo_collection():
     with patch("migrations.helpers.update_filtered_positives_helper.get_mongo_collection") as mock_collection:
         yield mock_collection
-
-
-@pytest.fixture
-def mock_positive_identifier():
-    with patch("migrations.helpers.update_filtered_positives_helper.FilteredPositiveIdentifier") as mock_identifier:
-        mock_identifier.is_positive.return_value = True
-        mock_identifier.version.return_value = "v2.3"
-        yield mock_identifier
 
 
 # ----- test pending_plate_barcodes_from_dart method -----
@@ -137,12 +129,13 @@ def test_positive_result_samples_from_mongo_returns_expected_samples(config, tes
 # ----- test update_filtered_positive_fields method -----
 
 
-def test_update_filtered_positive_fields_assigns_expected_filtered_positive_fields(
-    mock_positive_identifier,
-):
+def test_update_filtered_positive_fields_assigns_expected_filtered_positive_fields():
     samples = [{}, {}]
     timestamp = datetime.now()
     version = "v2.3"
+    mock_positive_identifier = MagicMock()
+    mock_positive_identifier.is_positive.return_value = True
+    mock_positive_identifier.version.return_value = version
 
     update_filtered_positive_fields(mock_positive_identifier, samples, version, timestamp)
     for sample in samples:
