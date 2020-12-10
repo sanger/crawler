@@ -114,7 +114,6 @@ def test_process_files_one_wrong_format(mongo_database, config, testing_files_fo
     logger = logging.getLogger(__name__)
 
     centre_config = config.CENTRES[2]
-    print(f"centre config: {centre_config}")
     centre_config["sftp_root_read"] = "tmp/files"
     centre = Centre(config, centre_config)
     centre.process_files()
@@ -122,10 +121,6 @@ def test_process_files_one_wrong_format(mongo_database, config, testing_files_fo
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
     samples_history_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES_HISTORY)
-
-    # # We record *all* our samples
-    for s in samples_collection.find():
-        print(f"sample: {s}")
 
     # check that the valid file still gets processed, even though the bad file is in there
     assert samples_collection.count_documents({"RNA ID": "789_A02", "source": "Test Centre"}) == 1
