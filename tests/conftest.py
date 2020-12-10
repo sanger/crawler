@@ -15,6 +15,9 @@ from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
     MLWH_TABLE_NAME,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
+    FIELD_FILTERED_POSITIVE_VERSION,
 )
 from crawler.db import create_mongo_client, create_mysql_connection, get_mongo_collection, get_mongo_db
 from crawler.helpers.general_helpers import get_config
@@ -118,6 +121,49 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
 ]
 
 
+FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
+    {
+        FIELD_COORDINATE: "A01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Positive",
+        FIELD_PLATE_BARCODE: "123",
+        "released": True,
+        FIELD_ROOT_SAMPLE_ID: "MCM001",
+        FIELD_FILTERED_POSITIVE: True,
+        FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
+        FIELD_FILTERED_POSITIVE_VERSION: "v1",
+    },
+    {
+        FIELD_COORDINATE: "B01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Positive",
+        FIELD_PLATE_BARCODE: "123",
+        "released": False,
+        FIELD_ROOT_SAMPLE_ID: "MCM002",
+        FIELD_FILTERED_POSITIVE: True,
+        FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
+        FIELD_FILTERED_POSITIVE_VERSION: "v0",
+    },
+    {
+        FIELD_COORDINATE: "C01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Void",
+        FIELD_PLATE_BARCODE: "123",
+        FIELD_ROOT_SAMPLE_ID: "MCM003",
+        FIELD_FILTERED_POSITIVE: False,
+        FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
+        FIELD_FILTERED_POSITIVE_VERSION: "v0",
+    },
+    {
+        FIELD_COORDINATE: "D01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Void",
+        FIELD_PLATE_BARCODE: "123",
+        FIELD_ROOT_SAMPLE_ID: "MCM003",
+    },
+]
+
+
 @pytest.fixture
 def samples_collection_accessor(mongo_database):
     return get_mongo_collection(mongo_database[1], COLLECTION_SAMPLES)
@@ -136,6 +182,29 @@ def samples_history_collection_accessor(mongo_database):
 @pytest.fixture
 def testing_samples(samples_collection_accessor):
     result = samples_collection_accessor.insert_many(TESTING_SAMPLES)
+    samples = list(samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
+    try:
+        yield samples
+    finally:
+        samples_collection_accessor.delete_many({})
+
+
+@pytest.fixture
+def filtered_positive_testing_samples(samples_collection_accessor):
+    result = samples_collection_accessor.insert_many(FILTERED_POSITIVE_TESTING_SAMPLES)
+    samples = list(samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
+    try:
+        yield samples
+    finally:
+        samples_collection_accessor.delete_many({})
+
+
+@pytest.fixture
+def v1_filtered_positive_testing_samples(samples_collection_accessor):
+    V1_FILTERED_POSITIVE_TESTING_SAMPLES = FILTERED_POSITIVE_TESTING_SAMPLES
+    del V1_FILTERED_POSITIVE_TESTING_SAMPLES[1:3]
+
+    result = samples_collection_accessor.insert_many(V1_FILTERED_POSITIVE_TESTING_SAMPLES)
     samples = list(samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
     try:
         yield samples
