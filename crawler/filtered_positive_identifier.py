@@ -43,7 +43,10 @@ class FilteredPositiveIdentifier(ABC):
         if self.result_regex.match(sample[FIELD_RESULT]) is None:
             return False
 
-        if self.root_sample_id_control_regex and self.root_sample_id_control_regex.match(sample[FIELD_ROOT_SAMPLE_ID]) is not None:
+        if (
+            self.root_sample_id_control_regex
+            and self.root_sample_id_control_regex.match(sample[FIELD_ROOT_SAMPLE_ID]) is not None
+        ):
             return False
 
         if self.evaluate_ct_values:
