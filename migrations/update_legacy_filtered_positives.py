@@ -9,8 +9,9 @@ from migrations.helpers.update_filtered_positives_helper import (
     update_mongo_filtered_positive_fields,
 )
 from migrations.helpers.update_legacy_filtered_positives_helper import (
-    all_mongo_samples,
+    unmigrated_mongo_samples,
     get_cherrypicked_samples,
+    v0_version_set,
 )
 from migrations.helpers.dart_samples_update_helper import extract_required_cp_info
 
@@ -35,11 +36,9 @@ def run(settings_module: str = "") -> None:
 
 
     try:
-        # Get all samples from Mongo
-        logger.info("Selecting all samples from Mongo...")
-
-        # If v0 version has been set on any samples, migration has likely been run before - do not want to run again in this case
+        # If v0 version has been set on any samples, migration has likely been run before - do not want to run in this case
         if v0_version_set(config) is False:
+            logger.info("Selecting unmigrated samples from Mongo...")
             samples = unmigrated_mongo_samples(config)
 
             root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
@@ -61,12 +60,13 @@ def run(settings_module: str = "") -> None:
                 )
 
         else:
-            logger.warning("v0 version has already been set in some Mongo samples. This migration has likely been run before.")
-            raise
+            logger.warning("v0 version has already been set in some Mongo samples - this migration has likely been run before.")
+            raise Exception()
     except Exception as e:
         logger.error("---------- Process aborted: ----------")
         logger.error(f"An exception occurred, at {datetime.now()}")
         logger.exception(e)
+        raise
     finally:
         logger.info(
             f"""
