@@ -10,8 +10,11 @@ from crawler.constants import (
 )
 from crawler.filtered_positive_identifier import (
     current_filtered_positive_identifier,
-    FilteredPositiveIdentifierV2,
+    FILTERED_POSITIVE_VERSION_0,
+    FILTERED_POSITIVE_VERSION_1,
     FILTERED_POSITIVE_VERSION_2,
+    FilteredPositiveIdentifierV0,
+    FilteredPositiveIdentifierV2,
 )
 
 # ----- test helpers -----
@@ -33,6 +36,51 @@ def positive_sample():
 def test_current_filtered_positive_identifier():
     identifier = current_filtered_positive_identifier()
     assert identifier.version() == FILTERED_POSITIVE_VERSION_2
+
+
+# ----- tests for FilteredPositiveIdentifierV0 -----
+
+
+def test_v0_version():
+    identifier = FilteredPositiveIdentifierV0()
+    assert identifier.version() == FILTERED_POSITIVE_VERSION_0
+
+
+def test_v0_is_positive_returns_true_matching_criteria():
+    identifier = FilteredPositiveIdentifierV0()
+
+    # expected positive match
+    sample = positive_sample()
+    assert identifier.is_positive(sample) is True
+
+    # case invariant positive match
+    sample = positive_sample()
+    sample[FIELD_RESULT] = "POSITIVE"
+    assert identifier.is_positive(sample) is True
+
+
+def test_v0_is_positive_returns_false_result_not_positive():
+    identifier = FilteredPositiveIdentifierV0()
+
+    # does not conform to regex
+    sample = positive_sample()
+    sample[FIELD_RESULT] = "  positive"
+    assert identifier.is_positive(sample) is False
+
+    # negative result
+    sample = positive_sample()
+    sample[FIELD_RESULT] = "Negative"
+    assert identifier.is_positive(sample) is False
+
+    # void result
+    sample = positive_sample()
+    sample[FIELD_RESULT] = "Void"
+    assert identifier.is_positive(sample) is False
+
+    # 'limit of detection' result
+    sample = positive_sample()
+    sample[FIELD_RESULT] = LIMIT_OF_DETECTION_RESULT_VALUE
+    assert identifier.is_positive(sample) is False
 
 
 # ----- tests for FilteredPositiveIdentifierV2 -----
@@ -130,7 +178,7 @@ def test_v2_is_positive_returns_false_control_sample():
 
 def test_v2_is_positive_returns_false_all_ct_values_greater_than_30():
     identifier = FilteredPositiveIdentifierV2()
-    
+
     sample = positive_sample()
     sample[FIELD_CH1_CQ] = Decimal128("40.12345678")
     sample[FIELD_CH2_CQ] = Decimal128("41.12345678")

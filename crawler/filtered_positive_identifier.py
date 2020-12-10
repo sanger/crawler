@@ -16,6 +16,7 @@ from crawler.types import Sample
 
 
 # record/reference all versions and definitions here
+FILTERED_POSITIVE_VERSION_0 = "v0"  # pre-filtered_positive definitions
 FILTERED_POSITIVE_VERSION_1 = "v1"  # initial implementation, as per GPL-669
 FILTERED_POSITIVE_VERSION_2 = "v2"  # updated as per GPL-699 and GPL-740
 
@@ -26,6 +27,24 @@ class FilteredPositiveIdentifier:
 
 def current_filtered_positive_identifier() -> FilteredPositiveIdentifier:
     return FilteredPositiveIdentifierV2()
+
+
+class FilteredPositiveIdentifierV0(FilteredPositiveIdentifier):
+    result_regex = re.compile(f"^{POSITIVE_RESULT_VALUE}", re.IGNORECASE)
+
+    def version(self) -> str:
+        return FILTERED_POSITIVE_VERSION_0
+
+    def is_positive(self, sample: Sample) -> bool:
+        """Determines whether a sample is a filtered positive.
+
+        Arguments:
+            sample {Sample} -- information on a single sample
+
+        Returns:
+            {bool} -- whether the sample is a filtered positive
+        """
+        return self.result_regex.match(sample[FIELD_RESULT]) is not None
 
 
 class FilteredPositiveIdentifierV2(FilteredPositiveIdentifier):
