@@ -104,6 +104,14 @@ in the below relevant section.
 The implementation of the current version can be found in [FilteredPositiveIdentifier](./crawler/filtered_positive_identifier.py),
 with the implementation of previous versions (if any) in the git history.
 
+#### Version 0 `v0`
+
+A sample is filtered positive if:
+
+* it has a positive RESULT
+
+This is the pre-"fit-to-pick" implementation, without any extra filtering on top of the RESULT=Positive requirement.
+
 #### Version 1 `v1`
 
 A sample is filtered positive if:
