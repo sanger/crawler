@@ -36,7 +36,7 @@ def positive_sample():
 
 def test_current_filtered_positive_identifier():
     identifier = current_filtered_positive_identifier()
-    assert identifier.version() == FILTERED_POSITIVE_VERSION_2
+    assert identifier.version == FILTERED_POSITIVE_VERSION_2
 
 
 # ----- tests for FilteredPositiveIdentifierV0 -----
@@ -44,7 +44,7 @@ def test_current_filtered_positive_identifier():
 
 def test_v0_version():
     identifier = FilteredPositiveIdentifierV0()
-    assert identifier.version() == FILTERED_POSITIVE_VERSION_0
+    assert identifier.version == FILTERED_POSITIVE_VERSION_0
 
 
 def test_v0_is_positive_returns_true_matching_criteria():
@@ -89,7 +89,7 @@ def test_v0_is_positive_returns_false_result_not_positive():
 
 def test_v1_version():
     identifier = FilteredPositiveIdentifierV1()
-    assert identifier.version() == FILTERED_POSITIVE_VERSION_1
+    assert identifier.version == FILTERED_POSITIVE_VERSION_1
 
 
 def test_v1_is_positive_returns_true_matching_criteria():
@@ -179,7 +179,7 @@ def test_v1_is_positive_returns_false_all_ct_values_greater_than_30():
 
 def test_v2_version():
     identifier = FilteredPositiveIdentifierV2()
-    assert identifier.version() == FILTERED_POSITIVE_VERSION_2
+    assert identifier.version == FILTERED_POSITIVE_VERSION_2
 
 
 def test_v2_is_positive_returns_true_matching_criteria():

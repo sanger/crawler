@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractproperty
 import decimal
 import re
 
@@ -23,13 +23,49 @@ FILTERED_POSITIVE_VERSION_2 = "v2"  # updated as per GPL-699 and GPL-740
 
 
 class FilteredPositiveIdentifier(ABC):
-    @abstractmethod
-    def version(self) -> str:
-        pass
+    def __init__(self):
+        self.version = None
+        self.ct_value_limit = decimal.Decimal(30)
+        self.d128_context = create_decimal128_context()
+        self.result_regex = None
+        self.root_sample_id_control_regex = None
+        self.evaluate_ct_values = False
 
-    @abstractmethod
     def is_positive(self, sample: Sample) -> bool:
-        pass
+        """Determines whether a sample is a filtered positive.
+
+        Arguments:
+            sample {Sample} -- information on a single sample
+
+        Returns:
+            {bool} -- whether the sample is a filtered positive
+        """
+        if self.result_regex.match(sample[FIELD_RESULT]) is None:
+            return False
+
+        if self.root_sample_id_control_regex and self.root_sample_id_control_regex.match(sample[FIELD_ROOT_SAMPLE_ID]) is not None:
+            return False
+
+        if self.evaluate_ct_values:
+            ch1_cq = sample.get(FIELD_CH1_CQ)
+            ch2_cq = sample.get(FIELD_CH2_CQ)
+            ch3_cq = sample.get(FIELD_CH3_CQ)
+
+            if ch1_cq is None and ch2_cq is None and ch3_cq is None:
+                return True
+
+            with decimal.localcontext(self.d128_context):
+                # type check before attempting to convert to decimal
+                if ch1_cq is not None and ch1_cq.to_decimal() <= self.ct_value_limit:
+                    return True
+                elif ch2_cq is not None and ch2_cq.to_decimal() <= self.ct_value_limit:
+                    return True
+                elif ch3_cq is not None and ch3_cq.to_decimal() <= self.ct_value_limit:
+                    return True
+                else:
+                    return False
+        else:
+            return True
 
 
 def current_filtered_positive_identifier() -> FilteredPositiveIdentifier:
@@ -37,104 +73,25 @@ def current_filtered_positive_identifier() -> FilteredPositiveIdentifier:
 
 
 class FilteredPositiveIdentifierV0(FilteredPositiveIdentifier):
-    result_regex = re.compile(f"^{POSITIVE_RESULT_VALUE}", re.IGNORECASE)
-
-    def version(self) -> str:
-        return FILTERED_POSITIVE_VERSION_0
-
-    def is_positive(self, sample: Sample) -> bool:
-        """Determines whether a sample is a filtered positive.
-
-        Arguments:
-            sample {Sample} -- information on a single sample
-
-        Returns:
-            {bool} -- whether the sample is a filtered positive
-        """
-        return self.result_regex.match(sample[FIELD_RESULT]) is not None
+    def __init__(self):
+        super(FilteredPositiveIdentifierV0, self).__init__()
+        self.version = FILTERED_POSITIVE_VERSION_0
+        self.result_regex = re.compile(f"^{POSITIVE_RESULT_VALUE}", re.IGNORECASE)
 
 
 class FilteredPositiveIdentifierV1(FilteredPositiveIdentifier):
-    result_regex = re.compile(f"^{POSITIVE_RESULT_VALUE}", re.IGNORECASE)
-    root_sample_id_control_regex = re.compile("^CBIQA_")
-    ct_value_limit = decimal.Decimal(30)
-    d128_context = create_decimal128_context()
-
-    def version(self) -> str:
-        return FILTERED_POSITIVE_VERSION_1
-
-    def is_positive(self, sample: Sample) -> bool:
-        """Determines whether a sample is a filtered positive.
-
-        Arguments:
-            sample {Sample} -- information on a single sample
-
-        Returns:
-            {bool} -- whether the sample is a filtered positive
-        """
-        if self.result_regex.match(sample[FIELD_RESULT]) is None:
-            return False
-
-        if self.root_sample_id_control_regex.match(sample[FIELD_ROOT_SAMPLE_ID]) is not None:
-            return False
-
-        ch1_cq = sample.get(FIELD_CH1_CQ)
-        ch2_cq = sample.get(FIELD_CH2_CQ)
-        ch3_cq = sample.get(FIELD_CH3_CQ)
-
-        if ch1_cq is None and ch2_cq is None and ch3_cq is None:
-            return True
-
-        with decimal.localcontext(self.d128_context):
-            # type check before attempting to convert to decimal
-            if ch1_cq is not None and ch1_cq.to_decimal() <= self.ct_value_limit:
-                return True
-            elif ch2_cq is not None and ch2_cq.to_decimal() <= self.ct_value_limit:
-                return True
-            elif ch3_cq is not None and ch3_cq.to_decimal() <= self.ct_value_limit:
-                return True
-            else:
-                return False
+    def __init__(self):
+        super(FilteredPositiveIdentifierV1, self).__init__()
+        self.version = FILTERED_POSITIVE_VERSION_1
+        self.result_regex = re.compile(f"^{POSITIVE_RESULT_VALUE}", re.IGNORECASE)
+        self.root_sample_id_control_regex = re.compile("^CBIQA_")
+        self.evaluate_ct_values = True
 
 
 class FilteredPositiveIdentifierV2(FilteredPositiveIdentifier):
-    result_regex = re.compile(f"^(?:{POSITIVE_RESULT_VALUE}|{LIMIT_OF_DETECTION_RESULT_VALUE})", re.IGNORECASE)
-    root_sample_id_control_regex = re.compile("^(?:CBIQA_|QC0|ZZA000)")
-    ct_value_limit = decimal.Decimal(30)
-    d128_context = create_decimal128_context()
-
-    def version(self) -> str:
-        return FILTERED_POSITIVE_VERSION_2
-
-    def is_positive(self, sample: Sample) -> bool:
-        """Determines whether a sample is a filtered positive.
-
-        Arguments:
-            sample {Sample} -- information on a single sample
-
-        Returns:
-            {bool} -- whether the sample is a filtered positive
-        """
-        if self.result_regex.match(sample[FIELD_RESULT]) is None:
-            return False
-
-        if self.root_sample_id_control_regex.match(sample[FIELD_ROOT_SAMPLE_ID]) is not None:
-            return False
-
-        ch1_cq = sample.get(FIELD_CH1_CQ)
-        ch2_cq = sample.get(FIELD_CH2_CQ)
-        ch3_cq = sample.get(FIELD_CH3_CQ)
-
-        if ch1_cq is None and ch2_cq is None and ch3_cq is None:
-            return True
-
-        with decimal.localcontext(self.d128_context):
-            # type check before attempting to convert to decimal
-            if ch1_cq is not None and ch1_cq.to_decimal() <= self.ct_value_limit:
-                return True
-            elif ch2_cq is not None and ch2_cq.to_decimal() <= self.ct_value_limit:
-                return True
-            elif ch3_cq is not None and ch3_cq.to_decimal() <= self.ct_value_limit:
-                return True
-            else:
-                return False
+    def __init__(self):
+        super(FilteredPositiveIdentifierV2, self).__init__()
+        self.version = FILTERED_POSITIVE_VERSION_2
+        self.result_regex = re.compile(f"^(?:{POSITIVE_RESULT_VALUE}|{LIMIT_OF_DETECTION_RESULT_VALUE})", re.IGNORECASE)
+        self.root_sample_id_control_regex = re.compile("^(?:CBIQA_|QC0|ZZA000)")
+        self.evaluate_ct_values = True
