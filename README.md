@@ -127,7 +127,7 @@ Confluence page.
 
 A sample is filtered positive if:
 
-* it has a 'Positive' or 'limit of detection' RESULT
+* it has a 'Positive'
 * it is not a control (ROOT_SAMPLE_ID does not start with 'CBIQA_', 'QC0', or 'ZZA000')
 * all of CH1_CQ, CH2_CQ and CH3_CQ are `None`, or one of these is less than or equal to 30
 
