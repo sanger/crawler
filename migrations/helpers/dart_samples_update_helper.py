@@ -202,7 +202,6 @@ def get_positive_samples(
             # 1. First filter by the start and end dates
             FIELD_CREATED_AT: {"$gte": start_datetime, "$lte": end_datetime},
             FIELD_RESULT: {"$regex": "^positive", "$options": "i"},
-            FIELD_ROOT_SAMPLE_ID: {"$not": {"$regex": "^CBIQA_"}},
         }
     }
 

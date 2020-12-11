@@ -112,7 +112,7 @@ def test_mongo_aggregate(mongo_database):
     assert mongo_db.samples.count_documents({}) == 8
 
     # although 6 samples would be created, test that we are selecting only a subset using dates
-    assert len(get_positive_samples(mongo_db.samples, start_datetime, (start_datetime + timedelta(days=2)))) == 3
+    assert len(get_positive_samples(mongo_db.samples, start_datetime, (start_datetime + timedelta(days=2)))) == 4
 
 
 def test_add_sample_uuid_field():
