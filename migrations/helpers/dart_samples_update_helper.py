@@ -32,7 +32,7 @@ from crawler.db import (
     get_mongo_db,
     run_mysql_executemany_query,
 )
-from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
+from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.general_helpers import map_mongo_doc_to_sql_columns
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from crawler.types import Sample, SourcePlate
@@ -121,8 +121,8 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
             logger.info(f"{len(samples)} samples between these timestamps and not cherry-picked")
 
             # 3. add the relevant filtered positive fields if not present
-            filtered_positive_identifier = FilteredPositiveIdentifier()
-            version = filtered_positive_identifier.current_version()
+            filtered_positive_identifier = current_filtered_positive_identifier()
+            version = filtered_positive_identifier.version
             update_timestamp = datetime.now()
 
             """

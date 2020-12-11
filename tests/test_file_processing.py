@@ -80,7 +80,7 @@ from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFil
 def centre_file_with_mocked_filtered_postitive_identifier(config, file_name):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile(file_name, centre)
-    centre_file.filtered_positive_identifier.current_version = MagicMock(return_value="v2.3")
+    centre_file.filtered_positive_identifier.version = "v2.3"
     centre_file.filtered_positive_identifier.is_positive = MagicMock(return_value=True)
     return centre_file
 
@@ -561,6 +561,9 @@ def test_parse_and_format_file_rows_to_add_file_details(config):
                     "updated_at": timestamp,
                     "Result": "Negative",
                     "Lab ID": None,
+                    "filtered_positive": True,
+                    "filtered_positive_version": "v2.3",
+                    "filtered_positive_timestamp": timestamp,
                     "lh_sample_uuid": str(test_uuid),
                 },
             ]

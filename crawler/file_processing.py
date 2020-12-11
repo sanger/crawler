@@ -76,7 +76,7 @@ from crawler.db import (
     run_mysql_executemany_query,
     set_dart_well_properties,
 )
-from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
+from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.general_helpers import (
     current_time,
     get_dart_well_index,
@@ -254,7 +254,7 @@ class CentreFile:
         FIELD_CH4_CQ,
     }
 
-    filtered_positive_identifier = FilteredPositiveIdentifier()
+    filtered_positive_identifier = current_filtered_positive_identifier()
 
     def __init__(self, file_name, centre):
         """Initialiser for the class representing the file
@@ -1005,10 +1005,9 @@ class CentreFile:
         modified_row[FIELD_UPDATED_AT] = import_timestamp
 
         # filtered-positive calculations
-        if modified_row[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
-            modified_row[FIELD_FILTERED_POSITIVE] = self.filtered_positive_identifier.is_positive(modified_row)
-            modified_row[FIELD_FILTERED_POSITIVE_VERSION] = self.filtered_positive_identifier.current_version()
-            modified_row[FIELD_FILTERED_POSITIVE_TIMESTAMP] = import_timestamp
+        modified_row[FIELD_FILTERED_POSITIVE] = self.filtered_positive_identifier.is_positive(modified_row)
+        modified_row[FIELD_FILTERED_POSITIVE_VERSION] = self.filtered_positive_identifier.version
+        modified_row[FIELD_FILTERED_POSITIVE_TIMESTAMP] = import_timestamp
 
         # add lh sample uuid
         modified_row[FIELD_LH_SAMPLE_UUID] = str(uuid.uuid4())
