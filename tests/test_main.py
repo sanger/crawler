@@ -212,7 +212,7 @@ def test_error_run_duplicates_plate_barcodes_from_different_labs_message(
 
     # Fetch the imports collection, expect it to contain the additional duplicate error file record
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
-    assert imports_collection.count_documents({}) == 8
+    assert imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED + 1
 
     # Fetch the Test centre record
     test_centre_imports = imports_collection.find_one({"centre_name": "Test Centre"})
