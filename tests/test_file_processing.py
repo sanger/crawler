@@ -10,6 +10,7 @@ from bson.decimal128 import Decimal128  # type: ignore
 from bson.objectid import ObjectId
 from crawler.constants import (
     COLLECTION_SAMPLES,
+    COLLECTION_IMPORTS,
     COLLECTION_SOURCE_PLATES,
     DART_STATE_PENDING,
     FIELD_BARCODE,
@@ -140,6 +141,28 @@ def test_process_files_dont_add_to_dart_mlwh_failed(
 
         # assert no attempt was made to connect
         pyodbc_conn.assert_not_called()
+
+
+def test_process_files_one_wrong_format(mongo_database, config, testing_files_for_process, testing_centres):
+    # Test using files in the files/TEST directory
+    # They include a rogue xlsx file dressed as csv file
+
+    _, mongo_database = mongo_database
+
+    centre_config = config.CENTRES[2]
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+    centre.process_files(False)
+
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+
+    # check that the valid file still gets processed, even though the bad file is in there
+    assert samples_collection.count_documents({"RNA ID": "TS789_A02", "source": "Test Centre"}) == 1
+
+    assert imports_collection.count_documents({"csv_file_used": "TEST_sanger_report_200518_2207.csv"}) == 1
+    for i in imports_collection.find({"csv_file_used": "TEST_sanger_report_200518_2207.csv"}):
+        assert "CRITICAL: File is unexpected type and cannot be processed. (TYPE 10)" in i["errors"]
 
 
 # ----- tests for class CentreFile -----
