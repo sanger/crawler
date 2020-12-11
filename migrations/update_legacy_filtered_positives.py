@@ -48,7 +48,7 @@ def run(settings_module: str = "") -> None:
 
             cp_samples_df = get_v0_cherrypicked_samples(config, list(root_sample_ids), list(plate_barcodes))
 
-            v0_cherrypicked_samples, unmigrated_samples = split_samples_on_version()
+            v0_cherrypicked_samples, unmigrated_samples = split_v0_cherrypicked_mongo_samples(samples, cp_samples_df)
 
             filtered_positive_identifier = FilteredPositiveIdentifier()
             version = filtered_positive_identifier.current_version()

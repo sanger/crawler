@@ -169,6 +169,31 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
 ]
 
 
+UNMIGRATED_MONGO_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
+    {
+        FIELD_COORDINATE: "D01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Void",
+        FIELD_PLATE_BARCODE: "123",
+        FIELD_ROOT_SAMPLE_ID: "MCM004",
+    },
+    {
+        FIELD_COORDINATE: "E01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Void",
+        FIELD_PLATE_BARCODE: "456",
+        FIELD_ROOT_SAMPLE_ID: "MCM005",
+    },
+    {
+        FIELD_COORDINATE: "E01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Void",
+        FIELD_PLATE_BARCODE: "456",
+        FIELD_ROOT_SAMPLE_ID: "MCM006",
+    },
+]
+
+
 EVENT_WH_DATA: Dict[str, Any] = {
     "subjects": [
         {"id": 1, "uuid": "1".encode("utf-8"), "friendly_name": "ss1", "subject_type_id": 1},

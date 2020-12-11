@@ -5,6 +5,7 @@ from migrations.helpers.update_legacy_filtered_positives_helper import (
     v0_version_set,
     unmigrated_mongo_samples,
     get_v0_cherrypicked_samples,
+    split_v0_cherrypicked_mongo_samples,
 )
 
 from crawler.constants import (
@@ -40,7 +41,7 @@ def test_get_v0_cherrypicked_samples_returns_expected(
 ):
     # root_4 does not exist in MLWH
     root_sample_ids = ["root_1", "root_2", "root_3", "root_4"]
-    plate_barcodes = ["pb_1", "pb_2", "pb_3", "root_4"]
+    plate_barcodes = ["pb_1", "pb_2", "pb_3", "pb_4"]
 
     expected_rows = [["root_1", "pb_1", "positive", "A1"], ["root_2", "pb_2", "positive", "A1"]]
     expected_columns = [FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE, "Result_lower", FIELD_COORDINATE]
@@ -48,3 +49,17 @@ def test_get_v0_cherrypicked_samples_returns_expected(
 
     returned_samples = get_v0_cherrypicked_samples(config, root_sample_ids, plate_barcodes)
     pd.testing.assert_frame_equal(expected, returned_samples)
+
+
+def test_split_v0_cherrypicked_mongo_samples(unmigrated_mongo_testing_samples):
+    rows = [["MCM005", "456", "positive", "E01"], ["MCM006", "456", "positive", "E01"]]
+    columns = [FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE, "Result_lower", FIELD_COORDINATE]
+    v0_cherrypicked_samples = pd.DataFrame(np.array(expected_rows), columns=expected_columns, index=[0, 1])
+
+    expected_v0_unmigrated_samples = unmigrated_mongo_testing_samples[1:]
+    expected_v1_unmigrated_samples = unmigrated_mongo_testing_samples[:1]
+
+    returned_v0_unmigrated_samples, returned_v1_unmigrated_samples = split_v0_cherrypicked_mongo_samples(unmigrated_mongo_testing_samples, v0_cherrypicked_samples)
+
+    assert expected_v0_unmigrated_samples == returned_v0_unmigrated_samples
+    assert expected_v1_unmigrated_samples == returned_v1_unmigrated_samples

@@ -180,3 +180,17 @@ def v0_version_set(config: ModuleType):
             return True
         else:
             return False
+
+
+def split_v0_cherrypicked_mongo_samples(samples: List[Sample], cp_samples_df: DataFrame):
+    """Split the Mongo samples dataframe based on the v0 cherrypicked samples. Samples
+       which have been v0 cherrypicked need to have the v0 filtered postive rules
+       applied. The remaining samples need the v1 rule applied.
+    
+    Args:
+        samples {List[Sample]} -- List of samples from Mongo
+
+    Returns:
+        v0_unmigrated_samples {DataFrame} -- Mongo samples to be updated with v0 rules
+        v1_unmigrated_samples {DataFrame} -- Mongo samples to be updated with v1 rules
+    """
