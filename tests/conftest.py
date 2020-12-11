@@ -173,10 +173,12 @@ EVENT_WH_DATA: Dict[str, Any] = {
     "subjects": [
         {"id": 1, "uuid": "1".encode("utf-8"), "friendly_name": "ss1", "subject_type_id": 1},
         {"id": 2, "uuid": "2".encode("utf-8"), "friendly_name": "ss2", "subject_type_id": 1},
+        {"id": 3, "uuid": "3".encode("utf-8"), "friendly_name": "ss3", "subject_type_id": 1},
     ],
     "roles": [
         {"id": 1, "event_id": 1, "subject_id": 1, "role_type_id": 1},
         {"id": 2, "event_id": 2, "subject_id": 2, "role_type_id": 1},
+        {"id": 3, "event_id": 3, "subject_id": 3, "role_type_id": 1},
     ],
     "events": [
         {
@@ -218,6 +220,10 @@ EVENT_WH_DATA: Dict[str, Any] = {
 }
 
 
+def to_datetime(date_string):
+    return datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S')
+
+
 MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
     "sample": [
         {
@@ -230,7 +236,7 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": to_datetime(V0_V1_CUTOFF_DATE), # Created at cut-off time
+            "created": str(to_datetime(V0_V1_CUTOFF_DATE)), # Created at cut-off time
         },
         {
             "id_sample_tmp": "2",
@@ -242,19 +248,19 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": to_datetime(V0_V1_CUTOFF_DATE) - timedelta(days=1), # Created before cut-off time
+            "created": str(to_datetime(V0_V1_CUTOFF_DATE) - timedelta(days=1)), # Created before cut-off time
         },
         {
             "id_sample_tmp": "3",
             "id_sample_lims": "3",
-            "description": "root_1",
+            "description": "root_3",
             "supplier_name": "cog_uk_id_3",
             "phenotype": "positive",
             "sanger_sample_id": "ss3",
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": to_datetime(V0_V1_CUTOFF_DATE) + timedelta(days=1), # Created before cut-off time,
+            "created": str(to_datetime(V0_V1_CUTOFF_DATE) + timedelta(days=1)), # Created before cut-off time,
         },
     ],
     "stock_resource": [
@@ -312,8 +318,6 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
     ],
 }
 
-def to_datetime(date_string)
-    datetime_object = datetime.strptime('Jun 1 2005  1:33PM', '%b %d %Y %I:%M%p')
 
 @pytest.fixture
 def samples_collection_accessor(mongo_database):

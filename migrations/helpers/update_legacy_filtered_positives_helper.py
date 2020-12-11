@@ -1,6 +1,8 @@
 from types import ModuleType
 from typing import List, Optional, Set, Tuple
 from pandas import DataFrame
+import pandas as pd
+import sqlalchemy  # type: ignore
 from crawler.types import Sample
 from crawler.constants import (
     COLLECTION_SAMPLES,
@@ -8,6 +10,9 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
     V0_V1_CUTOFF_DATE,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_COORDINATE,
 )
 from crawler.db import (
     create_mongo_client,
@@ -114,7 +119,7 @@ def get_v0_cherrypicked_samples(
                 f" JOIN {events_wh_db}.events mlwh_events_events ON (mlwh_events_roles.event_id = mlwh_events_events.id)"  # noqa: E501
                 f" JOIN {events_wh_db}.event_types mlwh_events_event_types ON (mlwh_events_events.event_type_id = mlwh_events_event_types.id)"  # noqa: E501
                 f" WHERE mlwh_sample.description IN %(root_sample_ids)s"
-                f" WHERE mlwh_sample.created <= {V0_V1_CUTOFF_DATE}"
+                f" AND mlwh_sample.created <= '{V0_V1_CUTOFF_DATE}'"
                 f" AND mlwh_stock_resource.labware_human_barcode IN %(plate_barcodes)s"
                 " AND mlwh_events_event_types.key = 'cherrypick_layout_set'"
                 " GROUP BY mlwh_sample.description, mlwh_stock_resource.labware_human_barcode, mlwh_sample.phenotype, mlwh_stock_resource.labware_coordinate"  # noqa: E501
