@@ -731,7 +731,7 @@ class CentreFile:
                     documents = self.parse_and_format_file_rows(csvreader)
 
                     return documents
-            except csv.Error:
+            except (csv.Error, UnicodeDecodeError):
                 self.logging_collection.add_error("TYPE 10", "Wrong read from file")
 
         return []
