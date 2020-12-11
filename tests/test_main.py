@@ -52,9 +52,6 @@ def test_run(mongo_database, testing_files_for_process):
     assert samples_collection.count_documents({"RNA ID": "123_B09", "source": "Alderley"}) == 1
     assert samples_collection.count_documents({"RNA ID": "123_H09", "source": "UK Biocentre"}) == 1
 
-    for i in imports_collection.find():
-        print(f"import: {i}")
-
     # We get one import per centre
     assert (
         imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED
