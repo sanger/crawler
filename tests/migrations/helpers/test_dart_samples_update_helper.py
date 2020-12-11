@@ -230,14 +230,28 @@ def test_migrate_all_dbs_returns_early_start_datetime_after_end_datetime(
     mock_update_dart.assert_not_called()
 
 
-def test_migrate_all_dbs_return_early_no_samples(config, mock_mongo_client, mock_mysql_connection, mock_update_dart):
-    start_datetime = "201016_1600"
-    end_datetime = "201017_1200"
-    with patch("migrations.helpers.dart_samples_update_helper.get_positive_samples", side_effect=[]):
-        migrate_all_dbs(config, start_datetime, end_datetime)
+def test_migrate_all_dbs_return_early_no_samples(config, mock_mysql_connection, mock_update_dart):
+    start_datetime = datetime(year=2020, month=5, day=10, hour=15, minute=10)
+    end_datetime = start_datetime + timedelta(days=1)
 
-        # ensure only mongo connections/updates are made
-        mock_mongo_client.assert_called()
+    mock_samples_collection = MagicMock()
+    mock_samples_collection.aggregate.retutn_value = []  # mock samples collection call
+    mock_source_plates_collection = MagicMock()
+
+    def side_effect(_, collection_name):
+        if collection_name == COLLECTION_SAMPLES:
+            return mock_samples_collection
+        elif collection_name == COLLECTION_SOURCE_PLATES:
+            return mock_source_plates_collection
+        else:
+            raise ValueError(f"{collection_name} is not recognised/expected")
+
+    with patch("migrations.helpers.dart_samples_update_helper.get_mongo_collection", side_effect=side_effect):
+        migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))
+
+        # ensure no updates are made
+        mock_samples_collection.bulk_write.assert_not_called()
+        mock_source_plates_collection.insert_many.assert_not_called()
         mock_mysql_connection.assert_not_called()
         mock_update_dart.assert_not_called()
 
