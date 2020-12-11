@@ -79,7 +79,6 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
 
     try:
         mongo_docs_for_sql = []
-        number_docs_found = 0
 
         # open connection to mongo
         with create_mongo_client(config) as client:
@@ -128,25 +127,21 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
             _ = update_mongo_fields(mongo_db, samples)
             logger.info("Finished updating Mongo")
 
-        # 5. update the MLWH (should be an idempotent operation)
         # convert mongo field values into MySQL format
         for sample in samples:
             mongo_docs_for_sql.append(map_mongo_doc_to_sql_columns(sample))
 
-        if number_docs_found > 0:
-            logger.info(f"Updating MLWH database for {len(mongo_docs_for_sql)} sample documents")
+        if (num_sql_docs := len(mongo_docs_for_sql)) > 0:
+            logger.info(f"Updating MLWH database for {num_sql_docs} sample documents")
             # create connection to the MLWH database
             with create_mysql_connection(config, False) as mlwh_conn:
-
-                # TODO: make sure DART is not updated if this fails (https://github.com/sanger/crawler/issues/162)
-                # execute SQL query to update filtered positive and UUID fields, it does this using the insert
-                #   and performs an update when a duplicate key is found
+                # 5. update the MLWH (should be an idempotent operation)
                 run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
+                
+            # 6. add all the plates of the positive samples we've selected in step 1 above, to DART
+            update_dart_fields(config, samples)
         else:
-            logger.info("No documents found for this timestamp range, nothing to insert or update in MLWH")
-
-        # 6. add all the plates of the positive samples we've selected in step 1 above, to DART
-        update_dart_fields(config, samples)
+            logger.info("No documents found for this timestamp range, nothing to insert or update in MLWH or DART")
     except Exception as e:
         logger.error("Error while attempting to migrate all DBs")
         logger.exception(e)

@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timedelta
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pandas as pd
 import pytest
@@ -29,7 +29,7 @@ from migrations.helpers.dart_samples_update_helper import (
     update_mongo_fields,
 )
 
-# ----- update_dart tests -----
+# ----- test helpers -----
 
 
 @pytest.fixture
@@ -48,9 +48,6 @@ def mock_mysql_connection():
 def mock_update_dart():
     with patch("migrations.helpers.dart_samples_update_helper.update_dart_fields") as mock_update:
         yield mock_update
-
-
-# ----- other tests -----
 
 
 def generate_example_samples(range, start_datetime):
@@ -98,6 +95,9 @@ def generate_example_samples(range, start_datetime):
         }
     )
     return samples
+
+
+# ----- other tests -----
 
 
 def test_mongo_aggregate(mongo_database):
@@ -183,6 +183,9 @@ def test_update_mongo_fields(mongo_database):
 
 
 # ----- migrate_all_dbs tests -----
+
+
+# TODO - mock out the event warehouse, and add end-to-end tests for the `migrate_all_dbs` method
 
 
 def test_migrate_all_dbs_returns_early_invalid_start_datetime(
@@ -315,3 +318,39 @@ def test_migrate_all_dbs_remove_cherrypicked_samples(config, mongo_database, moc
         migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))
 
         mock_remove_cherrypicked_samples.assert_not_called()
+
+
+def test_migrate_all_dbs_returns_early_failed_mongo_update(config, mock_mysql_connection, mock_update_dart):
+    start_datetime = datetime(year=2020, month=5, day=10, hour=15, minute=10)
+    end_datetime = start_datetime + timedelta(days=1)
+    test_samples = generate_example_samples(range(0, 6), start_datetime)
+
+    with patch("migrations.helpers.dart_samples_update_helper.get_mongo_collection") as mock_get_mongo_collection:
+        collection = MagicMock()
+        collection.find_one.return_value = None  # mock source plates collection call
+        collection.aggregate.return_value = test_samples  # mock samples collection call
+        collection.bulk_write.side_effect = Exception("Boom!")  # mock samples collection bulk write
+        mock_get_mongo_collection.return_value = collection
+
+        migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))
+
+        mock_mysql_connection.assert_not_called()
+        mock_update_dart.assert_not_called()
+
+
+def test_migrate_all_dbs_returns_early_failed_mlwh_update(config, mock_mysql_connection, mock_update_dart):
+    start_datetime = datetime(year=2020, month=5, day=10, hour=15, minute=10)
+    end_datetime = start_datetime + timedelta(days=1)
+    test_samples = generate_example_samples(range(0, 6), start_datetime)
+
+    with patch("migrations.helpers.dart_samples_update_helper.get_mongo_collection") as mock_get_mongo_collection:
+        collection = MagicMock()
+        collection.find_one.return_value = None  # mock source plates collection call
+        collection.aggregate.return_value = test_samples  # mock samples collection call
+        mock_get_mongo_collection.return_value = collection
+
+        mock_mysql_connection.side_effect = Exception("Boom!")  # mock creating MLWH mysql connection to fail
+
+        migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))
+
+        mock_update_dart.assert_not_called()
