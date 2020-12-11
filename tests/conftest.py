@@ -6,6 +6,7 @@ from unittest.mock import patch
 import sqlalchemy  # type: ignore
 from sqlalchemy.engine.base import Engine  # type: ignore
 from sqlalchemy import MetaData  # type: ignore
+from datetime import datetime, timedelta
 
 import pytest
 from crawler.constants import (
@@ -21,6 +22,7 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
     FIELD_FILTERED_POSITIVE_VERSION,
+    V0_V1_CUTOFF_DATE,
 )
 from crawler.db import create_mongo_client, create_mysql_connection, get_mongo_collection, get_mongo_db
 from crawler.helpers.general_helpers import get_config
@@ -215,6 +217,104 @@ EVENT_WH_DATA: Dict[str, Any] = {
     "role_types": [{"id": 1, "key": "sample", "description": "stuff"}],
 }
 
+
+MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
+    "sample": [
+        {
+            "id_sample_tmp": "1",
+            "id_sample_lims": "1",
+            "description": "root_1",
+            "supplier_name": "cog_uk_id_1",
+            "phenotype": "positive",
+            "sanger_sample_id": "ss1",
+            "id_lims": "SQSCP",
+            "last_updated": "2015-11-25 11:35:30",
+            "recorded_at": "2015-11-25 11:35:30",
+            "created": to_datetime(V0_V1_CUTOFF_DATE), # Created at cut-off time
+        },
+        {
+            "id_sample_tmp": "2",
+            "id_sample_lims": "2",
+            "description": "root_2",
+            "supplier_name": "cog_uk_id_2",
+            "phenotype": "positive",
+            "sanger_sample_id": "ss2",
+            "id_lims": "SQSCP",
+            "last_updated": "2015-11-25 11:35:30",
+            "recorded_at": "2015-11-25 11:35:30",
+            "created": to_datetime(V0_V1_CUTOFF_DATE) - timedelta(days=1), # Created before cut-off time
+        },
+        {
+            "id_sample_tmp": "3",
+            "id_sample_lims": "3",
+            "description": "root_1",
+            "supplier_name": "cog_uk_id_3",
+            "phenotype": "positive",
+            "sanger_sample_id": "ss3",
+            "id_lims": "SQSCP",
+            "last_updated": "2015-11-25 11:35:30",
+            "recorded_at": "2015-11-25 11:35:30",
+            "created": to_datetime(V0_V1_CUTOFF_DATE) + timedelta(days=1), # Created before cut-off time,
+        },
+    ],
+    "stock_resource": [
+        {
+            "id_stock_resource_tmp": "1",
+            "id_sample_tmp": "1",
+            "labware_human_barcode": "pb_1",
+            "labware_machine_barcode": "pb_1",
+            "labware_coordinate": "A1",
+            "last_updated": "2015-11-25 11:35:30",
+            "recorded_at": "2015-11-25 11:35:30",
+            "created": "2015-11-25 11:35:30",
+            "id_study_tmp": "1",
+            "id_lims": "SQSCP",
+            "id_stock_resource_lims": "1",
+            "labware_type": "well",
+        },
+        {
+            "id_stock_resource_tmp": "2",
+            "id_sample_tmp": "2",
+            "labware_human_barcode": "pb_2",
+            "labware_machine_barcode": "pb_2",
+            "labware_coordinate": "A1",
+            "last_updated": "2015-11-25 11:35:30",
+            "recorded_at": "2015-11-25 11:35:30",
+            "created": "2015-11-25 11:35:30",
+            "id_study_tmp": "1",
+            "id_lims": "SQSCP",
+            "id_stock_resource_lims": "2",
+            "labware_type": "well",
+        },
+        {
+            "id_stock_resource_tmp": "3",
+            "id_sample_tmp": "3",
+            "labware_human_barcode": "pb_3",
+            "labware_machine_barcode": "pb_3",
+            "labware_coordinate": "A1",
+            "last_updated": "2015-11-25 11:35:30",
+            "recorded_at": "2015-11-25 11:35:30",
+            "created": "2015-11-25 11:35:30",
+            "id_study_tmp": "1",
+            "id_lims": "SQSCP",
+            "id_stock_resource_lims": "3",
+            "labware_type": "well",
+        },
+    ],
+    "study": [
+        {
+            "id_study_tmp": "1",
+            "last_updated": "2015-11-25 11:35:30",
+            "recorded_at": "2015-11-25 11:35:30",
+            "id_study_lims": "1",
+            "id_lims": "SQSCP",
+        }
+    ],
+}
+
+def to_datetime(date_string)
+    datetime_object = datetime.strptime('Jun 1 2005  1:33PM', '%b %d %Y %I:%M%p')
+
 @pytest.fixture
 def samples_collection_accessor(mongo_database):
     return get_mongo_collection(mongo_database[1], COLLECTION_SAMPLES)
@@ -264,34 +364,80 @@ def v1_filtered_positive_testing_samples(samples_collection_accessor):
 
 
 @pytest.fixture
-def event_wh_data(config):
-    insert_data_into_events_warehouse_tables(config, EVENT_WH_DATA, event_wh_sql_engine(config))
+def event_wh_data(config, event_wh_sql_engine):
+    try:
+        subjects_table = get_table(event_wh_sql_engine, config.EVENT_WH_SUBJECTS_TABLE)
+        roles_table = get_table(event_wh_sql_engine, config.EVENT_WH_ROLES_TABLE)
+        events_table = get_table(event_wh_sql_engine, config.EVENT_WH_EVENTS_TABLE)
+        event_types_table = get_table(event_wh_sql_engine, config.EVENT_WH_EVENT_TYPES_TABLE)
+        subject_types_table = get_table(event_wh_sql_engine, config.EVENT_WH_SUBJECT_TYPES_TABLE)
+        role_types_table = get_table(event_wh_sql_engine, config.EVENT_WH_ROLE_TYPES_TABLE)
+        def delete_event_warehouse_data():
+            with event_wh_sql_engine.begin() as connection:
+                connection.execute(roles_table.delete())
+                connection.execute(subjects_table.delete())
+                connection.execute(events_table.delete())
+                connection.execute(event_types_table.delete())
+                connection.execute(subject_types_table.delete())
+                connection.execute(role_types_table.delete())
+        delete_event_warehouse_data()
+        with event_wh_sql_engine.begin() as connection:
+            print("Inserting Events Warehouse test data")
+            connection.execute(role_types_table.insert(), EVENT_WH_DATA["role_types"])
+            connection.execute(event_types_table.insert(), EVENT_WH_DATA["event_types"])
+            connection.execute(subject_types_table.insert(), EVENT_WH_DATA["subject_types"])
+            connection.execute(subjects_table.insert(), EVENT_WH_DATA["subjects"])
+            connection.execute(events_table.insert(), EVENT_WH_DATA["events"])
+            connection.execute(roles_table.insert(), EVENT_WH_DATA["roles"])
+        yield
+    finally:
+        delete_event_warehouse_data()
 
 
-def insert_data_into_events_warehouse_tables(config, data, event_wh_sql_engine):
-    subjects_table = get_table(event_wh_sql_engine, config.EVENT_WH_SUBJECTS_TABLE)
-    roles_table = get_table(event_wh_sql_engine, config.EVENT_WH_ROLES_TABLE)
-    events_table = get_table(event_wh_sql_engine, config.EVENT_WH_EVENTS_TABLE)
-    event_types_table = get_table(event_wh_sql_engine, config.EVENT_WH_EVENT_TYPES_TABLE)
-    subject_types_table = get_table(event_wh_sql_engine, config.EVENT_WH_SUBJECT_TYPES_TABLE)
-    role_types_table = get_table(event_wh_sql_engine, config.EVENT_WH_ROLE_TYPES_TABLE)
+@pytest.fixture
+def mlwh_sample_stock_resource(config, mlwh_sql_engine):
+    # deletes
+    delete_from_mlwh(
+        MLWH_SAMPLE_STOCK_RESOURCE["stock_resource"],
+        mlwh_sql_engine,
+        config.MLWH_STOCK_RESOURCES_TABLE,
+    )
+    delete_from_mlwh(
+        MLWH_SAMPLE_STOCK_RESOURCE["sample"], mlwh_sql_engine, config.MLWH_SAMPLE_TABLE
+    )
+    delete_from_mlwh(
+        MLWH_SAMPLE_STOCK_RESOURCE["study"], mlwh_sql_engine, config.MLWH_STUDY_TABLE
+    )
 
-    with event_wh_sql_engine.begin() as connection:
-        # delete all rows from each table
-        connection.execute(roles_table.delete())
-        connection.execute(subjects_table.delete())
-        connection.execute(events_table.delete())
-        connection.execute(event_types_table.delete())
-        connection.execute(subject_types_table.delete())
-        connection.execute(role_types_table.delete())
+    # inserts
+    insert_into_mlwh(
+        MLWH_SAMPLE_STOCK_RESOURCE["sample"], mlwh_sql_engine, config.MLWH_SAMPLE_TABLE
+    )
+    insert_into_mlwh(
+        MLWH_SAMPLE_STOCK_RESOURCE["study"], mlwh_sql_engine, config.MLWH_STUDY_TABLE
+    )
+    insert_into_mlwh(
+        MLWH_SAMPLE_STOCK_RESOURCE["stock_resource"],
+        mlwh_sql_engine,
+        config.MLWH_STOCK_RESOURCES_TABLE,
+    )
 
-        print("Inserting Events Warehouse test data")
-        connection.execute(role_types_table.insert(), data["role_types"])
-        connection.execute(event_types_table.insert(), data["event_types"])
-        connection.execute(subject_types_table.insert(), data["subject_types"])
-        connection.execute(subjects_table.insert(), data["subjects"])
-        connection.execute(events_table.insert(), data["events"])
-        connection.execute(roles_table.insert(), data["roles"])
+
+def insert_into_mlwh(data, mlwh_sql_engine, table_name):
+    table = get_table(mlwh_sql_engine, table_name)
+
+    with mlwh_sql_engine.begin() as connection:
+        connection.execute(table.delete())  # delete all rows from table first
+        print("Inserting MLWH test data")
+        connection.execute(table.insert(), data)
+
+
+def delete_from_mlwh(data, mlwh_sql_engine, table_name):
+    table = get_table(mlwh_sql_engine, table_name)
+
+    with mlwh_sql_engine.begin() as connection:
+        print("Deleting MLWH test data")
+        connection.execute(table.delete())
 
 
 def get_table(sql_engine: Engine, table_name: str):
@@ -300,9 +446,28 @@ def get_table(sql_engine: Engine, table_name: str):
     return metadata.tables[table_name]
 
 
+@pytest.fixture
 def event_wh_sql_engine(config):
-    create_engine_string = f"mysql+pymysql://{config.WAREHOUSES_RW_CONN_STRING}/{config.EVENTS_WH_DB}"
-    return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
+    sql_engine = sqlalchemy.create_engine(
+        (
+            f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}"  # type: ignore
+            f"@{config.MLWH_DB_HOST}/{config.EVENTS_WH_DB}"  # type: ignore
+        ),
+        pool_recycle=3600,
+    )
+    return sql_engine
+
+
+@pytest.fixture
+def mlwh_sql_engine(config):
+    sql_engine = sqlalchemy.create_engine(
+        (
+            f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}"  # type: ignore
+            f"@{config.MLWH_DB_HOST}/{config.ML_WH_DB}"  # type: ignore
+        ),
+        pool_recycle=3600,
+    )
+    return sql_engine
 
 
 @pytest.fixture
