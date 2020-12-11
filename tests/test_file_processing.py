@@ -158,7 +158,7 @@ def test_process_files_one_wrong_format(mongo_database, config, testing_files_fo
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
 
     # check that the valid file still gets processed, even though the bad file is in there
-    assert samples_collection.count_documents({"RNA ID": "789_A02", "source": "Test Centre"}) == 1
+    assert samples_collection.count_documents({"RNA ID": "TS789_A02", "source": "Test Centre"}) == 1
 
     assert imports_collection.count_documents({"csv_file_used": "TEST_sanger_report_200518_2207.csv"}) == 1
     for i in imports_collection.find({"csv_file_used": "TEST_sanger_report_200518_2207.csv"}):
