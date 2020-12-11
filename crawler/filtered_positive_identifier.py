@@ -26,7 +26,7 @@ class FilteredPositiveIdentifier(ABC):
         self.version = None
         self.ct_value_limit = decimal.Decimal(30)
         self.d128_context = create_decimal128_context()
-        self.result_regex = None
+        self.result_regex = re.compile(f"^{POSITIVE_RESULT_VALUE}", re.IGNORECASE)
         self.root_sample_id_control_regex = None
         self.evaluate_ct_values = False
 
@@ -78,14 +78,12 @@ class FilteredPositiveIdentifierV0(FilteredPositiveIdentifier):
     def __init__(self):
         super(FilteredPositiveIdentifierV0, self).__init__()
         self.version = FILTERED_POSITIVE_VERSION_0
-        self.result_regex = re.compile(f"^{POSITIVE_RESULT_VALUE}", re.IGNORECASE)
 
 
 class FilteredPositiveIdentifierV1(FilteredPositiveIdentifier):
     def __init__(self):
         super(FilteredPositiveIdentifierV1, self).__init__()
         self.version = FILTERED_POSITIVE_VERSION_1
-        self.result_regex = re.compile(f"^{POSITIVE_RESULT_VALUE}", re.IGNORECASE)
         self.root_sample_id_control_regex = re.compile("^CBIQA_")
         self.evaluate_ct_values = True
 
@@ -94,6 +92,5 @@ class FilteredPositiveIdentifierV2(FilteredPositiveIdentifier):
     def __init__(self):
         super(FilteredPositiveIdentifierV2, self).__init__()
         self.version = FILTERED_POSITIVE_VERSION_2
-        self.result_regex = re.compile(f"^{POSITIVE_RESULT_VALUE}", re.IGNORECASE)
         self.root_sample_id_control_regex = re.compile("^(?:CBIQA_|QC0|ZZA000)")
         self.evaluate_ct_values = True
