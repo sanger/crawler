@@ -74,9 +74,9 @@ MLWH_DB_DBNAME = "unified_warehouse_test"
 MLWH_DB_HOST = "127.0.0.1"
 MLWH_DB_PORT = 3306
 MLWH_DB_RO_USER = "root"
-MLWH_DB_RO_PASSWORD = "root"
+MLWH_DB_RO_PASSWORD = ""
 MLWH_DB_RW_USER = "root"
-MLWH_DB_RW_PASSWORD = "root"
+MLWH_DB_RW_PASSWORD = ""
 
 # DART database details
 DART_DB_DBNAME = "dart_test"
@@ -90,6 +90,12 @@ DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
 LOGGING["loggers"]["crawler"]["level"] = "DEBUG"  # noqa: F405
 LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]  # noqa: F405
 
+# MLWH database details
+ML_WH_DB = "unified_warehouse_test"
+MLWH_SAMPLE_TABLE = "sample"
+MLWH_STOCK_RESOURCES_TABLE = "stock_resource"
+MLWH_STUDY_TABLE = "study"
+
 # Event warehouse database details
 EVENT_WH_SUBJECTS_TABLE = "subjects"
 EVENT_WH_ROLES_TABLE = "roles"
@@ -98,5 +104,4 @@ EVENT_WH_EVENT_TYPES_TABLE = "event_types"
 EVENT_WH_SUBJECT_TYPES_TABLE = "subject_types"
 EVENT_WH_ROLE_TYPES_TABLE = "role_types"
 
-WAREHOUSES_RW_CONN_STRING = "root@localhost"
 EVENTS_WH_DB = "event_warehouse_test"
