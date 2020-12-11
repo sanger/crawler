@@ -10,6 +10,7 @@ from bson.decimal128 import Decimal128  # type: ignore
 from bson.objectid import ObjectId
 from crawler.constants import (
     COLLECTION_SAMPLES,
+    COLLECTION_IMPORTS,
     COLLECTION_SOURCE_PLATES,
     DART_STATE_PENDING,
     FIELD_BARCODE,
@@ -147,7 +148,6 @@ def test_process_files_one_wrong_format(mongo_database, config, testing_files_fo
     # They include a rogue xlsx file dressed as csv file
 
     _, mongo_database = mongo_database
-    logger = logging.getLogger(__name__)
 
     centre_config = config.CENTRES[2]
     centre_config["sftp_root_read"] = "tmp/files"
@@ -156,7 +156,6 @@ def test_process_files_one_wrong_format(mongo_database, config, testing_files_fo
 
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
-    samples_history_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES_HISTORY)
 
     # check that the valid file still gets processed, even though the bad file is in there
     assert samples_collection.count_documents({"RNA ID": "789_A02", "source": "Test Centre"}) == 1
