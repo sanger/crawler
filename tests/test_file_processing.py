@@ -10,6 +10,7 @@ from bson.decimal128 import Decimal128  # type: ignore
 from bson.objectid import ObjectId
 from crawler.constants import (
     COLLECTION_SAMPLES,
+    COLLECTION_IMPORTS,
     COLLECTION_SOURCE_PLATES,
     DART_STATE_PENDING,
     FIELD_BARCODE,
@@ -80,7 +81,7 @@ from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFil
 def centre_file_with_mocked_filtered_postitive_identifier(config, file_name):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile(file_name, centre)
-    centre_file.filtered_positive_identifier.current_version = MagicMock(return_value="v2.3")
+    centre_file.filtered_positive_identifier.version = "v2.3"
     centre_file.filtered_positive_identifier.is_positive = MagicMock(return_value=True)
     return centre_file
 
@@ -113,7 +114,7 @@ def test_process_files(mongo_database, config, testing_files_for_process, testin
     assert source_plates_collection.count_documents({"barcode": "AP123"}) == 1
 
 
-def test_process_files_dont_add_to_dart(
+def test_process_files_dont_add_to_dart_flag_not_set(
     mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn
 ):
     _, mongo_database = mongo_database
@@ -125,6 +126,43 @@ def test_process_files_dont_add_to_dart(
 
     # assert no attempt was made to connect
     pyodbc_conn.assert_not_called()
+
+
+def test_process_files_dont_add_to_dart_mlwh_failed(
+    mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn
+):
+    with patch("crawler.file_processing.run_mysql_executemany_query", side_effect=Exception("Boom!")):
+        _, mongo_database = mongo_database
+
+        centre_config = config.CENTRES[0]
+        centre_config["sftp_root_read"] = "tmp/files"
+        centre = Centre(config, centre_config)
+        centre.process_files(True)
+
+        # assert no attempt was made to connect
+        pyodbc_conn.assert_not_called()
+
+
+def test_process_files_one_wrong_format(mongo_database, config, testing_files_for_process, testing_centres):
+    # Test using files in the files/TEST directory
+    # They include a rogue xlsx file dressed as csv file
+
+    _, mongo_database = mongo_database
+
+    centre_config = config.CENTRES[2]
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+    centre.process_files(False)
+
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+
+    # check that the valid file still gets processed, even though the bad file is in there
+    assert samples_collection.count_documents({"RNA ID": "TS789_A02", "source": "Test Centre"}) == 1
+
+    assert imports_collection.count_documents({"csv_file_used": "TEST_sanger_report_200518_2207.csv"}) == 1
+    for i in imports_collection.find({"csv_file_used": "TEST_sanger_report_200518_2207.csv"}):
+        assert "CRITICAL: File is unexpected type and cannot be processed. (TYPE 10)" in i["errors"]
 
 
 # ----- tests for class CentreFile -----
@@ -546,6 +584,9 @@ def test_parse_and_format_file_rows_to_add_file_details(config):
                     "updated_at": timestamp,
                     "Result": "Negative",
                     "Lab ID": None,
+                    "filtered_positive": True,
+                    "filtered_positive_version": "v2.3",
+                    "filtered_positive_timestamp": timestamp,
                     "lh_sample_uuid": str(test_uuid),
                 },
             ]
@@ -1048,8 +1089,9 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
             },
         ]
 
-        centre_file.insert_samples_from_docs_into_mlwh(docs)
+        result = centre_file.insert_samples_from_docs_into_mlwh(docs)
 
+        assert result is True
         error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
         error_messages = centre_file.logging_collection.get_aggregate_messages()
         assert (
@@ -1136,8 +1178,9 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_con
             }
         ]
 
-        centre_file.insert_samples_from_docs_into_mlwh(docs)
+        result = centre_file.insert_samples_from_docs_into_mlwh(docs)
 
+        assert result is True
         error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
         error_messages = centre_file.logging_collection.get_aggregate_messages()
         assert (
@@ -1171,8 +1214,9 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_blank(config, mlwh_conne
             }
         ]
 
-        centre_file.insert_samples_from_docs_into_mlwh(docs)
+        result = centre_file.insert_samples_from_docs_into_mlwh(docs)
 
+        assert result is True
         error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
         error_messages = centre_file.logging_collection.get_aggregate_messages()
         assert (
@@ -1185,6 +1229,77 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_blank(config, mlwh_conne
         cursor.close()
 
         assert rows[0][MLWH_DATE_TESTED] is None
+
+
+def test_insert_samples_from_docs_into_mlwh_returns_false_none_connection(config, mlwh_connection):
+    with patch("crawler.file_processing.create_mysql_connection", return_value=None):
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+
+        docs = [
+            {
+                "_id": ObjectId("5f562d9931d9959b92544728"),
+                FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+                FIELD_RNA_ID: "TC-rna-00000029_H11",
+                FIELD_PLATE_BARCODE: "TC-rna-00000029",
+                FIELD_COORDINATE: "H11",
+                FIELD_RESULT: "Negative",
+                FIELD_DATE_TESTED: "",
+                FIELD_SOURCE: "Test Centre",
+                FIELD_LAB_ID: "TC",
+            }
+        ]
+
+        result = centre_file.insert_samples_from_docs_into_mlwh(docs)
+        assert result is False
+
+
+def test_insert_samples_from_docs_into_mlwh_returns_false_not_connected(config, mlwh_connection):
+    with patch("crawler.file_processing.create_mysql_connection") as mysql_conn:
+        mysql_conn().is_connected.return_value = False
+        centre = Centre(config, config.CENTRES[0])
+        centre_file = CentreFile("some file", centre)
+
+        docs = [
+            {
+                "_id": ObjectId("5f562d9931d9959b92544728"),
+                FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+                FIELD_RNA_ID: "TC-rna-00000029_H11",
+                FIELD_PLATE_BARCODE: "TC-rna-00000029",
+                FIELD_COORDINATE: "H11",
+                FIELD_RESULT: "Negative",
+                FIELD_DATE_TESTED: "",
+                FIELD_SOURCE: "Test Centre",
+                FIELD_LAB_ID: "TC",
+            }
+        ]
+
+        result = centre_file.insert_samples_from_docs_into_mlwh(docs)
+        assert result is False
+
+
+def test_insert_samples_from_docs_into_mlwh_returns_failure_executing(config, mlwh_connection):
+    with patch("crawler.file_processing.create_mysql_connection"):
+        with patch("crawler.file_processing.run_mysql_executemany_query", side_effect=Exception("Boom!")):
+            centre = Centre(config, config.CENTRES[0])
+            centre_file = CentreFile("some file", centre)
+
+            docs = [
+                {
+                    "_id": ObjectId("5f562d9931d9959b92544728"),
+                    FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+                    FIELD_RNA_ID: "TC-rna-00000029_H11",
+                    FIELD_PLATE_BARCODE: "TC-rna-00000029",
+                    FIELD_COORDINATE: "H11",
+                    FIELD_RESULT: "Negative",
+                    FIELD_DATE_TESTED: "",
+                    FIELD_SOURCE: "Test Centre",
+                    FIELD_LAB_ID: "TC",
+                }
+            ]
+
+            result = centre_file.insert_samples_from_docs_into_mlwh(docs)
+            assert result is False
 
 
 # tests for inserting docs into DART

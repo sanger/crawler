@@ -76,7 +76,7 @@ from crawler.db import (
     run_mysql_executemany_query,
     set_dart_well_properties,
 )
-from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
+from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.general_helpers import (
     current_time,
     get_dart_well_index,
@@ -254,7 +254,7 @@ class CentreFile:
         FIELD_CH4_CQ,
     }
 
-    filtered_positive_identifier = FilteredPositiveIdentifier()
+    filtered_positive_identifier = current_filtered_positive_identifier()
 
     def __init__(self, file_name, centre):
         """Initialiser for the class representing the file
@@ -394,9 +394,9 @@ class CentreFile:
             # records for these
             docs_to_insert_mlwh = list(filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert))
 
-            self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
+            mlwh_success = self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
-            if add_to_dart:
+            if add_to_dart and mlwh_success:
                 self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
 
         self.backup_file()
@@ -603,7 +603,7 @@ class CentreFile:
             logger.exception(e)
             return []
 
-    def insert_samples_from_docs_into_mlwh(self, docs_to_insert: List[Dict[str, str]]) -> None:
+    def insert_samples_from_docs_into_mlwh(self, docs_to_insert) -> bool:
         """Insert sample records into the MLWH database from the parsed file information, including the corresponding
         mongodb _id
 
@@ -612,6 +612,9 @@ class CentreFile:
             Includes the mongodb _id, as the list has already been inserted into mongodb
             mongo_ids {List[Any]} -- list of mongodb _ids in the same order as docs_to_insert, from the insert into the
             mongodb
+
+        Returns:
+            {bool} -- True if the insert was successful; otherwise False
         """
         values: List[Dict[str, Any]] = []
         for doc in docs_to_insert:
@@ -624,6 +627,7 @@ class CentreFile:
                 run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
 
                 logger.debug(f"MLWH database inserts completed successfully for file {self.file_name}")
+                return True
             except Exception as e:
                 self.logging_collection.add_error(
                     "TYPE 14",
@@ -637,6 +641,8 @@ class CentreFile:
                 f"MLWH database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
+
+        return False
 
     def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[Dict[str, str]]) -> None:
         """Insert plates and wells into the DART database from the parsed file information
@@ -725,7 +731,7 @@ class CentreFile:
                     documents = self.parse_and_format_file_rows(csvreader)
 
                     return documents
-            except csv.Error:
+            except (csv.Error, UnicodeDecodeError):
                 self.logging_collection.add_error("TYPE 10", "Wrong read from file")
 
         return []
@@ -999,10 +1005,9 @@ class CentreFile:
         modified_row[FIELD_UPDATED_AT] = import_timestamp
 
         # filtered-positive calculations
-        if modified_row[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
-            modified_row[FIELD_FILTERED_POSITIVE] = self.filtered_positive_identifier.is_positive(modified_row)
-            modified_row[FIELD_FILTERED_POSITIVE_VERSION] = self.filtered_positive_identifier.current_version()
-            modified_row[FIELD_FILTERED_POSITIVE_TIMESTAMP] = import_timestamp
+        modified_row[FIELD_FILTERED_POSITIVE] = self.filtered_positive_identifier.is_positive(modified_row)
+        modified_row[FIELD_FILTERED_POSITIVE_VERSION] = self.filtered_positive_identifier.version
+        modified_row[FIELD_FILTERED_POSITIVE_TIMESTAMP] = import_timestamp
 
         # add lh sample uuid
         modified_row[FIELD_LH_SAMPLE_UUID] = str(uuid.uuid4())
