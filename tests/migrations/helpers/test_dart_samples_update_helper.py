@@ -21,7 +21,6 @@ from crawler.constants import (
 )
 from migrations.helpers.dart_samples_update_helper import (
     add_sample_uuid_field,
-    extract_required_cp_info,
     get_positive_samples,
     migrate_all_dbs,
     new_mongo_source_plate,
@@ -189,6 +188,8 @@ def test_update_mongo_fields(mongo_database):
 
 # TODO - test get_cherrypicked_samples
 
+# TODO - test extract_required_cp_info
+
 
 # ----- migrate_all_dbs tests -----
 
@@ -283,7 +284,9 @@ def test_migrate_all_dbs_returns_early_failed_mongo_samples_update(config, mock_
         mock_update_dart.assert_not_called()
 
 
-def test_migrate_all_dbs_returns_early_failed_mongo_source_plates_update(config, mock_mysql_connection, mock_update_dart):
+def test_migrate_all_dbs_returns_early_failed_mongo_source_plates_update(
+    config, mock_mysql_connection, mock_update_dart
+):
     start_datetime = datetime(year=2020, month=5, day=10, hour=15, minute=10)
     end_datetime = start_datetime + timedelta(days=1)
     test_samples = generate_example_samples(range(0, 6), start_datetime)

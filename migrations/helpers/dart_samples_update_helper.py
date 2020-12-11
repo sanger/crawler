@@ -137,7 +137,7 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
             with create_mysql_connection(config, False) as mlwh_conn:
                 # 5. update the MLWH (should be an idempotent operation)
                 run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
-                
+
             # 6. add all the plates of the positive samples we've selected in step 1 above, to DART
             update_dart_fields(config, samples)
         else:
@@ -270,7 +270,7 @@ def samples_updated_with_source_plate_uuids(mongo_db, samples: List[Sample]) -> 
         if len(new_plates) > 0:
             source_plates_collection.insert_many(new_plates, ordered=False)
 
-    except Exception as e:
+    except Exception:
         logger.error("Failed assigning source plate UUIDs to samples.")
         raise
 
