@@ -186,7 +186,7 @@ EVENT_WH_DATA: Dict[str, Any] = {
             "lims_id": "SQSCP",
             "uuid": "1".encode("utf-8"),
             "event_type_id": 1,
-            "occured_at": "2020-09-25 11:35:30", #
+            "occured_at": "2020-09-25 11:35:30",  #
             "user_identifier": "test@example.com",
         },
         {
@@ -212,7 +212,7 @@ EVENT_WH_DATA: Dict[str, Any] = {
             "event_type_id": 1,
             "occured_at": "2020-10-15 16:35:30",
             "user_identifier": "test@example.com",
-        }
+        },
     ],
     "event_types": [{"id": 1, "key": "cherrypick_layout_set", "description": "stuff"}],
     "subject_types": [{"id": 1, "key": "sample", "description": "stuff"}],
@@ -221,7 +221,7 @@ EVENT_WH_DATA: Dict[str, Any] = {
 
 
 def to_datetime(date_string):
-    return datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S')
+    return datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S")
 
 
 MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
@@ -236,7 +236,7 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": str(to_datetime(V0_V1_CUTOFF_DATE)), # Created at cut-off time
+            "created": str(to_datetime(V0_V1_CUTOFF_DATE)),  # Created at cut-off time
         },
         {
             "id_sample_tmp": "2",
@@ -248,7 +248,7 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": str(to_datetime(V0_V1_CUTOFF_DATE) - timedelta(days=1)), # Created before cut-off time
+            "created": str(to_datetime(V0_V1_CUTOFF_DATE) - timedelta(days=1)),  # Created before cut-off time
         },
         {
             "id_sample_tmp": "3",
@@ -260,7 +260,7 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": str(to_datetime(V0_V1_CUTOFF_DATE) + timedelta(days=1)), # Created before cut-off time,
+            "created": str(to_datetime(V0_V1_CUTOFF_DATE) + timedelta(days=1)),  # Created before cut-off time,
         },
     ],
     "stock_resource": [
@@ -376,6 +376,7 @@ def event_wh_data(config, event_wh_sql_engine):
         event_types_table = get_table(event_wh_sql_engine, config.EVENT_WH_EVENT_TYPES_TABLE)
         subject_types_table = get_table(event_wh_sql_engine, config.EVENT_WH_SUBJECT_TYPES_TABLE)
         role_types_table = get_table(event_wh_sql_engine, config.EVENT_WH_ROLE_TYPES_TABLE)
+
         def delete_event_warehouse_data():
             with event_wh_sql_engine.begin() as connection:
                 connection.execute(roles_table.delete())
@@ -384,6 +385,7 @@ def event_wh_data(config, event_wh_sql_engine):
                 connection.execute(event_types_table.delete())
                 connection.execute(subject_types_table.delete())
                 connection.execute(role_types_table.delete())
+
         delete_event_warehouse_data()
         with event_wh_sql_engine.begin() as connection:
             print("Inserting Events Warehouse test data")
@@ -406,20 +408,12 @@ def mlwh_sample_stock_resource(config, mlwh_sql_engine):
         mlwh_sql_engine,
         config.MLWH_STOCK_RESOURCES_TABLE,
     )
-    delete_from_mlwh(
-        MLWH_SAMPLE_STOCK_RESOURCE["sample"], mlwh_sql_engine, config.MLWH_SAMPLE_TABLE
-    )
-    delete_from_mlwh(
-        MLWH_SAMPLE_STOCK_RESOURCE["study"], mlwh_sql_engine, config.MLWH_STUDY_TABLE
-    )
+    delete_from_mlwh(MLWH_SAMPLE_STOCK_RESOURCE["sample"], mlwh_sql_engine, config.MLWH_SAMPLE_TABLE)
+    delete_from_mlwh(MLWH_SAMPLE_STOCK_RESOURCE["study"], mlwh_sql_engine, config.MLWH_STUDY_TABLE)
 
     # inserts
-    insert_into_mlwh(
-        MLWH_SAMPLE_STOCK_RESOURCE["sample"], mlwh_sql_engine, config.MLWH_SAMPLE_TABLE
-    )
-    insert_into_mlwh(
-        MLWH_SAMPLE_STOCK_RESOURCE["study"], mlwh_sql_engine, config.MLWH_STUDY_TABLE
-    )
+    insert_into_mlwh(MLWH_SAMPLE_STOCK_RESOURCE["sample"], mlwh_sql_engine, config.MLWH_SAMPLE_TABLE)
+    insert_into_mlwh(MLWH_SAMPLE_STOCK_RESOURCE["study"], mlwh_sql_engine, config.MLWH_STUDY_TABLE)
     insert_into_mlwh(
         MLWH_SAMPLE_STOCK_RESOURCE["stock_resource"],
         mlwh_sql_engine,

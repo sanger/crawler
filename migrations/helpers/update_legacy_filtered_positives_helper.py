@@ -23,12 +23,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def filtered_positive_fields_exist(config: ModuleType):
     """Determines whether filtered positive fields exist in database
 
     Arguments:
         None
-    
+
     Returns:
         Boolean -- Filtered positive fields exist
     """
@@ -36,13 +37,17 @@ def filtered_positive_fields_exist(config: ModuleType):
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-        return list(samples_collection.find({
-            "$or" : [
-                { FIELD_FILTERED_POSITIVE : {"$exists": True} },
-                { FIELD_FILTERED_POSITIVE_VERSION : {"$exists": True} },
-                { FIELD_FILTERED_POSITIVE_TIMESTAMP : {"$exists": True} }
-            ]
-        }))
+        return list(
+            samples_collection.find(
+                {
+                    "$or": [
+                        {FIELD_FILTERED_POSITIVE: {"$exists": True}},
+                        {FIELD_FILTERED_POSITIVE_VERSION: {"$exists": True}},
+                        {FIELD_FILTERED_POSITIVE_TIMESTAMP: {"$exists": True}},
+                    ]
+                }
+            )
+        )
 
 
 def unmigrated_mongo_samples(config: ModuleType):
@@ -50,7 +55,7 @@ def unmigrated_mongo_samples(config: ModuleType):
 
     Arguments:
         None
-    
+
     Returns:
         List[Dict] -- All unmigrated samples from Mongo
     """
@@ -58,13 +63,17 @@ def unmigrated_mongo_samples(config: ModuleType):
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-        return list(samples_collection.find({
-            "$and" : [
-                { FIELD_FILTERED_POSITIVE : {"$exists": False} },
-                { FIELD_FILTERED_POSITIVE_VERSION : {"$exists": False} },
-                { FIELD_FILTERED_POSITIVE_TIMESTAMP : {"$exists": False} }
-            ]
-        }))
+        return list(
+            samples_collection.find(
+                {
+                    "$and": [
+                        {FIELD_FILTERED_POSITIVE: {"$exists": False}},
+                        {FIELD_FILTERED_POSITIVE_VERSION: {"$exists": False}},
+                        {FIELD_FILTERED_POSITIVE_TIMESTAMP: {"$exists": False}},
+                    ]
+                }
+            )
+        )
 
 
 def get_v0_cherrypicked_samples(
@@ -161,12 +170,11 @@ def v0_version_set(config: ModuleType):
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-        v0_samples = list(samples_collection.find({
-            "$and": [
-                { FIELD_FILTERED_POSITIVE_VERSION : {"$exists": True} },
-                {"filtered_positive_version": "v0"}
-            ]
-        }))
+        v0_samples = list(
+            samples_collection.find(
+                {"$and": [{FIELD_FILTERED_POSITIVE_VERSION: {"$exists": True}}, {"filtered_positive_version": "v0"}]}
+            )
+        )
 
         if len(v0_samples) > 0:
             return True

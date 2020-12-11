@@ -3,7 +3,13 @@ import logging.config
 import sys
 
 from crawler.helpers.general_helpers import get_config
-from migrations import sample_timestamps, update_dart, update_filtered_positives, update_mlwh_with_legacy_samples, update_legacy_filtered_positives
+from migrations import (
+    sample_timestamps,
+    update_dart,
+    update_filtered_positives,
+    update_mlwh_with_legacy_samples,
+    update_legacy_filtered_positives,
+)
 
 config, settings_module = get_config("")
 

@@ -34,7 +34,6 @@ def run(settings_module: str = "") -> None:
     mongo_updated = False
     mlwh_updated = False
 
-
     try:
         # If v0 version has been set on any samples, migration has likely been run before - do not want to run in this case
         if v0_version_set(config) is False:
@@ -60,12 +59,12 @@ def run(settings_module: str = "") -> None:
                 update_timestamp,
             )
 
-            mongo_updated = update_mongo_filtered_positive_fields(
-                    config, samples, version, update_timestamp
-                )
+            mongo_updated = update_mongo_filtered_positive_fields(config, samples, version, update_timestamp)
 
         else:
-            logger.warning("v0 version has already been set in some Mongo samples - this migration has likely been run before.")
+            logger.warning(
+                "v0 version has already been set in some Mongo samples - this migration has likely been run before."
+            )
             raise Exception()
     except Exception as e:
         logger.error("---------- Process aborted: ----------")

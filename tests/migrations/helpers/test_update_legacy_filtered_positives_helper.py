@@ -18,6 +18,7 @@ from crawler.constants import (
 
 # ----- migration helper function tests -----
 
+
 def test_unmigrated_mongo_samples_returns_expected(config, filtered_positive_testing_samples):
     result = unmigrated_mongo_samples(config)
     assert len(result) == 1
