@@ -152,7 +152,7 @@ def test_process_files_one_wrong_format(mongo_database, config, testing_files_fo
     centre_config = config.CENTRES[2]
     centre_config["sftp_root_read"] = "tmp/files"
     centre = Centre(config, centre_config)
-    centre.process_files()
+    centre.process_files(False)
 
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
