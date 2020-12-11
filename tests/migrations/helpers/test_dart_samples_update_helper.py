@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 from crawler.constants import (
+    COLLECTION_SAMPLES,
     FIELD_BARCODE,
     FIELD_CREATED_AT,
     FIELD_FILTERED_POSITIVE,
@@ -161,21 +162,25 @@ def test_samples_updated_with_source_plate_uuids(mongo_database):
 def test_update_mongo_fields(mongo_database):
     _, mongo_db = mongo_database
     test_samples = generate_example_samples(range(0, 6), datetime.now())
+    mongo_db[COLLECTION_SAMPLES].insert_many(test_samples)
 
-    # make all sample negative
+    idx = 0
     for sample in test_samples:
-        sample[FIELD_FILTERED_POSITIVE] = False
-    #  make first sample filtered positive
-    test_samples[0][FIELD_FILTERED_POSITIVE] = True
+        sample[FIELD_LH_SAMPLE_UUID] = f"{idx}"
+        sample[FIELD_LH_SOURCE_PLATE_UUID] = f"{idx}"
+        idx += 1
 
-    mongo_db.SAMPLES_COLLECTION.insert_many(test_samples)
-
-    version = "test_version_123"
-    now = datetime.now()
-
-    assert update_mongo_fields(mongo_db, test_samples, version, now)
-    assert mongo_db.SAMPLES_COLLECTION.count_documents({FIELD_FILTERED_POSITIVE: True}) == 1
-    assert mongo_db.SAMPLES_COLLECTION.count_documents({FIELD_FILTERED_POSITIVE: False}) == 7
+    assert update_mongo_fields(mongo_db, test_samples)
+    for sample in test_samples:
+        assert (
+            mongo_db[COLLECTION_SAMPLES].count_documents(
+                {
+                    FIELD_LH_SAMPLE_UUID: sample[FIELD_LH_SAMPLE_UUID],
+                    FIELD_LH_SOURCE_PLATE_UUID: sample[FIELD_LH_SOURCE_PLATE_UUID],
+                }
+            )
+            == 1
+        )
 
 
 # ----- migrate_all_dbs tests -----

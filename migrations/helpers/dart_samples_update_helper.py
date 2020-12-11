@@ -39,6 +39,7 @@ from migrations.helpers.shared_helper import valid_datetime_string
 from migrations.helpers.update_filtered_positives_helper import update_dart_fields
 from pandas import DataFrame
 from pymongo.collection import Collection
+from pymongo.operations import UpdateOne
 
 ##
 # Requirements:
@@ -211,45 +212,31 @@ def add_sample_uuid_field(samples: List[Sample]) -> List[Sample]:
     return samples
 
 
-def update_mongo_fields(mongo_db, samples: List[Sample], version: str, update_timestamp: datetime) -> bool:
+def update_mongo_fields(mongo_db, samples: List[Sample]) -> bool:
     """Bulk updates sample filtered positive fields in the Mongo database
 
     Arguments:
         config {ModuleType} -- application config specifying database details
         samples {List[Sample]} -- the list of samples whose filtered positive fields should be updated
-        version {str} -- the filtered positive identifier version used
-        update_timestamp {datetime} -- the timestamp at which the update was performed
 
     Returns:
         bool -- whether the updates completed successfully
     """
-    # get ids of those that are filtered positive, and those that aren't
-    all_ids: List[str] = [sample[FIELD_MONGODB_ID] for sample in samples]
-    filtered_positive_ids: List[str] = [
-        sample[FIELD_MONGODB_ID] for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] is True, samples))
-    ]
-    filtered_negative_ids = [mongo_id for mongo_id in all_ids if mongo_id not in filtered_positive_ids]
-
+    # Need to bulk write with mulitple operations: one per sample
     samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
-    samples_collection.update_many(
-        {FIELD_MONGODB_ID: {"$in": filtered_positive_ids}},
-        {
-            "$set": {
-                FIELD_FILTERED_POSITIVE: True,
-                FIELD_FILTERED_POSITIVE_VERSION: version,
-                FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
-            }
-        },
-    )
-    samples_collection.update_many(
-        {FIELD_MONGODB_ID: {"$in": filtered_negative_ids}},
-        {
-            "$set": {
-                FIELD_FILTERED_POSITIVE: False,
-                FIELD_FILTERED_POSITIVE_VERSION: version,
-                FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
-            }
-        },
+    samples_collection.bulk_write(
+        [
+            UpdateOne(
+                {FIELD_MONGODB_ID: sample[FIELD_MONGODB_ID]},
+                {
+                    "$set": {
+                        FIELD_LH_SAMPLE_UUID: sample[FIELD_LH_SAMPLE_UUID],
+                        FIELD_LH_SOURCE_PLATE_UUID: sample[FIELD_LH_SOURCE_PLATE_UUID],
+                    }
+                },
+            )
+            for sample in samples
+        ]
     )
     return True
 
