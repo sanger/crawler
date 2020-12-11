@@ -1,6 +1,6 @@
 from types import ModuleType
 from typing import List, Optional, Set, Tuple
-from pandas import DataFrame
+from pandas import DataFrame # type: ignore
 import pandas as pd
 import sqlalchemy  # type: ignore
 from crawler.types import Sample

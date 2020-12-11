@@ -1,4 +1,3 @@
-import pytest
 import pandas as pd
 import numpy as np
 
@@ -11,9 +10,7 @@ from migrations.helpers.update_legacy_filtered_positives_helper import (
 from crawler.constants import (
     FIELD_COORDINATE,
     FIELD_PLATE_BARCODE,
-    FIELD_RESULT,
     FIELD_ROOT_SAMPLE_ID,
-    FIELD_SOURCE,
 )
 
 # ----- migration helper function tests -----
@@ -25,15 +22,17 @@ def test_unmigrated_mongo_samples_returns_expected(config, filtered_positive_tes
 
 
 def test_v0_version_set_returns_true_with_v0_samples(config, filtered_positive_testing_samples):
-    assert v0_version_set(config) == True
+    assert v0_version_set(config) is True
 
 
-def test_v0_version_set_returns_false_with_no_v0_samples(config, v1_filtered_positive_testing_samples):
-    assert v0_version_set(config) == False
+def test_v0_version_set_returns_false_with_no_v0_samples(
+    config, v1_filtered_positive_testing_samples
+):
+    assert v0_version_set(config) is False
 
 
 def test_v0_version_set_returns_false_with_no_version_fields(config, testing_samples):
-    assert v0_version_set(config) == False
+    assert v0_version_set(config) is False
 
 
 def test_get_v0_cherrypicked_samples_returns_expected(
