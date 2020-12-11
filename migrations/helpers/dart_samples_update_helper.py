@@ -214,7 +214,6 @@ def update_mongo_fields(mongo_db, samples: List[Sample]) -> bool:
     Returns:
         bool -- whether the updates completed successfully
     """
-    # Need to bulk write with mulitple operations: one per sample
     samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
     samples_collection.bulk_write(
         [
