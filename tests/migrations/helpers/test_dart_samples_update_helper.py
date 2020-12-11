@@ -98,10 +98,10 @@ def generate_example_samples(range, start_datetime):
     return samples
 
 
-# ----- other tests -----
+# ----- helper method tests -----
 
 
-def test_mongo_aggregate(mongo_database):
+def test_get_positive_samples(mongo_database):
     _, mongo_db = mongo_database
 
     start_datetime = datetime(year=2020, month=5, day=10, hour=15, minute=10)
@@ -157,6 +157,10 @@ def test_samples_updated_with_source_plate_uuids(mongo_database):
     updated_samples = samples_updated_with_source_plate_uuids(mongo_db, test_samples)
 
     assert uuid.UUID(updated_samples[0][FIELD_LH_SOURCE_PLATE_UUID])
+    # TODO more rigourously test this:
+    # - test samples all have a UUID
+    # - test source plates added
+    # - test samples refer to source plates
 
 
 def test_update_mongo_fields(mongo_database):
@@ -183,10 +187,10 @@ def test_update_mongo_fields(mongo_database):
         )
 
 
+# TODO - test get_cherrypicked_samples
+
+
 # ----- migrate_all_dbs tests -----
-
-
-# TODO - mock out the event warehouse, and add end-to-end tests for the `migrate_all_dbs` method
 
 
 def test_migrate_all_dbs_returns_early_invalid_start_datetime(
@@ -256,85 +260,6 @@ def test_migrate_all_dbs_return_early_no_samples(config, mock_mysql_connection, 
         mock_update_dart.assert_not_called()
 
 
-def test_migrate_all_dbs_with_no_cherry_picked_samples(config, mongo_database, mock_mysql_connection, mock_update_dart):
-    _, mongo_db = mongo_database
-
-    start_datetime = datetime(year=2020, month=5, day=10, hour=15, minute=10)
-    end_datetime = start_datetime + timedelta(days=1)
-    # generate and insert sample rows into the mongo database
-    test_samples = generate_example_samples(range(0, 6), start_datetime)
-    mongo_db.samples.insert_many(test_samples)
-
-    assert mongo_db.samples.count_documents({}) == 8
-
-    with patch(
-        "migrations.helpers.dart_samples_update_helper.get_cherrypicked_samples", side_effect=None
-    ) as mock_get_cherrypicked_samples:
-        migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))
-
-        samples = get_positive_samples(mongo_db.samples, start_datetime, end_datetime)
-
-        root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
-
-        mock_mysql_connection.assert_not_called()
-        mock_get_cherrypicked_samples.assert_called_once_with(config, list(root_sample_ids), list(plate_barcodes))
-
-
-def test_migrate_all_dbs_with_cherry_picked_samples_mocked(
-    config, mongo_database, mock_mysql_connection, mock_update_dart
-):
-    _, mongo_db = mongo_database
-
-    start_datetime = datetime(year=2020, month=5, day=10, hour=15, minute=10)
-    end_datetime = start_datetime + timedelta(days=1)
-    # generate and insert sample rows into the mongo database
-    test_samples = generate_example_samples(range(0, 6), start_datetime)
-    mongo_db.samples.insert_many(test_samples)
-
-    assert mongo_db.samples.count_documents({}) == 8
-
-    cherry_picked_sample = {
-        FIELD_ROOT_SAMPLE_ID: [test_samples[0][FIELD_ROOT_SAMPLE_ID]],
-        FIELD_PLATE_BARCODE: [test_samples[0][FIELD_PLATE_BARCODE]],
-    }
-
-    cherry_picked_df = pd.DataFrame.from_dict(cherry_picked_sample)
-
-    with patch(
-        "migrations.helpers.dart_samples_update_helper.get_cherrypicked_samples", side_effect=[cherry_picked_df]
-    ):
-        with patch(
-            "migrations.helpers.dart_samples_update_helper.remove_cherrypicked_samples"
-        ) as mock_remove_cherrypicked_samples:
-
-            migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))
-
-            samples = get_positive_samples(mongo_db.samples, start_datetime, end_datetime)
-
-            mock_remove_cherrypicked_samples.assert_called_once_with(
-                samples, [[cherry_picked_sample[FIELD_ROOT_SAMPLE_ID][0], cherry_picked_sample[FIELD_PLATE_BARCODE][0]]]
-            )
-
-
-def test_migrate_all_dbs_remove_cherrypicked_samples(config, mongo_database, mock_update_dart):
-    _, mongo_db = mongo_database
-
-    start_datetime = datetime(year=2020, month=5, day=10, hour=15, minute=10)
-    end_datetime = start_datetime + timedelta(days=1)
-    # generate and insert sample rows into the mongo database
-    test_samples = generate_example_samples(range(0, 6), start_datetime)
-    mongo_db.samples.insert_many(test_samples)
-
-    assert mongo_db.samples.count_documents({}) == 8
-
-    with patch(
-        "migrations.helpers.dart_samples_update_helper.remove_cherrypicked_samples"
-    ) as mock_remove_cherrypicked_samples:
-        migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))
-
-        mock_remove_cherrypicked_samples.assert_not_called()
-
-
 def test_migrate_all_dbs_returns_early_failed_mongo_samples_update(config, mock_mysql_connection, mock_update_dart):
     start_datetime = datetime(year=2020, month=5, day=10, hour=15, minute=10)
     end_datetime = start_datetime + timedelta(days=1)
@@ -402,3 +327,58 @@ def test_migrate_all_dbs_returns_early_failed_mlwh_update(config, mock_mysql_con
         migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))
 
         mock_update_dart.assert_not_called()
+
+
+def test_migrate_all_dbs_with_cherry_picked_samples_mocked(
+    config, mongo_database, mock_mysql_connection, mock_update_dart
+):
+    _, mongo_db = mongo_database
+
+    start_datetime = datetime(year=2020, month=5, day=10, hour=15, minute=10)
+    end_datetime = start_datetime + timedelta(days=1)
+    # generate and insert sample rows into the mongo database
+    test_samples = generate_example_samples(range(0, 6), start_datetime)
+    mongo_db.samples.insert_many(test_samples)
+
+    assert mongo_db.samples.count_documents({}) == 8
+
+    cherry_picked_sample = {
+        FIELD_ROOT_SAMPLE_ID: [test_samples[0][FIELD_ROOT_SAMPLE_ID]],
+        FIELD_PLATE_BARCODE: [test_samples[0][FIELD_PLATE_BARCODE]],
+    }
+
+    cherry_picked_df = pd.DataFrame.from_dict(cherry_picked_sample)
+
+    with patch(
+        "migrations.helpers.dart_samples_update_helper.get_cherrypicked_samples", side_effect=[cherry_picked_df]
+    ):
+        with patch(
+            "migrations.helpers.dart_samples_update_helper.remove_cherrypicked_samples"
+        ) as mock_remove_cherrypicked_samples:
+
+            migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))
+
+            samples = get_positive_samples(mongo_db.samples, start_datetime, end_datetime)
+
+            mock_remove_cherrypicked_samples.assert_called_once_with(
+                samples, [[cherry_picked_sample[FIELD_ROOT_SAMPLE_ID][0], cherry_picked_sample[FIELD_PLATE_BARCODE][0]]]
+            )
+
+
+def test_migrate_all_dbs_remove_cherrypicked_samples(config, mongo_database, mock_update_dart):
+    _, mongo_db = mongo_database
+
+    start_datetime = datetime(year=2020, month=5, day=10, hour=15, minute=10)
+    end_datetime = start_datetime + timedelta(days=1)
+    # generate and insert sample rows into the mongo database
+    test_samples = generate_example_samples(range(0, 6), start_datetime)
+    mongo_db.samples.insert_many(test_samples)
+
+    assert mongo_db.samples.count_documents({}) == 8
+
+    with patch(
+        "migrations.helpers.dart_samples_update_helper.remove_cherrypicked_samples"
+    ) as mock_remove_cherrypicked_samples:
+        migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))
+
+        mock_remove_cherrypicked_samples.assert_not_called()
