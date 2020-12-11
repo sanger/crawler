@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 from crawler.constants import (
     COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
     FIELD_BARCODE,
     FIELD_CREATED_AT,
     FIELD_LAB_ID,
@@ -320,18 +321,46 @@ def test_migrate_all_dbs_remove_cherrypicked_samples(config, mongo_database, moc
         mock_remove_cherrypicked_samples.assert_not_called()
 
 
-def test_migrate_all_dbs_returns_early_failed_mongo_update(config, mock_mysql_connection, mock_update_dart):
+def test_migrate_all_dbs_returns_early_failed_mongo_samples_update(config, mock_mysql_connection, mock_update_dart):
     start_datetime = datetime(year=2020, month=5, day=10, hour=15, minute=10)
     end_datetime = start_datetime + timedelta(days=1)
     test_samples = generate_example_samples(range(0, 6), start_datetime)
 
-    with patch("migrations.helpers.dart_samples_update_helper.get_mongo_collection") as mock_get_mongo_collection:
-        collection = MagicMock()
-        collection.find_one.return_value = None  # mock source plates collection call
-        collection.aggregate.return_value = test_samples  # mock samples collection call
-        collection.bulk_write.side_effect = Exception("Boom!")  # mock samples collection bulk write
-        mock_get_mongo_collection.return_value = collection
+    def side_effect(_, collection_name):
+        mock_collection = MagicMock()
+        if collection_name == COLLECTION_SAMPLES:
+            mock_collection.aggregate.return_value = test_samples
+            mock_collection.bulk_write.side_effect = Exception("Boom!")
+        elif collection_name == COLLECTION_SOURCE_PLATES:
+            mock_collection.find_one.return_value = None
+        else:
+            raise ValueError(f"{collection_name} is not recognised/expected")
+        return mock_collection
 
+    with patch("migrations.helpers.dart_samples_update_helper.get_mongo_collection", side_effect=side_effect):
+        migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))
+
+        mock_mysql_connection.assert_not_called()
+        mock_update_dart.assert_not_called()
+
+
+def test_migrate_all_dbs_returns_early_failed_mongo_source_plates_update(config, mock_mysql_connection, mock_update_dart):
+    start_datetime = datetime(year=2020, month=5, day=10, hour=15, minute=10)
+    end_datetime = start_datetime + timedelta(days=1)
+    test_samples = generate_example_samples(range(0, 6), start_datetime)
+
+    def side_effect(_, collection_name):
+        mock_collection = MagicMock()
+        if collection_name == COLLECTION_SAMPLES:
+            mock_collection.aggregate.return_value = test_samples
+        elif collection_name == COLLECTION_SOURCE_PLATES:
+            mock_collection.find_one.return_value = None
+            mock_collection.insert_many.side_effect = Exception("Boom!")
+        else:
+            raise ValueError(f"{collection_name} is not recognised/expected")
+        return mock_collection
+
+    with patch("migrations.helpers.dart_samples_update_helper.get_mongo_collection", side_effect=side_effect):
         migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))
 
         mock_mysql_connection.assert_not_called()
@@ -343,12 +372,17 @@ def test_migrate_all_dbs_returns_early_failed_mlwh_update(config, mock_mysql_con
     end_datetime = start_datetime + timedelta(days=1)
     test_samples = generate_example_samples(range(0, 6), start_datetime)
 
-    with patch("migrations.helpers.dart_samples_update_helper.get_mongo_collection") as mock_get_mongo_collection:
-        collection = MagicMock()
-        collection.find_one.return_value = None  # mock source plates collection call
-        collection.aggregate.return_value = test_samples  # mock samples collection call
-        mock_get_mongo_collection.return_value = collection
+    def side_effect(_, collection_name):
+        mock_collection = MagicMock()
+        if collection_name == COLLECTION_SAMPLES:
+            mock_collection.aggregate.return_value = test_samples
+        elif collection_name == COLLECTION_SOURCE_PLATES:
+            mock_collection.find_one.return_value = None
+        else:
+            raise ValueError(f"{collection_name} is not recognised/expected")
+        return mock_collection
 
+    with patch("migrations.helpers.dart_samples_update_helper.get_mongo_collection", side_effect=side_effect):
         mock_mysql_connection.side_effect = Exception("Boom!")  # mock creating MLWH mysql connection to fail
 
         migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))

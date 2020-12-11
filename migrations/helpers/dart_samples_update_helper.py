@@ -272,8 +272,7 @@ def samples_updated_with_source_plate_uuids(mongo_db, samples: List[Sample]) -> 
 
     except Exception as e:
         logger.error("Failed assigning source plate UUIDs to samples.")
-        logger.exception(e)
-        updated_samples = []
+        raise
 
     return updated_samples
 
