@@ -2,7 +2,7 @@ import logging
 import logging.config
 from datetime import datetime
 
-from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
+from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.general_helpers import get_config
 
 from migrations.helpers.update_filtered_positives_helper import (
@@ -47,8 +47,8 @@ def run(settings_module: str = "") -> None:
             positive_pending_samples = positive_result_samples_from_mongo(config, pending_plate_barcodes)
             if num_positive_pending_samples := len(positive_pending_samples):
                 logger.info(f"{num_positive_pending_samples} positive samples in pending plates found in Mongo")
-                filtered_positive_identifier = FilteredPositiveIdentifier()
-                version = filtered_positive_identifier.current_version()
+                filtered_positive_identifier = current_filtered_positive_identifier()
+                version = filtered_positive_identifier.version
                 update_timestamp = datetime.now()
                 logger.info("Updating filtered positives...")
                 update_filtered_positive_fields(
