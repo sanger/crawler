@@ -12,9 +12,6 @@ from crawler.constants import (
     FIELD_BARCODE,
     FIELD_COORDINATE,
     FIELD_CREATED_AT,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_LAB_ID,
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
@@ -128,7 +125,7 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
             # 4. update samples in mongo updated in either of the above two steps (would expect the same set of samples
             #       from both steps)
             logger.info("Updating Mongo...")
-            _ = update_mongo_fields(mongo_db, samples, version, update_timestamp)
+            _ = update_mongo_fields(mongo_db, samples)
             logger.info("Finished updating Mongo")
 
         # 5. update the MLWH (should be an idempotent operation)
