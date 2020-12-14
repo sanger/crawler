@@ -1,7 +1,7 @@
 import logging
 import uuid
 from datetime import datetime
-from typing import List, Set, Tuple
+from typing import List
 
 from crawler.constants import (
     COLLECTION_SAMPLES,
@@ -34,7 +34,7 @@ from migrations.helpers.shared_helper import (
     remove_cherrypicked_samples,
     valid_datetime_string,
 )
-from migrations.helpers.update_filtered_positives_helper import update_dart_fields, update_filtered_positive_fields
+from migrations.helpers.update_filtered_positives_helper import update_dart_fields
 from pymongo.collection import Collection
 from pymongo.operations import UpdateOne
 
