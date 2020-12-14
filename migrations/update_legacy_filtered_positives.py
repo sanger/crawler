@@ -10,7 +10,7 @@ from migrations.helpers.update_filtered_positives_helper import (
 )
 from migrations.helpers.update_legacy_filtered_positives_helper import (
     unmigrated_mongo_samples,
-    get_v0_cherrypicked_samples,
+    get_cherrypicked_samples_by_date,
     v0_version_set,
     split_v0_cherrypicked_mongo_samples,
 )
@@ -48,10 +48,13 @@ def run(settings_module: str = "") -> None:
 
             root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
 
-            cp_samples_df = get_v0_cherrypicked_samples(
+            # Get v0 cherrypicked samples
+            cp_samples_df = get_cherrypicked_samples_by_date(
                 config,
                 list(root_sample_ids),
-                list(plate_barcodes)
+                list(plate_barcodes),
+                '1970-01-01 00:00:01',
+                V0_V1_CUTOFF_TIMESTAMP,
             )
 
             v0_unmigrated_samples, v1_unmigrated_samples = split_v0_cherrypicked_mongo_samples(

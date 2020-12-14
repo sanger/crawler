@@ -23,7 +23,8 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
     FIELD_FILTERED_POSITIVE_VERSION,
-    V0_V1_CUTOFF_DATE,
+    V0_V1_CUTOFF_TIMESTAMP,
+    V1_V2_CUTOFF_TIMESTAMP,
 )
 from crawler.db import create_mongo_client, create_mysql_connection, get_mongo_collection, get_mongo_db
 from crawler.helpers.general_helpers import get_config
@@ -269,7 +270,7 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": str(to_datetime(V0_V1_CUTOFF_DATE)),  # Created at cut-off time
+            "created": str(to_datetime(V0_V1_CUTOFF_TIMESTAMP)),  # Created at v0/v1 cut-off time
         },
         {
             "id_sample_tmp": "2",
@@ -281,7 +282,7 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": str(to_datetime(V0_V1_CUTOFF_DATE) - timedelta(days=1)),  # Created before cut-off time
+            "created": str(to_datetime(V0_V1_CUTOFF_TIMESTAMP) - timedelta(days=1)),  # Created before v0/v1 cut-off time
         },
         {
             "id_sample_tmp": "3",
@@ -293,7 +294,19 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": str(to_datetime(V0_V1_CUTOFF_DATE) + timedelta(days=1)),  # Created before cut-off time,
+            "created": str(to_datetime(V0_V1_CUTOFF_TIMESTAMP) + timedelta(days=1)),  # Created after v0/v1 cut-off time
+        },
+        {
+            "id_sample_tmp": "4",
+            "id_sample_lims": "4",
+            "description": "root_4",
+            "supplier_name": "cog_uk_id_4",
+            "phenotype": "positive",
+            "sanger_sample_id": "ss4",
+            "id_lims": "SQSCP",
+            "last_updated": "2015-11-25 11:35:30",
+            "recorded_at": "2015-11-25 11:35:30",
+            "created": str(to_datetime(V1_V2_CUTOFF_TIMESTAMP) + timedelta(days=1)),  # Created after v1/v2 cut-off time
         },
     ],
     "stock_resource": [

@@ -120,4 +120,5 @@ DART_EMPTY_VALUE = ""
 DART_SET_PROP_STATUS_SUCCESS = 0
 
 # Cut off date for v0 and v1 filtered positive
-V0_V1_CUTOFF_DATE = "2020-10-15 16:15:00"  # Date on which positive rule change (GPL-669) deployed to production
+V0_V1_CUTOFF_TIMESTAMP = "2020-10-15 16:15:00"  # Timestamp of v1 positive rule change (GPL-669) deployed to production
+V1_V2_CUTOFF_TIMESTAMP = "2020-12-14 12:00:00"  # Timestamp of v2 positive rule change 

@@ -10,7 +10,6 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    V0_V1_CUTOFF_DATE,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_PLATE_BARCODE,
     FIELD_COORDINATE,
@@ -51,13 +50,15 @@ def unmigrated_mongo_samples(config: ModuleType):
         )
 
 
-def get_v0_cherrypicked_samples(
+def get_cherrypicked_samples_by_date(
     config: ModuleType,
     root_sample_ids: List[str],
     plate_barcodes: List[str],
+    start_date: str,
+    end_date: str,
     chunk_size: int = 50000,
 ) -> Optional[DataFrame]:
-    """Find which samples have been cherrypicked using MLWH & Events warehouse.
+    """Find which samples have been cherrypicked between defined dates using MLWH & Events warehouse.
     Returns dataframe with 4 columns: those needed to uniquely identify the sample resulting
     dataframe only contains those samples that have been cherrypicked (those that have an entry
     for the relevant event type in the event warehouse)
@@ -102,7 +103,7 @@ def get_v0_cherrypicked_samples(
                 f" JOIN {events_wh_db}.events mlwh_events_events ON (mlwh_events_roles.event_id = mlwh_events_events.id)"  # noqa: E501
                 f" JOIN {events_wh_db}.event_types mlwh_events_event_types ON (mlwh_events_events.event_type_id = mlwh_events_event_types.id)"  # noqa: E501
                 f" WHERE mlwh_sample.description IN %(root_sample_ids)s"
-                f" AND mlwh_sample.created <= '{V0_V1_CUTOFF_DATE}'"
+                f" AND mlwh_sample.created BETWEEN '{start_date}' AND '{end_date}'"
                 f" AND mlwh_stock_resource.labware_human_barcode IN %(plate_barcodes)s"
                 " AND mlwh_events_event_types.key = 'cherrypick_layout_set'"
                 " GROUP BY mlwh_sample.description, mlwh_stock_resource.labware_human_barcode, mlwh_sample.phenotype, mlwh_stock_resource.labware_coordinate"  # noqa: E501

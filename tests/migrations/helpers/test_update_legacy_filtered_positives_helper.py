@@ -4,7 +4,7 @@ import numpy as np
 from migrations.helpers.update_legacy_filtered_positives_helper import (
     check_versions_set,
     unmigrated_mongo_samples,
-    get_v0_cherrypicked_samples,
+    get_cherrypicked_samples_by_date,
     split_v0_cherrypicked_mongo_samples,
 )
 
@@ -12,6 +12,7 @@ from crawler.constants import (
     FIELD_COORDINATE,
     FIELD_PLATE_BARCODE,
     FIELD_ROOT_SAMPLE_ID,
+    V0_V1_CUTOFF_TIMESTAMP,
 )
 
 # ----- migration helper function tests -----
@@ -30,7 +31,7 @@ def test_check_versions_set_returns_false_with_no_v0_v1_samples(config, filtered
     assert check_versions_set(config) is False
 
 
-def test_get_v0_cherrypicked_samples_returns_expected(
+def test_get_cherrypicked_samples_by_date_returns_expected_v0_v1(
     config, event_wh_data, mlwh_sample_stock_resource, mlwh_sql_engine, event_wh_sql_engine
 ):
     # root_4 does not exist in MLWH
@@ -41,7 +42,9 @@ def test_get_v0_cherrypicked_samples_returns_expected(
     expected_columns = [FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]
     expected = pd.DataFrame(np.array(expected_rows), columns=expected_columns, index=[0, 1])
 
-    returned_samples = get_v0_cherrypicked_samples(config, root_sample_ids, plate_barcodes)
+    returned_samples = get_cherrypicked_samples_by_date(
+        config, root_sample_ids, plate_barcodes, '1970-01-01 00:00:01', V0_V1_CUTOFF_TIMESTAMP
+    )
     pd.testing.assert_frame_equal(expected, returned_samples)
 
 
