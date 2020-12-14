@@ -36,7 +36,8 @@ def run(settings_module: str = "") -> None:
     mlwh_updated = False
 
     try:
-        # If v0 version has been set on any samples, migration has likely been run before - do not want to run in this case
+        # If v0 version has been set on any samples, migration has likely been run before - do not
+        # want to run in this case
         if v0_version_set(config) is False:
             logger.info("Selecting unmigrated samples from Mongo...")
             samples = unmigrated_mongo_samples(config)
@@ -47,22 +48,47 @@ def run(settings_module: str = "") -> None:
 
             root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
 
-            cp_samples_df = get_v0_cherrypicked_samples(config, list(root_sample_ids), list(plate_barcodes))
+            cp_samples_df = get_v0_cherrypicked_samples(
+                config,
+                list(root_sample_ids),
+                list(plate_barcodes)
+            )
 
-            v0_cherrypicked_samples, unmigrated_samples = split_v0_cherrypicked_mongo_samples(samples, cp_samples_df)
+            v0_unmigrated_samples, v1_unmigrated_samples = split_v0_cherrypicked_mongo_samples(
+                                                            samples,
+                                                            cp_samples_df
+                                                          )
 
+            # Updating v0 filtered positive fields
+            filtered_positive_identifier = FilteredPositiveIdentifier("v0")
+            version = filtered_positive_identifier.current_version()
+            update_timestamp = datetime.now()
+
+            update_filtered_positive_fields(
+                filtered_positive_identifier,
+                v0_unmigrated_samples,
+                version,
+                update_timestamp,
+            )
+
+            # Updating v0 filtered positive fields
             filtered_positive_identifier = FilteredPositiveIdentifier("v1")
             version = filtered_positive_identifier.current_version()
             update_timestamp = datetime.now()
 
             update_filtered_positive_fields(
                 filtered_positive_identifier,
-                samples,
+                v1_unmigrated_samples,
                 version,
                 update_timestamp,
             )
 
-            mongo_updated = update_mongo_filtered_positive_fields(config, samples, version, update_timestamp)
+            mongo_updated = update_mongo_filtered_positive_fields(
+                config,
+                samples,
+                version,
+                update_timestamp
+            )
 
         else:
             logger.warning(
