@@ -1,16 +1,17 @@
 import logging
 import logging.config
 import time
-from typing import List
 
 import pymongo
 
 from crawler.constants import (
     COLLECTION_CENTRES,
-    COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
+    FIELD_BARCODE,
     FIELD_CENTRE_NAME,
     FIELD_LAB_ID,
+    FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_PLATE_BARCODE,
     FIELD_RESULT,
     FIELD_RNA_ID,
@@ -21,18 +22,15 @@ from crawler.db import (
     get_mongo_collection,
     get_mongo_db,
     populate_centres_collection,
-    samples_collection_accessor
-)
-from crawler.helpers import (
-    get_config,
-    current_time,
+    samples_collection_accessor,
 )
 from crawler.file_processing import Centre
+from crawler.helpers.general_helpers import get_config
 
 logger = logging.getLogger(__name__)
 
 
-def run(sftp: bool, keep_files: bool, settings_module: str = "") -> None:
+def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = "") -> None:
     try:
         start = time.time()
         config, settings_module = get_config(settings_module)
@@ -48,34 +46,36 @@ def run(sftp: bool, keep_files: bool, settings_module: str = "") -> None:
         with create_mongo_client(config) as client:
             db = get_mongo_db(config, client)
 
+            # centres collection
             centres_collection = get_mongo_collection(db, COLLECTION_CENTRES)
 
-            logger.debug(
-                f"Creating index '{FIELD_CENTRE_NAME}' on '{centres_collection.full_name}'"
-            )
+            logger.debug(f"Creating index '{FIELD_CENTRE_NAME}' on '{centres_collection.full_name}'")
             centres_collection.create_index(FIELD_CENTRE_NAME, unique=True)
             populate_centres_collection(centres_collection, centres, FIELD_CENTRE_NAME)
 
-            imports_collection = get_mongo_collection(db, COLLECTION_IMPORTS)
+            # source plates collection
+            source_plates_collection = get_mongo_collection(db, COLLECTION_SOURCE_PLATES)
+
+            logger.debug(f"Creating index '{FIELD_BARCODE}' on '{source_plates_collection.full_name}'")
+            source_plates_collection.create_index(FIELD_BARCODE, unique=True)
+
+            logger.debug(f"Creating index '{FIELD_LH_SOURCE_PLATE_UUID}' on '{source_plates_collection.full_name}'")
+            source_plates_collection.create_index(FIELD_LH_SOURCE_PLATE_UUID, unique=True)
 
             with samples_collection_accessor(db, COLLECTION_SAMPLES) as samples_collection:
                 # Index on plate barcode to make it easier to select based on plate barcode
-                logger.debug(
-                    f"Creating index '{FIELD_PLATE_BARCODE}' on '{samples_collection.full_name}'"
-                )
+                logger.debug(f"Creating index '{FIELD_PLATE_BARCODE}' on '{samples_collection.full_name}'")
                 samples_collection.create_index(FIELD_PLATE_BARCODE)
 
                 # Index on result column to make it easier to select the positives
-                logger.debug(
-                    f"Creating index '{FIELD_RESULT}' on '{samples_collection.full_name}'"
-                )
+                logger.debug(f"Creating index '{FIELD_RESULT}' on '{samples_collection.full_name}'")
                 samples_collection.create_index(FIELD_RESULT)
 
                 # Index on unique combination of columns
                 logger.debug(f"Creating compound index on '{samples_collection.full_name}'")
-                # create compound index on 'Root Sample ID', 'RNA ID', 'Result', 'Lab ID' - some data
-                #   had the same plate tested at another time so ignore the data if it is exactly the
-                #   same
+                # create compound index on 'Root Sample ID', 'RNA ID', 'Result', 'Lab ID' - some
+                # data had the same plate tested at another time so ignore the data if it is exactly
+                # the same
                 samples_collection.create_index(
                     [
                         (FIELD_ROOT_SAMPLE_ID, pymongo.ASCENDING),
@@ -95,7 +95,7 @@ def run(sftp: bool, keep_files: bool, settings_module: str = "") -> None:
                         if sftp:
                             centre_instance.download_csv_files()
 
-                        centre_instance.process_files()
+                        centre_instance.process_files(add_to_dart)
                     except Exception as e:
                         logger.error("An exception occured")
                         logger.error(f"Error in centre {centre_instance.centre_config['name']}")

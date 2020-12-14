@@ -1,34 +1,27 @@
 import logging
 import logging.config
 import shutil
-import tempfile
-import pytest
+from typing import Dict, List, Union
 from unittest.mock import patch
-from typing import Dict, List, Any
+
+import pytest
 from crawler.constants import (
-    COLLECTION_SAMPLES,
     COLLECTION_CENTRES,
+    COLLECTION_SAMPLES,
     COLLECTION_SAMPLES_HISTORY,
     FIELD_COORDINATE,
-    FIELD_SOURCE,
-    FIELD_RESULT,
     FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
     FIELD_ROOT_SAMPLE_ID,
-    MLWH_TABLE_NAME
+    FIELD_SOURCE,
+    MLWH_TABLE_NAME,
 )
-
-from crawler.db import create_mongo_client, get_mongo_db
-from crawler.helpers import get_config
-from crawler.db import (
-    get_mongo_collection,
-    create_mysql_connection,
-)
+from crawler.db import create_mongo_client, create_mysql_connection, get_mongo_collection, get_mongo_db
+from crawler.helpers.general_helpers import get_config
 
 logger = logging.getLogger(__name__)
 CONFIG, _ = get_config("crawler.config.test")
 logging.config.dictConfig(CONFIG.LOGGING)  # type: ignore
-
-from copy import deepcopy
 
 
 @pytest.fixture
@@ -65,7 +58,7 @@ def mlwh_connection(config):
         try:
             cursor.execute(f"TRUNCATE TABLE {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
             mysql_conn.commit()
-        except:
+        except Exception:
             pytest.fail("An exception occurred clearing the table")
         finally:
             cursor.close()
@@ -73,6 +66,13 @@ def mlwh_connection(config):
     finally:
         # close the connection
         mysql_conn.close()
+
+
+@pytest.fixture
+def pyodbc_conn(config):
+    with patch("pyodbc.connect") as mock_connect:
+        yield mock_connect
+
 
 @pytest.fixture
 def testing_files_for_process(cleanup_backups):
@@ -91,7 +91,7 @@ def testing_files_for_process(cleanup_backups):
         # (_, _, files) = next(os.walk("tmp/files"))
 
 
-TESTING_SAMPLES: List[Dict[str, str]] = [
+TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
     {
         FIELD_COORDINATE: "A01",
         FIELD_SOURCE: "test1",
@@ -127,6 +127,7 @@ def samples_collection_accessor(mongo_database):
 def centres_collection_accessor(mongo_database):
     return get_mongo_collection(mongo_database[1], COLLECTION_CENTRES)
 
+
 @pytest.fixture
 def samples_history_collection_accessor(mongo_database):
     return get_mongo_collection(mongo_database[1], COLLECTION_SAMPLES_HISTORY)
@@ -149,6 +150,7 @@ def testing_centres(centres_collection_accessor, config):
         yield result
     finally:
         centres_collection_accessor.delete_many({})
+
 
 @pytest.fixture
 def cleanup_backups():

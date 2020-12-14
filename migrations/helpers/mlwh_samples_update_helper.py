@@ -1,51 +1,25 @@
-import logging
-import logging.config
-import time
-from typing import List
-import pymongo
-import sys
-import traceback
-from crawler.constants import (
-    COLLECTION_SAMPLES,
-    FIELD_CREATED_AT,
-    MONGO_DATETIME_FORMAT,
-)
+from datetime import datetime
+
+from crawler.constants import COLLECTION_SAMPLES, FIELD_CREATED_AT, MONGO_DATETIME_FORMAT
 from crawler.db import (
     create_mongo_client,
+    create_mysql_connection,
     get_mongo_collection,
     get_mongo_db,
-    create_mysql_connection,
     run_mysql_executemany_query,
 )
-from crawler.helpers import map_mongo_doc_to_sql_columns
-from datetime import datetime
+from crawler.helpers.general_helpers import map_mongo_doc_to_sql_columns
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
+from migrations.helpers.shared_helper import print_exception, valid_datetime_string
 
-def valid_datetime_string(s_datetime: str) -> bool:
-    try:
-        dt = datetime.strptime(s_datetime, MONGO_DATETIME_FORMAT)
-        if dt == None:
-            return False
-        return True
-    except Exception as e:
-        print_exception()
-        return False
-
-def print_exception() -> None:
-    print(f'An exception occurred, at {datetime.now()}')
-    e = sys.exc_info()
-    print(e[0]) # exception type
-    print(e[1]) # exception message
-    if e[2]: # traceback
-      traceback.print_tb(e[2], limit=10)
 
 def update_mlwh_with_legacy_samples(config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
     if not valid_datetime_string(s_start_datetime):
-        print('Aborting run: Expected format of Start datetime is YYMMDD_HHmm')
+        print("Aborting run: Expected format of Start datetime is YYMMDD_HHmm")
         return
 
     if not valid_datetime_string(s_end_datetime):
-        print('Aborting run: Expected format of End datetime is YYMMDD_HHmm')
+        print("Aborting run: Expected format of End datetime is YYMMDD_HHmm")
         return
 
     start_datetime = datetime.strptime(s_start_datetime, MONGO_DATETIME_FORMAT)
@@ -59,7 +33,7 @@ def update_mlwh_with_legacy_samples(config, s_start_datetime: str = "", s_end_da
 
     try:
         mongo_docs_for_sql = []
-        number_docs_found  = 0
+        number_docs_found = 0
 
         # open connection mongo
         with create_mongo_client(config) as client:
@@ -69,16 +43,10 @@ def update_mlwh_with_legacy_samples(config, s_start_datetime: str = "", s_end_da
 
             print("Selecting Mongo samples")
 
-            # this should take everything from the cursor find into RAM memory (assuming you have enough memory)
+            # this should take everything from the cursor find into RAM memory (assuming you have
+            # enough memory)
             mongo_docs = list(
-                samples_collection.find(
-                    {
-                        FIELD_CREATED_AT:{
-                            '$gte': start_datetime,
-                            '$lte': end_datetime
-                        }
-                    }
-                )
+                samples_collection.find({FIELD_CREATED_AT: {"$gte": start_datetime, "$lte": end_datetime}})
             )
             number_docs_found = len(mongo_docs)
             print(f"{number_docs_found} documents found in the mongo database between these timestamps")
@@ -92,10 +60,10 @@ def update_mlwh_with_legacy_samples(config, s_start_datetime: str = "", s_end_da
             # create connection to the MLWH database
             with create_mysql_connection(config, False) as mlwh_conn:
 
-                    # execute sql query to insert/update timestamps into MLWH
-                    run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
+                # execute sql query to insert/update timestamps into MLWH
+                run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
         else:
             print("No documents found for this timestamp range, nothing to insert or update in MLWH")
 
-    except Exception as e:
+    except Exception:
         print_exception()
