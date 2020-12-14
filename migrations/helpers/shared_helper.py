@@ -14,6 +14,7 @@ from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
     MONGO_DATETIME_FORMAT,
 )
+from crawler.types import Sample
 
 
 logger = logging.getLogger(__name__)
@@ -118,3 +119,25 @@ def get_cherrypicked_samples(
         return None
     finally:
         db_connection.close()
+
+
+def remove_cherrypicked_samples(samples: List[Sample], cherry_picked_samples: List[List[str]]) -> List[Sample]:
+    """Remove samples that have been cherry-picked. We need to check on (root sample id, plate barcode) combo rather
+    than just root sample id. As multiple samples can exist with the same root sample id, with the potential for one
+    being cherry-picked, and one not.
+
+    Args:
+        samples (List[Sample]): List of samples in the shape of mongo documents
+        cherry_picked_samples (List[List[str]]): 2 dimensional list of cherry-picked samples with root sample id and
+        plate barcodes for each.
+
+    Returns:
+        List[Sample]: The original list of samples minus the cherry-picked samples.
+    """
+    cherry_picked_sets = [{cp_sample[0], cp_sample[1]} for cp_sample in cherry_picked_samples]
+    return list(
+        filter(
+            lambda sample: {sample[FIELD_ROOT_SAMPLE_ID], sample[FIELD_PLATE_BARCODE]} not in cherry_picked_sets,
+            samples,
+        )
+    )

@@ -28,7 +28,11 @@ from crawler.db import (
 from crawler.helpers.general_helpers import map_mongo_doc_to_sql_columns
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from crawler.types import Sample, SourcePlate
-from migrations.helpers.shared_helper import valid_datetime_string, get_cherrypicked_samples
+from migrations.helpers.shared_helper import (
+    get_cherrypicked_samples,
+    remove_cherrypicked_samples,
+    valid_datetime_string,
+)
 from migrations.helpers.update_filtered_positives_helper import update_dart_fields, update_filtered_positive_fields
 from pymongo.collection import Collection
 from pymongo.operations import UpdateOne
@@ -167,28 +171,6 @@ def get_positive_samples(
     }
 
     return list(samples_collection.aggregate([match]))
-
-
-def remove_cherrypicked_samples(samples: List[Sample], cherry_picked_samples: List[List[str]]) -> List[Sample]:
-    """Remove samples that have been cherry-picked. We need to check on (root sample id, plate barcode) combo rather
-    than just root sample id. As multiple samples can exist with the same root sample id, with the potential for one
-    being cherry-picked, and one not.
-
-    Args:
-        samples (List[Sample]): List of samples in the shape of mongo documents
-        cherry_picked_samples (List[List[str]]): 2 dimensional list of cherry-picked samples with root sample id and
-        plate barcodes for each.
-
-    Returns:
-        List[Sample]: The original list of samples minus the cherry-picked samples.
-    """
-    cherry_picked_sets = [{cp_sample[0], cp_sample[1]} for cp_sample in cherry_picked_samples]
-    return list(
-        filter(
-            lambda sample: {sample[FIELD_ROOT_SAMPLE_ID], sample[FIELD_PLATE_BARCODE]} not in cherry_picked_sets,
-            samples,
-        )
-    )
 
 
 def add_sample_uuid_field(samples: List[Sample]) -> List[Sample]:

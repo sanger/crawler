@@ -24,7 +24,6 @@ from migrations.helpers.dart_samples_update_helper import (
     get_positive_samples,
     migrate_all_dbs,
     new_mongo_source_plate,
-    remove_cherrypicked_samples,
     samples_updated_with_source_plate_uuids,
     update_mongo_fields,
 )
@@ -121,15 +120,6 @@ def test_add_sample_uuid_field():
     for sample in add_sample_uuid_field(test_samples):
         assert FIELD_LH_SAMPLE_UUID in [*sample]
         assert type(sample[FIELD_LH_SAMPLE_UUID]) == str
-
-
-def test_remove_cherrypicked_samples():
-    test_samples = generate_example_samples(range(0, 6), datetime.now())
-    mock_cherry_picked_sample = [test_samples[0][FIELD_ROOT_SAMPLE_ID], test_samples[0][FIELD_PLATE_BARCODE]]
-
-    samples = remove_cherrypicked_samples(test_samples, [mock_cherry_picked_sample])
-    assert len(samples) == 7
-    assert mock_cherry_picked_sample[0] not in [sample[FIELD_ROOT_SAMPLE_ID] for sample in samples]
 
 
 def test_new_mongo_source_plate(freezer):
