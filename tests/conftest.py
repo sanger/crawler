@@ -1,4 +1,5 @@
 import logging
+import copy
 import logging.config
 import shutil
 from typing import Dict, List, Union, Any
@@ -136,7 +137,7 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_ROOT_SAMPLE_ID: "MCM001",
         FIELD_FILTERED_POSITIVE: True,
         FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
-        FIELD_FILTERED_POSITIVE_VERSION: "v1",
+        FIELD_FILTERED_POSITIVE_VERSION: "v2",
     },
     {
         FIELD_COORDINATE: "B01",
@@ -147,7 +148,7 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_ROOT_SAMPLE_ID: "MCM002",
         FIELD_FILTERED_POSITIVE: True,
         FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
-        FIELD_FILTERED_POSITIVE_VERSION: "v0",
+        FIELD_FILTERED_POSITIVE_VERSION: "v2",
     },
     {
         FIELD_COORDINATE: "C01",
@@ -157,7 +158,7 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_ROOT_SAMPLE_ID: "MCM003",
         FIELD_FILTERED_POSITIVE: False,
         FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
-        FIELD_FILTERED_POSITIVE_VERSION: "v0",
+        FIELD_FILTERED_POSITIVE_VERSION: "v2",
     },
     {
         FIELD_COORDINATE: "D01",
@@ -165,6 +166,13 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_RESULT: "Void",
         FIELD_PLATE_BARCODE: "123",
         FIELD_ROOT_SAMPLE_ID: "MCM003",
+    },
+    {
+        FIELD_COORDINATE: "D01",
+        FIELD_SOURCE: "test2",
+        FIELD_RESULT: "Positive",
+        FIELD_PLATE_BARCODE: "456",
+        FIELD_ROOT_SAMPLE_ID: "MCM004",
     },
 ]
 
@@ -380,11 +388,12 @@ def filtered_positive_testing_samples(samples_collection_accessor):
 
 
 @pytest.fixture
-def v1_filtered_positive_testing_samples(samples_collection_accessor):
-    V1_FILTERED_POSITIVE_TESTING_SAMPLES = FILTERED_POSITIVE_TESTING_SAMPLES
-    del V1_FILTERED_POSITIVE_TESTING_SAMPLES[1:3]
+def filtered_positive_testing_samples_v0_v1(samples_collection_accessor):
+    v1_v0_samples = copy.deepcopy(FILTERED_POSITIVE_TESTING_SAMPLES)
+    v1_v0_samples[0][FIELD_FILTERED_POSITIVE_VERSION] = "v0"
+    v1_v0_samples[1][FIELD_FILTERED_POSITIVE_VERSION] = "v1"
 
-    result = samples_collection_accessor.insert_many(V1_FILTERED_POSITIVE_TESTING_SAMPLES)
+    result = samples_collection_accessor.insert_many(v1_v0_samples)
     samples = list(samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
     try:
         yield samples

@@ -4,6 +4,7 @@ from pandas import DataFrame # type: ignore
 import pandas as pd
 import sqlalchemy  # type: ignore
 from crawler.types import Sample
+from crawler.filtered_positive_identifier import FilteredPositiveIdentifier, FILTERED_POSITIVE_VERSION_0, FILTERED_POSITIVE_VERSION_1
 from crawler.constants import (
     COLLECTION_SAMPLES,
     FIELD_FILTERED_POSITIVE,
@@ -22,32 +23,6 @@ from crawler.db import (
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-def filtered_positive_fields_exist(config: ModuleType):
-    """Determines whether filtered positive fields exist in database
-
-    Arguments:
-        None
-
-    Returns:
-        Boolean -- Filtered positive fields exist
-    """
-    with create_mongo_client(config) as client:
-        mongo_db = get_mongo_db(config, client)
-        samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
-
-        return list(
-            samples_collection.find(
-                {
-                    "$or": [
-                        {FIELD_FILTERED_POSITIVE: {"$exists": True}},
-                        {FIELD_FILTERED_POSITIVE_VERSION: {"$exists": True}},
-                        {FIELD_FILTERED_POSITIVE_TIMESTAMP: {"$exists": True}},
-                    ]
-                }
-            )
-        )
 
 
 def unmigrated_mongo_samples(config: ModuleType):
@@ -156,8 +131,8 @@ def get_v0_cherrypicked_samples(
         db_connection.close()
 
 
-def v0_version_set(config: ModuleType):
-    """Find if v0 version has been set in any of the samples. This would indicate that the legacy migration has already been run.
+def check_versions_set(config: ModuleType):
+    """Find if the v0 or v1 version has been set in any of the samples. This would indicate that the legacy migration has already been run.
 
     Args:
         samples {List[Dict]} -- List of samples from Mongo
@@ -171,10 +146,14 @@ def v0_version_set(config: ModuleType):
 
         v0_samples = list(
             samples_collection.find(
-                {"$and": [{FIELD_FILTERED_POSITIVE_VERSION: {"$exists": True}}, {"filtered_positive_version": "v0"}]}
+                {
+                    "$or": [
+                        {FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_0},
+                        {FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_1},
+                    ]
+                }
             )
         )
-
         if len(v0_samples) > 0:
             return True
         else:

@@ -36,9 +36,9 @@ def run(settings_module: str = "") -> None:
     mlwh_updated = False
 
     try:
-        # If v0 version has been set on any samples, migration has likely been run before - do not
+        # If v0 or v1 versions have been set on any samples, migration has likely been run before - do not
         # want to run in this case
-        if v0_version_set(config) is False:
+        if check_versions_set(config) is False:
             logger.info("Selecting unmigrated samples from Mongo...")
             samples = unmigrated_mongo_samples(config)
 
@@ -102,7 +102,7 @@ def run(settings_module: str = "") -> None:
 
         else:
             logger.warning(
-                "v0 version has already been set in some Mongo samples - this migration has likely been run before."
+                "v0 filtered_positive_version has already been set in some Mongo samples - this migration has likely been run before."
             )
             raise Exception()
     except Exception as e:
