@@ -49,7 +49,7 @@ def run(settings_module: str = "") -> None:
             root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
 
             # Get v0 cherrypicked samples
-            cp_samples_df = get_cherrypicked_samples_by_date(
+            v0_cp_samples_df = get_cherrypicked_samples_by_date(
                 config,
                 list(root_sample_ids),
                 list(plate_barcodes),
@@ -57,35 +57,29 @@ def run(settings_module: str = "") -> None:
                 V0_V1_CUTOFF_TIMESTAMP,
             )
 
-            v0_unmigrated_samples, v1_unmigrated_samples = split_v0_cherrypicked_mongo_samples(
-                                                            samples, cp_samples_df
-                                                          )
-
-            # Updating v0 filtered positive fields
-            filtered_positive_identifier = FilteredPositiveIdentifier("v0")
-            version = filtered_positive_identifier.current_version()
-            update_timestamp = datetime.now()
-
-            logger.info("Updating v0 filtered positives...")
-            update_filtered_positive_fields(
-                filtered_positive_identifier,
-                v0_unmigrated_samples,
-                version,
-                update_timestamp,
+            # Get v1 cherrypicked samples
+            v1_cp_samples_df = get_cherrypicked_samples_by_date(
+                config,
+                list(root_sample_ids),
+                list(plate_barcodes),
+                V0_V1_CUTOFF_TIMESTAMP,
+                V1_V2_CUTOFF_TIMESTAMP,
             )
 
-            # Updating v1 filtered positive fields
-            filtered_positive_identifier = FilteredPositiveIdentifier("v1")
-            version = filtered_positive_identifier.current_version()
-            update_timestamp = datetime.now()
+            samples_by_version = split_mongo_samples_on_version(samples, v0_cp_samples_df, v1_cp_samples_df)
 
-            logger.info("Updating v1 filtered positives...")
-            update_filtered_positive_fields(
-                filtered_positive_identifier,
-                v1_unmigrated_samples,
-                version,
-                update_timestamp,
-            )
+            for version in [FILTERED_POSITIVE_VERSION_0, FILTERED_POSITIVE_VERSION_1, FILTERED_POSITIVE_VERSION_2]:
+                filtered_positive_identifier = FilteredPositiveIdentifier(version)
+                update_timestamp = datetime.now()
+
+                logger.info(f"Updating {version} filtered positives...")
+                update_filtered_positive_fields(
+                    filtered_positive_identifier,
+                    samples_by_version[version],
+                    version,
+                    update_timestamp,
+                )
+
             logger.info("Updated filtered positives")
 
             migrated_samples = v0_unmigrated_samples + v1_unmigrated_samples
