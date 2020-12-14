@@ -12,9 +12,6 @@ from crawler.constants import (
     FIELD_BARCODE,
     FIELD_COORDINATE,
     FIELD_CREATED_AT,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_LAB_ID,
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
@@ -32,14 +29,14 @@ from crawler.db import (
     get_mongo_db,
     run_mysql_executemany_query,
 )
-from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.general_helpers import map_mongo_doc_to_sql_columns
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from crawler.types import Sample, SourcePlate
 from migrations.helpers.shared_helper import valid_datetime_string
-from migrations.helpers.update_filtered_positives_helper import update_dart_fields, update_filtered_positive_fields
+from migrations.helpers.update_filtered_positives_helper import update_dart_fields
 from pandas import DataFrame
 from pymongo.collection import Collection
+from pymongo.operations import UpdateOne
 
 ##
 # Requirements:
@@ -48,12 +45,11 @@ from pymongo.collection import Collection
 ####
 # 1. get samples from mongo between these time ranges that are positive
 # 2. of these, find which have been cherry-picked and remove them from the list
-# 3. add the relevant filtered positive fields if not present
-# 4. add the UUID fields if not present
-# 5. update samples in mongo updated in either of the above two steps (would expect the same set of samples from both
+# 3. add the UUID fields if not present
+# 4. update samples in mongo updated in either of the above two steps (would expect the same set of samples from both
 #       steps)
-# 6. update the MLWH (should be an idempotent operation)
-# 7. add all the plates of the positive samples we've selected in step 1 above, to DART
+# 5. update the MLWH (should be an idempotent operation)
+# 6. add all the plates of the positive samples we've selected in step 1 above, to DART
 
 
 logger = logging.getLogger(__name__)
@@ -83,7 +79,6 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
 
     try:
         mongo_docs_for_sql = []
-        number_docs_found = 0
 
         # open connection to mongo
         with create_mongo_client(config) as client:
@@ -120,62 +115,33 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
 
             logger.info(f"{len(samples)} samples between these timestamps and not cherry-picked")
 
-            # 3. add the relevant filtered positive fields if not present
-            filtered_positive_identifier = current_filtered_positive_identifier()
-            version = filtered_positive_identifier.version
-            update_timestamp = datetime.now()
-
-            """
-            This will update the filtered positive fields on all samples. This should be fine as long as any pending
-            filtered positive rule change migration is run first. If not, one situation in which it might not be okay is
-            for a sample currently being cherrypicked, but not actually picked: you could update this sample to be not
-            eligible for cherrypicking in mongo and MLWH, but this wouldn't go to DART as the sample's plate would be
-            'started'.
-
-            The safest way to do this would be to add filtered positive info if none existed on the sample (e.g. one of
-            the three expected fields doesn't exist), as you know that sample won't be in the process of being
-            cherrypicked. Although I can't think of a non-rare set of circumstances in which this will manifest as a
-            problem, and the one I can think of isn't that much of a problem (picking a sample that has just been
-            updated so it shouldn't be picked).
-            """
-            update_filtered_positive_fields(
-                filtered_positive_identifier,
-                samples,
-                version,
-                update_timestamp,
-            )
-
-            # 4. add the UUID fields if not present
+            # 3. add the UUID fields if not present
             add_sample_uuid_field(samples)
 
             # update the samples with source plate UUIDs
             samples_updated_with_source_plate_uuids(mongo_db, samples)
 
-            # 5. update samples in mongo updated in either of the above two steps (would expect the same set of samples
+            # 4. update samples in mongo updated in either of the above two steps (would expect the same set of samples
             #       from both steps)
             logger.info("Updating Mongo...")
-            _ = update_mongo_fields(mongo_db, samples, version, update_timestamp)
+            _ = update_mongo_fields(mongo_db, samples)
             logger.info("Finished updating Mongo")
 
-        # 6. update the MLWH (should be an idempotent operation)
         # convert mongo field values into MySQL format
         for sample in samples:
             mongo_docs_for_sql.append(map_mongo_doc_to_sql_columns(sample))
 
-        if number_docs_found > 0:
-            logger.info(f"Updating MLWH database for {len(mongo_docs_for_sql)} sample documents")
+        if (num_sql_docs := len(mongo_docs_for_sql)) > 0:
+            logger.info(f"Updating MLWH database for {num_sql_docs} sample documents")
             # create connection to the MLWH database
             with create_mysql_connection(config, False) as mlwh_conn:
-
-                # TODO: make sure DART is not updated if this fails (https://github.com/sanger/crawler/issues/162)
-                # execute SQL query to update filtered positive and UUID fields, it does this using the insert
-                #   and performs an update when a duplicate key is found
+                # 5. update the MLWH (should be an idempotent operation)
                 run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
-        else:
-            logger.info("No documents found for this timestamp range, nothing to insert or update in MLWH")
 
-        # 7. add all the plates of the positive samples we've selected in step 1 above, to DART
-        update_dart_fields(config, samples)
+            # 6. add all the plates of the positive samples we've selected in step 1 above, to DART
+            update_dart_fields(config, samples)
+        else:
+            logger.info("No documents found for this timestamp range, nothing to insert or update in MLWH or DART")
     except Exception as e:
         logger.error("Error while attempting to migrate all DBs")
         logger.exception(e)
@@ -202,7 +168,6 @@ def get_positive_samples(
             # 1. First filter by the start and end dates
             FIELD_CREATED_AT: {"$gte": start_datetime, "$lte": end_datetime},
             FIELD_RESULT: {"$regex": "^positive", "$options": "i"},
-            FIELD_ROOT_SAMPLE_ID: {"$not": {"$regex": "^CBIQA_"}},
         }
     }
 
@@ -239,45 +204,30 @@ def add_sample_uuid_field(samples: List[Sample]) -> List[Sample]:
     return samples
 
 
-def update_mongo_fields(mongo_db, samples: List[Sample], version: str, update_timestamp: datetime) -> bool:
+def update_mongo_fields(mongo_db, samples: List[Sample]) -> bool:
     """Bulk updates sample filtered positive fields in the Mongo database
 
     Arguments:
         config {ModuleType} -- application config specifying database details
         samples {List[Sample]} -- the list of samples whose filtered positive fields should be updated
-        version {str} -- the filtered positive identifier version used
-        update_timestamp {datetime} -- the timestamp at which the update was performed
 
     Returns:
         bool -- whether the updates completed successfully
     """
-    # get ids of those that are filtered positive, and those that aren't
-    all_ids: List[str] = [sample[FIELD_MONGODB_ID] for sample in samples]
-    filtered_positive_ids: List[str] = [
-        sample[FIELD_MONGODB_ID] for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] is True, samples))
-    ]
-    filtered_negative_ids = [mongo_id for mongo_id in all_ids if mongo_id not in filtered_positive_ids]
-
     samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
-    samples_collection.update_many(
-        {FIELD_MONGODB_ID: {"$in": filtered_positive_ids}},
-        {
-            "$set": {
-                FIELD_FILTERED_POSITIVE: True,
-                FIELD_FILTERED_POSITIVE_VERSION: version,
-                FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
-            }
-        },
-    )
-    samples_collection.update_many(
-        {FIELD_MONGODB_ID: {"$in": filtered_negative_ids}},
-        {
-            "$set": {
-                FIELD_FILTERED_POSITIVE: False,
-                FIELD_FILTERED_POSITIVE_VERSION: version,
-                FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
-            }
-        },
+    samples_collection.bulk_write(
+        [
+            UpdateOne(
+                {FIELD_MONGODB_ID: sample[FIELD_MONGODB_ID]},
+                {
+                    "$set": {
+                        FIELD_LH_SAMPLE_UUID: sample[FIELD_LH_SAMPLE_UUID],
+                        FIELD_LH_SOURCE_PLATE_UUID: sample[FIELD_LH_SOURCE_PLATE_UUID],
+                    }
+                },
+            )
+            for sample in samples
+        ]
     )
     return True
 
@@ -319,10 +269,9 @@ def samples_updated_with_source_plate_uuids(mongo_db, samples: List[Sample]) -> 
         if len(new_plates) > 0:
             source_plates_collection.insert_many(new_plates, ordered=False)
 
-    except Exception as e:
+    except Exception:
         logger.error("Failed assigning source plate UUIDs to samples.")
-        logger.exception(e)
-        updated_samples = []
+        raise
 
     return updated_samples
 

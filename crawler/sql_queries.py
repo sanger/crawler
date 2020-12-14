@@ -72,9 +72,6 @@ source=VALUES(source),
 lab_id=VALUES(lab_id),
 created_at=VALUES(created_at),
 updated_at=VALUES(updated_at),
-filtered_positive=VALUES(filtered_positive),
-filtered_positive_version=VALUES(filtered_positive_version),
-filtered_positive_timestamp=VALUES(filtered_positive_timestamp),
 lh_sample_uuid=VALUES(lh_sample_uuid),
 lh_source_plate_uuid=VALUES(lh_source_plate_uuid);
 """
