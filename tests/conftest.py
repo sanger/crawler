@@ -393,6 +393,11 @@ def v1_filtered_positive_testing_samples(samples_collection_accessor):
 
 
 @pytest.fixture
+def unmigrated_mongo_testing_samples(config, event_wh_sql_engine):
+    return UNMIGRATED_MONGO_TESTING_SAMPLES
+
+
+@pytest.fixture
 def event_wh_data(config, event_wh_sql_engine):
     try:
         subjects_table = get_table(event_wh_sql_engine, config.EVENT_WH_SUBJECTS_TABLE)

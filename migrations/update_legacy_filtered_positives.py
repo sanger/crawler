@@ -12,6 +12,7 @@ from migrations.helpers.update_legacy_filtered_positives_helper import (
     unmigrated_mongo_samples,
     get_v0_cherrypicked_samples,
     v0_version_set,
+    split_v0_cherrypicked_mongo_samples,
 )
 from migrations.helpers.dart_samples_update_helper import extract_required_cp_info
 
@@ -50,7 +51,7 @@ def run(settings_module: str = "") -> None:
 
             v0_cherrypicked_samples, unmigrated_samples = split_v0_cherrypicked_mongo_samples(samples, cp_samples_df)
 
-            filtered_positive_identifier = FilteredPositiveIdentifier()
+            filtered_positive_identifier = FilteredPositiveIdentifier("v1")
             version = filtered_positive_identifier.current_version()
             update_timestamp = datetime.now()
 

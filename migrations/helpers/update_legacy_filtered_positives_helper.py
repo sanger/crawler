@@ -183,13 +183,26 @@ def v0_version_set(config: ModuleType):
 
 def split_v0_cherrypicked_mongo_samples(samples: List[Sample], cp_samples_df: DataFrame):
     """Split the Mongo samples dataframe based on the v0 cherrypicked samples. Samples
-       which have been v0 cherrypicked need to have the v0 filtered postive rules
+       which have been v0 cherrypicked need to have the v0 filtered positive rules
        applied. The remaining samples need the v1 rule applied.
-    
+
     Args:
         samples {List[Sample]} -- List of samples from Mongo
+        cp_samples_df: DataFrame -- DataFrame of v0 cherrypicked samples
 
     Returns:
-        v0_unmigrated_samples {DataFrame} -- Mongo samples to be updated with v0 rules
-        v1_unmigrated_samples {DataFrame} -- Mongo samples to be updated with v1 rules
+        v0_unmigrated_samples {List[Sample]} -- Mongo samples to be updated with v0 rules
+        v1_unmigrated_samples {List[Sample]} -- Mongo samples to be updated with v1 rules
     """
+    v0_cp_samples = cp_samples_df[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()
+
+    v0_unmigrated_samples = []
+    v1_unmigrated_samples = []
+
+    for sample in samples:
+        if [sample[FIELD_ROOT_SAMPLE_ID], sample[FIELD_PLATE_BARCODE]] in v0_cp_samples:
+            v0_unmigrated_samples.append(sample)
+        else:
+            v1_unmigrated_samples.append(sample)
+
+    return v0_unmigrated_samples, v1_unmigrated_samples

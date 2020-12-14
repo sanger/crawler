@@ -26,9 +26,7 @@ def test_v0_version_set_returns_true_with_v0_samples(config, filtered_positive_t
     assert v0_version_set(config) is True
 
 
-def test_v0_version_set_returns_false_with_no_v0_samples(
-    config, v1_filtered_positive_testing_samples
-):
+def test_v0_version_set_returns_false_with_no_v0_samples(config, v1_filtered_positive_testing_samples):
     assert v0_version_set(config) is False
 
 

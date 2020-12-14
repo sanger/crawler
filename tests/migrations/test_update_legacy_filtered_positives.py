@@ -25,6 +25,6 @@ def test_error_connecting_to_mysql_databases_raises_exception():
     with pytest.raises(Exception):
         with patch(
             "migrations.helpers.update_legacy_filtered_positives_helper.get_v0_cherrypicked_samples",
-            side_effect="Boom!"
+            side_effect="Boom!",
         ):
             update_legacy_filtered_positives.run("crawler.config.integration")
