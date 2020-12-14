@@ -29,6 +29,7 @@ from crawler.helpers.general_helpers import map_mongo_doc_to_sql_columns
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from crawler.types import Sample, SourcePlate
 from migrations.helpers.shared_helper import (
+    extract_required_cp_info,
     get_cherrypicked_samples,
     remove_cherrypicked_samples,
     valid_datetime_string,
@@ -144,17 +145,6 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
     except Exception as e:
         logger.error("Error while attempting to migrate all DBs")
         logger.exception(e)
-
-
-def extract_required_cp_info(samples: List[Sample]) -> Tuple[Set[str], Set[str]]:
-    root_sample_ids = set()
-    plate_barcodes = set()
-
-    for sample in samples:
-        root_sample_ids.add(sample[FIELD_ROOT_SAMPLE_ID])
-        plate_barcodes.add(sample[FIELD_PLATE_BARCODE])
-
-    return root_sample_ids, plate_barcodes
 
 
 def get_positive_samples(

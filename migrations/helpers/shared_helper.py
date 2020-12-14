@@ -6,7 +6,7 @@ import sqlalchemy  # type: ignore
 import sys
 import traceback
 from types import ModuleType
-from typing import Optional, List
+from typing import Optional, List, Tuple, Set
 
 from crawler.constants import (
     FIELD_COORDINATE,
@@ -38,6 +38,17 @@ def valid_datetime_string(s_datetime: str) -> bool:
     except Exception:
         print_exception()
         return False
+
+
+def extract_required_cp_info(samples: List[Sample]) -> Tuple[Set[str], Set[str]]:
+    root_sample_ids = set()
+    plate_barcodes = set()
+
+    for sample in samples:
+        root_sample_ids.add(sample[FIELD_ROOT_SAMPLE_ID])
+        plate_barcodes.add(sample[FIELD_PLATE_BARCODE])
+
+    return root_sample_ids, plate_barcodes
 
 
 # TODO - test this method
