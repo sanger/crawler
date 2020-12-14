@@ -55,8 +55,7 @@ def run(settings_module: str = "") -> None:
             )
 
             v0_unmigrated_samples, v1_unmigrated_samples = split_v0_cherrypicked_mongo_samples(
-                                                            samples,
-                                                            cp_samples_df
+                                                            samples, cp_samples_df
                                                           )
 
             # Updating v0 filtered positive fields
@@ -64,6 +63,7 @@ def run(settings_module: str = "") -> None:
             version = filtered_positive_identifier.current_version()
             update_timestamp = datetime.now()
 
+            logger.info("Updating v0 filtered positives...")
             update_filtered_positive_fields(
                 filtered_positive_identifier,
                 v0_unmigrated_samples,
@@ -71,24 +71,34 @@ def run(settings_module: str = "") -> None:
                 update_timestamp,
             )
 
-            # Updating v0 filtered positive fields
+            # Updating v1 filtered positive fields
             filtered_positive_identifier = FilteredPositiveIdentifier("v1")
             version = filtered_positive_identifier.current_version()
             update_timestamp = datetime.now()
 
+            logger.info("Updating v1 filtered positives...")
             update_filtered_positive_fields(
                 filtered_positive_identifier,
                 v1_unmigrated_samples,
                 version,
                 update_timestamp,
             )
+            logger.info("Updated filtered positives")
 
+            migrated_samples = v0_unmigrated_samples + v1_unmigrated_samples
+            logger.info("Updating Mongo...")
             mongo_updated = update_mongo_filtered_positive_fields(
                 config,
-                samples,
+                migrated_samples,
                 version,
                 update_timestamp
             )
+            logger.info("Finished updating Mongo")
+
+            if mongo_updated:
+                logger.info("Updating MLWH...")
+                mlwh_updated = update_mlwh_filtered_positive_fields(config, migrated_samples)
+                logger.info("Finished updating MLWH")
 
         else:
             logger.warning(
