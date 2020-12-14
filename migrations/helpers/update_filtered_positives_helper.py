@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from more_itertools import groupby_transform
 from types import ModuleType
 from typing import Dict, List
 
@@ -35,7 +36,11 @@ from crawler.helpers.general_helpers import (
 )
 from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE
 from crawler.types import Sample
-from more_itertools import groupby_transform
+from migrations.helpers.shared_helper import (
+    extract_required_cp_info,
+    get_cherrypicked_samples,
+    remove_cherrypicked_samples as remove_cp_samples,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +99,27 @@ def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[
                 }
             )
         )
+
+
+def remove_cherrypicked_samples(config: ModuleType, samples: List[Sample]) -> List[Sample]:
+    """Filters an input list of samples for those that have not been cherrypicked.
+
+    Arguments:
+        config {ModuleType} -- application config specifying database details
+        samples {List[Sample]} -- the list of samples to filter
+
+    Returns:
+        List[Sample] -- non-cherrypicked samples
+    """
+    non_cp_samples = []
+    root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
+    cp_samples_df = get_cherrypicked_samples(config, list(root_sample_ids), list(plate_barcodes))
+
+    if cp_samples_df is not None and not cp_samples_df.empty:
+        cp_samples = cp_samples_df[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()
+        non_cp_samples = remove_cp_samples(samples, cp_samples)
+
+    return non_cp_samples
 
 
 def update_filtered_positive_fields(
