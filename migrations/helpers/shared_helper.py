@@ -51,7 +51,6 @@ def extract_required_cp_info(samples: List[Sample]) -> Tuple[Set[str], Set[str]]
     return root_sample_ids, plate_barcodes
 
 
-# TODO - test this method
 def get_cherrypicked_samples(
     config: ModuleType,
     root_sample_ids: List[str],

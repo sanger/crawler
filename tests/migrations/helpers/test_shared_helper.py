@@ -64,7 +64,7 @@ def generate_example_samples(range, start_datetime):
     return samples
 
 
-# ----- remove_cherrpicked_samples tests -----
+# ----- remove_cherrypicked_samples tests -----
 
 
 def test_remove_cherrypicked_samples():
@@ -74,3 +74,8 @@ def test_remove_cherrypicked_samples():
     samples = remove_cherrypicked_samples(test_samples, [mock_cherry_picked_sample])
     assert len(samples) == 7
     assert mock_cherry_picked_sample[0] not in [sample[FIELD_ROOT_SAMPLE_ID] for sample in samples]
+
+
+# TODO - test get_cherrypicked_samples
+
+# TODO - test extract_required_cp_info

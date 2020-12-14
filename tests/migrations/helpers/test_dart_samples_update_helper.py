@@ -176,11 +176,6 @@ def test_update_mongo_fields(mongo_database):
         )
 
 
-# TODO - test get_cherrypicked_samples
-
-# TODO - test extract_required_cp_info
-
-
 # ----- migrate_all_dbs tests -----
 
 
