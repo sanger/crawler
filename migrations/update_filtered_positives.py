@@ -18,11 +18,12 @@ from migrations.helpers.update_filtered_positives_helper import (
 logger = logging.getLogger(__name__)
 
 
-def run(settings_module: str = "") -> None:
+def run(settings_module: str = "", omit_dart: bool = False) -> None:
     """Updates filtered positive values for all positive samples in pending plates
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        settings_module {str} -- settings module from which to generate the app config
+        omit_dart {bool} -- whether to omit DART queries/updates from the process
     """
     config, settings_module = get_config(settings_module)
     logging.config.dictConfig(config.LOGGING)  # type: ignore
