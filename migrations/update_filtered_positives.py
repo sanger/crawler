@@ -90,7 +90,7 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
                     mlwh_updated = update_mlwh_filtered_positive_fields(config, non_cp_pos_pending_samples)
                     logger.info("Finished updating MLWH")
 
-                    if mlwh_updated:
+                    if not omit_dart and mlwh_updated:
                         logger.info("Updating DART...")
                         dart_updated = update_dart_fields(config, non_cp_pos_pending_samples)
                         logger.info("Finished updating DART")
