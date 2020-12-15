@@ -325,8 +325,7 @@ def test_update_filtered_positives_outputs_success(
 
     version = "v2.3"
     mock_pos_id = MagicMock()
-    version_property_mock = PropertyMock(return_value=version)
-    type(mock_pos_id).version = version_property_mock
+    type(mock_pos_id).version = PropertyMock(return_value=version)
     with patch("migrations.update_filtered_positives.current_filtered_positive_identifier", return_value=mock_pos_id):
         with patch("migrations.update_filtered_positives.datetime") as mock_datetime:
             timestamp = datetime.now()
