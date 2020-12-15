@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, PropertyMock
 
 import pytest
 from crawler.constants import (
@@ -27,6 +27,7 @@ from crawler.constants import (
 from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES
 from migrations.helpers.update_filtered_positives_helper import (
     biomek_labclass_by_centre_name,
+    remove_cherrypicked_samples,
     pending_plate_barcodes_from_dart,
     positive_result_samples_from_mongo,
     update_dart_fields,
@@ -124,6 +125,53 @@ def test_positive_result_samples_from_mongo_returns_expected_samples(config, tes
     expected_samples = testing_samples[:1]  # only the first sample is positive, with matching plate barcode
     result = positive_result_samples_from_mongo(config, plate_barcodes)
     assert result == expected_samples
+
+
+# ----- test remove_cherrypicked_samples method -----
+
+
+def test_remove_cherrypicked_samples_throws_for_error_extracting_required_cp_info(config, testing_samples):
+    with patch("migrations.helpers.update_filtered_positives_helper.extract_required_cp_info", side_effect=Exception("Boom!")):
+        with pytest.raises(Exception):
+            remove_cherrypicked_samples(config, testing_samples)
+
+
+def test_remove_cherrypicked_samples_throws_for_error_getting_cherrypicked_samples(config, testing_samples):
+    with patch("migrations.helpers.update_filtered_positives_helper.get_cherrypicked_samples", side_effect=Exception("Boom!")):
+        with pytest.raises(Exception):
+            remove_cherrypicked_samples(config, testing_samples)
+
+
+def test_remove_cherrypicked_samples_returns_no_samples_with_none_cp_samples_df(config, testing_samples):
+    with patch("migrations.helpers.update_filtered_positives_helper.get_cherrypicked_samples", return_value=None):
+        result = remove_cherrypicked_samples(config, testing_samples)
+        assert result == []
+
+
+def test_remove_cherrypicked_samples_returns_no_samples_with_empty_cp_samples_df(config, testing_samples):
+    cp_samples_df = MagicMock()
+    type(cp_samples_df).empty = PropertyMock(return_value=True)
+    with patch("migrations.helpers.update_filtered_positives_helper.get_cherrypicked_samples", return_value=cp_samples_df):
+        result = remove_cherrypicked_samples(config, testing_samples)
+        assert result == []
+
+
+def test_remove_cherrypicked_samples_throws_for_error_removing_cp_samples(config, testing_samples):
+    cp_samples_df = MagicMock()
+    type(cp_samples_df).empty = PropertyMock(return_value=False)
+    with patch("migrations.helpers.update_filtered_positives_helper.get_cherrypicked_samples", return_value=cp_samples_df):
+        with patch("migrations.helpers.update_filtered_positives_helper.remove_cp_samples", side_effect=Exception("Boom!")):
+            with pytest.raises(Exception):
+                remove_cherrypicked_samples(config, testing_samples)
+
+
+def test_remove_cherrypicked_samples_returns_non_cp_samples(config, testing_samples):
+    cp_samples_df = MagicMock()
+    type(cp_samples_df).empty = PropertyMock(return_value=False)
+    with patch("migrations.helpers.update_filtered_positives_helper.get_cherrypicked_samples", return_value=cp_samples_df):
+        with patch("migrations.helpers.update_filtered_positives_helper.remove_cp_samples", return_value=testing_samples):
+            result = remove_cherrypicked_samples(config, [])
+            assert result == testing_samples
 
 
 # ----- test update_filtered_positive_fields method -----
