@@ -1,11 +1,16 @@
 import pandas as pd
 import numpy as np
-
+from crawler.filtered_positive_identifier import (
+    FilteredPositiveIdentifier,
+    FILTERED_POSITIVE_VERSION_0,
+    FILTERED_POSITIVE_VERSION_1,
+    FILTERED_POSITIVE_VERSION_2,
+)
 from migrations.helpers.update_legacy_filtered_positives_helper import (
     check_versions_set,
     unmigrated_mongo_samples,
     get_cherrypicked_samples_by_date,
-    split_mongo_samples_on_version,
+    split_mongo_samples_by_version,
 )
 
 from crawler.constants import (
@@ -32,7 +37,7 @@ def test_check_versions_set_returns_false_with_no_v0_v1_samples(config, filtered
     assert check_versions_set(config) is False
 
 
-def test_get_cherrypicked_samples_by_date_returns_expected_v0(
+def test_get_cherrypicked_samples_by_date_v0_returns_expected(
     config, event_wh_data, mlwh_sample_stock_resource, mlwh_sql_engine, event_wh_sql_engine
 ):
     root_sample_ids = ["root_1", "root_2", "root_3", "root_4"]
@@ -48,7 +53,7 @@ def test_get_cherrypicked_samples_by_date_returns_expected_v0(
     pd.testing.assert_frame_equal(expected, returned_samples)
 
 
-def test_get_cherrypicked_samples_by_date_returns_expected_v1(
+def test_get_cherrypicked_samples_by_date_v1_returns_expected(
     config, event_wh_data, mlwh_sample_stock_resource, mlwh_sql_engine, event_wh_sql_engine
 ):
     root_sample_ids = ["root_1", "root_2", "root_3", "root_4"]
@@ -64,17 +69,27 @@ def test_get_cherrypicked_samples_by_date_returns_expected_v1(
     pd.testing.assert_frame_equal(expected, returned_samples)
 
 
-def test_split_v0_cherrypicked_mongo_samples(unmigrated_mongo_testing_samples):
+def test_split_mongo_samples_by_version(unmigrated_mongo_testing_samples):
     rows = [["MCM005", "456"], ["MCM006", "456"]]
     columns = [FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]
     v0_cherrypicked_samples = pd.DataFrame(np.array(rows), columns=columns, index=[0, 1])
 
-    expected_v0_unmigrated_samples = unmigrated_mongo_testing_samples[1:]
-    expected_v1_unmigrated_samples = unmigrated_mongo_testing_samples[:1]
+    rows = [["MCM007", "456"]]
+    columns = [FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]
+    v1_cherrypicked_samples = pd.DataFrame(np.array(rows), columns=columns, index=[0])
 
-    returned_v0_unmigrated_samples, returned_v1_unmigrated_samples = split_mongo_samples_on_version(
-        unmigrated_mongo_testing_samples, v0_cherrypicked_samples
+    v0_unmigrated_samples = unmigrated_mongo_testing_samples[1:3]
+    v1_unmigrated_samples = unmigrated_mongo_testing_samples[-1:]
+    v2_unmigrated_samples = unmigrated_mongo_testing_samples[:1]
+    
+    expected = {
+        FILTERED_POSITIVE_VERSION_0: v0_unmigrated_samples,
+        FILTERED_POSITIVE_VERSION_1: v1_unmigrated_samples,
+        FILTERED_POSITIVE_VERSION_2: v2_unmigrated_samples,
+    }
+
+    samples_by_version = split_mongo_samples_by_version(
+        unmigrated_mongo_testing_samples, v0_cherrypicked_samples, v1_cherrypicked_samples
     )
 
-    assert expected_v0_unmigrated_samples == returned_v0_unmigrated_samples
-    assert expected_v1_unmigrated_samples == returned_v1_unmigrated_samples
+    assert samples_by_version == expected

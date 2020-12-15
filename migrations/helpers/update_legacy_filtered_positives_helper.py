@@ -4,7 +4,12 @@ from pandas import DataFrame # type: ignore
 import pandas as pd
 import sqlalchemy  # type: ignore
 from crawler.types import Sample
-from crawler.filtered_positive_identifier import FilteredPositiveIdentifier, FILTERED_POSITIVE_VERSION_0, FILTERED_POSITIVE_VERSION_1
+from crawler.filtered_positive_identifier import (
+    FilteredPositiveIdentifier,
+    FILTERED_POSITIVE_VERSION_0,
+    FILTERED_POSITIVE_VERSION_1,
+    FILTERED_POSITIVE_VERSION_2,
+) 
 from crawler.constants import (
     COLLECTION_SAMPLES,
     FIELD_FILTERED_POSITIVE,
@@ -161,7 +166,45 @@ def check_versions_set(config: ModuleType):
             return False
 
 
-def split_mongo_samples_on_version(samples: List[Sample], cp_samples_df: DataFrame):
+def split_mongo_samples_by_version(samples: List[Sample], cp_samples_df_v0: DataFrame, cp_samples_df_v1: DataFrame):
+    """Split the Mongo samples dataframe based on the v0 cherrypicked samples. Samples
+       which have been v0 cherrypicked need to have the v0 filtered positive rules
+       applied. The remaining samples need the v1 rule applied.
+
+    Args:
+        samples {List[Sample]} -- List of samples from Mongo
+        cp_samples_df_v0: DataFrame -- DataFrame of v0 cherrypicked samples
+        cp_samples_df_v1: DataFrame -- DataFrame of v1 cherrypicked samples
+
+    Returns:
+        samples_by_version {Dict[List[Sample]]} -- Samples split by version
+    """
+    v0_cp_samples = cp_samples_df_v0[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()
+    v1_cp_samples = cp_samples_df_v1[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()
+
+    v0_unmigrated_samples = []
+    v1_unmigrated_samples = []
+    v2_unmigrated_samples = []
+
+    for sample in samples:
+        if [sample[FIELD_ROOT_SAMPLE_ID], sample[FIELD_PLATE_BARCODE]] in v0_cp_samples:
+            v0_unmigrated_samples.append(sample)
+        elif [sample[FIELD_ROOT_SAMPLE_ID], sample[FIELD_PLATE_BARCODE]] in v1_cp_samples:
+            v1_unmigrated_samples.append(sample)
+        else:
+            v2_unmigrated_samples.append(sample)
+
+
+
+    samples_by_version = {
+        FILTERED_POSITIVE_VERSION_0: v0_unmigrated_samples,
+        FILTERED_POSITIVE_VERSION_1: v1_unmigrated_samples,
+        FILTERED_POSITIVE_VERSION_2: v2_unmigrated_samples,
+    }
+
+    return samples_by_version
+
+
     """Split the Mongo samples dataframe based on the v0 cherrypicked samples. Samples
        which have been v0 cherrypicked need to have the v0 filtered positive rules
        applied. The remaining samples need the v1 rule applied.

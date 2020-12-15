@@ -200,6 +200,13 @@ UNMIGRATED_MONGO_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_PLATE_BARCODE: "456",
         FIELD_ROOT_SAMPLE_ID: "MCM006",
     },
+    {
+        FIELD_COORDINATE: "F01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Void",
+        FIELD_PLATE_BARCODE: "456",
+        FIELD_ROOT_SAMPLE_ID: "MCM007",
+    },
 ]
 
 
