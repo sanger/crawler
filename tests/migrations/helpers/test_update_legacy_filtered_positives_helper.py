@@ -13,7 +13,6 @@ from migrations.helpers.update_legacy_filtered_positives_helper import (
     unmigrated_mongo_samples,
     get_cherrypicked_samples_by_date,
     split_mongo_samples_by_version,
-    update_filtered_positive_fields_by_version,
 )
 
 from crawler.constants import (
@@ -87,45 +86,15 @@ def test_split_mongo_samples_by_version(unmigrated_mongo_testing_samples):
     v0_unmigrated_samples = unmigrated_mongo_testing_samples[1:3]
     v1_unmigrated_samples = unmigrated_mongo_testing_samples[-1:]
     v2_unmigrated_samples = unmigrated_mongo_testing_samples[:1]
-    
-    expected = {
-        FILTERED_POSITIVE_VERSION_0: v0_unmigrated_samples,
-        FILTERED_POSITIVE_VERSION_1: v1_unmigrated_samples,
-        FILTERED_POSITIVE_VERSION_2: v2_unmigrated_samples,
-    }
 
     samples_by_version = split_mongo_samples_by_version(
         unmigrated_mongo_testing_samples, v0_cherrypicked_samples, v1_cherrypicked_samples
     )
 
-    assert samples_by_version == expected
-
-
-def test_update_filtered_positive_fields_by_version(freezer, unmigrated_mongo_testing_samples):
-    v0_unmigrated_samples = unmigrated_mongo_testing_samples[:1]
-    v1_unmigrated_samples = unmigrated_mongo_testing_samples[1:3]
-    v2_unmigrated_samples = unmigrated_mongo_testing_samples[-1:]
-
-    samples_by_version = {
-        FILTERED_POSITIVE_VERSION_0: v0_unmigrated_samples,
-        FILTERED_POSITIVE_VERSION_1: v1_unmigrated_samples,
-        FILTERED_POSITIVE_VERSION_2: v2_unmigrated_samples,
-    }
-
-    expected_samples = copy.deepcopy(v0_unmigrated_samples + v1_unmigrated_samples + v2_unmigrated_samples)
-
-    expected_samples[0][FIELD_FILTERED_POSITIVE] = False
-    expected_samples[0][FIELD_FILTERED_POSITIVE_VERSION] = "v0"
-    expected_samples[0][FIELD_FILTERED_POSITIVE_TIMESTAMP] = datetime.now()
-
-    for sample in expected_samples[1:3]:
-        sample[FIELD_FILTERED_POSITIVE] = False
-        sample[FIELD_FILTERED_POSITIVE_VERSION] = "v1"
-        sample[FIELD_FILTERED_POSITIVE_TIMESTAMP] = datetime.now()
-
-    expected_samples[3][FIELD_FILTERED_POSITIVE] = False
-    expected_samples[3][FIELD_FILTERED_POSITIVE_VERSION] = "v2"
-    expected_samples[3][FIELD_FILTERED_POSITIVE_TIMESTAMP] = datetime.now()
-
-    migrated_samples = update_filtered_positive_fields_by_version(samples_by_version)
-    assert migrated_samples ==  expected_samples
+    for filtered_positive_identifier, samples in samples_by_version.items():
+        if filtered_positive_identifier.version == "v0":
+            assert samples == v0_unmigrated_samples
+        elif filtered_positive_identifier.version == "v1":
+            assert samples == v1_unmigrated_samples
+        elif filtered_positive_identifier.version == "v2":
+            assert samples == v2_unmigrated_samples

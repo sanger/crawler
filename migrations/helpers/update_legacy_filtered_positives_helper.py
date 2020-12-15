@@ -199,44 +199,10 @@ def split_mongo_samples_by_version(samples: List[Sample], cp_samples_df_v0: Data
         else:
             v2_unmigrated_samples.append(sample)
 
-
-
     samples_by_version = {
-        FILTERED_POSITIVE_VERSION_0: v0_unmigrated_samples,
-        FILTERED_POSITIVE_VERSION_1: v1_unmigrated_samples,
-        FILTERED_POSITIVE_VERSION_2: v2_unmigrated_samples,
+        FilteredPositiveIdentifierV0(): v0_unmigrated_samples,
+        FilteredPositiveIdentifierV1(): v1_unmigrated_samples,
+        FilteredPositiveIdentifierV2(): v2_unmigrated_samples,
     }
 
     return samples_by_version
-
-
-def update_filtered_positive_fields_by_version(samples_by_version: Dict[str, List[Sample]]):
-    """Loop through filtered positive versions and update sample fields accordingly
-
-    Args:
-        samples_by_version {Dict[List[Sample]]} -- Samples split by version rule to be applied
-
-    Returns:
-        migrated_samples {List[Sample]} -- Samples with filtered positive rules applied
-    """
-    filtered_positive_identifiers = {
-        FILTERED_POSITIVE_VERSION_0: FilteredPositiveIdentifierV0(),
-        FILTERED_POSITIVE_VERSION_1: FilteredPositiveIdentifierV1(),
-        FILTERED_POSITIVE_VERSION_2: FilteredPositiveIdentifierV2(),
-    }
-
-    migrated_samples = []
-    update_timestamp = datetime.now()
-    for version, version_samples in samples_by_version.items():
-        filtered_positive_identifier = filtered_positive_identifiers[version]
-
-        logger.info(f"Updating {version} filtered positives...")
-        update_filtered_positive_fields(
-            filtered_positive_identifier,
-            version_samples,
-            version,
-            update_timestamp,
-        )
-        migrated_samples.extend(version_samples)
-    
-    return migrated_samples
