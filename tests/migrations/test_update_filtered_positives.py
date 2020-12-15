@@ -1,7 +1,9 @@
-from unittest.mock import patch
+from datetime import datetime
+from unittest.mock import patch, MagicMock, PropertyMock
 
 import pytest
 
+from crawler.helpers.general_helpers import get_config
 from migrations import update_filtered_positives
 
 # ----- test fixture helpers -----
@@ -275,15 +277,29 @@ def test_update_filtered_positives_outputs_success(
     # mock a successful update
     mock_get_plate_barcodes.return_value = ["123", "456"]
     mock_get_positive_samples.return_value = [{"plate_barcode": "123"}, {"plate_barcode": "456"}]
-    mock_remove_cherrypicked.return_value = [{"plate_barcode": "123"}]
+    non_cp_samples = [{"plate_barcode": "123"}]
+    mock_remove_cherrypicked.return_value = non_cp_samples
     mock_update_mongo.return_value = True
     mock_update_mlwh.return_value = True
     mock_update_dart.return_value = True
 
-    # call the migration
-    update_filtered_positives.run("crawler.config.integration")
+    version = "v2.3"
+    mock_pos_id = MagicMock()
+    version_property_mock = PropertyMock(return_value=version)
+    type(mock_pos_id).version = version_property_mock
+    with patch("migrations.update_filtered_positives.current_filtered_positive_identifier", return_value=mock_pos_id):
+        with patch("migrations.update_filtered_positives.datetime") as mock_datetime:
+            timestamp = datetime.now()
+            mock_datetime.now.return_value = timestamp
+            
+            # call the migration
+            update_filtered_positives.run("crawler.config.integration")
 
-    # ensure expected database calls
-    mock_update_mongo.assert_called_once()
-    mock_update_mlwh.assert_called_once()
-    mock_update_dart.assert_called_once()
+            # ensure expected database calls
+            config, _ = get_config("crawler.config.integration")
+            mock_update_mongo.assert_called_once()
+            mock_update_mongo.assert_called_with(config, non_cp_samples, version, timestamp)
+            mock_update_mlwh.assert_called_once()
+            mock_update_mlwh.assert_called_with(config, non_cp_samples)
+            mock_update_dart.assert_called_once()
+            mock_update_dart.assert_called_with(config, non_cp_samples)
