@@ -111,15 +111,14 @@ def remove_cherrypicked_samples(config: ModuleType, samples: List[Sample]) -> Li
     Returns:
         List[Sample] -- non-cherrypicked samples
     """
-    non_cp_samples = []
     root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
     cp_samples_df = get_cherrypicked_samples(config, list(root_sample_ids), list(plate_barcodes))
 
     if cp_samples_df is not None and not cp_samples_df.empty:
         cp_samples = cp_samples_df[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()
-        non_cp_samples = remove_cp_samples(samples, cp_samples)
-
-    return non_cp_samples
+        return remove_cp_samples(samples, cp_samples)
+    else:
+        return samples
 
 
 def update_filtered_positive_fields(

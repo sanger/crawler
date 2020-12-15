@@ -146,20 +146,20 @@ def test_remove_cherrypicked_samples_throws_for_error_getting_cherrypicked_sampl
             remove_cherrypicked_samples(config, testing_samples)
 
 
-def test_remove_cherrypicked_samples_returns_no_samples_with_none_cp_samples_df(config, testing_samples):
+def test_remove_cherrypicked_samples_returns_input_samples_with_none_cp_samples_df(config, testing_samples):
     with patch("migrations.helpers.update_filtered_positives_helper.get_cherrypicked_samples", return_value=None):
         result = remove_cherrypicked_samples(config, testing_samples)
-        assert result == []
+        assert result == testing_samples
 
 
-def test_remove_cherrypicked_samples_returns_no_samples_with_empty_cp_samples_df(config, testing_samples):
+def test_remove_cherrypicked_samples_returns_input_samples_with_empty_cp_samples_df(config, testing_samples):
     cp_samples_df = MagicMock()
     type(cp_samples_df).empty = PropertyMock(return_value=True)
     with patch(
         "migrations.helpers.update_filtered_positives_helper.get_cherrypicked_samples", return_value=cp_samples_df
     ):
         result = remove_cherrypicked_samples(config, testing_samples)
-        assert result == []
+        assert result == testing_samples
 
 
 def test_remove_cherrypicked_samples_throws_for_error_removing_cp_samples(config, testing_samples):
