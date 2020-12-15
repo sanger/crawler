@@ -1,15 +1,20 @@
 from types import ModuleType
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Set, Tuple, Dict
 from pandas import DataFrame # type: ignore
 import pandas as pd
+from datetime import datetime
 import sqlalchemy  # type: ignore
 from crawler.types import Sample
 from crawler.filtered_positive_identifier import (
     FilteredPositiveIdentifier,
+    FilteredPositiveIdentifierV0,
+    FilteredPositiveIdentifierV1,
+    FilteredPositiveIdentifierV2,
     FILTERED_POSITIVE_VERSION_0,
     FILTERED_POSITIVE_VERSION_1,
     FILTERED_POSITIVE_VERSION_2,
-) 
+)
+from migrations.helpers.update_filtered_positives_helper import update_filtered_positive_fields
 from crawler.constants import (
     COLLECTION_SAMPLES,
     FIELD_FILTERED_POSITIVE,
@@ -205,27 +210,33 @@ def split_mongo_samples_by_version(samples: List[Sample], cp_samples_df_v0: Data
     return samples_by_version
 
 
-    """Split the Mongo samples dataframe based on the v0 cherrypicked samples. Samples
-       which have been v0 cherrypicked need to have the v0 filtered positive rules
-       applied. The remaining samples need the v1 rule applied.
+def update_filtered_positive_fields_by_version(samples_by_version: Dict[str, List[Sample]]):
+    """Loop through filtered positive versions and update sample fields accordingly
 
     Args:
-        samples {List[Sample]} -- List of samples from Mongo
-        cp_samples_df: DataFrame -- DataFrame of v0 cherrypicked samples
+        samples_by_version {Dict[List[Sample]]} -- Samples split by version rule to be applied
 
     Returns:
-        v0_unmigrated_samples {List[Sample]} -- Mongo samples to be updated with v0 rules
-        v1_unmigrated_samples {List[Sample]} -- Mongo samples to be updated with v1 rules
+        migrated_samples {List[Sample]} -- Samples with filtered positive rules applied
     """
-    v0_cp_samples = cp_samples_df[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()
+    filtered_positive_identifiers = {
+        FILTERED_POSITIVE_VERSION_0: FilteredPositiveIdentifierV0(),
+        FILTERED_POSITIVE_VERSION_1: FilteredPositiveIdentifierV1(),
+        FILTERED_POSITIVE_VERSION_2: FilteredPositiveIdentifierV2(),
+    }
 
-    v0_unmigrated_samples = []
-    v1_unmigrated_samples = []
+    migrated_samples = []
+    update_timestamp = datetime.now()
+    for version, version_samples in samples_by_version.items():
+        filtered_positive_identifier = filtered_positive_identifiers[version]
 
-    for sample in samples:
-        if [sample[FIELD_ROOT_SAMPLE_ID], sample[FIELD_PLATE_BARCODE]] in v0_cp_samples:
-            v0_unmigrated_samples.append(sample)
-        else:
-            v1_unmigrated_samples.append(sample)
-
-    return v0_unmigrated_samples, v1_unmigrated_samples
+        logger.info(f"Updating {version} filtered positives...")
+        update_filtered_positive_fields(
+            filtered_positive_identifier,
+            version_samples,
+            version,
+            update_timestamp,
+        )
+        migrated_samples.extend(version_samples)
+    
+    return migrated_samples
