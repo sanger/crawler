@@ -115,6 +115,42 @@ def test_update_filtered_positives_aborts_with_no_positive_samples_fetched_from_
     mock_update_dart.assert_not_called()
 
 
+def test_update_filtered_positives_catches_error_removing_cherrypicked_samples(mock_helper_imports, mock_remove_cherrypicked, mock_helper_database_updates):
+    mock_get_plate_barcodes, mock_get_positive_samples = mock_helper_imports
+    mock_update_mongo, mock_update_mlwh, mock_update_dart = mock_helper_database_updates
+
+    # mock removing cherrypicked samples to throw
+    mock_get_plate_barcodes.return_value = ["123", "456"]
+    mock_get_positive_samples.return_value = [{"plate_barcode": "123"}, {"plate_barcode": "456"}]
+    mock_remove_cherrypicked.side_effect = NotImplementedError("Boom!")
+
+    # call the migration
+    update_filtered_positives.run("crawler.config.integration")
+
+    # ensure that no databases are updated
+    mock_update_mongo.assert_not_called()
+    mock_update_mlwh.assert_not_called()
+    mock_update_dart.assert_not_called()
+
+
+def test_update_filtered_positives_aborts_with_no_non_cherrypicked_samples(mock_helper_imports, mock_remove_cherrypicked, mock_helper_database_updates):
+    mock_get_plate_barcodes, mock_get_positive_samples = mock_helper_imports
+    mock_update_mongo, mock_update_mlwh, mock_update_dart = mock_helper_database_updates
+
+    # mock removing cherrypicked samples to throw
+    mock_get_plate_barcodes.return_value = ["123", "456"]
+    mock_get_positive_samples.return_value = [{"plate_barcode": "123"}, {"plate_barcode": "456"}]
+    mock_remove_cherrypicked.return_value = []
+
+    # call the migration
+    update_filtered_positives.run("crawler.config.integration")
+
+    # ensure that no databases are updated
+    mock_update_mongo.assert_not_called()
+    mock_update_mlwh.assert_not_called()
+    mock_update_dart.assert_not_called()
+
+
 def test_update_filtered_positives_catches_error_determining_filtered_positive_results(
     mock_helper_imports, mock_remove_cherrypicked, mock_update_positives, mock_helper_database_updates
 ):
