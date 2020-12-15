@@ -43,7 +43,7 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
         pending_plate_barcodes = pending_plate_barcodes_from_dart(config)
 
         if num_pending_plates := len(pending_plate_barcodes):
-            logger.info(f"{len(pending_plate_barcodes)} pending plates found in DART")
+            logger.info(f"{num_pending_plates} pending plates found in DART")
 
             # Get positive result samples from Mongo in these pending plates
             logger.info("Selecting postive samples in pending plates from Mongo...")
