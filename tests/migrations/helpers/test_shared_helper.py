@@ -69,15 +69,18 @@ def generate_example_samples(range, start_datetime):
 
 # ----- extract_required_cp_info tests -----
 
+
 def test_extract_required_cp_info():
     test_samples = generate_example_samples(range(0, 3), datetime.now())
     test_samples.append(test_samples[0])
-    
+
     expected_barcodes = set(["DN10000000", "DN10000001", "DN10000002"])
-    expected_root_sample_ids = set(["TLS00000000", "TLS00000001", "TLS00000002", "TLS0000000_neg", "CBIQA_TLS0000000_control"])
+    expected_root_sample_ids = set(
+        ["TLS00000000", "TLS00000001", "TLS00000002", "TLS0000000_neg", "CBIQA_TLS0000000_control"]
+    )
 
     root_sample_ids, barcodes = extract_required_cp_info(test_samples)
-    
+
     assert barcodes == expected_barcodes
     assert root_sample_ids == expected_root_sample_ids
 
