@@ -11,8 +11,13 @@ from migrations.helpers.update_filtered_positives_helper import (
 from migrations.helpers.update_legacy_filtered_positives_helper import (
     unmigrated_mongo_samples,
     get_cherrypicked_samples_by_date,
-    v0_version_set,
-    split_v0_cherrypicked_mongo_samples,
+    check_versions_set,
+    split_mongo_samples_by_version,
+    combine_samples,
+)
+from crawler.constants import (
+    V0_V1_CUTOFF_TIMESTAMP,
+    V1_V2_CUTOFF_TIMESTAMP,
 )
 from migrations.helpers.dart_samples_update_helper import extract_required_cp_info
 
@@ -66,40 +71,46 @@ def run(settings_module: str = "") -> None:
                 V1_V2_CUTOFF_TIMESTAMP,
             )
 
-            samples_by_version = split_mongo_samples_on_version(samples, v0_cp_samples_df, v1_cp_samples_df)
+            samples_by_version = split_mongo_samples_by_version(samples, v0_cp_samples_df, v1_cp_samples_df)
+            
+            update_timestamp = datetime.now()
 
-            for version in [FILTERED_POSITIVE_VERSION_0, FILTERED_POSITIVE_VERSION_1, FILTERED_POSITIVE_VERSION_2]:
-                filtered_positive_identifier = FilteredPositiveIdentifier(version)
-                update_timestamp = datetime.now()
-
+            for filtered_positive_identifier, version_samples in samples_by_version.items():
+                version = filtered_positive_identifier.version
                 logger.info(f"Updating {version} filtered positives...")
                 update_filtered_positive_fields(
                     filtered_positive_identifier,
-                    samples_by_version[version],
+                    version_samples,
                     version,
                     update_timestamp,
                 )
-
+            
             logger.info("Updated filtered positives")
 
-            migrated_samples = v0_unmigrated_samples + v1_unmigrated_samples
-            logger.info("Updating Mongo...")
-            mongo_updated = update_mongo_filtered_positive_fields(
-                config,
-                migrated_samples,
-                version,
-                update_timestamp
-            )
+            logger.info("Updating Mongo")
+
+            for filtered_positive_identifier, version_samples in samples_by_version.items():
+                logger.info(f"Updating {version} filtered positives in Mongo...")
+                version = filtered_positive_identifier.version
+                mongo_updated = update_mongo_filtered_positive_fields(
+                    config,
+                    version_samples,
+                    version,
+                    update_timestamp
+                )
+
             logger.info("Finished updating Mongo")
+
+            all_versioned_samples = combine_samples(samples_by_version)
 
             if mongo_updated:
                 logger.info("Updating MLWH...")
-                mlwh_updated = update_mlwh_filtered_positive_fields(config, migrated_samples)
+                mlwh_updated = update_mlwh_filtered_positive_fields(config, all_versioned_samples)
                 logger.info("Finished updating MLWH")
 
         else:
             logger.warning(
-                "v0 filtered_positive_version has already been set in some Mongo samples - this migration has likely been run before."
+                "v0/v1 filtered_positive_version has already been set in some Mongo samples - this migration has likely been run before."
             )
             raise Exception()
     except Exception as e:
