@@ -115,7 +115,9 @@ def test_update_filtered_positives_aborts_with_no_positive_samples_fetched_from_
     mock_update_dart.assert_not_called()
 
 
-def test_update_filtered_positives_catches_error_removing_cherrypicked_samples(mock_helper_imports, mock_remove_cherrypicked, mock_helper_database_updates):
+def test_update_filtered_positives_catches_error_removing_cherrypicked_samples(
+    mock_helper_imports, mock_remove_cherrypicked, mock_helper_database_updates
+):
     mock_get_plate_barcodes, mock_get_positive_samples = mock_helper_imports
     mock_update_mongo, mock_update_mlwh, mock_update_dart = mock_helper_database_updates
 
@@ -133,7 +135,9 @@ def test_update_filtered_positives_catches_error_removing_cherrypicked_samples(m
     mock_update_dart.assert_not_called()
 
 
-def test_update_filtered_positives_aborts_with_no_non_cherrypicked_samples(mock_helper_imports, mock_remove_cherrypicked, mock_helper_database_updates):
+def test_update_filtered_positives_aborts_with_no_non_cherrypicked_samples(
+    mock_helper_imports, mock_remove_cherrypicked, mock_helper_database_updates
+):
     mock_get_plate_barcodes, mock_get_positive_samples = mock_helper_imports
     mock_update_mongo, mock_update_mlwh, mock_update_dart = mock_helper_database_updates
 
@@ -327,7 +331,7 @@ def test_update_filtered_positives_outputs_success(
         with patch("migrations.update_filtered_positives.datetime") as mock_datetime:
             timestamp = datetime.now()
             mock_datetime.now.return_value = timestamp
-            
+
             # call the migration
             update_filtered_positives.run("crawler.config.integration")
 
