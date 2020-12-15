@@ -38,63 +38,68 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
     mlwh_updated = False
     dart_updated = False
     try:
-        # Get barcodes of pending plates in DART
-        logger.info("Selecting pending plates from DART...")
-        pending_plate_barcodes = pending_plate_barcodes_from_dart(config)
-
-        if num_pending_plates := len(pending_plate_barcodes):
-            logger.info(f"{num_pending_plates} pending plates found in DART")
-
-            # Get positive result samples from Mongo in these pending plates
-            logger.info("Selecting postive samples in pending plates from Mongo...")
-            positive_pending_samples = positive_result_samples_from_mongo(config, pending_plate_barcodes)
-
-            if num_positive_pending_samples := len(positive_pending_samples):
-                logger.info(f"{num_positive_pending_samples} positive samples in pending plates found in Mongo")
-
-                # Filter out cherrypicked samples
-                logger.info("Filtering out cherrypicked samples...")
-                non_cp_pos_pending_samples = remove_cherrypicked_samples(config, positive_pending_samples)
-
-                if num_non_cp_pos_pending_samples := len(non_cp_pos_pending_samples):
-                    logger.info(
-                        f"{num_non_cp_pos_pending_samples} non-cherrypicked positive samples in pending plates found"
-                    )
-                    filtered_positive_identifier = current_filtered_positive_identifier()
-                    version = filtered_positive_identifier.version
-                    update_timestamp = datetime.now()
-                    logger.info("Updating filtered positives...")
-                    update_filtered_positive_fields(
-                        filtered_positive_identifier,
-                        non_cp_pos_pending_samples,
-                        version,
-                        update_timestamp,
-                    )
-                    logger.info("Updated filtered positives")
-
-                    logger.info("Updating Mongo...")
-                    mongo_updated = update_mongo_filtered_positive_fields(
-                        config, non_cp_pos_pending_samples, version, update_timestamp
-                    )
-                    logger.info("Finished updating Mongo")
-
-                    if mongo_updated:
-                        logger.info("Updating MLWH...")
-                        mlwh_updated = update_mlwh_filtered_positive_fields(config, non_cp_pos_pending_samples)
-                        logger.info("Finished updating MLWH")
-
-                        if mlwh_updated:
-                            logger.info("Updating DART...")
-                            dart_updated = update_dart_fields(config, non_cp_pos_pending_samples)
-                            logger.info("Finished updating DART")
-                else:
-                    logger.warning(
-                        "No non-cherrypicked positive samples in pending plates found, not updating any database"
-                    )
-            else:
-                logger.warning("No positive samples in pending plates found in Mongo, not updating any database")
+        samples = []
+        if omit_dart:
+            logger.warning("Omitting DART from this update")
+            # TODO - get RESULT=Positive samples from Mongo
         else:
-            logger.warning("No pending plates found in DART, not updating any database")
+            # Get barcodes of pending plates in DART
+            logger.info("Selecting pending plates from DART...")
+            pending_plate_barcodes = pending_plate_barcodes_from_dart(config) 
+            
+            if num_pending_plates := len(pending_plate_barcodes):
+                logger.info(f"{num_pending_plates} pending plates found in DART")
+
+                # Get positive result samples from Mongo in these pending plates
+                logger.info("Selecting postive samples in pending plates from Mongo...")
+                samples = positive_result_samples_from_mongo(config, pending_plate_barcodes)
+            else:
+                logger.warning("No pending plates found in DART")
+
+        if num_samples := len(samples):
+            logger.info(f"{num_samples} positive samples in pending plates found in Mongo")
+
+            # Filter out cherrypicked samples
+            logger.info("Filtering out cherrypicked samples...")
+            non_cp_pos_pending_samples = remove_cherrypicked_samples(config, samples)
+
+            if num_non_cp_pos_pending_samples := len(non_cp_pos_pending_samples):
+                logger.info(
+                    f"{num_non_cp_pos_pending_samples} non-cherrypicked positive samples in pending plates found"
+                )
+                filtered_positive_identifier = current_filtered_positive_identifier()
+                version = filtered_positive_identifier.version
+                update_timestamp = datetime.now()
+                logger.info("Updating filtered positives...")
+                update_filtered_positive_fields(
+                    filtered_positive_identifier,
+                    non_cp_pos_pending_samples,
+                    version,
+                    update_timestamp,
+                )
+                logger.info("Updated filtered positives")
+
+                logger.info("Updating Mongo...")
+                mongo_updated = update_mongo_filtered_positive_fields(
+                    config, non_cp_pos_pending_samples, version, update_timestamp
+                )
+                logger.info("Finished updating Mongo")
+
+                if mongo_updated:
+                    logger.info("Updating MLWH...")
+                    mlwh_updated = update_mlwh_filtered_positive_fields(config, non_cp_pos_pending_samples)
+                    logger.info("Finished updating MLWH")
+
+                    if mlwh_updated:
+                        logger.info("Updating DART...")
+                        dart_updated = update_dart_fields(config, non_cp_pos_pending_samples)
+                        logger.info("Finished updating DART")
+            else:
+                logger.warning(
+                    "No non-cherrypicked positive samples in pending plates found, not updating any database"
+                )
+        else:
+            logger.warning("No positive samples in pending plates found in Mongo, not updating any database")
 
     except Exception as e:
         logger.error("---------- Process aborted: ----------")
