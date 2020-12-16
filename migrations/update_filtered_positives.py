@@ -40,13 +40,14 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
     try:
         samples = []
         if omit_dart:
+            # Get positive result samples from Mongo
             logger.warning("Omitting DART from this update")
-            # TODO - get RESULT=Positive samples from Mongo
+            samples = positive_result_samples_from_mongo(config)
         else:
             # Get barcodes of pending plates in DART
             logger.info("Selecting pending plates from DART...")
-            pending_plate_barcodes = pending_plate_barcodes_from_dart(config) 
-            
+            pending_plate_barcodes = pending_plate_barcodes_from_dart(config)
+
             if num_pending_plates := len(pending_plate_barcodes):
                 logger.info(f"{num_pending_plates} pending plates found in DART")
 
