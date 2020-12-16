@@ -1,4 +1,5 @@
-from crawler.config.test import *  # noqa: F403,F401
+# flake8: noqa
+from crawler.config.test import *
 
 # setting here will overwrite those in 'defaults.py'
 
