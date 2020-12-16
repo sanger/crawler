@@ -67,7 +67,7 @@ def run(settings_module: str = "") -> None:
             config,
             list(root_sample_ids),
             list(plate_barcodes),
-            '1970-01-01 00:00:01',
+            "1970-01-01 00:00:01",
             V0_V1_CUTOFF_TIMESTAMP,
         )
 
@@ -133,6 +133,7 @@ def run(settings_module: str = "") -> None:
 
     logger.info(f"Time finished: {datetime.now()}")
     logger.info("=" * 80)
+
 
 def get_input(text):
     return input(text)

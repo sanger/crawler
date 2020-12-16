@@ -57,7 +57,7 @@ def test_get_cherrypicked_samples_by_date_v0_returns_expected(
     expected = pd.DataFrame(np.array(expected_rows), columns=expected_columns, index=[0, 1])
 
     returned_samples = get_cherrypicked_samples_by_date(
-        config, root_sample_ids, plate_barcodes, '1970-01-01 00:00:01', V0_V1_CUTOFF_TIMESTAMP
+        config, root_sample_ids, plate_barcodes, "1970-01-01 00:00:01", V0_V1_CUTOFF_TIMESTAMP
     )
     pd.testing.assert_frame_equal(expected, returned_samples)
 
@@ -112,8 +112,8 @@ def test_combine_samples(unmigrated_mongo_testing_samples):
     samples_by_version = {
         FilteredPositiveIdentifierV0: v0_unmigrated_samples,
         FilteredPositiveIdentifierV1: v1_unmigrated_samples,
-        FilteredPositiveIdentifierV2: v2_unmigrated_samples,    
+        FilteredPositiveIdentifierV2: v2_unmigrated_samples,
     }
 
     expected_samples = v0_unmigrated_samples + v1_unmigrated_samples + v2_unmigrated_samples
-    assert combine_samples(samples_by_version) == expected_samples 
+    assert combine_samples(samples_by_version) == expected_samples

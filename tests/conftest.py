@@ -289,7 +289,9 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": str(to_datetime(V0_V1_CUTOFF_TIMESTAMP) - timedelta(days=1)),  # Created before v0/v1 cut-off time
+            "created": str(
+                to_datetime(V0_V1_CUTOFF_TIMESTAMP) - timedelta(days=1)
+            ),  # Created before v0/v1 cut-off time
         },
         {
             "id_sample_tmp": "3",

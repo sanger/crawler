@@ -1,6 +1,6 @@
 from types import ModuleType
 from typing import List, Optional, Set, Tuple, Dict
-from pandas import DataFrame # type: ignore
+from pandas import DataFrame  # type: ignore
 import pandas as pd
 from datetime import datetime
 import sqlalchemy  # type: ignore
@@ -155,9 +155,7 @@ def v0_version_set(config: ModuleType):
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-        v0_samples = list(
-            samples_collection.find({FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_0})
-        )
+        v0_samples = list(samples_collection.find({FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_0}))
         if len(v0_samples) > 0:
             return True
         else:
