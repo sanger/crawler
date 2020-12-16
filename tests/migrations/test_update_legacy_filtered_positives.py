@@ -63,12 +63,10 @@ def test_update_legacy_filtered_positives_exception_raised_if_user_enters_invali
         mock_update_mlwh.assert_not_called()
 
 
-def test_update_legacy_filtered_positives_no_unmigrated_samples_raises_exception():
+def test_update_legacy_filtered_positives_no_unmigrated_samples_raises_exception(
+    mock_helper_database_updates, mock_v0_version_set):
     with pytest.raises(Exception):
-        with patch(
-            "migrations.update_legacy_filtered_positives.unmigrated_mongo_samples", 
-            return_value=[]
-        ):
+            mock_v0_version_set.return_value = False
             mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
             update_legacy_filtered_positives.run("crawler.config.integration")
 
