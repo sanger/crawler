@@ -43,7 +43,7 @@ def test_check_versions_set_returns_true_with_v0(config, filtered_positive_testi
 
 
 def test_check_versions_set_returns_false_with_no_v0_samples(config, filtered_positive_testing_samples):
-    assert check_versions_set(config) is False
+    assert v0_version_set(config) is False
 
 
 def test_get_cherrypicked_samples_by_date_v0_returns_expected(
