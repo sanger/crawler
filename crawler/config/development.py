@@ -6,6 +6,3 @@ from crawler.config.defaults import *
 # logging config
 LOGGING["loggers"]["crawler"]["level"] = "DEBUG"
 LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]
-
-LOGGING["loggers"]["crawler"]["level"] = "DEBUG"  # noqa: F405
-LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]  # noqa: F405
