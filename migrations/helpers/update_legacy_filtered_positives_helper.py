@@ -201,7 +201,7 @@ def split_mongo_samples_by_version(samples: List[Sample], cp_samples_df_v0: Data
     return samples_by_version
 
 
-def combine_samples(samples_by_version: {Dict[FilteredPositiveIdentifier, List[Sample]]}):
+def combine_samples(samples_by_version: Dict[FilteredPositiveIdentifier, List[Sample]]):
     """Combine samples from each version into single list
 
     Args:
