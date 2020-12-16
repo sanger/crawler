@@ -107,10 +107,11 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
         logger.error(f"An exception occurred, at {datetime.now()}")
         logger.exception(e)
     finally:
+        dart_message = "DART omitted: True" if omit_dart else f"Found {num_pending_plates} pending plates in DART"
         logger.info(
             f"""
         ---------- Processing status of filtered positive rule changes: ----------
-        -- Found {num_pending_plates} pending plates in DART
+        -- {dart_message}
         -- Found {num_positive_pending_samples} samples in pending plates in Mongo
         -- Mongo updated: {mongo_updated}
         -- MLWH updated: {mlwh_updated}
