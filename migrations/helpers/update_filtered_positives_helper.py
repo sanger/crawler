@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from more_itertools import groupby_transform
 from types import ModuleType
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from crawler.constants import (
     COLLECTION_SAMPLES,
@@ -74,12 +74,12 @@ def pending_plate_barcodes_from_dart(config: ModuleType) -> List[str]:
     return plate_barcodes
 
 
-def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[str] = None) -> List[Sample]:
+def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: Optional[List[str]] = None) -> List[Sample]:
     """Fetch positive samples from Mongo contained within specified plates.
 
     Arguments:
         config {ModuleType} -- application config specifying database details
-        plate_barcodes {List[str]} -- barcodes of plates whose samples we are concerned with
+        plate_barcodes {Optional[List[str]]} -- barcodes of plates whose samples we are concerned with
 
     Returns:
         List[Dict[str, str]] -- List of positive samples contained within specified plates
@@ -91,7 +91,7 @@ def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[
         pipeline = [{"$match": {FIELD_RESULT: {"$eq": POSITIVE_RESULT_VALUE}}}]
 
         if plate_barcodes is not None:
-            pipeline.append({"$match": {FIELD_PLATE_BARCODE: {"$in": plate_barcodes}}})
+            pipeline.append({"$match": {FIELD_PLATE_BARCODE: {"$in": plate_barcodes}}})  # type: ignore
 
         # this should take everything from the cursor find into RAM memory
         # (assuming you have enough memory)

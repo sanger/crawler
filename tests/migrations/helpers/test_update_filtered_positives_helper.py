@@ -128,7 +128,6 @@ def test_positive_result_samples_from_mongo_returns_expected_samples(config, tes
 
 
 def test_positive_result_samples_from_mongo_returns_expected_samples_no_plate_barcodes(config, testing_samples):
-    plate_barcodes = ["123"]
     expected_samples = [testing_samples[0], testing_samples[-1]]  # only the first and last samples are positive
     result = positive_result_samples_from_mongo(config)
     assert result == expected_samples
