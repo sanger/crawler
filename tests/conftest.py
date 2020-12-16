@@ -408,12 +408,11 @@ def filtered_positive_testing_samples(samples_collection_accessor):
 
 
 @pytest.fixture
-def filtered_positive_testing_samples_v0_v1(samples_collection_accessor):
-    v1_v0_samples = copy.deepcopy(FILTERED_POSITIVE_TESTING_SAMPLES)
-    v1_v0_samples[0][FIELD_FILTERED_POSITIVE_VERSION] = "v0"
-    v1_v0_samples[1][FIELD_FILTERED_POSITIVE_VERSION] = "v1"
+def filtered_positive_testing_samples_v0(samples_collection_accessor):
+    v0_samples = copy.deepcopy(FILTERED_POSITIVE_TESTING_SAMPLES)
+    v0_samples[0][FIELD_FILTERED_POSITIVE_VERSION] = "v0"
 
-    result = samples_collection_accessor.insert_many(v1_v0_samples)
+    result = samples_collection_accessor.insert_many(v0_samples)
     samples = list(samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
     try:
         yield samples

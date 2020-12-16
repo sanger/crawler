@@ -1,7 +1,6 @@
 import logging
 import logging.config
 from datetime import datetime
-from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 from crawler.helpers.general_helpers import get_config
 from migrations.helpers.update_filtered_positives_helper import (
     update_filtered_positive_fields,
@@ -11,7 +10,7 @@ from migrations.helpers.update_filtered_positives_helper import (
 from migrations.helpers.update_legacy_filtered_positives_helper import (
     unmigrated_mongo_samples,
     get_cherrypicked_samples_by_date,
-    check_versions_set,
+    v0_version_set,
     split_mongo_samples_by_version,
     combine_samples,
 )
@@ -41,78 +40,82 @@ def run(settings_module: str = "") -> None:
     mlwh_updated = False
 
     try:
-        # If v0 or v1 versions have been set on any samples, migration has likely been run before - do not
-        # want to run in this case
-        if check_versions_set(config) is False:
-            logger.info("Selecting unmigrated samples from Mongo...")
-            samples = unmigrated_mongo_samples(config)
+        if v0_version_set(config):
+            question = "v0 version has been set on some samples. This migration has likely been run before - do you still wish to proceed? (yes/no):"
+            continue_migration = get_input(question)
 
-            if samples is None:
-                logger.info("All samples have filtered positive fields set, migration not needed.")
+            if continue_migration == "yes":
+                pass
+            elif continue_migration == "no":
+                logger.info("Now exiting migration")
+                raise Exception()
+            else:
+                logger.info("Please enter 'yes' or 'no'. Now exiting migration")
                 raise Exception()
 
-            root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
-
-            # Get v0 cherrypicked samples
-            v0_cp_samples_df = get_cherrypicked_samples_by_date(
-                config,
-                list(root_sample_ids),
-                list(plate_barcodes),
-                '1970-01-01 00:00:01',
-                V0_V1_CUTOFF_TIMESTAMP,
-            )
-
-            # Get v1 cherrypicked samples
-            v1_cp_samples_df = get_cherrypicked_samples_by_date(
-                config,
-                list(root_sample_ids),
-                list(plate_barcodes),
-                V0_V1_CUTOFF_TIMESTAMP,
-                V1_V2_CUTOFF_TIMESTAMP,
-            )
-
-            samples_by_version = split_mongo_samples_by_version(samples, v0_cp_samples_df, v1_cp_samples_df)
-            
-            update_timestamp = datetime.now()
-
-            for filtered_positive_identifier, version_samples in samples_by_version.items():
-                version = filtered_positive_identifier.version
-                logger.info(f"Updating {version} filtered positives...")
-                update_filtered_positive_fields(
-                    filtered_positive_identifier,
-                    version_samples,
-                    version,
-                    update_timestamp,
-                )
-            
-            logger.info("Updated filtered positives")
-
-            logger.info("Updating Mongo")
-
-            for filtered_positive_identifier, version_samples in samples_by_version.items():
-                logger.info(f"Updating {version} filtered positives in Mongo...")
-                version = filtered_positive_identifier.version
-                mongo_updated = update_mongo_filtered_positive_fields(
-                    config,
-                    version_samples,
-                    version,
-                    update_timestamp
-                )
-
-            logger.info("Finished updating Mongo")
-
-            all_versioned_samples = combine_samples(samples_by_version)
-
-            if mongo_updated:
-                logger.info("Updating MLWH...")
-                mlwh_updated = update_mlwh_filtered_positive_fields(config, all_versioned_samples)
-                logger.info("Finished updating MLWH")
-
-        else:
-            logger.warning(
-                "v0/v1 filtered_positive_version has already been set in some Mongo samples - this migration has likely been run before."
-            )
+        logger.info("Selecting unmigrated samples from Mongo...")
+        samples = unmigrated_mongo_samples(config)
+        if samples is None:
+            logger.info("All samples have filtered positive fields set, migration not needed.")
             raise Exception()
+
+        root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
+
+        # Get v0 cherrypicked samples
+        v0_cp_samples_df = get_cherrypicked_samples_by_date(
+            config,
+            list(root_sample_ids),
+            list(plate_barcodes),
+            '1970-01-01 00:00:01',
+            V0_V1_CUTOFF_TIMESTAMP,
+        )
+
+        # Get v1 cherrypicked samples
+        v1_cp_samples_df = get_cherrypicked_samples_by_date(
+            config,
+            list(root_sample_ids),
+            list(plate_barcodes),
+            V0_V1_CUTOFF_TIMESTAMP,
+            V1_V2_CUTOFF_TIMESTAMP,
+        )
+
+        samples_by_version = split_mongo_samples_by_version(samples, v0_cp_samples_df, v1_cp_samples_df)
+
+        update_timestamp = datetime.now()
+
+        for filtered_positive_identifier, version_samples in samples_by_version.items():
+            version = filtered_positive_identifier.version
+            logger.info(f"Updating {version} filtered positives...")
+            update_filtered_positive_fields(
+                filtered_positive_identifier,
+                version_samples,
+                version,
+                update_timestamp,
+            )
+
+        logger.info("Updated filtered positives")
+
+        logger.info("Updating Mongo")
+
+        for filtered_positive_identifier, version_samples in samples_by_version.items():
+            logger.info(f"Updating {version} filtered positives in Mongo...")
+            version = filtered_positive_identifier.version
+            mongo_updated = update_mongo_filtered_positive_fields(
+                config,
+                version_samples,
+                version,
+                update_timestamp,
+            )
+
+        logger.info("Finished updating Mongo")
+
+        all_versioned_samples = combine_samples(samples_by_version)
+
+        if mongo_updated:
+            logger.info("Updating MLWH...")
+            mlwh_updated = update_mlwh_filtered_positive_fields(config, all_versioned_samples)
+            logger.info("Finished updating MLWH")
+
     except Exception as e:
         logger.error("---------- Process aborted: ----------")
         logger.error(f"An exception occurred, at {datetime.now()}")
@@ -129,3 +132,6 @@ def run(settings_module: str = "") -> None:
 
     logger.info(f"Time finished: {datetime.now()}")
     logger.info("=" * 80)
+
+def get_input(text):
+    return input(text)

@@ -12,7 +12,7 @@ from crawler.filtered_positive_identifier import (
     FilteredPositiveIdentifierV2,
 )
 from migrations.helpers.update_legacy_filtered_positives_helper import (
-    check_versions_set,
+    v0_version_set,
     unmigrated_mongo_samples,
     get_cherrypicked_samples_by_date,
     split_mongo_samples_by_version,
@@ -38,11 +38,11 @@ def test_unmigrated_mongo_samples_returns_expected(config, filtered_positive_tes
     assert len(result) == 2
 
 
-def test_check_versions_set_returns_true_with_v0_v1_samples(config, filtered_positive_testing_samples_v0_v1):
-    assert check_versions_set(config) is True
+def test_check_versions_set_returns_true_with_v0(config, filtered_positive_testing_samples_v0):
+    assert v0_version_set(config) is True
 
 
-def test_check_versions_set_returns_false_with_no_v0_v1_samples(config, filtered_positive_testing_samples):
+def test_check_versions_set_returns_false_with_no_v0_samples(config, filtered_positive_testing_samples):
     assert check_versions_set(config) is False
 
 

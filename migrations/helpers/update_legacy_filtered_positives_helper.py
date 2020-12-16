@@ -142,7 +142,7 @@ def get_cherrypicked_samples_by_date(
         db_connection.close()
 
 
-def check_versions_set(config: ModuleType):
+def v0_version_set(config: ModuleType):
     """Find if the v0 or v1 version has been set in any of the samples. This would indicate that the legacy migration has already been run.
 
     Args:
@@ -156,14 +156,7 @@ def check_versions_set(config: ModuleType):
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
         v0_samples = list(
-            samples_collection.find(
-                {
-                    "$or": [
-                        {FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_0},
-                        {FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_1},
-                    ]
-                }
-            )
+            samples_collection.find({FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_0})
         )
         if len(v0_samples) > 0:
             return True
@@ -217,7 +210,6 @@ def combine_samples(samples_by_version: {Dict[FilteredPositiveIdentifier, List[S
     Returns:
         all_versioned_samples {List[Sample]} -- Samples split by version
     """
-
     all_versioned_samples = []
     for samples in samples_by_version.values():
         all_versioned_samples.extend(samples)
