@@ -124,4 +124,4 @@ DART_SET_PROP_STATUS_SUCCESS = 0
 # .env file you use for docker. eg
 # LOCALHOST=host.docker.internal
 LOCALHOST = os.environ.get("LOCALHOST", "127.0.0.1")
-ROOT_PASSWORD=os.environ.get("ROOT_PASSWORD", "root")
+ROOT_PASSWORD = os.environ.get("ROOT_PASSWORD", "root")
