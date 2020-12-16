@@ -74,7 +74,7 @@ def pending_plate_barcodes_from_dart(config: ModuleType) -> List[str]:
     return plate_barcodes
 
 
-def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[str]) -> List[Sample]:
+def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[str] = None) -> List[Sample]:
     """Fetch positive samples from Mongo contained within specified plates.
 
     Arguments:
@@ -88,17 +88,15 @@ def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
+        pipeline = [{"$match": {FIELD_RESULT: {"$eq": POSITIVE_RESULT_VALUE}}}]
+
+        if plate_barcodes is not None:
+            pipeline.append({"$match": {FIELD_PLATE_BARCODE: {"$in": plate_barcodes}}})
+
         # this should take everything from the cursor find into RAM memory
         # (assuming you have enough memory)
         # should we project to an object that has fewer fields?
-        return list(
-            samples_collection.find(
-                {
-                    FIELD_RESULT: {"$eq": POSITIVE_RESULT_VALUE},
-                    FIELD_PLATE_BARCODE: {"$in": plate_barcodes},
-                }
-            )
-        )
+        return list(samples_collection.aggregate(pipeline))
 
 
 def remove_cherrypicked_samples(config: ModuleType, samples: List[Sample]) -> List[Sample]:

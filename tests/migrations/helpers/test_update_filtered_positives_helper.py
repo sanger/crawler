@@ -115,7 +115,7 @@ def test_positive_result_samples_from_mongo_throws_for_error_getting_collection(
 
 
 def test_positive_result_samples_from_mongo_throws_for_error_finding_samples(config, mock_mongo_collection):
-    mock_mongo_collection().find.side_effect = Exception("Boom!")
+    mock_mongo_collection().aggregate.side_effect = Exception("Boom!")
     with pytest.raises(Exception):
         positive_result_samples_from_mongo(config, [])
 
