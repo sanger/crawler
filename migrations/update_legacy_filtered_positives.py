@@ -50,12 +50,13 @@ def run(settings_module: str = "") -> None:
                 logger.info("Now exiting migration")
                 raise Exception()
             else:
-                logger.info("Please enter 'yes' or 'no'. Now exiting migration")
+                logger.info("Invalid input, please enter 'yes' or 'no'. Now exiting migration")
                 raise Exception()
 
         logger.info("Selecting unmigrated samples from Mongo...")
         samples = unmigrated_mongo_samples(config)
-        if samples is None:
+
+        if not samples:
             logger.info("All samples have filtered positive fields set, migration not needed.")
             raise Exception()
 
