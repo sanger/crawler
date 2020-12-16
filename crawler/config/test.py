@@ -1,5 +1,5 @@
 from crawler.config.defaults import *  # noqa: F403,F401
-from crawler.constants import FIELD_RNA_ID
+from crawler.constants import FIELD_RNA_ID, LOCALHOST, ROOT_PASSWORD
 
 # settings here overwrite those in defaults.py
 
@@ -60,27 +60,28 @@ CENTRES = [
 
 # SFTP details
 SFTP_UPLOAD = False
-SFTP_HOST = "127.0.0.1"
+SFTP_HOST = LOCALHOST
 SFTP_PASSWORD = "pass"
 SFTP_PORT = "22"
 SFTP_USER = "foo"
 
 # MongoDB details
-MONGO_HOST = "127.0.0.1"
+MONGO_HOST = LOCALHOST
 MONGO_DB = "crawlerTestDB"
 
 # MLWH database details
 MLWH_DB_DBNAME = "unified_warehouse_test"
-MLWH_DB_HOST = "127.0.0.1"
+MLWH_DB_HOST = LOCALHOST
 MLWH_DB_PORT = 3306
 MLWH_DB_RO_USER = "root"
-MLWH_DB_RO_PASSWORD = "root"
+MLWH_DB_RO_PASSWORD = ROOT_PASSWORD
 MLWH_DB_RW_USER = "root"
-MLWH_DB_RW_PASSWORD = "root"
+MLWH_DB_RW_PASSWORD = ROOT_PASSWORD
 
 # DART database details
 DART_DB_DBNAME = "dart_test"
-DART_DB_HOST = "127.0.0.1"
+# DART_DB_HOST = "127.0.0.1"
+DART_DB_HOST = "host.docker.internal"
 DART_DB_PORT = 1433
 DART_DB_RW_USER = "root"
 DART_DB_RW_PASSWORD = ""

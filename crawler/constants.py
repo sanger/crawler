@@ -1,5 +1,6 @@
 # flake8: noqa
 from decimal import Decimal
+import os
 
 # mongo collections
 COLLECTION_CENTRES = "centres"
@@ -117,3 +118,10 @@ DART_EMPTY_VALUE = ""
 
 # DART others
 DART_SET_PROP_STATUS_SUCCESS = 0
+
+# If we're running in a container, then instead of localhost
+# we want host.docker.internal, you can specify this in the
+# .env file you use for docker. eg
+# LOCALHOST=host.docker.internal
+LOCALHOST = os.environ.get("LOCALHOST", "127.0.0.1")
+ROOT_PASSWORD=os.environ.get("ROOT_PASSWORD", "root")
