@@ -1,5 +1,4 @@
 from unittest.mock import patch
-import builtins
 import pandas as pd
 import pytest
 from crawler.filtered_positive_identifier import (
@@ -54,12 +53,14 @@ def mock_helper_functions():
     with patch(
         "migrations.update_legacy_filtered_positives.split_mongo_samples_by_version"
     ) as mock_split_mongo_samples_by_version:
-            yield mock_split_mongo_samples_by_version
+        yield mock_split_mongo_samples_by_version
 
 
 @pytest.fixture
 def mock_update_filtered_positive_fields():
-    with patch("migrations.update_legacy_filtered_positives.update_filtered_positive_fields") as mock_update_filtered_positive_fields:
+    with patch(
+        "migrations.update_legacy_filtered_positives.update_filtered_positive_fields"
+    ) as mock_update_filtered_positive_fields:
         yield mock_update_filtered_positive_fields
 
 

@@ -16,7 +16,6 @@ from migrations.helpers.update_legacy_filtered_positives_helper import (
     legacy_mongo_samples,
     get_cherrypicked_samples_by_date,
     split_mongo_samples_by_version,
-    combine_samples,
 )
 
 from crawler.constants import (
