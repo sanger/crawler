@@ -218,7 +218,7 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
 
         # BN. If ROWS_PER_QUERY value is too high, you may get '2006 (HY000): MySQL server has
         # gone away' error indicating you've exceeded the max_allowed_packet size for MySQL
-        ROWS_PER_QUERY = 25000
+        ROWS_PER_QUERY = 15000
         values_index = 0
         total_rows_affected = 0
         logger.debug(
