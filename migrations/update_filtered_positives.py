@@ -34,6 +34,7 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
 
     num_pending_plates = 0
     num_positive_pending_samples = 0
+    num_non_cp_pos_pending_samples = 0
     mongo_updated = False
     mlwh_updated = False
     dart_updated = False
@@ -113,6 +114,7 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
         ---------- Processing status of filtered positive rule changes: ----------
         -- {dart_message}
         -- Found {num_positive_pending_samples} matching samples in Mongo
+        -- Of which {num_non_cp_pos_pending_samples} have not been cherrypicked
         -- Mongo updated: {mongo_updated}
         -- MLWH updated: {mlwh_updated}
         -- DART updated: {dart_updated}
