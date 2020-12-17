@@ -40,7 +40,9 @@ def legacy_mongo_samples(config: ModuleType):
     with create_mongo_client(config) as client:
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
-        return list(samples_collection.find({FIELD_CREATED_AT: {"$lt": FILTERED_POSITIVE_FIELDS_SET_DATE}}))  # noqa: E501
+        return list(
+            samples_collection.find({FIELD_CREATED_AT: {"$lt": FILTERED_POSITIVE_FIELDS_SET_DATE}})
+        )  # noqa: E501
 
 
 def get_cherrypicked_samples_by_date(
@@ -141,18 +143,16 @@ def v0_version_set(config: ModuleType):
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-        v0_samples = list(samples_collection.find({FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_0}))  # noqa: E501
+        v0_samples = list(
+            samples_collection.find({FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_0})
+        )  # noqa: E501
         if len(v0_samples) > 0:
             return True
         else:
             return False
 
 
-def split_mongo_samples_by_version(
-    samples: List[Sample],
-    cp_samples_df_v0: DataFrame,
-    cp_samples_df_v1: DataFrame
-):
+def split_mongo_samples_by_version(samples: List[Sample], cp_samples_df_v0: DataFrame, cp_samples_df_v1: DataFrame):  # noqa: E501
     """Split the Mongo samples dataframe based on the v0 cherrypicked samples. Samples
        which have been v0 cherrypicked need to have the v0 filtered positive rules
        applied. The remaining samples need the v1 rule applied.
