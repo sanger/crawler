@@ -47,6 +47,12 @@ def run(settings_module: str = "") -> None:
         FILTERED_POSITIVE_VERSION_2: False,
     }
 
+    mlwh_versions_updated = {
+        FILTERED_POSITIVE_VERSION_0: False,
+        FILTERED_POSITIVE_VERSION_1: False,
+        FILTERED_POSITIVE_VERSION_2: False,
+    }
+
     mlwh_updated = False
 
     try:
@@ -117,11 +123,16 @@ def run(settings_module: str = "") -> None:
                 version,
                 update_timestamp,
             )
-            logger.info(f"Updated {version} filtered positives in Mongo...")
             if mongo_updated:
+                logger.info(f"Finished updating {version} filtered positives in Mongo")
+                mongo_versions_updated[version] = True
+
                 logger.info(f"Updating {version} filtered positives in MLWH...")
                 mlwh_updated = update_mlwh_filtered_positive_fields(config, version_samples)
-                logger.info(f"Finished updating {version} filtered positives MLWH")
+
+                if mlwh_updated:
+                    logger.info(f"Finished updating {version} filtered positives in MLWH")
+                    mlwh_versions_updated[version] = True
 
         logger.info("Finished updating databases")
 
@@ -137,7 +148,9 @@ def run(settings_module: str = "") -> None:
         -- Mongo updated with v0 filtered positives: {mongo_versions_updated[FILTERED_POSITIVE_VERSION_0]}
         -- Mongo updated with v1 filtered positives: {mongo_versions_updated[FILTERED_POSITIVE_VERSION_1]}
         -- Mongo updated with v2 filtered positives: {mongo_versions_updated[FILTERED_POSITIVE_VERSION_2]}
-        -- MLWH updated: {mlwh_updated}
+        -- MLWH updated with v0 filtered positives: {mlwh_versions_updated[FILTERED_POSITIVE_VERSION_0]}
+        -- MLWH updated with v1 filtered positives: {mlwh_versions_updated[FILTERED_POSITIVE_VERSION_1]}
+        -- MLWH updated with v2 filtered positives: {mlwh_versions_updated[FILTERED_POSITIVE_VERSION_2]}
         """
         )
 
