@@ -33,8 +33,8 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
     logger.info(f"Time start: {datetime.now()}")
 
     num_pending_plates = 0
-    num_positive_pending_samples = 0
-    num_non_cp_pos_pending_samples = 0
+    num_pos_samples = 0
+    num_non_cp_pos_samples = 0
     mongo_updated = False
     mlwh_updated = False
     dart_updated = False
@@ -58,16 +58,16 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
             else:
                 logger.warning("No pending plates found in DART")
 
-        if num_samples := len(samples):
-            logger.info(f"{num_samples} matching positive samples found in Mongo")
+        if num_pos_samples := len(samples):
+            logger.info(f"{num_pos_samples} matching positive samples found in Mongo")
 
             # Filter out cherrypicked samples
             logger.info("Filtering out cherrypicked samples...")
             non_cp_pos_pending_samples = remove_cherrypicked_samples(config, samples)
 
-            if num_non_cp_pos_pending_samples := len(non_cp_pos_pending_samples):
+            if num_non_cp_pos_samples := len(non_cp_pos_pending_samples):
                 logger.info(
-                    f"{num_non_cp_pos_pending_samples} non-cherrypicked matching positive samples found"
+                    f"{num_non_cp_pos_samples} non-cherrypicked matching positive samples found"
                 )
                 filtered_positive_identifier = current_filtered_positive_identifier()
                 version = filtered_positive_identifier.version
@@ -113,8 +113,8 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
             f"""
         ---------- Processing status of filtered positive rule changes: ----------
         -- {dart_message}
-        -- Found {num_positive_pending_samples} matching samples in Mongo
-        -- Of which {num_non_cp_pos_pending_samples} have not been cherrypicked
+        -- Found {num_pos_samples} matching samples in Mongo
+        -- Of which {num_non_cp_pos_samples} have not been cherrypicked
         -- Mongo updated: {mongo_updated}
         -- MLWH updated: {mlwh_updated}
         -- DART updated: {dart_updated}
