@@ -68,7 +68,7 @@ def mock_update_filtered_positive_fields():
 
 
 def test_update_legacy_filtered_positives_exception_raised_if_user_cancels_migration(
-    mock_user_input, mock_helper_database_updates, filtered_positive_testing_samples_v0
+    mock_user_input, mock_helper_database_updates, filtered_positive_testing_samples
 ):
     with pytest.raises(Exception):
         mock_user_input.return_value = "no"
@@ -81,7 +81,7 @@ def test_update_legacy_filtered_positives_exception_raised_if_user_cancels_migra
 
 
 def test_update_legacy_filtered_positives_exception_raised_if_user_enters_invalid_input(
-    mock_user_input, mock_helper_database_updates, filtered_positive_testing_samples_v0
+    mock_user_input, mock_helper_database_updates, filtered_positive_testing_samples
 ):
     with pytest.raises(Exception):
         mock_user_input.return_value = "invalid_input"

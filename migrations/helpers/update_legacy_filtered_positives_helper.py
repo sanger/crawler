@@ -23,6 +23,8 @@ from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
     FIELD_PLATE_BARCODE,
     FIELD_COORDINATE,
+    FILTERED_POSITIVE_FIELDS_SET_DATE,
+    FIELD_CREATED_AT,
 )
 from crawler.db import (
     create_mongo_client,
@@ -35,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 def legacy_mongo_samples(config: ModuleType):
-    """Gets all samples from Mongo which have not had the filtered positive field set
+    """Gets all samples from Mongo which have not had the filtered positive field set by Crawler
 
     Arguments:
         None
@@ -46,15 +48,10 @@ def legacy_mongo_samples(config: ModuleType):
     with create_mongo_client(config) as client:
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
-
         return list(
             samples_collection.find(
                 {
-                    "$and": [
-                        {FIELD_FILTERED_POSITIVE: {"$exists": False}},
-                        {FIELD_FILTERED_POSITIVE_VERSION: {"$exists": False}},
-                        {FIELD_FILTERED_POSITIVE_TIMESTAMP: {"$exists": False}},
-                    ]
+                    FIELD_CREATED_AT: {"$lt": FILTERED_POSITIVE_FIELDS_SET_DATE}
                 }
             )
         )

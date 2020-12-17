@@ -8,6 +8,7 @@ import sqlalchemy  # type: ignore
 from sqlalchemy.engine.base import Engine  # type: ignore
 from sqlalchemy import MetaData  # type: ignore
 from datetime import datetime, timedelta
+import dateutil.parser
 
 import pytest
 from crawler.constants import (
@@ -23,8 +24,10 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
     FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_CREATED_AT,
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
+    FILTERED_POSITIVE_FIELDS_SET_DATE,
 )
 from crawler.db import create_mongo_client, create_mysql_connection, get_mongo_collection, get_mongo_db
 from crawler.helpers.general_helpers import get_config
@@ -139,6 +142,7 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_FILTERED_POSITIVE: True,
         FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
         FIELD_FILTERED_POSITIVE_VERSION: "v2",
+        FIELD_CREATED_AT: str(dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) + timedelta(days=1)),
     },
     {
         FIELD_COORDINATE: "B01",
@@ -150,6 +154,7 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_FILTERED_POSITIVE: True,
         FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
         FIELD_FILTERED_POSITIVE_VERSION: "v2",
+        FIELD_CREATED_AT: str(dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) + timedelta(days=1)),
     },
     {
         FIELD_COORDINATE: "C01",
@@ -160,6 +165,18 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_FILTERED_POSITIVE: False,
         FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
         FIELD_FILTERED_POSITIVE_VERSION: "v2",
+        FIELD_CREATED_AT: str(dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) + timedelta(days=1)),
+    },
+    {
+        FIELD_COORDINATE: "C01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Void",
+        FIELD_PLATE_BARCODE: "123",
+        FIELD_ROOT_SAMPLE_ID: "MCM003",
+        FIELD_FILTERED_POSITIVE: False,
+        FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
+        FIELD_FILTERED_POSITIVE_VERSION: "v0",
+        FIELD_CREATED_AT: str(dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) - timedelta(days=1)),
     },
     {
         FIELD_COORDINATE: "D01",
@@ -167,6 +184,7 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_RESULT: "Void",
         FIELD_PLATE_BARCODE: "123",
         FIELD_ROOT_SAMPLE_ID: "MCM003",
+        FIELD_CREATED_AT: str(dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) - timedelta(days=1)),
     },
     {
         FIELD_COORDINATE: "D01",
@@ -174,6 +192,7 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_RESULT: "Positive",
         FIELD_PLATE_BARCODE: "456",
         FIELD_ROOT_SAMPLE_ID: "MCM004",
+        FIELD_CREATED_AT: str(dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) - timedelta(days=1)),
     },
 ]
 
@@ -410,9 +429,9 @@ def filtered_positive_testing_samples(samples_collection_accessor):
 
 
 @pytest.fixture
-def filtered_positive_testing_samples_v0(samples_collection_accessor):
+def filtered_positive_testing_samples_no_v0(samples_collection_accessor):
     v0_samples = copy.deepcopy(FILTERED_POSITIVE_TESTING_SAMPLES)
-    v0_samples[0][FIELD_FILTERED_POSITIVE_VERSION] = "v0"
+    v0_samples[3][FIELD_FILTERED_POSITIVE_VERSION] = "v2"
 
     result = samples_collection_accessor.insert_many(v0_samples)
     samples = list(samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
