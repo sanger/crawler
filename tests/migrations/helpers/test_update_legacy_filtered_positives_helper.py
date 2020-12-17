@@ -1,38 +1,24 @@
 import pandas as pd
 import numpy as np
-import copy
-from datetime import datetime
-from crawler.filtered_positive_identifier import (
-    FilteredPositiveIdentifier,
-    FILTERED_POSITIVE_VERSION_0,
-    FILTERED_POSITIVE_VERSION_1,
-    FILTERED_POSITIVE_VERSION_2,
-    FilteredPositiveIdentifierV0,
-    FilteredPositiveIdentifierV1,
-    FilteredPositiveIdentifierV2,
-)
 from migrations.helpers.update_legacy_filtered_positives_helper import (
     v0_version_set,
     legacy_mongo_samples,
     get_cherrypicked_samples_by_date,
     split_mongo_samples_by_version,
 )
-
 from crawler.constants import (
-    FIELD_COORDINATE,
     FIELD_PLATE_BARCODE,
     FIELD_ROOT_SAMPLE_ID,
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
 )
 
 # ----- migration helper function tests -----
 
 
-def test_legacy_mongo_samples_returns_correct_samples_filtered_by_date(config, filtered_positive_testing_samples):
+def test_legacy_mongo_samples_returns_correct_samples_filtered_by_date(
+    config, filtered_positive_testing_samples
+):  # noqa: E501
     result = legacy_mongo_samples(config)
     assert len(result) == 3
 
@@ -41,7 +27,9 @@ def test_check_versions_set_returns_true_with_v0(config, filtered_positive_testi
     assert v0_version_set(config) is True
 
 
-def test_check_versions_set_returns_false_with_no_v0_samples(config, filtered_positive_testing_samples_no_v0):
+def test_check_versions_set_returns_false_with_no_v0_samples(
+    config, filtered_positive_testing_samples_no_v0
+):  # noqa: E501
     assert v0_version_set(config) is False
 
 

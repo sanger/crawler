@@ -63,7 +63,8 @@ def run(settings_module: str = "") -> None:
 
     try:
         if v0_version_set(config):
-            question = "v0 version has been set on some samples. This migration has likely been run before - do you still wish to proceed? (yes/no):"
+            question = "v0 version has been set on some samples. This migration has likely been \
+                        run before - do you still wish to proceed? (yes/no):"
             continue_migration = get_input(question)
 
             if continue_migration == "yes":
@@ -98,7 +99,7 @@ def run(settings_module: str = "") -> None:
             V1_V2_CUTOFF_TIMESTAMP,
         )
 
-        samples_by_version = split_mongo_samples_by_version(samples, v0_cp_samples_df, v1_cp_samples_df)
+        samples_by_version = split_mongo_samples_by_version(samples, v0_cp_samples_df, v1_cp_samples_df)  # noqa: E501
 
         update_timestamp = datetime.now()
 
@@ -147,12 +148,18 @@ def run(settings_module: str = "") -> None:
         logger.info(
             f"""
         ---------- Processing status of filtered positive field migration: ----------
-        -- Mongo updated with v0 filtered positives: {mongo_versions_updated[FILTERED_POSITIVE_VERSION_0]}
-        -- Mongo updated with v1 filtered positives: {mongo_versions_updated[FILTERED_POSITIVE_VERSION_1]}
-        -- Mongo updated with v2 filtered positives: {mongo_versions_updated[FILTERED_POSITIVE_VERSION_2]}
-        -- MLWH updated with v0 filtered positives: {mlwh_versions_updated[FILTERED_POSITIVE_VERSION_0]}
-        -- MLWH updated with v1 filtered positives: {mlwh_versions_updated[FILTERED_POSITIVE_VERSION_1]}
-        -- MLWH updated with v2 filtered positives: {mlwh_versions_updated[FILTERED_POSITIVE_VERSION_2]}
+        -- Mongo updated with v0 filtered positives: \
+{mongo_versions_updated[FILTERED_POSITIVE_VERSION_0]}
+        -- Mongo updated with v1 filtered positives: \
+{mongo_versions_updated[FILTERED_POSITIVE_VERSION_1]}
+        -- Mongo updated with v2 filtered positives: \
+{mongo_versions_updated[FILTERED_POSITIVE_VERSION_2]}
+        -- MLWH updated with v0 filtered positives: \
+{mlwh_versions_updated[FILTERED_POSITIVE_VERSION_0]}
+        -- MLWH updated with v1 filtered positives: \
+{mlwh_versions_updated[FILTERED_POSITIVE_VERSION_1]}
+        -- MLWH updated with v2 filtered positives: \
+{mlwh_versions_updated[FILTERED_POSITIVE_VERSION_2]}
         """
         )
 

@@ -1,28 +1,20 @@
 from types import ModuleType
-from typing import List, Optional, Set, Tuple, Dict
+from typing import List, Optional
 from pandas import DataFrame  # type: ignore
 import pandas as pd
-from datetime import datetime
 import sqlalchemy  # type: ignore
 from crawler.types import Sample
 from crawler.filtered_positive_identifier import (
-    FilteredPositiveIdentifier,
+    FILTERED_POSITIVE_VERSION_0,
     FilteredPositiveIdentifierV0,
     FilteredPositiveIdentifierV1,
     FilteredPositiveIdentifierV2,
-    FILTERED_POSITIVE_VERSION_0,
-    FILTERED_POSITIVE_VERSION_1,
-    FILTERED_POSITIVE_VERSION_2,
 )
-from migrations.helpers.update_filtered_positives_helper import update_filtered_positive_fields
 from crawler.constants import (
     COLLECTION_SAMPLES,
-    FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_PLATE_BARCODE,
-    FIELD_COORDINATE,
     FILTERED_POSITIVE_FIELDS_SET_DATE,
     FIELD_CREATED_AT,
 )
@@ -48,7 +40,7 @@ def legacy_mongo_samples(config: ModuleType):
     with create_mongo_client(config) as client:
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
-        return list(samples_collection.find({FIELD_CREATED_AT: {"$lt": FILTERED_POSITIVE_FIELDS_SET_DATE}}))
+        return list(samples_collection.find({FIELD_CREATED_AT: {"$lt": FILTERED_POSITIVE_FIELDS_SET_DATE}}))  # noqa: E501
 
 
 def get_cherrypicked_samples_by_date(
@@ -79,12 +71,12 @@ def get_cherrypicked_samples_by_date(
         concat_frame = pd.DataFrame()
 
         chunk_root_sample_ids = [
-            root_sample_ids[x : (x + chunk_size)] for x in range(0, len(root_sample_ids), chunk_size)  # noqa:E203
+            root_sample_ids[x : (x + chunk_size)] for x in range(0, len(root_sample_ids), chunk_size)  # noqa:E203 E501
         ]
 
         sql_engine = sqlalchemy.create_engine(
             (
-                f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}"  # type: ignore
+                f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}"  # type: ignore # noqa: E501
                 f"@{config.MLWH_DB_HOST}"  # type: ignore
             ),
             pool_recycle=3600,
@@ -119,9 +111,11 @@ def get_cherrypicked_samples_by_date(
                 },
             )
 
-            # drop_duplicates is needed because the same 'root sample id' could pop up in two different batches,
-            # and then it would retrieve the same rows for that root sample id twice
-            # do reset_index after dropping duplicates to make sure the rows are numbered in a way that makes sense
+            # drop_duplicates is needed because the same 'root sample id' could
+            # pop up in two different batches, and then it would
+            # retrieve the same rows for that root sample id twice
+            # do reset_index after dropping duplicates to make sure the rows are numbered
+            # in a way that makes sense
             concat_frame = concat_frame.append(frame).drop_duplicates().reset_index(drop=True)
 
         return concat_frame
@@ -134,7 +128,8 @@ def get_cherrypicked_samples_by_date(
 
 
 def v0_version_set(config: ModuleType):
-    """Find if the v0 or v1 version has been set in any of the samples. This would indicate that the legacy migration has already been run.
+    """Find if the v0 or v1 version has been set in any of the samples.
+       This would indicate that the legacy migration has already been run.
 
     Args:
         samples {List[Dict]} -- List of samples from Mongo
@@ -146,14 +141,18 @@ def v0_version_set(config: ModuleType):
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-        v0_samples = list(samples_collection.find({FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_0}))
+        v0_samples = list(samples_collection.find({FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_0}))  # noqa: E501
         if len(v0_samples) > 0:
             return True
         else:
             return False
 
 
-def split_mongo_samples_by_version(samples: List[Sample], cp_samples_df_v0: DataFrame, cp_samples_df_v1: DataFrame):
+def split_mongo_samples_by_version(
+    samples: List[Sample],
+    cp_samples_df_v0: DataFrame,
+    cp_samples_df_v1: DataFrame
+):
     """Split the Mongo samples dataframe based on the v0 cherrypicked samples. Samples
        which have been v0 cherrypicked need to have the v0 filtered positive rules
        applied. The remaining samples need the v1 rule applied.
@@ -166,8 +165,8 @@ def split_mongo_samples_by_version(samples: List[Sample], cp_samples_df_v0: Data
     Returns:
         samples_by_version {Dict[List[Sample]]} -- Samples split by version
     """
-    v0_cp_samples = cp_samples_df_v0[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()
-    v1_cp_samples = cp_samples_df_v1[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()
+    v0_cp_samples = cp_samples_df_v0[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()  # noqa: E501
+    v1_cp_samples = cp_samples_df_v1[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()  # noqa: E501
 
     v0_unmigrated_samples = []
     v1_unmigrated_samples = []
