@@ -2,7 +2,7 @@
 from crawler.config.defaults import *
 from crawler.constants import FIELD_RNA_ID
 
-# settings here overwrite those in defaults.py
+# settings here overwrite those in 'defaults.py
 
 # general details
 DIR_DOWNLOADED_DATA = "tests/files/"

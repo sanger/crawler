@@ -6,11 +6,11 @@ from crawler.constants import COLLECTION_CENTRES, COLLECTION_IMPORTS, COLLECTION
 from crawler.db import get_mongo_collection
 from crawler.main import run
 
-NUMBER_CENTRES = 4
-NUMBER_VALID_SAMPLES = 14
+NUMBER_CENTRES = 5
+NUMBER_VALID_SAMPLES = 18
 NUMBER_SAMPLES_ON_PARTIAL_IMPORT = 10
-NUMBER_OF_FILES_PROCESSED = 8
-NUMBER_SOURCE_PLATES = 5
+NUMBER_OF_FILES_PROCESSED = 10
+NUMBER_SOURCE_PLATES = 7
 
 
 # The run method encompasses the main actions of the crawler
@@ -43,6 +43,8 @@ def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
     assert source_plates_collection.count_documents({"barcode": "MK123"}) == 1
     assert source_plates_collection.count_documents({"barcode": "MK456"}) == 1
     assert source_plates_collection.count_documents({"barcode": "TS789"}) == 1
+    assert source_plates_collection.count_documents({"barcode": "GLS123"}) == 1
+    assert source_plates_collection.count_documents({"barcode": "GLS789"}) == 1
 
     # We record *all* our samples
     assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES, (
@@ -99,6 +101,12 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     (_, _, files) = next(os.walk("tmp/backups/MILK/errors"))
     assert 0 == len(files)
 
+    (_, _, files) = next(os.walk("tmp/backups/QEUH/successes"))
+    assert 2 == len(files)
+
+    (_, _, files) = next(os.walk("tmp/backups/QEUH/errors"))
+    assert 0 == len(files)
+
     (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
     assert 0 == len(files), "Fail success TEST"
 
@@ -148,7 +156,7 @@ def test_error_run(mongo_database, testing_files_for_process, pyodbc_conn):
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
     source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
 
-    # we expect one file in the errors directory after the first run
+    # we expect files in the errors directory after the first run
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
     assert 2 == len(files)
 
@@ -157,9 +165,9 @@ def test_error_run(mongo_database, testing_files_for_process, pyodbc_conn):
 
     run(False, False, False, "crawler.config.integration")
 
-    # We still have 4 test centers
+    # The number of centres should be the same as before
     assert centres_collection.count_documents({}) == NUMBER_CENTRES
-    # The source plates count shoule be the same as before
+    # The source plates count should be the same as before
     assert source_plates_collection.count_documents({}) == NUMBER_SOURCE_PLATES
     # The samples count should be the same as before
     assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
