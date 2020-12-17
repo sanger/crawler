@@ -136,7 +136,6 @@ class Centre:
         logger.debug("Remove files")
         try:
             shutil.rmtree(self.get_download_dir())
-            (_, subfolders, files) = next(os.walk("tmp/files/"))
 
         except Exception:
             logger.exception("Failed clean up")
