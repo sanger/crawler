@@ -26,9 +26,17 @@ from migrations.helpers.dart_samples_update_helper import extract_required_cp_in
 
 logger = logging.getLogger(__name__)
 
+# Migration steps:
+# 1. Get all legacy samples (those created in Mongo prior to Crawler
+#    setting the filtered positive fields) from Mongo
+# 2. Query to find which of these samples belong to v0, v1, v2 based on 
+#    when they were created in the 'sample' table of MLWH
+# 3. Update the filtered positive fields of the samples using the correct
+#    version rules
+# 4. Update Mongo and MLWH with these filtered positive fields
 
 def run(settings_module: str = "") -> None:
-    """Migrate the existing samples to have the filtered positive values. Should only be run once.
+    """Migrate the existing samples to have the filtered positive values.
 
     Arguments:
         config {ModuleType} -- application config specifying database details
@@ -66,12 +74,8 @@ def run(settings_module: str = "") -> None:
                 logger.info("Invalid input, please enter 'yes' or 'no'. Now exiting migration")
                 raise Exception()
 
-        logger.info("Selecting unmigrated samples from Mongo...")
+        logger.info("Selecting legacy samples from Mongo...")
         samples = legacy_mongo_samples(config)
-
-        if not samples:
-            logger.info("All samples have filtered positive fields set, migration not needed.")
-            raise Exception()
 
         root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
 
