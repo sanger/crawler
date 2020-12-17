@@ -142,7 +142,7 @@ def run(settings_module: str = "") -> None:
         raise
     finally:
         logger.info(
-        f"""
+            f"""
         ---------- Processing status of filtered positive field migration: ----------
         -- Mongo updated with v0 filtered positives: {mongo_versions_updated[FILTERED_POSITIVE_VERSION_0]}
         -- Mongo updated with v1 filtered positives: {mongo_versions_updated[FILTERED_POSITIVE_VERSION_1]}

@@ -54,8 +54,7 @@ def mock_helper_functions():
     with patch(
         "migrations.update_legacy_filtered_positives.split_mongo_samples_by_version"
     ) as mock_split_mongo_samples_by_version:
-        with patch("migrations.update_legacy_filtered_positives.combine_samples") as mock_combine_samples:
-            yield mock_split_mongo_samples_by_version, mock_combine_samples
+            yield mock_split_mongo_samples_by_version
 
 
 @pytest.fixture
@@ -148,7 +147,7 @@ def test_update_legacy_filtered_positives_outputs_success(
 ):
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
     mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
-    mock_split_mongo_samples_by_version, mock_combine_samples = mock_helper_functions
+    mock_split_mongo_samples_by_version = mock_helper_functions
 
     mock_v0_version_set.return_value = False
     mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
@@ -161,8 +160,6 @@ def test_update_legacy_filtered_positives_outputs_success(
     }
     mock_update_mongo.return_value = True
     mock_update_mlwh.return_value = True
-
-    mock_combine_samples = [{"plate_barcode": "1"}, {"plate_barcode": "2"}, {"plate_barcode": "3"}]
 
     update_legacy_filtered_positives.run("crawler.config.integration")
 
@@ -182,7 +179,7 @@ def test_update_legacy_filtered_positives_successful_if_user_chooses_to_continue
 ):
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
     mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
-    mock_split_mongo_samples_by_version, mock_combine_samples = mock_helper_functions
+    mock_split_mongo_samples_by_version = mock_helper_functions
 
     mock_v0_version_set.return_value = True
     mock_user_input.return_value = "yes"
@@ -196,8 +193,6 @@ def test_update_legacy_filtered_positives_successful_if_user_chooses_to_continue
     }
     mock_update_mongo.return_value = True
     mock_update_mlwh.return_value = True
-
-    mock_combine_samples = [{"plate_barcode": "1"}, {"plate_barcode": "2"}, {"plate_barcode": "3"}]
 
     update_legacy_filtered_positives.run("crawler.config.integration")
 
