@@ -29,11 +29,12 @@ logger = logging.getLogger(__name__)
 # Migration steps:
 # 1. Get all legacy samples (those created in Mongo prior to Crawler
 #    setting the filtered positive fields) from Mongo
-# 2. Query to find which of these samples belong to v0, v1, v2 based on 
+# 2. Query to find which of these samples belong to v0, v1, v2 based on
 #    when they were created in the 'sample' table of MLWH
 # 3. Update the filtered positive fields of the samples using the correct
 #    version rules
 # 4. Update Mongo and MLWH with these filtered positive fields
+
 
 def run(settings_module: str = "") -> None:
     """Migrate the existing samples to have the filtered positive values.
