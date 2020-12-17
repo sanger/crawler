@@ -36,11 +36,11 @@ def mock_v0_version_set():
 
 @pytest.fixture
 def mock_query_helper_functions():
-    with patch("migrations.update_legacy_filtered_positives.unmigrated_mongo_samples") as mock_unmigrated_mongo_samples:
+    with patch("migrations.update_legacy_filtered_positives.legacy_mongo_samples") as mock_legacy_mongo_samples:
         with patch(
             "migrations.update_legacy_filtered_positives.get_cherrypicked_samples_by_date"
         ) as mock_get_cherrypicked_samples_by_date:
-            yield mock_unmigrated_mongo_samples, mock_get_cherrypicked_samples_by_date
+            yield mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date
 
 
 @pytest.fixture
@@ -110,7 +110,7 @@ def test_update_legacy_filtered_positives_catches_error_connecting_to_mongo(
 ):
     with pytest.raises(Exception):
         with patch(
-            "migrations.update_legacy_filtered_positives.unmigrated_mongo_samples",
+            "migrations.update_legacy_filtered_positives.legacy_mongo_samples",
             side_effect=Exception("Boom!"),
         ):
             mock_v0_version_set.return_value = False
@@ -125,10 +125,10 @@ def test_error_connecting_to_mysql_databases_raises_exception(
     mock_v0_version_set, mock_helper_database_updates, mock_query_helper_functions, mock_extract_required_cp_info
 ):
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
-    mock_unmigrated_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
+    mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
 
     mock_v0_version_set.return_value = False
-    mock_unmigrated_mongo_samples.return_value = [{"plate_barcode": "1"}]
+    mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.side_effect = Exception("Boom!")
 
@@ -147,11 +147,11 @@ def test_update_legacy_filtered_positives_outputs_success(
     mock_update_filtered_positive_fields,
 ):
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
-    mock_unmigrated_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
+    mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
     mock_split_mongo_samples_by_version, mock_combine_samples = mock_helper_functions
 
     mock_v0_version_set.return_value = False
-    mock_unmigrated_mongo_samples.return_value = [{"plate_barcode": "1"}]
+    mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.return_value = pd.DataFrame({"root_sample_id": ["s1", "s2"]})
     mock_split_mongo_samples_by_version.return_value = {
@@ -181,12 +181,12 @@ def test_update_legacy_filtered_positives_successful_if_user_chooses_to_continue
     mock_update_filtered_positive_fields,
 ):
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
-    mock_unmigrated_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
+    mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
     mock_split_mongo_samples_by_version, mock_combine_samples = mock_helper_functions
 
     mock_v0_version_set.return_value = True
     mock_user_input.return_value = "yes"
-    mock_unmigrated_mongo_samples.return_value = [{"plate_barcode": "1"}]
+    mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.return_value = pd.DataFrame({"root_sample_id": ["s1", "s2"]})
     mock_split_mongo_samples_by_version.return_value = {

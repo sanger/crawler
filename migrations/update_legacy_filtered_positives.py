@@ -8,7 +8,7 @@ from migrations.helpers.update_filtered_positives_helper import (
     update_mongo_filtered_positive_fields,
 )
 from migrations.helpers.update_legacy_filtered_positives_helper import (
-    unmigrated_mongo_samples,
+    legacy_mongo_samples,
     get_cherrypicked_samples_by_date,
     v0_version_set,
     split_mongo_samples_by_version,
@@ -17,6 +17,11 @@ from migrations.helpers.update_legacy_filtered_positives_helper import (
 from crawler.constants import (
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
+)
+from crawler.filtered_positive_identifier import (
+    FILTERED_POSITIVE_VERSION_0,
+    FILTERED_POSITIVE_VERSION_1,
+    FILTERED_POSITIVE_VERSION_2,
 )
 from migrations.helpers.dart_samples_update_helper import extract_required_cp_info
 
@@ -36,7 +41,12 @@ def run(settings_module: str = "") -> None:
     logger.info("STARTING FILTERED POSITIVES LEGACY UPDATE")
     logger.info(f"Time start: {datetime.now()}")
 
-    mongo_updated = False
+    mongo_versions_updated = {
+        FILTERED_POSITIVE_VERSION_0: False,
+        FILTERED_POSITIVE_VERSION_1: False,
+        FILTERED_POSITIVE_VERSION_2: False,
+    }
+
     mlwh_updated = False
 
     try:
@@ -54,7 +64,7 @@ def run(settings_module: str = "") -> None:
                 raise Exception()
 
         logger.info("Selecting unmigrated samples from Mongo...")
-        samples = unmigrated_mongo_samples(config)
+        samples = legacy_mongo_samples(config)
 
         if not samples:
             logger.info("All samples have filtered positive fields set, migration not needed.")
@@ -107,11 +117,16 @@ def run(settings_module: str = "") -> None:
                 version,
                 update_timestamp,
             )
+<<<<<<< Updated upstream
             logger.info(f"Updating {version} filtered positives in Mongo...")
             if mongo_updated:
                 logger.info(f"Updating {version} filtered positives in MLWH...")
                 mlwh_updated = update_mlwh_filtered_positive_fields(config, version_samples)
                 logger.info(f"Finished updating {version} filtered positives MLWH")
+=======
+            if mongo_updated:
+                mongo_versions_updated[version] = True
+>>>>>>> Stashed changes
 
         logger.info("Finished updating databases")
 
@@ -124,7 +139,9 @@ def run(settings_module: str = "") -> None:
         logger.info(
             f"""
         ---------- Processing status of filtered positive field migration: ----------
-        -- Mongo updated: {mongo_updated}
+        -- Mongo updated with v0 filtered positives: {mongo_versions_updated[FILTERED_POSITIVE_VERSION_0]}
+        -- Mongo updated with v1 filtered positives: {mongo_versions_updated[FILTERED_POSITIVE_VERSION_1]}
+        -- Mongo updated with v2 filtered positives: {mongo_versions_updated[FILTERED_POSITIVE_VERSION_2]}
         -- MLWH updated: {mlwh_updated}
         """
         )

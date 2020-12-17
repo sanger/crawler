@@ -34,7 +34,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def unmigrated_mongo_samples(config: ModuleType):
+def legacy_mongo_samples(config: ModuleType):
     """Gets all samples from Mongo which have not had the filtered positive field set
 
     Arguments:

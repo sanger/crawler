@@ -13,7 +13,7 @@ from crawler.filtered_positive_identifier import (
 )
 from migrations.helpers.update_legacy_filtered_positives_helper import (
     v0_version_set,
-    unmigrated_mongo_samples,
+    legacy_mongo_samples,
     get_cherrypicked_samples_by_date,
     split_mongo_samples_by_version,
     combine_samples,
@@ -33,8 +33,8 @@ from crawler.constants import (
 # ----- migration helper function tests -----
 
 
-def test_unmigrated_mongo_samples_returns_expected(config, filtered_positive_testing_samples):
-    result = unmigrated_mongo_samples(config)
+def test_legacy_mongo_samples_returns_expected(config, filtered_positive_testing_samples):
+    result = legacy_mongo_samples(config)
     assert len(result) == 2
 
 
