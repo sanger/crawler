@@ -58,7 +58,7 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
                 logger.warning("No pending plates found in DART")
 
         if num_samples := len(samples):
-            logger.info(f"{num_samples} positive samples in pending plates found in Mongo")
+            logger.info(f"{num_samples} matching positive samples found in Mongo")
 
             # Filter out cherrypicked samples
             logger.info("Filtering out cherrypicked samples...")
@@ -66,7 +66,7 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
 
             if num_non_cp_pos_pending_samples := len(non_cp_pos_pending_samples):
                 logger.info(
-                    f"{num_non_cp_pos_pending_samples} non-cherrypicked positive samples in pending plates found"
+                    f"{num_non_cp_pos_pending_samples} non-cherrypicked matching positive samples found"
                 )
                 filtered_positive_identifier = current_filtered_positive_identifier()
                 version = filtered_positive_identifier.version
@@ -97,10 +97,10 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
                         logger.info("Finished updating DART")
             else:
                 logger.warning(
-                    "No non-cherrypicked positive samples in pending plates found, not updating any database"
+                    "No non-cherrypicked matching positive samples found, not updating any database"
                 )
         else:
-            logger.warning("No positive samples in pending plates found in Mongo, not updating any database")
+            logger.warning("No matching positive samples found in Mongo, not updating any database")
 
     except Exception as e:
         logger.error("---------- Process aborted: ----------")
@@ -112,7 +112,7 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
             f"""
         ---------- Processing status of filtered positive rule changes: ----------
         -- {dart_message}
-        -- Found {num_positive_pending_samples} samples in pending plates in Mongo
+        -- Found {num_positive_pending_samples} matching samples in Mongo
         -- Mongo updated: {mongo_updated}
         -- MLWH updated: {mlwh_updated}
         -- DART updated: {dart_updated}
