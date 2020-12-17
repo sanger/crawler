@@ -1,4 +1,4 @@
-from crawler.constants import FIELD_RNA_ID
+from crawler.constants import BIOMEK_LABWARE_CLASS_BIO, BIOMEK_LABWARE_CLASS_KINGFISHER, FIELD_RNA_ID
 
 # general details
 DIR_DOWNLOADED_DATA = "data/sftp_files/"
@@ -28,53 +28,56 @@ ADD_LAB_ID = False
 # sftp_root_write: directory on sftp in which to upload master files
 # file_names_to_ignore: array of files to exclude from processing, such as those
 #                       containing invalid headers
+CENTRE_REGEX_BARCODE = r"^[\W_]*([\w-]*)_([A-Z]\d{2})[\W_]*$"
+CENTRE_DIR_BACKUPS = "data/backups"
+CENTRE_REGEX_SFTP_FILE = r"sanger_report_(\d{6}_\d{4}).*\.csv$"
 CENTRES = [
     {
         "barcode_field": FIELD_RNA_ID,
-        "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
+        "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Alderley",
         "prefix": "ALDP",
         "lab_id_default": "AP",
-        "backups_folder": "data/backups/ALDP",
-        "sftp_file_regex": r"^AP_sanger_report_(\d{6}_\d{4}).*\.csv$",
+        "backups_folder": f"{CENTRE_DIR_BACKUPS}/ALDP",
+        "sftp_file_regex": f"^AP_{CENTRE_REGEX_SFTP_FILE}",
         "sftp_root_read": "project-heron_alderly-park",
-        "biomek_labware_class": "KingFisher_96_2ml",
+        "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
     },
     {
         "barcode_field": FIELD_RNA_ID,
-        "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
+        "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "UK Biocentre",
         "prefix": "MILK",
         "lab_id_default": "MK",
-        "backups_folder": "data/backups/MILK",
-        "sftp_file_regex": r"^MK_sanger_report_(\d{6}_\d{4}).*\.csv$",
+        "backups_folder": f"{CENTRE_DIR_BACKUPS}/MILK",
+        "sftp_file_regex": f"^MK_{CENTRE_REGEX_SFTP_FILE}",
         "sftp_root_read": "project-heron/UK-Biocenter/Sanger Reports",
         "file_names_to_ignore": ["MK_sanger_report_200715_2000_master.csv"],
-        "biomek_labware_class": "KingFisher_96_2ml",
+        "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
     },
     {
         "barcode_field": FIELD_RNA_ID,
-        "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
+        "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Queen Elizabeth University Hospital",
         "prefix": "QEUH",
         "lab_id_default": "GLS",
-        "backups_folder": "data/backups/QEUH",
-        "sftp_file_regex": r"^GLS_sanger_report_(\d{6}_\d{4}).*\.csv$",
+        "backups_folder": f"{CENTRE_DIR_BACKUPS}/QEUH",
+        "sftp_file_regex": f"^GLS_{CENTRE_REGEX_SFTP_FILE}",
         "sftp_root_read": "project-heron_glasgow",
         "file_names_to_ignore": ["GLS_sanger_report_200713_0001_master.csv"],
-        "biomek_labware_class": "KingFisher_96_2ml",
+        "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
     },
     {
         "barcode_field": FIELD_RNA_ID,
-        "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
+        "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Cambridge-az",
         "prefix": "CAMC",
         "lab_id_default": "CB",
-        "backups_folder": "data/backups/CAMC",
-        "sftp_file_regex": r"^CB_sanger_report_(\d{6}_\d{4}).*\.csv$",
+        "backups_folder": f"{CENTRE_DIR_BACKUPS}/CAMC",
+        "sftp_file_regex": f"^CB_{CENTRE_REGEX_SFTP_FILE}",
         "sftp_root_read": "project-heron_cambridge-az",
         "file_names_to_ignore": ["CB_sanger_report_200714_0001_master.csv"],
-        "biomek_labware_class": "Bio-Rad_96PCR",
+        "biomek_labware_class": BIOMEK_LABWARE_CLASS_BIO,
     },
 ]
 

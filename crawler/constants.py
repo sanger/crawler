@@ -125,3 +125,7 @@ V1_V2_CUTOFF_TIMESTAMP = "2020-12-14 12:00:00"  # Timestamp of v2 positive rule 
 
 # Date on which filtered positive fields started being set by Crawler
 FILTERED_POSITIVE_FIELDS_SET_DATE = "2020-12-17 00:00:00"
+
+# Beckman labware
+BIOMEK_LABWARE_CLASS_KINGFISHER = "KingFisher_96_2ml"
+BIOMEK_LABWARE_CLASS_BIO = "Bio-Rad_96PCR"
