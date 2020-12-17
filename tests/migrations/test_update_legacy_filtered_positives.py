@@ -168,7 +168,7 @@ def test_update_legacy_filtered_positives_outputs_success(
 
     assert mock_update_filtered_positive_fields.call_count == 3
     assert mock_update_mongo.call_count == 3
-    assert mock_update_mlwh.call_count == 1
+    assert mock_update_mlwh.call_count == 3
 
 
 def test_update_legacy_filtered_positives_successful_if_user_chooses_to_continue(
@@ -203,4 +203,4 @@ def test_update_legacy_filtered_positives_successful_if_user_chooses_to_continue
 
     assert mock_update_filtered_positive_fields.call_count == 3
     assert mock_update_mongo.call_count == 3
-    assert mock_update_mlwh.call_count == 1
+    assert mock_update_mlwh.call_count == 3

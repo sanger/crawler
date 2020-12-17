@@ -107,15 +107,13 @@ def run(settings_module: str = "") -> None:
                 version,
                 update_timestamp,
             )
+            logger.info(f"Updating {version} filtered positives in Mongo...")
+            if mongo_updated:
+                logger.info(f"Updating {version} filtered positives in MLWH...")
+                mlwh_updated = update_mlwh_filtered_positive_fields(config, version_samples)
+                logger.info(f"Finished updating {version} filtered positives MLWH")
 
-        logger.info("Finished updating Mongo")
-
-        all_versioned_samples = combine_samples(samples_by_version)
-
-        if mongo_updated:
-            logger.info("Updating MLWH...")
-            mlwh_updated = update_mlwh_filtered_positive_fields(config, all_versioned_samples)
-            logger.info("Finished updating MLWH")
+        logger.info("Finished updating databases")
 
     except Exception as e:
         logger.error("---------- Process aborted: ----------")
