@@ -319,6 +319,13 @@ def test_extract_plate_barcode_and_coordinate(config):
         "H01",
     )
 
+    # lowercase coordinates
+    lower_coord = {"RNA ID": "AP-abc-12345678_h01"}
+    assert centre_file.extract_plate_barcode_and_coordinate(lower_coord, 0, barcode_field, barcode_regex) == (
+        "",
+        "",
+    )
+
 
 # tests for parsing and formatting the csv file rows
 def test_parse_and_format_file_rows(config, freezer):

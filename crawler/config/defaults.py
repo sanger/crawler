@@ -28,7 +28,7 @@ ADD_LAB_ID = False
 # sftp_root_write: directory on sftp in which to upload master files
 # file_names_to_ignore: array of files to exclude from processing, such as those
 #                       containing invalid headers
-CENTRE_REGEX_BARCODE = r"^[\W_]*([\w-]*)_([a-z]\d{2})[\W_]*$"
+CENTRE_REGEX_BARCODE = r"^[\W_]*([\w-]*)_([A-Z]\d{2})[\W_]*$"
 CENTRE_DIR_BACKUPS = "data/backups"
 CENTRE_REGEX_SFTP_FILE = r"sanger_report_(\d{6}_\d{4}).*\.csv$"
 CENTRES = [
@@ -50,7 +50,7 @@ CENTRES = [
         "prefix": "MILK",
         "lab_id_default": "MK",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/MILK",
-        "sftp_file_regex": r"^MK_sanger_report_(\d{6}_\d{4}).*\.csv$",
+        "sftp_file_regex": f"^MK_{CENTRE_REGEX_SFTP_FILE}",
         "sftp_root_read": "project-heron/UK-Biocenter/Sanger Reports",
         "file_names_to_ignore": ["MK_sanger_report_200715_2000_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
@@ -62,7 +62,7 @@ CENTRES = [
         "prefix": "QEUH",
         "lab_id_default": "GLS",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/QEUH",
-        "sftp_file_regex": r"^GLS_sanger_report_(\d{6}_\d{4}).*\.csv$",
+        "sftp_file_regex": f"^GLS_{CENTRE_REGEX_SFTP_FILE}",
         "sftp_root_read": "project-heron_glasgow",
         "file_names_to_ignore": ["GLS_sanger_report_200713_0001_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
@@ -74,7 +74,7 @@ CENTRES = [
         "prefix": "CAMC",
         "lab_id_default": "CB",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/CAMC",
-        "sftp_file_regex": r"^CB_sanger_report_(\d{6}_\d{4}).*\.csv$",
+        "sftp_file_regex": f"^CB_{CENTRE_REGEX_SFTP_FILE}",
         "sftp_root_read": "project-heron_cambridge-az",
         "file_names_to_ignore": ["CB_sanger_report_200714_0001_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_BIO,

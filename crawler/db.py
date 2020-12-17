@@ -127,9 +127,11 @@ def create_import_record(
     Returns:
         InsertOneResult -- the result of inserting this document
     """
-    logger.debug(f"Creating the status record for {centre['name']}")
+    logger.debug(f"Creating the import record for {centre['name']}")
+    logger.info(f"{docs_inserted} documents inserted into sample collection")
+    logger.debug(f"CSV file used: {file_name}")
 
-    status_doc = {
+    import_doc = {
         "date": datetime.now().isoformat(timespec="seconds"),
         "centre_name": centre["name"],
         "csv_file_used": file_name,
@@ -137,7 +139,7 @@ def create_import_record(
         "errors": errors,
     }
 
-    return import_collection.insert_one(status_doc)
+    return import_collection.insert_one(import_doc)
 
 
 def populate_centres_collection(collection: Collection, documents: List[Dict[str, str]], filter_field: str) -> None:

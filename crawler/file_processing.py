@@ -10,7 +10,7 @@ from datetime import datetime
 from enum import Enum
 from hashlib import md5
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 import pyodbc  # type: ignore
 from bson.decimal128 import Decimal128  # type: ignore
@@ -793,7 +793,7 @@ class CentreFile:
         Returns:
             Tuple[str, str] -- the barcode and coordinate
         """
-        pattern = re.compile(regex, re.IGNORECASE | re.ASCII)
+        pattern = re.compile(regex, re.ASCII)
         match = pattern.search(row[barcode_field].strip())
         # TODO: Update regex check to handle different format checks
         #  https://ssg-confluence.internal.sanger.ac.uk/pages/viewpage.action?pageId=101358138#ReceiptfromLighthouselaboratories(Largediagnosticcentres)-4.2.1VariantsofRNAplatebarcode
@@ -827,7 +827,7 @@ class CentreFile:
         )
 
     def filtered_row(self, row, line_number) -> Dict[str, Any]:
-        """Filter un-needed columns and add lab id if not present and config flag set.
+        """Filter unneeded columns and add lab id if not present and config flag set.
 
         Arguments:
             row {Dict[str][str]} - sample row read from file
