@@ -66,9 +66,7 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
             non_cp_pos_pending_samples = remove_cherrypicked_samples(config, samples)
 
             if num_non_cp_pos_samples := len(non_cp_pos_pending_samples):
-                logger.info(
-                    f"{num_non_cp_pos_samples} non-cherrypicked matching positive samples found"
-                )
+                logger.info(f"{num_non_cp_pos_samples} non-cherrypicked matching positive samples found")
                 filtered_positive_identifier = current_filtered_positive_identifier()
                 version = filtered_positive_identifier.version
                 update_timestamp = datetime.now()
@@ -97,9 +95,7 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
                         dart_updated = update_dart_fields(config, non_cp_pos_pending_samples)
                         logger.info("Finished updating DART")
             else:
-                logger.warning(
-                    "No non-cherrypicked matching positive samples found, not updating any database"
-                )
+                logger.warning("No non-cherrypicked matching positive samples found, not updating any database")
         else:
             logger.warning("No matching positive samples found in Mongo, not updating any database")
 
