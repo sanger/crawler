@@ -12,7 +12,6 @@ from migrations.helpers.update_legacy_filtered_positives_helper import (
     get_cherrypicked_samples_by_date,
     v0_version_set,
     split_mongo_samples_by_version,
-    combine_samples,
 )
 from crawler.constants import (
     V0_V1_CUTOFF_TIMESTAMP,
@@ -94,7 +93,9 @@ def run(settings_module: str = "") -> None:
             V1_V2_CUTOFF_TIMESTAMP,
         )
 
-        samples_by_version = split_mongo_samples_by_version(samples, v0_cp_samples_df, v1_cp_samples_df)
+        samples_by_version = split_mongo_samples_by_version(
+            samples, v0_cp_samples_df, v1_cp_samples_df
+        )
 
         update_timestamp = datetime.now()
 
@@ -141,7 +142,7 @@ def run(settings_module: str = "") -> None:
         raise
     finally:
         logger.info(
-            f"""
+        f"""
         ---------- Processing status of filtered positive field migration: ----------
         -- Mongo updated with v0 filtered positives: {mongo_versions_updated[FILTERED_POSITIVE_VERSION_0]}
         -- Mongo updated with v1 filtered positives: {mongo_versions_updated[FILTERED_POSITIVE_VERSION_1]}

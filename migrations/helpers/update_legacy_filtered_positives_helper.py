@@ -48,13 +48,7 @@ def legacy_mongo_samples(config: ModuleType):
     with create_mongo_client(config) as client:
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
-        return list(
-            samples_collection.find(
-                {
-                    FIELD_CREATED_AT: {"$lt": FILTERED_POSITIVE_FIELDS_SET_DATE}
-                }
-            )
-        )
+        return list(samples_collection.find({FIELD_CREATED_AT: {"$lt": FILTERED_POSITIVE_FIELDS_SET_DATE}}))
 
 
 def get_cherrypicked_samples_by_date(
@@ -194,19 +188,3 @@ def split_mongo_samples_by_version(samples: List[Sample], cp_samples_df_v0: Data
     }
 
     return samples_by_version
-
-
-def combine_samples(samples_by_version: Dict[FilteredPositiveIdentifier, List[Sample]]):
-    """Combine samples from each version into single list
-
-    Args:
-        {Dict[FilteredPositiveIdentifier, List[Sample]]} -- Dictionary of samples by filtered positive version
-
-    Returns:
-        all_versioned_samples {List[Sample]} -- Samples split by version
-    """
-    all_versioned_samples = []
-    for samples in samples_by_version.values():
-        all_versioned_samples.extend(samples)
-
-    return all_versioned_samples
