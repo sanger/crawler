@@ -53,8 +53,6 @@ def run(settings_module: str = "") -> None:
         FILTERED_POSITIVE_VERSION_2: False,
     }
 
-    mlwh_updated = False
-
     try:
         if v0_version_set(config):
             question = "v0 version has been set on some samples. This migration has likely been run before - do you still wish to proceed? (yes/no):"
