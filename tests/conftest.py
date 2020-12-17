@@ -526,26 +526,14 @@ def get_table(sql_engine: Engine, table_name: str):
 
 @pytest.fixture
 def event_wh_sql_engine(config):
-    sql_engine = sqlalchemy.create_engine(
-        (
-            f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}"  # type: ignore
-            f"@{config.MLWH_DB_HOST}/{config.EVENTS_WH_DB}"  # type: ignore
-        ),
-        pool_recycle=3600,
-    )
-    return sql_engine
+    create_engine_string = f"mysql+pymysql://{config.WAREHOUSES_RW_CONN_STRING}/{config.EVENTS_WH_DB}"
+    return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
 
 
 @pytest.fixture
 def mlwh_sql_engine(config):
-    sql_engine = sqlalchemy.create_engine(
-        (
-            f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}"  # type: ignore
-            f"@{config.MLWH_DB_HOST}/{config.ML_WH_DB}"  # type: ignore
-        ),
-        pool_recycle=3600,
-    )
-    return sql_engine
+    create_engine_string = f"mysql+pymysql://{config.WAREHOUSES_RW_CONN_STRING}/{config.ML_WH_DB}"
+    return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
 
 
 @pytest.fixture
