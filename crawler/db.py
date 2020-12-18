@@ -11,7 +11,8 @@ from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.results import InsertOneResult
-
+import sqlalchemy  # type: ignore
+from sqlalchemy.engine.base import Engine  # type: ignore
 from crawler.constants import (
     DART_SET_PROP_STATUS_SUCCESS,
     DART_STATE,
@@ -389,3 +390,8 @@ def add_dart_plate_if_doesnt_exist(cursor: pyodbc.Cursor, plate_barcode: str, bi
         raise DartStateError(f"DART plate {plate_barcode} should have a state")
 
     return state
+
+
+def create_mysql_connection_engine(connection_string: str, database: str) -> Engine:
+    create_engine_string = f"mysql+pymysql://{connection_string}/{database}"
+    return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
