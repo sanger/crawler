@@ -69,6 +69,7 @@ MLWH_STOCK_RESOURCES_TABLE = "stock_resource"
 MLWH_STUDY_TABLE = "study"
 
 # Event warehouse database details
+# Only used for setting up test environment
 EVENT_WH_SUBJECTS_TABLE = "subjects"
 EVENT_WH_ROLES_TABLE = "roles"
 EVENT_WH_EVENTS_TABLE = "events"
