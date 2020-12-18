@@ -22,6 +22,7 @@ from crawler.db import (
     run_mysql_executemany_query,
     set_dart_plate_state_pending,
     set_dart_well_properties,
+    create_mysql_connection_engine,
 )
 from crawler.exceptions import DartStateError
 from crawler.helpers.logging_helpers import LoggingCollection
@@ -36,6 +37,7 @@ from mysql.connector.connection_cext import CMySQLConnection
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
+from sqlalchemy.engine.base import Engine  # type: ignore
 
 
 def test_create_mongo_client(config):
@@ -217,3 +219,15 @@ def test_add_dart_plate_if_doesnt_exist_throws_without_state_property(config):
         with patch("crawler.db.get_dart_plate_state", return_value=DART_STATE_NO_PROP):
             with pytest.raises(DartStateError):
                 add_dart_plate_if_doesnt_exist(mock_conn.cursor(), test_plate_barcode, test_labclass)
+
+
+def test_create_mysql_connection_engine_returns_expected(config):
+    sql_engine = create_mysql_connection_engine(config.WAREHOUSES_RW_CONN_STRING, config.ML_WH_DB)
+    assert isinstance(sql_engine, Engine)
+
+
+def test_create_mysql_connection_engine_result_can_initiate_connection(config):
+    sql_engine = create_mysql_connection_engine(config.WAREHOUSES_RW_CONN_STRING, config.ML_WH_DB)
+    connection = sql_engine.connect()
+
+    assert connection.closed == False
