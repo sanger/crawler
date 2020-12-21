@@ -100,7 +100,9 @@ def run(settings_module: str = "") -> None:
                 V1_V2_CUTOFF_TIMESTAMP,
             )
 
-            samples_by_version = split_mongo_samples_by_version(samples, v0_cp_samples_df, v1_cp_samples_df)  # noqa: E501
+            samples_by_version = split_mongo_samples_by_version(
+                samples, v0_cp_samples_df, v1_cp_samples_df
+            )  # noqa: E501
 
             update_timestamp = datetime.now()
 
