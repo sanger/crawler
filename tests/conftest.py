@@ -76,19 +76,20 @@ def pyodbc_conn(config):
 
 @pytest.fixture
 def testing_files_for_process(cleanup_backups):
-    # Copy the test files to a new directory, as we expect run
-    # to perform a clean up, and we don't want it cleaning up our
-    # main copy of the data. We don't disable the clean up as:
-    # 1) It also clears up the master files, which we'd otherwise need to handle
-    # TODO: remove reference to master files above - they don't exist anymore
-    # 2) It means we keep the tested process closer to the actual one
+    """Copy the test files to a new directory, as we expect run() to perform a clean up, and we don't want it cleaning
+    up our main copy of the data.
+
+    We don't disable the clean up as:
+    1. It also clears up the master files, which we'd otherwise need to handle
+    TODO: remove reference to master files above - they don't exist anymore
+    2. It means we keep the tested process closer to the actual one
+    """
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
     try:
         yield
     finally:
         # remove files https://docs.python.org/3/library/shutil.html#shutil.rmtree
         shutil.rmtree("tmp/files")
-        # (_, _, files) = next(os.walk("tmp/files"))
 
 
 TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
@@ -114,6 +115,14 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_RESULT: "Void",
         FIELD_PLATE_BARCODE: "123",
         FIELD_ROOT_SAMPLE_ID: "MCM003",
+    },
+    {
+        FIELD_COORDINATE: "A01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Positive",
+        FIELD_PLATE_BARCODE: "456",
+        "released": True,
+        FIELD_ROOT_SAMPLE_ID: "MCM004",
     },
 ]
 
@@ -154,6 +163,7 @@ def testing_centres(centres_collection_accessor, config):
 
 @pytest.fixture
 def cleanup_backups():
+    """Fixture to remove the tmp/backups directory when complete."""
     try:
         yield
     finally:

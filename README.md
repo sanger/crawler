@@ -12,19 +12,21 @@ querying.
 
 <!-- toc -->
 
-* [Requirements](#requirements)
-* [Running](#running)
-* [Migrations](#migrations)
+- [Requirements](#requirements)
+- [Running](#running)
+- [Migrations](#migrations)
   * [Updating the MLWH lighthouse_sample table](#updating-the-mlwh-lighthouse_sample-table)
   * [Filtered Positive Rules](#filtered-positive-rules)
-    * [Version 1 `v1` - **Current Version**](#version-1-v1---current-version)
-    * [Propagating Filtered Positive version changes to MongoDB, MLWH and DART](#propagating-filtered-positive-version-changes-to-mongodb-mlwh-and-dart)
+    + [Version 0 `v0`](#version-0-v0)
+    + [Version 1 `v1`](#version-1-v1)
+    + [Version 2 `v2` - **Current Version**](#version-2-v2---current-version)
+    + [Propagating Filtered Positive version changes to MongoDB, MLWH and DART](#propagating-filtered-positive-version-changes-to-mongodb-mlwh-and-dart)
   * [Migrating legacy data to DART](#migrating-legacy-data-to-dart)
-* [Testing](#testing)
+- [Testing](#testing)
   * [Testing requirements](#testing-requirements)
   * [Running tests](#running-tests)
-* [Formatting, type checking and linting](#formatting-type-checking-and-linting)
-* [Miscellaneous](#miscellaneous)
+- [Formatting, type checking and linting](#formatting-type-checking-and-linting)
+- [Miscellaneous](#miscellaneous)
   * [Naming conventions](#naming-conventions)
   * [Updating the table of contents](#updating-the-table-of-contents)
 
@@ -104,7 +106,15 @@ in the below relevant section.
 The implementation of the current version can be found in [FilteredPositiveIdentifier](./crawler/filtered_positive_identifier.py),
 with the implementation of previous versions (if any) in the git history.
 
-#### Version 1 `v1` - **Current Version**
+#### Version 0 `v0`
+
+A sample is filtered positive if:
+
+* it has a positive RESULT
+
+This is the pre-"fit-to-pick" implementation, without any extra filtering on top of the RESULT=Positive requirement.
+
+#### Version 1 `v1`
 
 A sample is filtered positive if:
 
@@ -115,19 +125,34 @@ A sample is filtered positive if:
 More information on this version can be found on [this](https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/UAT+6th+October+2020)
 Confluence page.
 
-#### Propagating Filtered Positive version changes to MongoDB, MLWH and DART
+#### Version 2 `v2` - **Current Version**
+
+A sample is filtered positive if:
+
+* it has a 'Positive' RESULT
+* it is not a control (ROOT_SAMPLE_ID does not start with 'CBIQA_', 'QC0', or 'ZZA000')
+* all of CH1_CQ, CH2_CQ and CH3_CQ are `None`, or one of these is less than or equal to 30
+
+More information on this version can be found on [this](https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/Fit+to+pick+-+v2)
+Confluence page.
+
+#### Propagating Filtered Positive version changes to MongoDB, MLWH and (optional) DART 
 
 On changing the positive filtering version/definition, all unpicked samples stored in MongoDB, MLWH and DART need
-updating to determine whether they are still filtered positive under the new rules, and can therefore be picked in DART.
+updating to determine whether they are still filtered positive under the new rules, and can therefore be cherrypicked.
 In order to keep the databases in sync, the update process for all is performed in a single manual migration
-(update_filtered_positives) which identifies unpicked wells, re-determines their filtered positive value, and updates
+(update_filtered_positives) which identifies unpicked samples, re-determines their filtered positive value, and updates
 the databases.
 
 Usage (inside pipenv shell):
 
     python run_migration.py update_filtered_positives
+    OR
+    python run_migration.py update_filtered_positives omit_dart
 
-The process does not duplicate any data, instead updates existing entries.
+By default, the migration will attempt to use DART, as it will safely fail if DART cannot be accessed, hence warning
+the user to reconsider what they are doing. However, using DART can be omitted by including the `omit_dart` flag.
+Neither process duplicates any data, instead updating existing entries.
 
 ### Migrating legacy data to DART
 

@@ -88,9 +88,10 @@ MYSQL_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # positive Result value
 POSITIVE_RESULT_VALUE = "Positive"
+LIMIT_OF_DETECTION_RESULT_VALUE = "limit of detection"
 
 # allowed Result field values
-ALLOWED_RESULT_VALUES = (POSITIVE_RESULT_VALUE, "Negative", "limit of detection", "Void")
+ALLOWED_RESULT_VALUES = (POSITIVE_RESULT_VALUE, "Negative", LIMIT_OF_DETECTION_RESULT_VALUE, "Void")
 
 # allowed CT channel CHn-Target field values (or can be null)
 ALLOWED_CH_TARGET_VALUES = ("ORF1ab", "N gene", "S gene", "MS2")
@@ -125,3 +126,6 @@ DART_SET_PROP_STATUS_SUCCESS = 0
 # LOCALHOST=host.docker.internal
 LOCALHOST = os.environ.get("LOCALHOST", "127.0.0.1")
 ROOT_PASSWORD = os.environ.get("ROOT_PASSWORD", "root")
+# Beckman labware
+BIOMEK_LABWARE_CLASS_KINGFISHER = "KingFisher_96_2ml"
+BIOMEK_LABWARE_CLASS_BIO = "Bio-Rad_96PCR"

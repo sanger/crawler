@@ -46,14 +46,14 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
         with create_mongo_client(config) as client:
             db = get_mongo_db(config, client)
 
-            # centres collection
+            # get or create the centres collection
             centres_collection = get_mongo_collection(db, COLLECTION_CENTRES)
 
             logger.debug(f"Creating index '{FIELD_CENTRE_NAME}' on '{centres_collection.full_name}'")
             centres_collection.create_index(FIELD_CENTRE_NAME, unique=True)
             populate_centres_collection(centres_collection, centres, FIELD_CENTRE_NAME)
 
-            # source plates collection
+            # get or create the source plates collection
             source_plates_collection = get_mongo_collection(db, COLLECTION_SOURCE_PLATES)
 
             logger.debug(f"Creating index '{FIELD_BARCODE}' on '{source_plates_collection.full_name}'")
