@@ -116,6 +116,14 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_PLATE_BARCODE: "123",
         FIELD_ROOT_SAMPLE_ID: "MCM003",
     },
+    {
+        FIELD_COORDINATE: "A01",
+        FIELD_SOURCE: "test1",
+        FIELD_RESULT: "Positive",
+        FIELD_PLATE_BARCODE: "456",
+        "released": True,
+        FIELD_ROOT_SAMPLE_ID: "MCM004",
+    },
 ]
 
 

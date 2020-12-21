@@ -62,7 +62,8 @@ def migration_update_mlwh_and_dart_with_legacy_samples():
 
 def migration_update_filtered_positives():
     print("Running update_filtered_positives migration")
-    update_filtered_positives.run()
+    omit_dart = sys.argv[2] == "omit_dart" if 2 < len(sys.argv) else False
+    update_filtered_positives.run(omit_dart=omit_dart)
 
 
 def migration_by_name(migration_name):
