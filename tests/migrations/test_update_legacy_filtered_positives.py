@@ -253,13 +253,13 @@ def test_update_legacy_filtered_positives_outputs_success(
     assert mock_update_filtered_positive_fields.call_count == 3
     mock_update_filtered_positive_fields.assert_any_call(
         identifier_v0, v0_samples, "v0", update_timestamp
-    )
+    )  # noqa: E501
     mock_update_filtered_positive_fields.assert_any_call(
         identifier_v1, v1_samples, "v1", update_timestamp
-    )
+    )  # noqa: E501
     mock_update_filtered_positive_fields.assert_any_call(
         identifier_v2, v2_samples, "v2", update_timestamp
-    )
+    )  # noqa: E501
 
     assert mock_update_mongo.call_count == 3
     mock_update_mongo.assert_any_call(config, v0_samples, "v0", update_timestamp)
@@ -314,13 +314,13 @@ def test_update_legacy_filtered_positives_successful_if_user_chooses_to_continue
     assert mock_update_filtered_positive_fields.call_count == 3
     mock_update_filtered_positive_fields.assert_any_call(
         identifier_v0, v0_samples, "v0", update_timestamp
-    )
+    )  # noqa: E501
     mock_update_filtered_positive_fields.assert_any_call(
         identifier_v1, v1_samples, "v1", update_timestamp
-    )
+    )  # noqa: E501
     mock_update_filtered_positive_fields.assert_any_call(
         identifier_v2, v2_samples, "v2", update_timestamp
-    )
+    )  # noqa: E501
 
     assert mock_update_mongo.call_count == 3
     mock_update_mongo.assert_any_call(config, v0_samples, "v0", update_timestamp)
