@@ -132,20 +132,17 @@ class Centre:
             return []
 
     def clean_up(self) -> None:
-        """Remove the files downloaded from the SFTP for the given centre.
-
-        Arguments:
-            centre {Dict[str, str]} -- the centre in question
-        """
+        """Remove the files downloaded from the SFTP for the given centre."""
         logger.debug("Remove files")
         try:
             shutil.rmtree(self.get_download_dir())
+
         except Exception:
             logger.exception("Failed clean up")
 
     def process_files(self, add_to_dart: bool) -> None:
-        """Iterate through all the files for the centre, parsing any new ones into
-        the mongo database and then into the unified warehouse.
+        """Iterate through all the files for the centre, parsing any new ones into the mongo database and then into the
+        unified warehouse.
 
         Arguments:
             add_to_dart {bool} -- whether to add the samples to DART
@@ -160,7 +157,7 @@ class Centre:
             centre_file = CentreFile(file_name, self)
 
             centre_file.set_state_for_file()
-            logger.debug(f"File state {CentreFileState[centre_file.file_state.name]}")
+            logger.debug(f"File state: {CentreFileState[centre_file.file_state.name]}")
 
             # Process depending on file state
             if centre_file.file_state == CentreFileState.FILE_IN_BLACKLIST:
@@ -180,10 +177,11 @@ class Centre:
                 continue
             else:
                 # error unrecognised
-                logger.info(f"Unrecognised file state {centre_file.file_state.name}")
+                logger.error(f"Unrecognised file state: {centre_file.file_state.name}")
 
     def get_download_dir(self) -> str:
         """Get the download directory where the files from the SFTP are stored.
+
         Returns:
             str -- the download directory
         """
@@ -256,15 +254,12 @@ class CentreFile:
 
     filtered_positive_identifier = current_filtered_positive_identifier()
 
-    def __init__(self, file_name, centre):
+    def __init__(self, file_name: str, centre: Centre):
         """Initialiser for the class representing the file
 
         Arguments:
-            centre {Dict[str][str]} -- the lighthouse centre
             file_name {str} - the file name of the file
-
-        Returns:
-            str -- the filepath for the file
+            centre {Dict[str][str]} -- the lighthouse centre
         """
         self.logging_collection = LoggingCollection()
 
@@ -426,11 +421,10 @@ class CentreFile:
         shutil.copyfile(self.full_path_to_file(), destination)
 
     def create_import_record_for_file(self) -> None:
-        logger.info(f"{self.docs_inserted} documents inserted")
-
-        # write status record
+        """Writes to the imports collection with information about the CSV file processed."""
         imports_collection = get_mongo_collection(self.get_db(), COLLECTION_IMPORTS)
-        _ = create_import_record(
+
+        create_import_record(
             imports_collection,
             self.centre_config,
             self.docs_inserted,
@@ -783,25 +777,27 @@ class CentreFile:
         return True
 
     def extract_plate_barcode_and_coordinate(
-        self, row: Dict[str, Any], line_number, barcode_field: str, regex: str
+        self, row: Dict[str, Any], line_number: int, barcode_field: str, regex: str
     ) -> Tuple[str, str]:
-        """Extracts fields from a row of data (from the CSV file). Currently extracting the barcode
-        and coordinate (well position) using regex groups.
+        """Extracts fields from a row of data (from the CSV file). Currently extracting the barcode and coordinate (well
+        position) using regex groups.
+
+        We are using the re.ASCII flag so that \\w and \\W match ASCII values only.
 
         Arguments:
             row {Dict[str, Any]} -- row of data from CSV file
-            barcode_field {str} -- field indicating the plate barcode of interest, might also
-            include coordinate
+            barcode_field {str} -- field indicating the plate barcode of interest, might also include coordinate
             regex {str} -- regex pattern to use to extract the fields
 
         Returns:
             Tuple[str, str] -- the barcode and coordinate
         """
-        m = re.match(regex, row[barcode_field])
+        pattern = re.compile(regex, re.ASCII)
+        match = pattern.search(row[barcode_field].strip())
         # TODO: Update regex check to handle different format checks
         #  https://ssg-confluence.internal.sanger.ac.uk/pages/viewpage.action?pageId=101358138#ReceiptfromLighthouselaboratories(Largediagnosticcentres)-4.2.1VariantsofRNAplatebarcode
 
-        if not m:
+        if not match:
             sample_id = None
             if FIELD_ROOT_SAMPLE_ID in row:
                 sample_id = row.get(FIELD_ROOT_SAMPLE_ID)
@@ -813,10 +809,7 @@ class CentreFile:
             )
             return "", ""
 
-        return m.group(1), m.group(2)
-
-    def get_now_timestamp(self) -> datetime:
-        return datetime.now()
+        return match.group(1), match.group(2)
 
     def get_row_signature(self, row):
         memo = []
@@ -853,7 +846,7 @@ class CentreFile:
                 else:
                     if row.get(FIELD_LAB_ID) != self.centre_config["lab_id_default"]:
                         logger.warning(
-                            "Different lab id setting: {row[FIELD_LAB_ID]}!={self.centre_config['lab_id_default']}"
+                            f"Different lab id setting: {row[FIELD_LAB_ID]}!={self.centre_config['lab_id_default']}"
                         )
                     modified_row[FIELD_LAB_ID] = row.get(FIELD_LAB_ID)
             else:
@@ -869,8 +862,7 @@ class CentreFile:
                 seen_headers.append(key)
                 modified_row[key] = row[key]
 
-        # and check the row for values for any of the optional CT channel headers and copy them
-        # across
+        # and check the row for values for any of the optional CT channel headers and copy them across
         for key in self.get_channel_headers():
             if key in row:
                 seen_headers.append(key)
@@ -983,31 +975,28 @@ class CentreFile:
         modified_row[FIELD_SOURCE] = self.centre_config["name"]
 
         # extract the barcode and well coordinate
-        barcode_regex = self.centre_config["barcode_regex"]
         barcode_field = self.centre_config["barcode_field"]
 
         modified_row[FIELD_PLATE_BARCODE] = None  # type: ignore
-        if modified_row.get(barcode_field) and barcode_regex:
+        if modified_row.get(barcode_field) and (barcode_regex := self.centre_config["barcode_regex"]):
             (
                 modified_row[FIELD_PLATE_BARCODE],
                 modified_row[FIELD_COORDINATE],
             ) = self.extract_plate_barcode_and_coordinate(modified_row, line_number, barcode_field, barcode_regex)
+
         if not modified_row.get(FIELD_PLATE_BARCODE):
             return None
-
-        # add file details and import timestamp
-        import_timestamp = self.get_now_timestamp()
 
         modified_row[FIELD_LINE_NUMBER] = line_number  # type: ignore
         modified_row[FIELD_FILE_NAME] = self.file_name
         modified_row[FIELD_FILE_NAME_DATE] = self.file_name_date()
-        modified_row[FIELD_CREATED_AT] = import_timestamp
-        modified_row[FIELD_UPDATED_AT] = import_timestamp
+        modified_row[FIELD_CREATED_AT] = datetime.now()
+        modified_row[FIELD_UPDATED_AT] = datetime.now()
 
         # filtered-positive calculations
         modified_row[FIELD_FILTERED_POSITIVE] = self.filtered_positive_identifier.is_positive(modified_row)
         modified_row[FIELD_FILTERED_POSITIVE_VERSION] = self.filtered_positive_identifier.version
-        modified_row[FIELD_FILTERED_POSITIVE_TIMESTAMP] = import_timestamp
+        modified_row[FIELD_FILTERED_POSITIVE_TIMESTAMP] = datetime.now()
 
         # add lh sample uuid
         modified_row[FIELD_LH_SAMPLE_UUID] = str(uuid.uuid4())
@@ -1327,11 +1316,10 @@ class CentreFile:
         Returns:
             SourcePlate -- The new mongo source plate doc.
         """
-        timestamp = self.get_now_timestamp()
         return {
             FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4()),
             FIELD_BARCODE: plate_barcode,
             FIELD_LAB_ID: lab_id,
-            FIELD_UPDATED_AT: timestamp,
-            FIELD_CREATED_AT: timestamp,
+            FIELD_UPDATED_AT: datetime.now(),
+            FIELD_CREATED_AT: datetime.now(),
         }
