@@ -22,7 +22,7 @@ from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_1,
     FILTERED_POSITIVE_VERSION_2,
 )
-from migrations.helpers.dart_samples_update_helper import extract_required_cp_info
+from migrations.helpers.shared_helper import extract_required_cp_info
 
 logger = logging.getLogger(__name__)
 
