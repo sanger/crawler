@@ -1,4 +1,10 @@
-from crawler.constants import BIOMEK_LABWARE_CLASS_BIO, BIOMEK_LABWARE_CLASS_KINGFISHER, FIELD_RNA_ID, LOCALHOST, ROOT_PASSWORD
+from crawler.constants import (
+    BIOMEK_LABWARE_CLASS_BIO,
+    BIOMEK_LABWARE_CLASS_KINGFISHER,
+    FIELD_RNA_ID,
+    LOCALHOST,
+    ROOT_PASSWORD,
+)
 
 # general details
 DIR_DOWNLOADED_DATA = "data/sftp_files/"
