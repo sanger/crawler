@@ -27,7 +27,6 @@ from crawler.sql_queries import (
     SQL_DART_GET_PLATE_PROPERTY,
     SQL_DART_SET_PLATE_PROPERTY,
     SQL_DART_SET_WELL_PROPERTY,
-    SQL_TEST_MLWH_CREATE,
 )
 
 logger = logging.getLogger(__name__)
@@ -259,25 +258,6 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
         # close the connection
         logger.debug("Closing the MLWH database connection.")
         mysql_conn.close()
-
-
-# Set up a basic MLWH db for testing
-def init_warehouse_db_command():
-    """Drop and recreate required tables."""
-    logger.debug("Initialising the test MySQL warehouse database")
-    config, _settings_module = get_config("crawler.config.development")
-    mysql_conn = create_mysql_connection(config, False)
-    mysql_cursor = mysql_conn.cursor()
-
-    for result in mysql_cursor.execute(SQL_TEST_MLWH_CREATE, multi=True):
-        if result.with_rows:
-            result.fetchall()
-
-    mysql_conn.commit()
-    mysql_cursor.close()
-    mysql_conn.close()
-
-    logger.debug("Done")
 
 
 def create_dart_sql_server_conn(config: ModuleType) -> Optional[pyodbc.Connection]:
