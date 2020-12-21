@@ -29,10 +29,10 @@ logger = logging.getLogger(__name__)
 
 
 def legacy_mongo_samples(config: ModuleType):
-    """Gets all samples from Mongo which have not had the filtered positive field set by Crawler
+    """Gets all samples from Mongo created before Crawler started setting filtered positive fields
 
     Arguments:
-        None
+        config {ModuleType} -- application config specifying database details
 
     Returns:
         List[Dict] -- All unmigrated samples from Mongo
