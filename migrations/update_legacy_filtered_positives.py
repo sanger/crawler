@@ -62,83 +62,85 @@ def run(settings_module: str = "") -> None:
     }
 
     try:
+        continue_migration = True
         if v0_version_set(config):
             question = "v0 version has been set on some samples. This migration has likely been \
                         run before - do you still wish to proceed? (yes/no):"
-            continue_migration = get_input(question)
+            response = get_input(question)
 
-            if continue_migration == "yes":
+            if response == "yes":
                 pass
-            elif continue_migration == "no":
-                logger.info("Now exiting migration")
-                raise Exception()
+            elif response == "no":
+                continue_migration = False
             else:
                 logger.info("Invalid input, please enter 'yes' or 'no'. Now exiting migration")
-                raise Exception()
+                continue_migration = False
 
-        logger.info("Selecting legacy samples from Mongo...")
-        samples = legacy_mongo_samples(config)
+        if continue_migration:
+            logger.info("Selecting legacy samples from Mongo...")
+            samples = legacy_mongo_samples(config)
 
-        root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
+            root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
 
-        # Get v0 cherrypicked samples
-        v0_cp_samples_df = get_cherrypicked_samples_by_date(
-            config,
-            list(root_sample_ids),
-            list(plate_barcodes),
-            "1970-01-01 00:00:01",
-            V0_V1_CUTOFF_TIMESTAMP,
-        )
-
-        # Get v1 cherrypicked samples
-        v1_cp_samples_df = get_cherrypicked_samples_by_date(
-            config,
-            list(root_sample_ids),
-            list(plate_barcodes),
-            V0_V1_CUTOFF_TIMESTAMP,
-            V1_V2_CUTOFF_TIMESTAMP,
-        )
-
-        samples_by_version = split_mongo_samples_by_version(samples, v0_cp_samples_df, v1_cp_samples_df)  # noqa: E501
-
-        update_timestamp = datetime.now()
-
-        for filtered_positive_identifier, version_samples in samples_by_version.items():
-            version = filtered_positive_identifier.version
-            logger.info(f"Updating {version} filtered positives...")
-            update_filtered_positive_fields(
-                filtered_positive_identifier,
-                version_samples,
-                version,
-                update_timestamp,
-            )
-
-        logger.info("Updated filtered positives")
-
-        logger.info("Updating Mongo")
-
-        for filtered_positive_identifier, version_samples in samples_by_version.items():
-            logger.info(f"Updating {version} filtered positives in Mongo...")
-            version = filtered_positive_identifier.version
-            mongo_updated = update_mongo_filtered_positive_fields(
+            # Get v0 cherrypicked samples
+            v0_cp_samples_df = get_cherrypicked_samples_by_date(
                 config,
-                version_samples,
-                version,
-                update_timestamp,
+                list(root_sample_ids),
+                list(plate_barcodes),
+                "1970-01-01 00:00:01",
+                V0_V1_CUTOFF_TIMESTAMP,
             )
-            if mongo_updated:
-                logger.info(f"Finished updating {version} filtered positives in Mongo")
-                mongo_versions_updated[version] = True
 
-                logger.info(f"Updating {version} filtered positives in MLWH...")
-                mlwh_updated = update_mlwh_filtered_positive_fields(config, version_samples)
+            # Get v1 cherrypicked samples
+            v1_cp_samples_df = get_cherrypicked_samples_by_date(
+                config,
+                list(root_sample_ids),
+                list(plate_barcodes),
+                V0_V1_CUTOFF_TIMESTAMP,
+                V1_V2_CUTOFF_TIMESTAMP,
+            )
 
-                if mlwh_updated:
-                    logger.info(f"Finished updating {version} filtered positives in MLWH")
-                    mlwh_versions_updated[version] = True
+            samples_by_version = split_mongo_samples_by_version(samples, v0_cp_samples_df, v1_cp_samples_df)  # noqa: E501
 
-        logger.info("Finished updating databases")
+            update_timestamp = datetime.now()
 
+            for filtered_positive_identifier, version_samples in samples_by_version.items():
+                version = filtered_positive_identifier.version
+                logger.info(f"Updating {version} filtered positives...")
+                update_filtered_positive_fields(
+                    filtered_positive_identifier,
+                    version_samples,
+                    version,
+                    update_timestamp,
+                )
+
+            logger.info("Updated filtered positives")
+
+            logger.info("Updating Mongo")
+
+            for filtered_positive_identifier, version_samples in samples_by_version.items():
+                logger.info(f"Updating {version} filtered positives in Mongo...")
+                version = filtered_positive_identifier.version
+                mongo_updated = update_mongo_filtered_positive_fields(
+                    config,
+                    version_samples,
+                    version,
+                    update_timestamp,
+                )
+                if mongo_updated:
+                    logger.info(f"Finished updating {version} filtered positives in Mongo")
+                    mongo_versions_updated[version] = True
+
+                    logger.info(f"Updating {version} filtered positives in MLWH...")
+                    mlwh_updated = update_mlwh_filtered_positive_fields(config, version_samples)
+
+                    if mlwh_updated:
+                        logger.info(f"Finished updating {version} filtered positives in MLWH")
+                        mlwh_versions_updated[version] = True
+
+            logger.info("Finished updating databases")
+        else:
+            logger.info("Now exiting migration")
     except Exception as e:
         logger.error("---------- Process aborted: ----------")
         logger.error(f"An exception occurred, at {datetime.now()}")
