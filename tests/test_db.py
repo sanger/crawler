@@ -230,4 +230,4 @@ def test_create_mysql_connection_engine_result_can_initiate_connection(config):
     sql_engine = create_mysql_connection_engine(config.WAREHOUSES_RW_CONN_STRING, config.ML_WH_DB)
     connection = sql_engine.connect()
 
-    assert connection.closed == False
+    assert connection.closed is False
