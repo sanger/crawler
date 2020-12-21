@@ -21,7 +21,6 @@ from crawler.constants import (
     DART_STATE_PENDING,
 )
 from crawler.exceptions import DartStateError
-from crawler.helpers.general_helpers import get_config
 from crawler.sql_queries import (
     SQL_DART_ADD_PLATE,
     SQL_DART_GET_PLATE_PROPERTY,
