@@ -113,7 +113,7 @@ def test_update_legacy_filtered_positives_catches_error_connecting_to_mongo(
             mock_update_mlwh.assert_not_called()
 
 
-def test_error_connecting_to_mysql_databases_raises_exception(
+def test_get_cherrypicked_samples_by_date_error_raises_exception(
     mock_v0_version_set,
     mock_helper_database_updates,
     mock_query_helper_functions,
@@ -186,7 +186,7 @@ def test_update_filtered_positive_fields_error_raises_exception(
     identifier_v0 = FilteredPositiveIdentifierV0()
     identifier_v1 = FilteredPositiveIdentifierV1()
     identifier_v2 = FilteredPositiveIdentifierV2()
-    update_timestamp = datetime.now()
+
     v0_samples = [{"plate_barcode": "0"}]
     v1_samples = [{"plate_barcode": "1"}]
     v2_samples = [{"plate_barcode": "2"}]
@@ -248,28 +248,28 @@ def test_update_legacy_filtered_positives_outputs_success(
     mock_update_mongo.return_value = True
     mock_update_mlwh.return_value = True
 
-    update_legacy_filtered_positives.run("crawler.config.integration")
+    update_legacy_filtered_positives.run("crawler.config.test")
 
     assert mock_update_filtered_positive_fields.call_count == 3
-    assert mock_update_filtered_positive_fields.called_once_with(
-        FilteredPositiveIdentifierV0, v0_samples, "v0", update_timestamp
+    mock_update_filtered_positive_fields.assert_any_call(
+        identifier_v0, v0_samples, "v0", update_timestamp
     )
-    assert mock_update_filtered_positive_fields.called_once_with(
-        FilteredPositiveIdentifierV1, v1_samples, "v1", update_timestamp
+    mock_update_filtered_positive_fields.assert_any_call(
+        identifier_v1, v1_samples, "v1", update_timestamp
     )
-    assert mock_update_filtered_positive_fields.called_once_with(
-        FilteredPositiveIdentifierV2, v2_samples, "v2", update_timestamp
+    mock_update_filtered_positive_fields.assert_any_call(
+        identifier_v2, v2_samples, "v2", update_timestamp
     )
 
     assert mock_update_mongo.call_count == 3
-    assert mock_update_mongo.called_once_with(config, v0_samples, "v0", update_timestamp)
-    assert mock_update_mongo.called_once_with(config, v1_samples, "v1", update_timestamp)
-    assert mock_update_mongo.called_once_with(config, v2_samples, "v2", update_timestamp)
+    mock_update_mongo.assert_any_call(config, v0_samples, "v0", update_timestamp)
+    mock_update_mongo.assert_any_call(config, v1_samples, "v1", update_timestamp)
+    mock_update_mongo.assert_any_call(config, v2_samples, "v2", update_timestamp)
 
     assert mock_update_mlwh.call_count == 3
-    assert mock_update_mlwh.called_once_with(config, v0_samples)
-    assert mock_update_mlwh.called_once_with(config, v1_samples)
-    assert mock_update_mlwh.called_once_with(config, v2_samples)
+    mock_update_mlwh.assert_any_call(config, v0_samples)
+    mock_update_mlwh.assert_any_call(config, v1_samples)
+    mock_update_mlwh.assert_any_call(config, v2_samples)
 
 
 def test_update_legacy_filtered_positives_successful_if_user_chooses_to_continue(
@@ -301,32 +301,33 @@ def test_update_legacy_filtered_positives_successful_if_user_chooses_to_continue
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.return_value = pd.DataFrame({"id": ["s1", "s2"]})
     mock_split_mongo_samples_by_version.return_value = {
-        FilteredPositiveIdentifierV0(): [{"plate_barcode": "1"}],
-        FilteredPositiveIdentifierV1(): [{"plate_barcode": "2"}],
-        FilteredPositiveIdentifierV2(): [{"plate_barcode": "3"}],
+        identifier_v0: v0_samples,
+        identifier_v1: v1_samples,
+        identifier_v2: v2_samples,
     }
+
     mock_update_mongo.return_value = True
     mock_update_mlwh.return_value = True
 
-    update_legacy_filtered_positives.run("crawler.config.integration")
+    update_legacy_filtered_positives.run("crawler.config.test")
 
     assert mock_update_filtered_positive_fields.call_count == 3
-    assert mock_update_filtered_positive_fields.called_once_with(
-        FilteredPositiveIdentifierV0, v0_samples, "v0", update_timestamp
+    mock_update_filtered_positive_fields.assert_any_call(
+        identifier_v0, v0_samples, "v0", update_timestamp
     )
-    assert mock_update_filtered_positive_fields.called_once_with(
-        FilteredPositiveIdentifierV1, v1_samples, "v1", update_timestamp
+    mock_update_filtered_positive_fields.assert_any_call(
+        identifier_v1, v1_samples, "v1", update_timestamp
     )
-    assert mock_update_filtered_positive_fields.called_once_with(
-        FilteredPositiveIdentifierV2, v2_samples, "v2", update_timestamp
+    mock_update_filtered_positive_fields.assert_any_call(
+        identifier_v2, v2_samples, "v2", update_timestamp
     )
 
     assert mock_update_mongo.call_count == 3
-    assert mock_update_mongo.called_once_with(config, v0_samples, "v0", update_timestamp)
-    assert mock_update_mongo.called_once_with(config, v1_samples, "v1", update_timestamp)
-    assert mock_update_mongo.called_once_with(config, v2_samples, "v2", update_timestamp)
+    mock_update_mongo.assert_any_call(config, v0_samples, "v0", update_timestamp)
+    mock_update_mongo.assert_any_call(config, v1_samples, "v1", update_timestamp)
+    mock_update_mongo.assert_any_call(config, v2_samples, "v2", update_timestamp)
 
     assert mock_update_mlwh.call_count == 3
-    assert mock_update_mlwh.called_once_with(config, v0_samples)
-    assert mock_update_mlwh.called_once_with(config, v1_samples)
-    assert mock_update_mlwh.called_once_with(config, v2_samples)
+    mock_update_mlwh.assert_any_call(config, v0_samples)
+    mock_update_mlwh.assert_any_call(config, v1_samples)
+    mock_update_mlwh.assert_any_call(config, v2_samples)
