@@ -134,14 +134,14 @@ def get_cherrypicked_samples_by_date(
 
 
 def v0_version_set(config: ModuleType):
-    """Find if the v0 or v1 version has been set in any of the samples.
+    """Find if the v0 version has been set in any of the samples.
        This would indicate that the legacy migration has already been run.
 
     Args:
-        samples {List[Dict]} -- List of samples from Mongo
+        config {ModuleType} -- application config specifying database details
 
     Returns:
-        Boolean -- v0 version set in samples
+        Boolean {Bool} -- v0 version set in samples
     """
     with create_mongo_client(config) as client:
         mongo_db = get_mongo_db(config, client)
