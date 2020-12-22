@@ -147,10 +147,10 @@ def v0_version_set(config: ModuleType):
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-        v0_samples = list(
-            samples_collection.find({FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_0})
+        v0_samples = samples_collection.count_documents(
+            {FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_0}
         )  # noqa: E501
-        if len(v0_samples) > 0:
+        if v0_samples > 0:
             return True
         else:
             return False
