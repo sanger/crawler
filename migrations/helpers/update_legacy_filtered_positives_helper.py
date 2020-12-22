@@ -147,13 +147,11 @@ def v0_version_set(config: ModuleType):
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-        v0_samples = samples_collection.count_documents(
+        num_v0_samples = samples_collection.count_documents(
             {FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_0}
         )  # noqa: E501
-        if v0_samples > 0:
-            return True
-        else:
-            return False
+
+        return num_v0_samples
 
 
 def split_mongo_samples_by_version(
