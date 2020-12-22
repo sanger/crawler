@@ -7,9 +7,8 @@ from crawler.types import Sample
 from crawler.filtered_positive_identifier import (
     FilteredPositiveIdentifier,
     FILTERED_POSITIVE_VERSION_0,
-    FilteredPositiveIdentifierV0,
-    FilteredPositiveIdentifierV1,
-    FilteredPositiveIdentifierV2,
+    FILTERED_POSITIVE_VERSION_1,
+    FILTERED_POSITIVE_VERSION_2,
 )
 from crawler.constants import (
     COLLECTION_SAMPLES,
@@ -156,7 +155,7 @@ def v0_version_set(config: ModuleType):
 
 
 def split_mongo_samples_by_version(
-    samples: Dict[FilteredPositiveIdentifier, List[Sample]], cp_samples_df_v0: DataFrame, cp_samples_df_v1: DataFrame
+    samples: Dict[str, List[Sample]], cp_samples_df_v0: DataFrame, cp_samples_df_v1: DataFrame
 ):  # noqa: E501
     """Split the Mongo samples dataframe based on the v0 cherrypicked samples. Samples
        which have been v0 cherrypicked need to have the v0 filtered positive rules
@@ -186,9 +185,9 @@ def split_mongo_samples_by_version(
             v2_samples.append(sample)
 
     samples_by_version = {
-        FilteredPositiveIdentifierV0(): v0_samples,
-        FilteredPositiveIdentifierV1(): v1_samples,
-        FilteredPositiveIdentifierV2(): v2_samples,
+        FILTERED_POSITIVE_VERSION_0: v0_samples,
+        FILTERED_POSITIVE_VERSION_1: v1_samples,
+        FILTERED_POSITIVE_VERSION_2: v2_samples,
     }
 
     return samples_by_version
