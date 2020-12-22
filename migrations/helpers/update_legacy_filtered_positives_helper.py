@@ -35,7 +35,7 @@ def legacy_mongo_samples(config: ModuleType):
         config {ModuleType} -- application config specifying database details
 
     Returns:
-        List[Dict] -- All unmigrated samples from Mongo
+        List[Dict] -- List of Mongo samples created before filtered positive Crawler changes
     """
     with create_mongo_client(config) as client:
         mongo_db = get_mongo_db(config, client)
