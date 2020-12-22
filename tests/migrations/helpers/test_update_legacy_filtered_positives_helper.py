@@ -36,7 +36,7 @@ def test_check_versions_set_returns_false_with_no_v0_samples(
 
 
 def test_get_cherrypicked_samples_by_date_v0_returns_expected(
-    config, event_wh_data, mlwh_sample_stock_resource, mlwh_sql_engine, event_wh_sql_engine
+    config, event_wh_data, mlwh_sample_stock_resource
 ):
     root_sample_ids = ["root_1", "root_2", "root_3", "root_4"]
     plate_barcodes = ["pb_1", "pb_2", "pb_3", "pb_4"]
@@ -52,7 +52,7 @@ def test_get_cherrypicked_samples_by_date_v0_returns_expected(
 
 
 def test_get_cherrypicked_samples_by_date_v1_returns_expected(
-    config, event_wh_data, mlwh_sample_stock_resource, mlwh_sql_engine, event_wh_sql_engine
+    config, event_wh_data, mlwh_sample_stock_resource
 ):
     root_sample_ids = ["root_1", "root_2", "root_3", "root_4"]
     plate_barcodes = ["pb_1", "pb_2", "pb_3", "pb_4"]
