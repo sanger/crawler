@@ -20,7 +20,9 @@ def test_legacy_mongo_samples_returns_correct_samples_filtered_by_date(
     config, filtered_positive_testing_samples
 ):  # noqa: E501
     result = legacy_mongo_samples(config)
-    assert len(result) == 3
+    expected_samples = filtered_positive_testing_samples[-3:]
+
+    assert result == expected_samples
 
 
 def test_check_versions_set_returns_true_with_v0(config, filtered_positive_testing_samples):
