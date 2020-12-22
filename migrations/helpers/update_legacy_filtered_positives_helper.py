@@ -1,10 +1,11 @@
 from types import ModuleType
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pandas import DataFrame  # type: ignore
 import pandas as pd
 import sqlalchemy  # type: ignore
 from crawler.types import Sample
 from crawler.filtered_positive_identifier import (
+    FilteredPositiveIdentifier,
     FILTERED_POSITIVE_VERSION_0,
     FilteredPositiveIdentifierV0,
     FilteredPositiveIdentifierV1,
@@ -155,7 +156,7 @@ def v0_version_set(config: ModuleType):
 
 
 def split_mongo_samples_by_version(
-    samples: List[Sample], cp_samples_df_v0: DataFrame, cp_samples_df_v1: DataFrame
+    samples: Dict[FilteredPositiveIdentifier, List[Sample]], cp_samples_df_v0: DataFrame, cp_samples_df_v1: DataFrame
 ):  # noqa: E501
     """Split the Mongo samples dataframe based on the v0 cherrypicked samples. Samples
        which have been v0 cherrypicked need to have the v0 filtered positive rules
@@ -172,22 +173,22 @@ def split_mongo_samples_by_version(
     v0_cp_samples = cp_samples_df_v0[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()  # noqa: E501
     v1_cp_samples = cp_samples_df_v1[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()  # noqa: E501
 
-    v0_unmigrated_samples = []
-    v1_unmigrated_samples = []
-    v2_unmigrated_samples = []
+    v0_samples = []
+    v1_samples = []
+    v2_samples = []
 
     for sample in samples:
         if [sample[FIELD_ROOT_SAMPLE_ID], sample[FIELD_PLATE_BARCODE]] in v0_cp_samples:
-            v0_unmigrated_samples.append(sample)
+            v0_samples.append(sample)
         elif [sample[FIELD_ROOT_SAMPLE_ID], sample[FIELD_PLATE_BARCODE]] in v1_cp_samples:
-            v1_unmigrated_samples.append(sample)
+            v1_samples.append(sample)
         else:
-            v2_unmigrated_samples.append(sample)
+            v2_samples.append(sample)
 
     samples_by_version = {
-        FilteredPositiveIdentifierV0(): v0_unmigrated_samples,
-        FilteredPositiveIdentifierV1(): v1_unmigrated_samples,
-        FilteredPositiveIdentifierV2(): v2_unmigrated_samples,
+        FilteredPositiveIdentifierV0(): v0_samples,
+        FilteredPositiveIdentifierV1(): v1_samples,
+        FilteredPositiveIdentifierV2(): v2_samples,
     }
 
     return samples_by_version
