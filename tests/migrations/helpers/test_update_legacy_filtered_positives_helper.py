@@ -37,13 +37,13 @@ def test_check_versions_set_returns_false_with_no_v0_samples(
 
 def test_get_cherrypicked_samples_by_date_v0_returns_expected(
     config, event_wh_data, mlwh_sample_stock_resource
-):
+):  # noqa: E501
     root_sample_ids = ["root_1", "root_2", "root_3", "root_4"]
     plate_barcodes = ["pb_1", "pb_2", "pb_3", "pb_4"]
 
-    expected_rows = [["root_1", "pb_1"], ["root_2", "pb_2"]]
+    expected_rows = [["root_2", "pb_2"]]
     expected_columns = [FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]
-    expected = pd.DataFrame(np.array(expected_rows), columns=expected_columns, index=[0, 1])
+    expected = pd.DataFrame(np.array(expected_rows), columns=expected_columns, index=[0])
 
     returned_samples = get_cherrypicked_samples_by_date(
         config, root_sample_ids, plate_barcodes, "1970-01-01 00:00:01", V0_V1_CUTOFF_TIMESTAMP
@@ -53,7 +53,7 @@ def test_get_cherrypicked_samples_by_date_v0_returns_expected(
 
 def test_get_cherrypicked_samples_by_date_v1_returns_expected(
     config, event_wh_data, mlwh_sample_stock_resource
-):
+):  # noqa: E501
     root_sample_ids = ["root_1", "root_2", "root_3", "root_4"]
     plate_barcodes = ["pb_1", "pb_2", "pb_3", "pb_4"]
 
