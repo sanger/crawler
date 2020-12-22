@@ -59,8 +59,11 @@ def get_cherrypicked_samples_by_date(
     for the relevant event type in the event warehouse)
 
     Args:
+        config (ModuleType): application config specifying database details
         root_sample_ids (List[str]): [description]
         plate_barcodes (List[str]): [description]
+        start_date (str): lower limit on creation date
+        end_date (str): upper limit on creation date
         chunk_size (int, optional): [description]. Defaults to 50000.
 
     Returns:
