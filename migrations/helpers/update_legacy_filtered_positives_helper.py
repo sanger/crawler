@@ -151,7 +151,7 @@ def v0_version_set(config: ModuleType):
             {FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_0}
         )  # noqa: E501
 
-        return num_v0_samples
+        return num_v0_samples > 0
 
 
 def split_mongo_samples_by_version(
