@@ -389,6 +389,20 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_stock_resource_lims": "3",
             "labware_type": "well",
         },
+        {
+            "id_stock_resource_tmp": "4",
+            "id_sample_tmp": "4",
+            "labware_human_barcode": "pb_3",
+            "labware_machine_barcode": "pb_3",
+            "labware_coordinate": "A1",
+            "last_updated": "2015-11-25 11:35:30",
+            "recorded_at": "2015-11-25 11:35:30",
+            "created": "2015-11-25 11:35:30",
+            "id_study_tmp": "1",
+            "id_lims": "SQSCP",
+            "id_stock_resource_lims": "4",
+            "labware_type": "well",
+        },
     ],
     "study": [
         {
