@@ -67,6 +67,8 @@ def get_cherrypicked_samples_by_date(
         DataFrame: [description]
     """
     try:
+        db_connection = None
+
         logger.debug("Getting cherry-picked samples from MLWH")
 
         # Create an empty DataFrame to merge into
@@ -127,7 +129,8 @@ def get_cherrypicked_samples_by_date(
         logger.exception(e)
         return None
     finally:
-        db_connection.close()
+        if db_connection:
+            db_connection.close()
 
 
 def v0_version_set(config: ModuleType) -> bool:
