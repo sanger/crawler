@@ -21,6 +21,7 @@ from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_0,
     FILTERED_POSITIVE_VERSION_1,
     FILTERED_POSITIVE_VERSION_2,
+    filtered_positive_identifier_by_version,
 )
 from migrations.helpers.shared_helper import extract_required_cp_info
 
@@ -106,8 +107,8 @@ def run(settings_module: str = "") -> None:
 
             update_timestamp = datetime.now()
 
-            for filtered_positive_identifier, version_samples in samples_by_version.items():
-                version = filtered_positive_identifier.version
+            for version, version_samples in samples_by_version.items():
+                filtered_positive_identifier = filtered_positive_identifier_by_version(version)
                 logger.info(f"Updating {version} filtered positives...")
                 update_filtered_positive_fields(
                     filtered_positive_identifier,
@@ -120,9 +121,8 @@ def run(settings_module: str = "") -> None:
 
             logger.info("Updating Mongo")
 
-            for filtered_positive_identifier, version_samples in samples_by_version.items():
+            for version, version_samples in samples_by_version.items():
                 logger.info(f"Updating {version} filtered positives in Mongo...")
-                version = filtered_positive_identifier.version
                 mongo_updated = update_mongo_filtered_positive_fields(
                     config,
                     version_samples,
