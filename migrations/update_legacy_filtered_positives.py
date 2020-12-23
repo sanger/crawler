@@ -74,7 +74,7 @@ def run(settings_module: str = "") -> None:
             elif response == "no":
                 continue_migration = False
             else:
-                logger.info("Invalid input, please enter 'yes' or 'no'. Now exiting migration")
+                logger.warning("Invalid input, please enter 'yes' or 'no'. Now exiting migration")
                 continue_migration = False
 
         if continue_migration:
