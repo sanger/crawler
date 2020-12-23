@@ -71,7 +71,31 @@ class FilteredPositiveIdentifier(ABC):
 
 
 def current_filtered_positive_identifier() -> FilteredPositiveIdentifier:
+    """Returns the current filtered positive identifier.
+
+    Returns:
+        {FilteredPositiveIdentifier} -- the current filtered positive identifier
+    """
     return FilteredPositiveIdentifierV2()
+
+
+def filtered_positive_identifier_by_version(version: str) -> FilteredPositiveIdentifier:
+    """Returns the filtered positive identifier matching the specified version.
+
+    Arguments:
+        version {str} -- the filtered positive version
+
+    Returns:
+        {FilteredPositiveIdentifier} -- the matching filtered positive identifier
+    """
+    if version == FILTERED_POSITIVE_VERSION_0:
+        return FilteredPositiveIdentifierV0()
+    elif version == FILTERED_POSITIVE_VERSION_1:
+        return FilteredPositiveIdentifierV1()
+    elif version == FILTERED_POSITIVE_VERSION_2:
+        return FilteredPositiveIdentifierV2()
+    else:
+        raise ValueError(f"'{version}' is not a known filtered positive version")
 
 
 class FilteredPositiveIdentifierV0(FilteredPositiveIdentifier):
