@@ -12,6 +12,11 @@ from crawler.constants import (
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
 )
+from crawler.filtered_positive_identifier import (
+    FILTERED_POSITIVE_VERSION_0,
+    FILTERED_POSITIVE_VERSION_1,
+    FILTERED_POSITIVE_VERSION_2,
+)
 
 # ----- migration helper function tests -----
 
@@ -84,10 +89,10 @@ def test_split_mongo_samples_by_version(unmigrated_mongo_testing_samples):
         unmigrated_mongo_testing_samples, v0_cherrypicked_samples, v1_cherrypicked_samples
     )
 
-    for filtered_positive_identifier, samples in samples_by_version.items():
-        if filtered_positive_identifier.version == "v0":
+    for version, samples in samples_by_version.items():
+        if version == FILTERED_POSITIVE_VERSION_0:
             assert samples == v0_unmigrated_samples
-        elif filtered_positive_identifier.version == "v1":
+        elif version == FILTERED_POSITIVE_VERSION_1:
             assert samples == v1_unmigrated_samples
-        elif filtered_positive_identifier.version == "v2":
+        elif version == FILTERED_POSITIVE_VERSION_2:
             assert samples == v2_unmigrated_samples
