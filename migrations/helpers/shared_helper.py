@@ -71,6 +71,8 @@ def get_cherrypicked_samples(
         DataFrame: [description]
     """
     try:
+        db_connection = None
+
         logger.debug("Getting cherry-picked samples from MLWH")
 
         # Create an empty DataFrame to merge into
@@ -128,7 +130,8 @@ def get_cherrypicked_samples(
         logger.exception(e)
         return None
     finally:
-        db_connection.close()
+        if db_connection:
+            db_connection.close()
 
 
 def remove_cherrypicked_samples(samples: List[Sample], cherry_picked_samples: List[List[str]]) -> List[Sample]:
