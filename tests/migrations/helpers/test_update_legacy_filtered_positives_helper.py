@@ -31,13 +31,13 @@ def test_legacy_mongo_samples_returns_correct_samples_filtered_by_date(
 
 
 def test_check_versions_set_returns_true_with_v0(config, filtered_positive_testing_samples):
-    assert v0_version_set(config) == True
+    assert v0_version_set(config) is True
 
 
 def test_check_versions_set_returns_false_with_no_v0_samples(
     config, filtered_positive_testing_samples_no_v0
 ):  # noqa: E501
-    assert v0_version_set(config) == False
+    assert v0_version_set(config) is False
 
 
 def test_get_cherrypicked_samples_by_date_v0_returns_expected(

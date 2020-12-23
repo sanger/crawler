@@ -61,7 +61,7 @@ def test_filtered_positive_identifier_by_version_returns_V2_identifier():
 
 def test_filtered_positive_identifier_by_version_raises_unknown_version():
     with pytest.raises(ValueError):
-        identifier = filtered_positive_identifier_by_version("unknown version")
+        filtered_positive_identifier_by_version("unknown version")
 
 
 # ----- tests for FilteredPositiveIdentifierV0 -----
