@@ -91,6 +91,8 @@ def get_cherrypicked_samples_by_date(
         events_wh_db = config.EVENTS_WH_DB  # type: ignore
 
         for chunk_root_sample_id in chunk_root_sample_ids:
+            # Note we only querying for Sentinel cherrypicked samples as we expect the timestamps used in the query
+            # to all be earlier than when the Beckman workflow was adopted
             sql = (
                 f"SELECT mlwh_sample.description as `{FIELD_ROOT_SAMPLE_ID}`, mlwh_stock_resource.labware_human_barcode as `{FIELD_PLATE_BARCODE}`"  # noqa: E501
                 f" FROM {ml_wh_db}.sample as mlwh_sample"
