@@ -1,5 +1,7 @@
 import pandas as pd
+import pytest
 import numpy as np
+from unittest.mock import patch
 from migrations.helpers.update_legacy_filtered_positives_helper import (
     v0_version_set,
     legacy_mongo_samples,
@@ -21,9 +23,16 @@ from crawler.filtered_positive_identifier import (
 # ----- legacy_mongo_samples tests -----
 
 
-def test_legacy_mongo_samples_returns_correct_samples_filtered_by_date(
-    config, filtered_positive_testing_samples
-):  # noqa: E501
+def test_legacy_mongo_samples_error_getting_samples(config):
+    with patch(
+        "migrations.helpers.update_legacy_filtered_positives_helper.create_mongo_client",
+        side_effect=ValueError("Boom!"),
+    ):
+        with pytest.raises(ValueError):
+            legacy_mongo_samples(config)
+
+
+def test_legacy_mongo_samples_returns_correct_samples_filtered_by_date(config, filtered_positive_testing_samples):
     result = legacy_mongo_samples(config)
     expected_samples = filtered_positive_testing_samples[-3:]
 
@@ -37,18 +46,36 @@ def test_check_versions_set_returns_true_with_v0(config, filtered_positive_testi
     assert v0_version_set(config) is True
 
 
-def test_check_versions_set_returns_false_with_no_v0_samples(
-    config, filtered_positive_testing_samples_no_v0
-):  # noqa: E501
+def test_check_versions_set_returns_false_with_no_v0_samples(config, filtered_positive_testing_samples_no_v0):
     assert v0_version_set(config) is False
 
 
 # ----- get_cherrypicked_samples_by_date tests -----
 
 
-def test_get_cherrypicked_samples_by_date_v0_returns_expected(
-    config, event_wh_data, mlwh_sample_stock_resource
-):  # noqa: E501
+def test_get_cherrypicked_samples_by_date_error_creating_engine_returns_none(config):
+    with patch(
+        "migrations.helpers.update_legacy_filtered_positives_helper.sqlalchemy.create_engine",
+        side_effect=ValueError("Boom!"),
+    ):
+        returned_samples = get_cherrypicked_samples_by_date(
+            config, [], [], "1970-01-01 00:00:01", V0_V1_CUTOFF_TIMESTAMP
+        )
+        assert returned_samples is None
+
+
+def test_get_cherrypicked_samples_by_date_error_connecting_returns_none(config):
+    with patch(
+        "migrations.helpers.update_legacy_filtered_positives_helper.sqlalchemy.create_engine"
+    ) as mock_sql_engine:
+        mock_sql_engine().connect.side_effect = ValueError("Boom!")
+        returned_samples = get_cherrypicked_samples_by_date(
+            config, [], [], "1970-01-01 00:00:01", V0_V1_CUTOFF_TIMESTAMP
+        )
+        assert returned_samples is None
+
+
+def test_get_cherrypicked_samples_by_date_v0_returns_expected(config, event_wh_data, mlwh_sample_stock_resource):
     root_sample_ids = ["root_1", "root_2", "root_3", "root_4"]
     plate_barcodes = ["pb_1", "pb_2", "pb_3", "pb_4"]
 
@@ -62,9 +89,7 @@ def test_get_cherrypicked_samples_by_date_v0_returns_expected(
     pd.testing.assert_frame_equal(expected, returned_samples)
 
 
-def test_get_cherrypicked_samples_by_date_v1_returns_expected(
-    config, event_wh_data, mlwh_sample_stock_resource
-):  # noqa: E501
+def test_get_cherrypicked_samples_by_date_v1_returns_expected(config, event_wh_data, mlwh_sample_stock_resource):
     root_sample_ids = ["root_1", "root_2", "root_3", "root_4"]
     plate_barcodes = ["pb_1", "pb_2", "pb_3", "pb_4"]
 
@@ -88,8 +113,10 @@ def test_split_mongo_samples_by_version_empty_dataframes(unmigrated_mongo_testin
     # sanity check
     assert cp_samples_df_v0.empty
     assert cp_samples_df_v1.empty
-    
-    samples_by_version = split_mongo_samples_by_version(unmigrated_mongo_testing_samples, cp_samples_df_v0, cp_samples_df_v1)
+
+    samples_by_version = split_mongo_samples_by_version(
+        unmigrated_mongo_testing_samples, cp_samples_df_v0, cp_samples_df_v1
+    )
 
     for version, samples in samples_by_version.items():
         if version == FILTERED_POSITIVE_VERSION_0 or version == FILTERED_POSITIVE_VERSION_1:
@@ -97,7 +124,7 @@ def test_split_mongo_samples_by_version_empty_dataframes(unmigrated_mongo_testin
         elif version == FILTERED_POSITIVE_VERSION_2:
             assert samples == unmigrated_mongo_testing_samples
         else:
-            assert False
+            raise AssertionError(f"Unexpected version '{version}'")
 
 
 def test_split_mongo_samples_by_version(unmigrated_mongo_testing_samples):
@@ -125,4 +152,4 @@ def test_split_mongo_samples_by_version(unmigrated_mongo_testing_samples):
         elif version == FILTERED_POSITIVE_VERSION_2:
             assert samples == v2_unmigrated_samples
         else:
-            assert False
+            raise AssertionError(f"Unexpected version '{version}'")
