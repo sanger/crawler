@@ -1,3 +1,4 @@
+import pytest
 from bson.decimal128 import Decimal128
 from crawler.constants import (
     FIELD_CH1_CQ,
@@ -10,6 +11,7 @@ from crawler.constants import (
 )
 from crawler.filtered_positive_identifier import (
     current_filtered_positive_identifier,
+    filtered_positive_identifier_by_version,
     FILTERED_POSITIVE_VERSION_0,
     FILTERED_POSITIVE_VERSION_1,
     FILTERED_POSITIVE_VERSION_2,
@@ -37,6 +39,29 @@ def positive_sample():
 def test_current_filtered_positive_identifier():
     identifier = current_filtered_positive_identifier()
     assert identifier.version == FILTERED_POSITIVE_VERSION_2
+
+
+# ----- tests for filtered_positive_identifier_by_version() -----
+
+
+def test_filtered_positive_identifier_by_version_returns_VO_identifier():
+    identifier = filtered_positive_identifier_by_version(FILTERED_POSITIVE_VERSION_0)
+    assert identifier.version == FILTERED_POSITIVE_VERSION_0
+
+
+def test_filtered_positive_identifier_by_version_returns_V1_identifier():
+    identifier = filtered_positive_identifier_by_version(FILTERED_POSITIVE_VERSION_1)
+    assert identifier.version == FILTERED_POSITIVE_VERSION_1
+
+
+def test_filtered_positive_identifier_by_version_returns_V2_identifier():
+    identifier = filtered_positive_identifier_by_version(FILTERED_POSITIVE_VERSION_2)
+    assert identifier.version == FILTERED_POSITIVE_VERSION_2
+
+
+def test_filtered_positive_identifier_by_version_raises_unknown_version():
+    with pytest.raises(ValueError):
+        filtered_positive_identifier_by_version("unknown version")
 
 
 # ----- tests for FilteredPositiveIdentifierV0 -----

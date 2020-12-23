@@ -1,4 +1,5 @@
 from crawler.constants import BIOMEK_LABWARE_CLASS_BIO, BIOMEK_LABWARE_CLASS_KINGFISHER, FIELD_RNA_ID
+import os
 
 # general details
 DIR_DOWNLOADED_DATA = "data/sftp_files/"
@@ -80,6 +81,12 @@ CENTRES = [
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_BIO,
     },
 ]
+
+# If we're running in a container, then instead of localhost
+# we want host.docker.internal, you can specify this in the
+# .env file you use for docker. eg
+# LOCALHOST=host.docker.internal
+LOCALHOST = os.environ.get("LOCALHOST", "localhost")
 
 # mongo details
 MONGO_DB = "crawlerDevelopmentDB"

@@ -3,7 +3,13 @@ import logging.config
 import sys
 
 from crawler.helpers.general_helpers import get_config
-from migrations import sample_timestamps, update_dart, update_filtered_positives, update_mlwh_with_legacy_samples
+from migrations import (
+    sample_timestamps,
+    update_dart,
+    update_filtered_positives,
+    update_mlwh_with_legacy_samples,
+    update_legacy_filtered_positives,
+)
 
 config, settings_module = get_config("")
 
@@ -66,12 +72,18 @@ def migration_update_filtered_positives():
     update_filtered_positives.run(omit_dart=omit_dart)
 
 
+def migration_update_legacy_filtered_positives():
+    print("Running update_legacy_filtered_positives migration")
+    update_legacy_filtered_positives.run()
+
+
 def migration_by_name(migration_name):
     switcher = {
         "sample_timestamps": migration_sample_timestamps,
         "update_mlwh_with_legacy_samples": migration_update_mlwh_with_legacy_samples,
         "update_mlwh_and_dart_with_legacy_samples": migration_update_mlwh_and_dart_with_legacy_samples,
         "update_filtered_positives": migration_update_filtered_positives,
+        "update_legacy_filtered_positives": migration_update_legacy_filtered_positives,
     }
     # Get the function from switcher dictionary
     func = switcher.get(migration_name, lambda: print("Invalid migration name, aborting"))
