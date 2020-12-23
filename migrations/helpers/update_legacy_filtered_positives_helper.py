@@ -5,7 +5,6 @@ import pandas as pd
 import sqlalchemy  # type: ignore
 from crawler.types import Sample
 from crawler.filtered_positive_identifier import (
-    FilteredPositiveIdentifier,
     FILTERED_POSITIVE_VERSION_0,
     FILTERED_POSITIVE_VERSION_1,
     FILTERED_POSITIVE_VERSION_2,
@@ -28,14 +27,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def legacy_mongo_samples(config: ModuleType):
+def legacy_mongo_samples(config: ModuleType) -> List[Sample]:
     """Gets all samples from Mongo created before Crawler started setting filtered positive fields
 
     Arguments:
         config {ModuleType} -- application config specifying database details
 
     Returns:
-        List[Dict] -- List of Mongo samples created before filtered positive Crawler changes
+        List[Sample] -- List of Mongo samples created before filtered positive Crawler changes
     """
     with create_mongo_client(config) as client:
         mongo_db = get_mongo_db(config, client)
@@ -133,7 +132,7 @@ def get_cherrypicked_samples_by_date(
         db_connection.close()
 
 
-def v0_version_set(config: ModuleType):
+def v0_version_set(config: ModuleType) -> bool:
     """Find if the v0 version has been set in any of the samples.
        This would indicate that the legacy migration has already been run.
 
@@ -141,7 +140,7 @@ def v0_version_set(config: ModuleType):
         config {ModuleType} -- application config specifying database details
 
     Returns:
-        Boolean {Bool} -- v0 version set in samples
+        {bool} -- v0 version set in samples
     """
     with create_mongo_client(config) as client:
         mongo_db = get_mongo_db(config, client)
@@ -155,8 +154,8 @@ def v0_version_set(config: ModuleType):
 
 
 def split_mongo_samples_by_version(
-    samples: Dict[str, List[Sample]], cp_samples_df_v0: DataFrame, cp_samples_df_v1: DataFrame
-):  # noqa: E501
+    samples: List[Sample], cp_samples_df_v0: DataFrame, cp_samples_df_v1: DataFrame
+) -> Dict[str, List[Sample]]:  # noqa: E501
     """Split the Mongo samples dataframe based on the v0 cherrypicked samples. Samples
        which have been v0 cherrypicked need to have the v0 filtered positive rules
        applied. The remaining samples need the v1 rule applied.
