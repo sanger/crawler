@@ -18,7 +18,7 @@ from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_2,
 )
 
-# ----- migration helper function tests -----
+# ----- legacy_mongo_samples tests -----
 
 
 def test_legacy_mongo_samples_returns_correct_samples_filtered_by_date(
@@ -30,6 +30,9 @@ def test_legacy_mongo_samples_returns_correct_samples_filtered_by_date(
     assert result == expected_samples
 
 
+# ----- v0_version_set tests -----
+
+
 def test_check_versions_set_returns_true_with_v0(config, filtered_positive_testing_samples):
     assert v0_version_set(config) is True
 
@@ -38,6 +41,9 @@ def test_check_versions_set_returns_false_with_no_v0_samples(
     config, filtered_positive_testing_samples_no_v0
 ):  # noqa: E501
     assert v0_version_set(config) is False
+
+
+# ----- get_cherrypicked_samples_by_date tests -----
 
 
 def test_get_cherrypicked_samples_by_date_v0_returns_expected(
@@ -72,6 +78,28 @@ def test_get_cherrypicked_samples_by_date_v1_returns_expected(
     pd.testing.assert_frame_equal(expected, returned_samples)
 
 
+# ----- split_mongo_samples_by_version tests -----
+
+
+def test_split_mongo_samples_by_version_empty_dataframes(unmigrated_mongo_testing_samples):
+    cp_samples_df_v0 = pd.DataFrame(np.array([]))
+    cp_samples_df_v1 = pd.DataFrame(np.array([]))
+
+    # sanity check
+    assert cp_samples_df_v0.empty
+    assert cp_samples_df_v1.empty
+    
+    samples_by_version = split_mongo_samples_by_version(unmigrated_mongo_testing_samples, cp_samples_df_v0, cp_samples_df_v1)
+
+    for version, samples in samples_by_version.items():
+        if version == FILTERED_POSITIVE_VERSION_0 or version == FILTERED_POSITIVE_VERSION_1:
+            assert samples == []
+        elif version == FILTERED_POSITIVE_VERSION_2:
+            assert samples == unmigrated_mongo_testing_samples
+        else:
+            assert False
+
+
 def test_split_mongo_samples_by_version(unmigrated_mongo_testing_samples):
     rows = [["MCM005", "456"], ["MCM006", "456"]]
     columns = [FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]
@@ -96,3 +124,5 @@ def test_split_mongo_samples_by_version(unmigrated_mongo_testing_samples):
             assert samples == v1_unmigrated_samples
         elif version == FILTERED_POSITIVE_VERSION_2:
             assert samples == v2_unmigrated_samples
+        else:
+            assert False

@@ -160,14 +160,19 @@ def split_mongo_samples_by_version(
 
     Args:
         samples {List[Sample]} -- List of samples from Mongo
-        cp_samples_df_v0: DataFrame -- DataFrame of v0 cherrypicked samples
-        cp_samples_df_v1: DataFrame -- DataFrame of v1 cherrypicked samples
+        cp_samples_df_v0 {DataFrame} -- DataFrame of v0 cherrypicked samples
+        cp_samples_df_v1: {DataFrame} -- DataFrame of v1 cherrypicked samples
 
     Returns:
         samples_by_version {Dict[List[Sample]]} -- Samples split by version
     """
-    v0_cp_samples = cp_samples_df_v0[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()  # noqa: E501
-    v1_cp_samples = cp_samples_df_v1[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()  # noqa: E501
+    v0_cp_samples = []
+    if not cp_samples_df_v0.empty:
+        v0_cp_samples = cp_samples_df_v0[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()  # noqa: E501
+
+    v1_cp_samples = []
+    if not cp_samples_df_v1.empty:
+        v1_cp_samples = cp_samples_df_v1[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()  # noqa: E501
 
     v0_samples = []
     v1_samples = []
