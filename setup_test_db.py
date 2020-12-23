@@ -6,7 +6,7 @@ from crawler.db import create_mysql_connection_engine
 """Drop and recreate required tables."""
 print("Initialising the test MySQL MLWH database")
 
-sql_engine = create_mysql_connection_engine(config.WAREHOUSES_RW_CONN_STRING, config.ML_WH_DB)
+sql_engine = create_mysql_connection_engine(config.WAREHOUSES_RW_CONN_STRING)
 
 create_db = """
 CREATE DATABASE IF NOT EXISTS `unified_warehouse_test` /*!40100 DEFAULT CHARACTER SET latin1 */;

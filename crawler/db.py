@@ -371,6 +371,8 @@ def add_dart_plate_if_doesnt_exist(cursor: pyodbc.Cursor, plate_barcode: str, bi
     return state
 
 
-def create_mysql_connection_engine(connection_string: str, database: str) -> Engine:
-    create_engine_string = f"mysql+pymysql://{connection_string}/{database}"
+def create_mysql_connection_engine(connection_string: str, database: Optional[str] = None) -> Engine:
+    create_engine_string = f"mysql+pymysql://{connection_string}"
+    if database:
+        create_engine_string += f"/{database}"
     return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
