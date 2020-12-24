@@ -725,7 +725,7 @@ def mlwh_sentinel_and_beckman_cherrypicked(config, mlwh_sql_engine):
     def delete_data():
         delete_from_mlwh(mlwh_sql_engine, config.MLWH_STOCK_RESOURCES_TABLE)
         delete_from_mlwh(mlwh_sql_engine, config.MLWH_SAMPLE_TABLE)
-        delete_from_mlwh(mlwh_sql_engine, configMLWH_STUDY_TABLE)
+        delete_from_mlwh(mlwh_sql_engine, config.MLWH_STUDY_TABLE)
         delete_from_mlwh(mlwh_sql_engine, config.MLWH_LIGHTHOUSE_SAMPLE_TABLE)
 
     try:
