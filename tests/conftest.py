@@ -558,23 +558,26 @@ def event_wh_data(config, event_wh_sql_engine):
 
 @pytest.fixture
 def mlwh_sample_stock_resource(config, mlwh_sql_engine):
-    # deletes
-    delete_from_mlwh(
-        MLWH_SAMPLE_STOCK_RESOURCE["stock_resource"],
-        mlwh_sql_engine,
-        config.MLWH_STOCK_RESOURCES_TABLE,
-    )
-    delete_from_mlwh(MLWH_SAMPLE_STOCK_RESOURCE["sample"], mlwh_sql_engine, config.MLWH_SAMPLE_TABLE)
-    delete_from_mlwh(MLWH_SAMPLE_STOCK_RESOURCE["study"], mlwh_sql_engine, config.MLWH_STUDY_TABLE)
+    def delete_data():
+        delete_from_mlwh(mlwh_sql_engine, config.MLWH_STOCK_RESOURCES_TABLE)
+        delete_from_mlwh(mlwh_sql_engine, config.MLWH_SAMPLE_TABLE)
+        delete_from_mlwh(mlwh_sql_engine, config.MLWH_STUDY_TABLE)
 
-    # inserts
-    insert_into_mlwh(MLWH_SAMPLE_STOCK_RESOURCE["sample"], mlwh_sql_engine, config.MLWH_SAMPLE_TABLE)
-    insert_into_mlwh(MLWH_SAMPLE_STOCK_RESOURCE["study"], mlwh_sql_engine, config.MLWH_STUDY_TABLE)
-    insert_into_mlwh(
-        MLWH_SAMPLE_STOCK_RESOURCE["stock_resource"],
-        mlwh_sql_engine,
-        config.MLWH_STOCK_RESOURCES_TABLE,
-    )
+    try:
+        delete_data()
+
+        # inserts
+        insert_into_mlwh(MLWH_SAMPLE_STOCK_RESOURCE["sample"], mlwh_sql_engine, config.MLWH_SAMPLE_TABLE)
+        insert_into_mlwh(MLWH_SAMPLE_STOCK_RESOURCE["study"], mlwh_sql_engine, config.MLWH_STUDY_TABLE)
+        insert_into_mlwh(
+            MLWH_SAMPLE_STOCK_RESOURCE["stock_resource"],
+            mlwh_sql_engine,
+            config.MLWH_STOCK_RESOURCES_TABLE,
+        )
+
+        yield
+    finally:
+        delete_data()
 
 
 def insert_into_mlwh(data, mlwh_sql_engine, table_name):
@@ -586,7 +589,7 @@ def insert_into_mlwh(data, mlwh_sql_engine, table_name):
         connection.execute(table.insert(), data)
 
 
-def delete_from_mlwh(data, mlwh_sql_engine, table_name):
+def delete_from_mlwh(mlwh_sql_engine, table_name):
     table = get_table(mlwh_sql_engine, table_name)
 
     with mlwh_sql_engine.begin() as connection:
