@@ -149,7 +149,7 @@ def test_get_cherrypicked_samples_chunking_no_beckman(config):
 # test scenario where there have been multiple lighthouse tests for a sample with the same Root
 # Sample ID uses actual databases rather than mocking to make sure the query is correct
 def test_get_cherrypicked_samples_repeat_tests_no_beckman(config, mlwh_sentinel_cherrypicked, event_wh_data):
-    # the following come from MLWH_SAMPLE_STOCK_RESOURCE in fixture_data
+    # the following come from MLWH_SAMPLE_STOCK_RESOURCE in test data
     root_sample_ids = ["root_1", "root_2", "root_3", "root_1"]
     plate_barcodes = ["pb_1", "pb_2", "pb_3"]
 
@@ -164,6 +164,67 @@ def test_get_cherrypicked_samples_repeat_tests_no_beckman(config, mlwh_sentinel_
     ]
     expected_columns = [FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE, "Result_lower", FIELD_COORDINATE]
     expected = pd.DataFrame(np.array(expected_rows), columns=expected_columns, index=[0, 1, 2])
+
+    chunk_size = 2
+    returned_samples = get_cherrypicked_samples(config, root_sample_ids, plate_barcodes, chunk_size)
+    pd.testing.assert_frame_equal(expected, returned_samples)
+
+
+def test_get_cherrypicked_samples_no_sentinel(config):
+    expected = [
+        # Sentinel query response
+        pd.DataFrame([]),
+        # Beckman query response
+        pd.DataFrame(["MCM001", "MCM003", "MCM005"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0, 1, 2]),
+    ]
+    samples = ["MCM001", "MCM002", "MCM003", "MCM004", "MCM005"]
+    plate_barcodes = ["123", "456"]
+
+    with patch("sqlalchemy.create_engine", return_value=Mock()):
+        with patch("pandas.read_sql", side_effect=expected):
+            returned_samples = get_cherrypicked_samples(config, samples, plate_barcodes)
+            assert returned_samples.at[0, FIELD_ROOT_SAMPLE_ID] == "MCM001"
+            assert returned_samples.at[1, FIELD_ROOT_SAMPLE_ID] == "MCM003"
+            assert returned_samples.at[2, FIELD_ROOT_SAMPLE_ID] == "MCM005"
+
+
+def test_get_cherrypicked_samples_chunking_no_sentinel(config):
+    # Note: This represents the results of three different (Sentinel, Beckman) sets of
+    # database queries, each Beckman query getting indexed from 0. Do not changes the
+    # indicies here unless you have modified the behaviour of the query.
+    query_results = [
+        pd.DataFrame([]),
+        pd.DataFrame(["MCM001"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0]),
+        pd.DataFrame([]),
+        pd.DataFrame(["MCM003"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0]),
+        pd.DataFrame([]),
+        pd.DataFrame(["MCM005"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0]),
+    ]
+    expected = pd.DataFrame(["MCM001", "MCM003", "MCM005"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0, 1, 2])
+
+    samples = ["MCM001", "MCM002", "MCM003", "MCM004", "MCM005"]
+    plate_barcodes = ["123", "456"]
+
+    with patch("sqlalchemy.create_engine", return_value=Mock()):
+        with patch("pandas.read_sql", side_effect=query_results):
+            returned_samples = get_cherrypicked_samples(config, samples, plate_barcodes, 2)
+            pd.testing.assert_frame_equal(expected, returned_samples)
+
+
+# test scenario where there have been multiple lighthouse tests for a sample with the same Root
+# Sample ID uses actual databases rather than mocking to make sure the query is correct
+def test_get_cherrypicked_samples_repeat_tests_no_sentinel(config, mlwh_beckman_cherrypicked, event_wh_data):
+    # the following come from MLWH_SAMPLE_LIGHTHOUSE_SAMPLE in test data
+    root_sample_ids = ["root_5", "root_6", "root_5"]
+    plate_barcodes = ["pb_4", "pb_5", "pb_6"]
+
+    # root_5 will match 2 samples, but only one of those will match an event (on sample uuid)
+    # therefore we only get 1 of the samples called 'root_5' back (the one on plate 'pb_4')
+    # this also checks we don't get a duplicate row for root_5 / pb_4, despite it cropped up in 2
+    # different 'chunks'
+    expected_rows = [["root_5", "pb_4", "positive", "A1"], ["root_6", "pb_5", "positive", "A1"]]
+    expected_columns = [FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE, "Result_lower", FIELD_COORDINATE]
+    expected = pd.DataFrame(np.array(expected_rows), columns=expected_columns, index=[0, 1])
 
     chunk_size = 2
     returned_samples = get_cherrypicked_samples(config, root_sample_ids, plate_barcodes, chunk_size)
