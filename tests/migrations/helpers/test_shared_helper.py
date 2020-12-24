@@ -105,7 +105,12 @@ def test_remove_cherrypicked_samples():
 # ----- remove_cherrypicked_samples tests -----
 
 def test_get_cherrypicked_samples_no_beckman(config):
-    expected = [pd.DataFrame(["MCM001", "MCM003", "MCM005"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0, 1, 2])]
+    expected = [
+        # Sentinel query response
+        pd.DataFrame(["MCM001", "MCM003", "MCM005"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0, 1, 2]),
+        # Beckman query response
+        pd.DataFrame([]),
+    ]
     samples = ["MCM001", "MCM002", "MCM003", "MCM004", "MCM005"]
     plate_barcodes = ["123", "456"]
 
@@ -121,13 +126,16 @@ def test_get_cherrypicked_samples_no_beckman(config):
 
 
 def test_get_cherrypicked_samples_chunking_no_beckman(config):
-    # Note: This represents the results of three different Sentinel sets of
+    # Note: This represents the results of three different (Sentinel, Beckman) sets of
     # database queries, each Sentinel query getting indexed from 0. Do not changes the
     # indicies here unless you have modified the behaviour of the query.
     query_results = [
         pd.DataFrame(["MCM001"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0]),
+        pd.DataFrame([]),
         pd.DataFrame(["MCM003"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0]),
+        pd.DataFrame([]),
         pd.DataFrame(["MCM005"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0]),
+        pd.DataFrame([]),
     ]
     expected = pd.DataFrame(
         ["MCM001", "MCM003", "MCM005"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0, 1, 2]
@@ -136,7 +144,6 @@ def test_get_cherrypicked_samples_chunking_no_beckman(config):
     samples = ["MCM001", "MCM002", "MCM003", "MCM004", "MCM005"]
     plate_barcodes = ["123", "456"]
 
-    # with app.app_context():
     with patch("sqlalchemy.create_engine", return_value=Mock()):
         with patch(
             "pandas.read_sql",
