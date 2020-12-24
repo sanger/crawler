@@ -243,11 +243,15 @@ EVENT_WH_DATA: Dict[str, Any] = {
         {"id": 1, "uuid": "1".encode("utf-8"), "friendly_name": "ss1", "subject_type_id": 1},
         {"id": 2, "uuid": "2".encode("utf-8"), "friendly_name": "ss2", "subject_type_id": 1},
         {"id": 3, "uuid": "3".encode("utf-8"), "friendly_name": "ss3", "subject_type_id": 1},
+        {"id": 4, "uuid": "6".encode("utf-8"), "friendly_name": "ss1-beck", "subject_type_id": 1},
+        {"id": 5, "uuid": "7".encode("utf-8"), "friendly_name": "ss2-beck", "subject_type_id": 1},
     ],
     "roles": [
         {"id": 1, "event_id": 1, "subject_id": 1, "role_type_id": 1},
         {"id": 2, "event_id": 2, "subject_id": 2, "role_type_id": 1},
         {"id": 3, "event_id": 3, "subject_id": 3, "role_type_id": 1},
+        {"id": 4, "event_id": 5, "subject_id": 4, "role_type_id": 1},
+        {"id": 5, "event_id": 6, "subject_id": 5, "role_type_id": 1},
     ],
     "events": [
         {
@@ -255,7 +259,7 @@ EVENT_WH_DATA: Dict[str, Any] = {
             "lims_id": "SQSCP",
             "uuid": "1".encode("utf-8"),
             "event_type_id": 1,
-            "occured_at": "2020-09-25 11:35:30",  #
+            "occured_at": "2020-09-25 11:35:30",
             "user_identifier": "test@example.com",
         },
         {
@@ -282,8 +286,27 @@ EVENT_WH_DATA: Dict[str, Any] = {
             "occured_at": "2020-10-15 16:35:30",
             "user_identifier": "test@example.com",
         },
+        {
+            "id": 5,
+            "lims_id": "SQSCP",
+            "uuid": "5".encode("utf-8"),
+            "event_type_id": 2,
+            "occured_at": "2020-10-15 16:35:30",
+            "user_identifier": "test@example.com",
+        },
+        {
+            "id": 6,
+            "lims_id": "SQSCP",
+            "uuid": "6".encode("utf-8"),
+            "event_type_id": 2,
+            "occured_at": "2020-10-15 16:35:30",
+            "user_identifier": "test@example.com",
+        },
     ],
-    "event_types": [{"id": 1, "key": "cherrypick_layout_set", "description": "stuff"}],
+    "event_types": [
+        {"id": 1, "key": "cherrypick_layout_set", "description": "stuff"},
+        {"id": 2, "key": "lh_beckman_cp_destination_created", "description": "stuff"},
+    ],
     "subject_types": [{"id": 1, "key": "sample", "description": "stuff"}],
     "role_types": [{"id": 1, "key": "sample", "description": "stuff"}],
 }
@@ -306,6 +329,7 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
             "created": str(to_datetime(V0_V1_CUTOFF_TIMESTAMP)),  # Created at v0/v1 cut-off time
+            "uuid_sample_lims": "1",
         },
         {
             "id_sample_tmp": "2",
@@ -320,6 +344,7 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "created": str(
                 to_datetime(V0_V1_CUTOFF_TIMESTAMP) - timedelta(days=1)
             ),  # Created before v0/v1 cut-off time
+            "uuid_sample_lims": "2",
         },
         {
             "id_sample_tmp": "3",
@@ -332,6 +357,7 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
             "created": str(to_datetime(V0_V1_CUTOFF_TIMESTAMP) + timedelta(days=1)),  # Created after v0/v1 cut-off time
+            "uuid_sample_lims": "3",
         },
         {
             "id_sample_tmp": "4",
@@ -344,6 +370,20 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
             "created": str(to_datetime(V1_V2_CUTOFF_TIMESTAMP) + timedelta(days=1)),  # Created after v1/v2 cut-off time
+            "uuid_sample_lims": "4",
+        },
+        {
+            "id_sample_tmp": "5",
+            "id_sample_lims": "5",
+            "description": "root_1",
+            "supplier_name": "cog_uk_id_5",
+            "phenotype": "positive",
+            "sanger_sample_id": "ss5",
+            "id_lims": "SQSCP",
+            "last_updated": "2015-11-25 11:35:30",
+            "recorded_at": "2015-11-25 11:35:30",
+            "created": str(to_datetime(FILTERED_POSITIVE_FIELDS_SET_DATE) + timedelta(days=1)),  # Created after filtered positive fields set
+            "uuid_sample_lims": "5",
         },
     ],
     "stock_resource": [
@@ -401,6 +441,20 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_study_tmp": "1",
             "id_lims": "SQSCP",
             "id_stock_resource_lims": "4",
+            "labware_type": "well",
+        },
+        {
+            "id_stock_resource_tmp": "5",
+            "id_sample_tmp": "5",
+            "labware_human_barcode": "pb_3",
+            "labware_machine_barcode": "pb_3",
+            "labware_coordinate": "A1",
+            "last_updated": "2015-11-25 11:35:30",
+            "recorded_at": "2015-11-25 11:35:30",
+            "created": "2015-11-25 11:35:30",
+            "id_study_tmp": "1",
+            "id_lims": "SQSCP",
+            "id_stock_resource_lims": "5",
             "labware_type": "well",
         },
     ],
