@@ -382,7 +382,9 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": str(to_datetime(FILTERED_POSITIVE_FIELDS_SET_DATE) + timedelta(days=1)),  # Created after filtered positive fields set
+            "created": str(
+                to_datetime(FILTERED_POSITIVE_FIELDS_SET_DATE) + timedelta(days=1)
+            ),  # Created after filtered positive fields set
             "uuid_sample_lims": "5",
         },
     ],

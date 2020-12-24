@@ -109,7 +109,7 @@ def get_cherrypicked_samples(
             beckman_frame = pd.read_sql(beckman_sql, db_connection, params=params)
 
             # again we concatenate dropping duplicates here (same reason as outlined above)
-            concat_frame = (concat_frame.append(beckman_frame).drop_duplicates().reset_index(drop=True))
+            concat_frame = concat_frame.append(beckman_frame).drop_duplicates().reset_index(drop=True)
 
         return concat_frame
     except Exception as e:
@@ -144,6 +144,7 @@ def remove_cherrypicked_samples(samples: List[Sample], cherry_picked_samples: Li
 
 
 # Private, not explicitly tested methods
+
 
 def __sentinel_cherrypicked_samples_query(ml_wh_db: str, events_wh_db: str) -> str:
     """Forms the SQL query to identify samples cherrypicked via the Sentinel workflow.
