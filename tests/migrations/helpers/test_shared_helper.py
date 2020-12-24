@@ -102,7 +102,7 @@ def test_remove_cherrypicked_samples():
     assert mock_cherry_picked_sample[0] not in [sample[FIELD_ROOT_SAMPLE_ID] for sample in samples]
 
 
-# ----- remove_cherrypicked_samples tests -----
+# ----- get_cherrypicked_samples tests -----
 
 
 def test_get_cherrypicked_samples_no_beckman(config):
