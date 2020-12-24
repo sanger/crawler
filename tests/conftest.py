@@ -470,6 +470,118 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
 }
 
 
+MLWH_SAMPLE_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
+    "sample": [
+        {
+            "id_sample_tmp": "6",
+            "id_sample_lims": "6",
+            "description": "root_5",
+            "supplier_name": "cog_uk_id_6",
+            "phenotype": "positive",
+            "sanger_sample_id": "beck-ss1",
+            "id_lims": "SQSCP",
+            "last_updated": "2015-11-25 11:35:30",
+            "recorded_at": "2015-11-25 11:35:30",
+            "created": "2015-11-25 11:35:30",
+            "uuid_sample_lims": "36000000000000000000000000000000",
+        },
+        {
+            "id_sample_tmp": "7",
+            "id_sample_lims": "7",
+            "description": "root_6",
+            "supplier_name": "cog_uk_id_7",
+            "phenotype": "positive",
+            "sanger_sample_id": "beck-ss2",
+            "id_lims": "SQSCP",
+            "last_updated": "2015-11-25 11:35:30",
+            "recorded_at": "2015-11-25 11:35:30",
+            "created": "2015-11-25 11:35:30",
+            "uuid_sample_lims": "37000000000000000000000000000000",
+        },
+        {
+            "id_sample_tmp": "8",
+            "id_sample_lims": "8",
+            "description": "root_5",
+            "supplier_name": "cog_uk_id_8",
+            "phenotype": "positive",
+            "sanger_sample_id": "beck-ss3",
+            "id_lims": "SQSCP",
+            "last_updated": "2015-11-25 11:35:30",
+            "recorded_at": "2015-11-25 11:35:30",
+            "created": "2015-11-25 11:35:30",
+            "uuid_sample_lims": "38000000000000000000000000000000",
+        },
+        {
+            "id_sample_tmp": "9",
+            "id_sample_lims": "9",
+            "description": "root_4",
+            "supplier_name": "cog_uk_id_9",
+            "phenotype": "positive",
+            "sanger_sample_id": "beck-ss4",
+            "id_lims": "SQSCP",
+            "last_updated": "2015-11-25 11:35:30",
+            "recorded_at": "2015-11-25 11:35:30",
+            "created": "2015-11-25 11:35:30",
+            "uuid_sample_lims": "39000000000000000000000000000000",
+        },
+    ],
+    "lighthouse_sample": [
+        {
+            "mongodb_id": "1",
+            "root_sample_id": "root_5",
+            "rna_id": "pb_4_A01",
+            "plate_barcode": "pb_4",
+            "coordinate": "A1",
+            "result": "Positive",
+            "date_tested_string": "2020-10-24 22:30:22",
+            "date_tested": datetime(2020, 10, 24, 22, 30, 22),
+            "source": "test centre",
+            "lab_id": "TC",
+            "lh_sample_uuid": "36000000000000000000000000000000",
+        },
+        {
+            "mongodb_id": "2",
+            "root_sample_id": "root_6",
+            "rna_id": "pb_5_A01",
+            "plate_barcode": "pb_5",
+            "coordinate": "A1",
+            "result": "Positive",
+            "date_tested_string": "2020-10-24 22:30:22",
+            "date_tested": datetime(2020, 10, 24, 22, 30, 22),
+            "source": "test centre",
+            "lab_id": "TC",
+            "lh_sample_uuid": "37000000000000000000000000000000",
+        },
+        {
+            "mongodb_id": "3",
+            "root_sample_id": "root_5",
+            "rna_id": "pb_6_A01",
+            "plate_barcode": "pb_6",
+            "coordinate": "A1",
+            "result": "Positive",
+            "date_tested_string": "2020-10-24 22:30:22",
+            "date_tested": datetime(2020, 10, 24, 22, 30, 22),
+            "source": "test centre",
+            "lab_id": "TC",
+            "lh_sample_uuid": "38000000000000000000000000000000",
+        },
+        {
+            "mongodb_id": "4",
+            "root_sample_id": "root_4",
+            "rna_id": "pb_3_A01",
+            "plate_barcode": "pb_3",
+            "coordinate": "A1",
+            "result": "Positive",
+            "date_tested_string": "2020-10-24 22:30:22",
+            "date_tested": datetime(2020, 10, 24, 22, 30, 22),
+            "source": "test centre",
+            "lab_id": "TC",
+            "lh_sample_uuid": "39000000000000000000000000000000",
+        },
+    ],
+}
+
+
 @pytest.fixture
 def samples_collection_accessor(mongo_database):
     return get_mongo_collection(mongo_database[1], COLLECTION_SAMPLES)
@@ -569,6 +681,70 @@ def mlwh_sentinel_cherrypicked(config, mlwh_sql_engine):
         # inserts
         insert_into_mlwh(MLWH_SAMPLE_STOCK_RESOURCE["sample"], mlwh_sql_engine, config.MLWH_SAMPLE_TABLE)
         insert_into_mlwh(MLWH_SAMPLE_STOCK_RESOURCE["study"], mlwh_sql_engine, config.MLWH_STUDY_TABLE)
+        insert_into_mlwh(
+            MLWH_SAMPLE_STOCK_RESOURCE["stock_resource"],
+            mlwh_sql_engine,
+            config.MLWH_STOCK_RESOURCES_TABLE,
+        )
+
+        yield
+    finally:
+        delete_data()
+
+
+@pytest.fixture
+def mlwh_beckman_cherrypicked(config, mlwh_sql_engine):
+    def delete_data():
+        delete_from_mlwh(mlwh_sql_engine, config.MLWH_SAMPLE_TABLE)
+        delete_from_mlwh(mlwh_sql_engine, config.MLWH_LIGHTHOUSE_SAMPLE_TABLE)
+
+    try:
+        delete_data()
+
+        # inserts
+        insert_into_mlwh(
+            MLWH_SAMPLE_LIGHTHOUSE_SAMPLE["lighthouse_sample"],
+            mlwh_sql_engine,
+            config.MLWH_LIGHTHOUSE_SAMPLE_TABLE,
+        )
+        insert_into_mlwh(
+            MLWH_SAMPLE_LIGHTHOUSE_SAMPLE["sample"],
+            mlwh_sql_engine,
+            config.MLWH_SAMPLE_TABLE,
+        )
+
+        yield
+    finally:
+        delete_data()
+
+
+@pytest.fixture
+def mlwh_sentinel_and_beckman_cherrypicked(config, mlwh_sql_engine):
+    def delete_data():
+        delete_from_mlwh(mlwh_sql_engine, config.MLWH_STOCK_RESOURCES_TABLE)
+        delete_from_mlwh(mlwh_sql_engine, config.MLWH_SAMPLE_TABLE)
+        delete_from_mlwh(mlwh_sql_engine, configMLWH_STUDY_TABLE)
+        delete_from_mlwh(mlwh_sql_engine, config.MLWH_LIGHTHOUSE_SAMPLE_TABLE)
+
+    try:
+        delete_data()
+
+        # inserts
+        insert_into_mlwh(
+            MLWH_SAMPLE_LIGHTHOUSE_SAMPLE["lighthouse_sample"],
+            mlwh_sql_engine,
+            config.MLWH_LIGHTHOUSE_SAMPLE_TABLE,
+        )
+        insert_into_mlwh(
+            MLWH_SAMPLE_STOCK_RESOURCE["sample"] + MLWH_SAMPLE_LIGHTHOUSE_SAMPLE["sample"],
+            mlwh_sql_engine,
+            config.MLWH_SAMPLE_TABLE,
+        )
+        insert_into_mlwh(
+            MLWH_SAMPLE_STOCK_RESOURCE["study"],
+            mlwh_sql_engine,
+            config.MLWH_STUDY_TABLE,
+        )
         insert_into_mlwh(
             MLWH_SAMPLE_STOCK_RESOURCE["stock_resource"],
             mlwh_sql_engine,
