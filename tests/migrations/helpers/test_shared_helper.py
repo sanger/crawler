@@ -125,8 +125,8 @@ def test_get_cherrypicked_samples_no_beckman(config):
 
 def test_get_cherrypicked_samples_chunking_no_beckman(config):
     # Note: This represents the results of three different (Sentinel, Beckman) sets of
-    # database queries, each Sentinel query getting indexed from 0. Do not changes the
-    # indicies here unless you have modified the behaviour of the query.
+    # database queries, each Sentinel query getting indexed from 0. Do not change the
+    # indices here unless you have modified the behaviour of the query.
     query_results = [
         pd.DataFrame(["MCM001"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0]),
         pd.DataFrame([]),
@@ -190,8 +190,8 @@ def test_get_cherrypicked_samples_no_sentinel(config):
 
 def test_get_cherrypicked_samples_chunking_no_sentinel(config):
     # Note: This represents the results of three different (Sentinel, Beckman) sets of
-    # database queries, each Beckman query getting indexed from 0. Do not changes the
-    # indicies here unless you have modified the behaviour of the query.
+    # database queries, each Beckman query getting indexed from 0. Do not change the
+    # indices here unless you have modified the behaviour of the query.
     query_results = [
         pd.DataFrame([]),
         pd.DataFrame(["MCM001"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0]),
@@ -252,8 +252,8 @@ def test_get_cherrypicked_samples_sentinel_and_beckman(config):
 
 def test_get_cherrypicked_samples_chunking_sentinel_and_beckman(config):
     # Note: This represents the results of three different (Sentinel, Beckman) sets of
-    # database queries, each query getting indexed from 0. Do not changes the
-    # indicies here unless you have modified the behaviour of the query.
+    # database queries, each query getting indexed from 0. Do not change the
+    # indices here unless you have modified the behaviour of the query.
     query_results = [
         pd.DataFrame(["MCM001"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0]),
         pd.DataFrame(["MCM001", "MCM002"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0, 1]),
