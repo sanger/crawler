@@ -28,6 +28,8 @@ from crawler.constants import (
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
     FILTERED_POSITIVE_FIELDS_SET_DATE,
+    EVENT_CHERRYPICK_LAYOUT_SET,
+    PLATE_EVENT_DESTINATION_CREATED,
 )
 from crawler.db import create_mongo_client, create_mysql_connection, get_mongo_collection, get_mongo_db
 from crawler.helpers.general_helpers import get_config
@@ -304,8 +306,8 @@ EVENT_WH_DATA: Dict[str, Any] = {
         },
     ],
     "event_types": [
-        {"id": 1, "key": "cherrypick_layout_set", "description": "stuff"},
-        {"id": 2, "key": "lh_beckman_cp_destination_created", "description": "stuff"},
+        {"id": 1, "key": EVENT_CHERRYPICK_LAYOUT_SET, "description": "stuff"},
+        {"id": 2, "key": PLATE_EVENT_DESTINATION_CREATED, "description": "stuff"},
     ],
     "subject_types": [{"id": 1, "key": "sample", "description": "stuff"}],
     "role_types": [{"id": 1, "key": "sample", "description": "stuff"}],

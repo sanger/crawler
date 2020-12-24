@@ -16,6 +16,7 @@ from crawler.constants import (
     FIELD_PLATE_BARCODE,
     FILTERED_POSITIVE_FIELDS_SET_DATE,
     FIELD_CREATED_AT,
+    EVENT_CHERRYPICK_LAYOUT_SET,
 )
 from crawler.db import (
     create_mongo_client,
@@ -105,7 +106,7 @@ def get_cherrypicked_samples_by_date(
                 f" AND mlwh_sample.created >= '{start_date}'"
                 f" AND mlwh_sample.created < '{end_date}'"
                 f" AND mlwh_stock_resource.labware_human_barcode IN %(plate_barcodes)s"
-                " AND mlwh_events_event_types.key = 'cherrypick_layout_set'"
+                f" AND mlwh_events_event_types.key = '{EVENT_CHERRYPICK_LAYOUT_SET}'"
                 " GROUP BY mlwh_sample.description, mlwh_stock_resource.labware_human_barcode, mlwh_sample.phenotype, mlwh_stock_resource.labware_coordinate"  # noqa: E501
             )
 

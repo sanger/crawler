@@ -13,6 +13,8 @@ from crawler.constants import (
     FIELD_PLATE_BARCODE,
     FIELD_ROOT_SAMPLE_ID,
     MONGO_DATETIME_FORMAT,
+    EVENT_CHERRYPICK_LAYOUT_SET,
+    PLATE_EVENT_DESTINATION_CREATED,
 )
 from crawler.types import Sample
 
@@ -167,7 +169,7 @@ def __sentinel_cherrypicked_samples_query(ml_wh_db: str, events_wh_db: str) -> s
         f" JOIN {events_wh_db}.event_types mlwh_events_event_types ON (mlwh_events_events.event_type_id = mlwh_events_event_types.id)"  # noqa: E501
         f" WHERE mlwh_sample.description IN %(root_sample_ids)s"
         f" AND mlwh_stock_resource.labware_human_barcode IN %(plate_barcodes)s"
-        " AND mlwh_events_event_types.key = 'cherrypick_layout_set'"
+        f" AND mlwh_events_event_types.key = '{EVENT_CHERRYPICK_LAYOUT_SET}'"
         " GROUP BY mlwh_sample.description, mlwh_stock_resource.labware_human_barcode, mlwh_sample.phenotype, mlwh_stock_resource.labware_coordinate"  # noqa: E501
     )
 
@@ -193,6 +195,6 @@ def __beckman_cherrypicked_samples_query(ml_wh_db: str, events_wh_db: str) -> st
         f" JOIN {events_wh_db}.event_types AS mlwh_events_event_types ON (mlwh_events_event_types.id = mlwh_events_events.event_type_id)"  # noqa: E501
         f" WHERE mlwh_sample.description IN %(root_sample_ids)s"
         f" AND mlwh_lh_sample.plate_barcode IN %(plate_barcodes)s"
-        f" AND mlwh_events_event_types.key = 'lh_beckman_cp_destination_created'"
+        f" AND mlwh_events_event_types.key = '{PLATE_EVENT_DESTINATION_CREATED}'"
         " GROUP BY mlwh_sample.description, mlwh_lh_sample.plate_barcode, mlwh_sample.phenotype, mlwh_lh_sample.coordinate;"  # noqa: E501
     )
