@@ -557,7 +557,7 @@ def event_wh_data(config, event_wh_sql_engine):
 
 
 @pytest.fixture
-def mlwh_sample_stock_resource(config, mlwh_sql_engine):
+def mlwh_sentinel_cherrypicked(config, mlwh_sql_engine):
     def delete_data():
         delete_from_mlwh(mlwh_sql_engine, config.MLWH_STOCK_RESOURCES_TABLE)
         delete_from_mlwh(mlwh_sql_engine, config.MLWH_SAMPLE_TABLE)
