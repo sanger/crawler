@@ -1,6 +1,5 @@
 # flake8: noqa
 from decimal import Decimal
-import os
 
 # mongo collections
 COLLECTION_CENTRES = "centres"
