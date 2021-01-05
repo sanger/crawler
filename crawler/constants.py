@@ -4,7 +4,7 @@ from decimal import Decimal
 # mongo collections
 COLLECTION_CENTRES = "centres"
 COLLECTION_IMPORTS = "imports"
-COLLECTION_SAMPLES = "samples"
+COLLECTION_SAMPLES = "samples_test_migration"
 COLLECTION_SAMPLES_HISTORY = "samples_history"
 COLLECTION_SOURCE_PLATES = "source_plates"
 
