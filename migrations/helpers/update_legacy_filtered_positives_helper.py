@@ -100,9 +100,9 @@ def get_cherrypicked_samples_by_date(
                 f" JOIN {events_wh_db}.events mlwh_events_events ON (mlwh_events_roles.event_id = mlwh_events_events.id)"  # noqa: E501
                 f" JOIN {events_wh_db}.event_types mlwh_events_event_types ON (mlwh_events_events.event_type_id = mlwh_events_event_types.id)"  # noqa: E501
                 f" WHERE mlwh_sample.description IN %(root_sample_ids)s"
+                f" AND mlwh_stock_resource.labware_human_barcode IN %(plate_barcodes)s"
                 f" AND mlwh_sample.created >= '{start_date}'"
                 f" AND mlwh_sample.created < '{end_date}'"
-                f" AND mlwh_stock_resource.labware_human_barcode IN %(plate_barcodes)s"
                 " AND mlwh_events_event_types.key = 'cherrypick_layout_set'"
                 " GROUP BY mlwh_sample.description, mlwh_stock_resource.labware_human_barcode, mlwh_sample.phenotype, mlwh_stock_resource.labware_coordinate"  # noqa: E501
             )
