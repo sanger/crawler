@@ -81,7 +81,7 @@ def get_cherrypicked_samples_by_date(
         sql_engine = sqlalchemy.create_engine(
             (
                 f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}"  # type: ignore # noqa: E501
-                f"@{config.MLWH_DB_HOST}"  # type: ignore
+                f"@{config.MLWH_DB_HOST}:{config.MLWH_DB_PORT}"  # type: ignore
             ),
             pool_recycle=3600,
         )
