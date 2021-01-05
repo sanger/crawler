@@ -1,6 +1,6 @@
 # flake8: noqa
 from crawler.config.defaults import *
-from crawler.constants import FIELD_RNA_ID, LOCALHOST, ROOT_PASSWORD
+from crawler.constants import FIELD_RNA_ID
 
 # settings here overwrite those in 'defaults.py'
 

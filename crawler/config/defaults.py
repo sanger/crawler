@@ -1,10 +1,4 @@
-from crawler.constants import (
-    BIOMEK_LABWARE_CLASS_BIO,
-    BIOMEK_LABWARE_CLASS_KINGFISHER,
-    FIELD_RNA_ID,
-    LOCALHOST,
-    ROOT_PASSWORD,
-)
+from crawler.constants import BIOMEK_LABWARE_CLASS_BIO, BIOMEK_LABWARE_CLASS_KINGFISHER, FIELD_RNA_ID
 import os
 
 # general details
@@ -93,6 +87,7 @@ CENTRES = [
 # .env file you use for docker. eg
 # LOCALHOST=host.docker.internal
 LOCALHOST = os.environ.get("LOCALHOST", "localhost")
+ROOT_PASSWORD = os.environ.get("ROOT_PASSWORD", "root")
 
 # mongo details
 MONGO_DB = "crawlerDevelopmentDB"

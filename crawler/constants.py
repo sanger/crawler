@@ -120,13 +120,6 @@ DART_EMPTY_VALUE = ""
 # DART others
 DART_SET_PROP_STATUS_SUCCESS = 0
 
-# If we're running in a container, then instead of localhost
-# we want host.docker.internal, you can specify this in the
-# .env file you use for docker. eg
-# LOCALHOST=host.docker.internal
-LOCALHOST = os.environ.get("LOCALHOST", "127.0.0.1")
-ROOT_PASSWORD = os.environ.get("ROOT_PASSWORD", "root")
-
 # Cut off date for v0 and v1 filtered positive
 V0_V1_CUTOFF_TIMESTAMP = "2020-10-15 16:15:00"  # Timestamp of v1 positive rule change (GPL-669) deployed to production
 V1_V2_CUTOFF_TIMESTAMP = "2020-12-15 14:19:03"  # Timestamp of v2 positive rule change (Lighthouse deployment GPL-776)
