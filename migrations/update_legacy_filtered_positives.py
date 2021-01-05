@@ -81,6 +81,9 @@ def run(settings_module: str = "") -> None:
             logger.info("Selecting legacy samples from Mongo...")
             samples = legacy_mongo_samples(config)
 
+            legacy_samples_num = len(samples)
+            logger.info(f"{legacy_samples_num} samples found from Mongo")
+
             root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
 
             # Get v0 cherrypicked samples
