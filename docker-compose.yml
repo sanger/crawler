@@ -35,7 +35,7 @@ services:
   # Setup the runner
   # we need to set the localhost and root password as they can be different
   runner:
-    build: ./
+    build: .
     environment:
       - LOCALHOST=host.docker.internal
       - ROOT_PASSWORD=
