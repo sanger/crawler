@@ -126,6 +126,14 @@ DART_SET_PROP_STATUS_SUCCESS = 0
 # LOCALHOST=host.docker.internal
 LOCALHOST = os.environ.get("LOCALHOST", "127.0.0.1")
 ROOT_PASSWORD = os.environ.get("ROOT_PASSWORD", "root")
+
+# Cut off date for v0 and v1 filtered positive
+V0_V1_CUTOFF_TIMESTAMP = "2020-10-15 16:15:00"  # Timestamp of v1 positive rule change (GPL-669) deployed to production
+V1_V2_CUTOFF_TIMESTAMP = "2020-12-15 14:19:03"  # Timestamp of v2 positive rule change (Lighthouse deployment GPL-776)
+
+# Date on which filtered positive fields started being set by Crawler
+FILTERED_POSITIVE_FIELDS_SET_DATE = "2020-12-17 00:00:00"
+
 # Beckman labware
 BIOMEK_LABWARE_CLASS_KINGFISHER = "KingFisher_96_2ml"
 BIOMEK_LABWARE_CLASS_BIO = "Bio-Rad_96PCR"
