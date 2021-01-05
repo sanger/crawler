@@ -124,7 +124,7 @@ V0_V1_CUTOFF_TIMESTAMP = "2020-10-15 16:15:00"  # Timestamp of v1 positive rule 
 V1_V2_CUTOFF_TIMESTAMP = "2020-12-15 14:19:03"  # Timestamp of v2 positive rule change (Lighthouse deployment GPL-776)
 
 # Date on which filtered positive fields started being set by Crawler
-FILTERED_POSITIVE_FIELDS_SET_DATE = "2020-12-17 00:00:00"
+FILTERED_POSITIVE_FIELDS_SET_DATE = "2020-12-17"
 
 # Beckman labware
 BIOMEK_LABWARE_CLASS_KINGFISHER = "KingFisher_96_2ml"
