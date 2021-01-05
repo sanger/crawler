@@ -1,5 +1,6 @@
 import logging
 import logging.config
+import time
 from datetime import datetime
 from crawler.helpers.general_helpers import get_config
 from migrations.helpers.update_filtered_positives_helper import (
@@ -49,6 +50,7 @@ def run(settings_module: str = "") -> None:
     logger.info("-" * 80)
     logger.info("STARTING FILTERED POSITIVES LEGACY UPDATE")
     logger.info(f"Time start: {datetime.now()}")
+    start_time = time.time()
 
     mongo_versions_updated = {
         FILTERED_POSITIVE_VERSION_0: False,
@@ -141,6 +143,7 @@ def run(settings_module: str = "") -> None:
                         logger.info(f"Finished updating {version} filtered positives in MLWH")
                         mlwh_versions_updated[version] = True
 
+            end_time = time.time()
             logger.info("Finished updating databases")
         else:
             logger.info("Now exiting migration")
@@ -169,6 +172,7 @@ def run(settings_module: str = "") -> None:
         )
 
     logger.info(f"Time finished: {datetime.now()}")
+    logger.info(f"Migration complete in {round(end_time - start_time, 2)}s")
     logger.info("=" * 80)
 
 
