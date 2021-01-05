@@ -43,7 +43,7 @@ def legacy_mongo_samples(config: ModuleType) -> List[Sample]:
         return list(
             samples_collection.find(
                 {FIELD_CREATED_AT: {"$lt": datetime.strptime(FILTERED_POSITIVE_FIELDS_SET_DATE, "%Y-%m-%d")}}
-            ).limit(100)
+            )
         )
 
 
