@@ -2,6 +2,7 @@ from types import ModuleType
 from typing import List, Optional, Dict
 from pandas import DataFrame  # type: ignore
 import pandas as pd
+from datetime import datetime
 import sqlalchemy  # type: ignore
 from crawler.types import Sample
 from crawler.filtered_positive_identifier import (
@@ -39,7 +40,11 @@ def legacy_mongo_samples(config: ModuleType) -> List[Sample]:
     with create_mongo_client(config) as client:
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
-        return list(samples_collection.find({FIELD_CREATED_AT: {"$lt": FILTERED_POSITIVE_FIELDS_SET_DATE}}))
+        return list(
+            samples_collection.find(
+                {FIELD_CREATED_AT: {"$lt": datetime.strptime(FILTERED_POSITIVE_FIELDS_SET_DATE, "%Y-%m-%d")}}
+            ).limit(100)
+        )
 
 
 def get_cherrypicked_samples_by_date(
