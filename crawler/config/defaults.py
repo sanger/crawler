@@ -87,22 +87,23 @@ CENTRES = [
 # .env file you use for docker. eg
 # LOCALHOST=host.docker.internal
 LOCALHOST = os.environ.get("LOCALHOST", "localhost")
+ROOT_PASSWORD = os.environ.get("ROOT_PASSWORD", "root")
 
 # mongo details
 MONGO_DB = "crawlerDevelopmentDB"
-MONGO_HOST = "127.0.0.1"
+MONGO_HOST = LOCALHOST
 MONGO_PASSWORD = ""
 MONGO_PORT = 27017
 MONGO_USERNAME = ""
 
 # MLWH database details
 MLWH_DB_DBNAME = "unified_warehouse_test"
-MLWH_DB_HOST = "127.0.0.1"
+MLWH_DB_HOST = LOCALHOST
 MLWH_DB_PORT = 3306
 MLWH_DB_RO_USER = "root"
-MLWH_DB_RO_PASSWORD = "root"
+MLWH_DB_RO_PASSWORD = ROOT_PASSWORD
 MLWH_DB_RW_USER = "root"
-MLWH_DB_RW_PASSWORD = "root"
+MLWH_DB_RW_PASSWORD = ROOT_PASSWORD
 
 # DART database details
 DART_DB_DBNAME = "dart_test"
