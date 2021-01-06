@@ -87,7 +87,7 @@ CENTRES = [
 # .env file you use for docker. eg
 # LOCALHOST=host.docker.internal
 LOCALHOST = os.environ.get("LOCALHOST", "localhost")
-ROOT_PASSWORD = os.environ.get("ROOT_PASSWORD", "root")
+ROOT_PASSWORD = os.environ.get("ROOT_PASSWORD", "")
 
 # mongo details
 MONGO_DB = "crawlerDevelopmentDB"
