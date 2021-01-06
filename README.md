@@ -217,6 +217,23 @@ A little convenience script can be used to run the formatting, type checking and
 
     ./forlint.sh
 
+## Docker
+
+If you do not have root access pyodbc will not work if you use brew
+Using the docker compose you can set up the full stack and it will also set the correct environment variables
+
+To build the containers:
+
+    docker-compose up
+
+To run the tests:
+
+You will need to find the id of the container with image name crawler_runner
+
+    docker exec -ti <container_id> python -m pytest -vs
+
+There is now a volume for the runner so there is hot reloading i.e. changes in the code and tests will be updated when you rerun tests.
+
 ## Miscellaneous
 
 ### Naming conventions
