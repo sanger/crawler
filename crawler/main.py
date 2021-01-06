@@ -21,7 +21,7 @@ from crawler.db import (
     create_mongo_client,
     get_mongo_collection,
     get_mongo_db,
-    populate_centres_collection,
+    populate_collection,
     samples_collection_accessor,
 )
 from crawler.file_processing import Centre
@@ -35,13 +35,13 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
         start = time.time()
         config, settings_module = get_config(settings_module)
 
-        logging.config.dictConfig(config.LOGGING)  # type: ignore
+        logging.config.dictConfig(config.LOGGING)
 
         logger.info("-" * 80)
         logger.info("START")
         logger.info(f"Using settings from {settings_module}")
 
-        centres = config.CENTRES  # type: ignore
+        centres = config.CENTRES
 
         with create_mongo_client(config) as client:
             db = get_mongo_db(config, client)
@@ -51,7 +51,7 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
 
             logger.debug(f"Creating index '{FIELD_CENTRE_NAME}' on '{centres_collection.full_name}'")
             centres_collection.create_index(FIELD_CENTRE_NAME, unique=True)
-            populate_centres_collection(centres_collection, centres, FIELD_CENTRE_NAME)
+            populate_collection(centres_collection, centres, FIELD_CENTRE_NAME)
 
             # get or create the source plates collection
             source_plates_collection = get_mongo_collection(db, COLLECTION_SOURCE_PLATES)

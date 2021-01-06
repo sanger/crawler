@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 from bson.decimal128 import Decimal128  # type: ignore
 from bson.objectid import ObjectId
+
 from crawler.constants import (
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
@@ -27,7 +28,6 @@ from crawler.constants import (
     FIELD_CH4_RESULT,
     FIELD_CH4_TARGET,
     FIELD_COORDINATE,
-    FIELD_CREATED_AT,
     FIELD_DATE_TESTED,
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
@@ -40,7 +40,6 @@ from crawler.constants import (
     FIELD_RNA_PCR_ID,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
-    FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
     MLWH_CH1_CQ,
     MLWH_CH1_RESULT,
@@ -73,7 +72,7 @@ from crawler.constants import (
     POSITIVE_RESULT_VALUE,
 )
 from crawler.db import get_mongo_collection
-from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile, CentreFileState
+from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
 
 # ----- tests helpers -----
 
@@ -788,16 +787,13 @@ def test_where_ct_channel_cq_value_is_not_numeric(config):
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
 
-def test_is_within_cq_range(config):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some_file.csv", centre)
+def test_is_within_cq_range():
+    assert CentreFile.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("0.0")) is True
+    assert CentreFile.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("100.0")) is True
+    assert CentreFile.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("27.019291283")) is True
 
-    assert centre_file.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("0.0")) is True
-    assert centre_file.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("100.0")) is True
-    assert centre_file.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("27.019291283")) is True
-
-    assert centre_file.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("-0.00000001")) is False
-    assert centre_file.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("100.00000001")) is False
+    assert CentreFile.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("-0.00000001")) is False
+    assert CentreFile.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("100.00000001")) is False
 
 
 def test_where_ct_channel_cq_value_is_not_within_range(config):
@@ -1008,48 +1004,6 @@ def test_file_name_date_parses_right(config):
 
     centre_file = CentreFile("AP_sanger_report_200503_2338 (2).csv", centre)
     assert centre_file.file_name_date() is None
-
-
-def test_set_state_for_file_when_file_in_black_list(config, blacklist_for_centre, testing_centres):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
-    centre_file.set_state_for_file()
-
-    assert centre_file.file_state == CentreFileState.FILE_IN_BLACKLIST
-
-
-def test_set_state_for_file_when_never_seen_before(config, testing_centres):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
-    centre_file.set_state_for_file()
-
-    assert centre_file.file_state == CentreFileState.FILE_NOT_PROCESSED_YET
-
-
-def test_set_state_for_file_when_in_error_folder(config, tmpdir, testing_centres):
-    with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
-        errors_folder = tmpdir.mkdir(ERRORS_DIR)
-
-        # configure to use the backups folder for this test
-
-        centre = Centre(config, config.CENTRES[0])
-
-        # create a backup of the file inside the errors directory as if previously processed there
-        filename = "AP_sanger_report_200518_2132.csv"
-        centre_file = CentreFile(filename, centre)
-        centre_file.logging_collection.add_error("TYPE 4", "Some error happened")
-        centre_file.backup_file()
-
-        assert len(errors_folder.listdir()) == 1
-
-        # check the file state again now the error version exists
-        centre_file.set_state_for_file()
-
-        assert centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_ERROR
-
-
-def test_set_state_for_file_when_in_success_folder(config):
-    return False
 
 
 # tests for inserting docs into mlwh using rows with and without ct columns
@@ -1572,24 +1526,6 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
                         mock_conn().cursor().rollback.assert_not_called()
                         assert mock_conn().cursor().commit.call_count == 1
                         mock_conn().close.assert_called_once()
-
-
-# tests for updating docs with source plate uuids
-def test_new_mongo_source_plate(config, freezer):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
-    now = datetime.now()
-    test_uuid = uuid.uuid4()
-    with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
-        plate_barcode = "abc123"
-        lab_id = "AP"
-        source_plate = centre_file.new_mongo_source_plate(plate_barcode, lab_id)
-
-        assert source_plate[FIELD_LH_SOURCE_PLATE_UUID] == str(test_uuid)
-        assert source_plate[FIELD_BARCODE] == plate_barcode
-        assert source_plate[FIELD_LAB_ID] == lab_id
-        assert source_plate[FIELD_UPDATED_AT] == now
-        assert source_plate[FIELD_CREATED_AT] == now
 
 
 def test_docs_to_insert_updated_with_source_plate_uuids_handles_mongo_collection_error(config):

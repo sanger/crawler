@@ -21,7 +21,7 @@ class AggregateTypeBase:
         self.short_display_description = ""
         self.type_str = ""
 
-    def add_error(self, message) -> None:
+    def add_error(self, message: str) -> None:
         """Adds a new error to the aggregate type. Checks max_errors to decide whether message
         should be appended to the default message or not. Increments total counter for this type of
         error.

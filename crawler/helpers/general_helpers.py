@@ -3,14 +3,15 @@ import os
 import re
 import string
 import sys
+import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from importlib import import_module
-from types import ModuleType
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, cast
 
-import pysftp  # type: ignore
-from bson.decimal128 import Decimal128  # type: ignore
+import pysftp
+from bson.decimal128 import Decimal128
+
 from crawler.constants import (
     DART_EMPTY_VALUE,
     DART_LAB_ID,
@@ -19,6 +20,7 @@ from crawler.constants import (
     DART_ROOT_SAMPLE_ID,
     DART_STATE,
     DART_STATE_PICKABLE,
+    FIELD_BARCODE,
     FIELD_CH1_CQ,
     FIELD_CH1_RESULT,
     FIELD_CH1_TARGET,
@@ -78,7 +80,7 @@ from crawler.constants import (
     MLWH_UPDATED_AT,
     MYSQL_DATETIME_FORMAT,
 )
-from crawler.types import DartWellProp, Sample
+from crawler.types import Config, DartWellProp, Sample, SourcePlate
 
 logger = logging.getLogger(__name__)
 
@@ -93,29 +95,27 @@ def current_time() -> str:
     return datetime.now().strftime("%y%m%d_%H%M")
 
 
-def get_sftp_connection(config: ModuleType, username: str = None, password: str = None) -> pysftp.Connection:
+def get_sftp_connection(config: Config, username: str = "", password: str = "") -> pysftp.Connection:
     """Get a connection to the SFTP server as a context manager. The READ credentials are used by default but a username
     and password provided will override these.
 
     Arguments:
-        config {ModuleType} -- application config
-
-    Keyword Arguments:
-        username {str} -- username to use instead of the READ username (default: {None})
-        password {str} -- password for the provided username (default: {None})
+        config (Config): application config module
+        username (str, optional): username to use instead of the READ username. Defaults to "".
+        password (str, optional): password for the provided username. Defaults to "".
 
     Returns:
-        pysftp.Connection -- a connection to the SFTP server as a context manager
+        pysftp.Connection: a connection to the SFTP server as a context manager
     """
     # disable host key checking:
     #   https://bitbucket.org/dundeemt/pysftp/src/master/docs/cookbook.rst#rst-header-id5
     cnopts = pysftp.CnOpts()
     cnopts.hostkeys = None
 
-    sftp_host = config.SFTP_HOST  # type: ignore
-    sftp_port = config.SFTP_PORT  # type: ignore
-    sftp_username = config.SFTP_READ_USERNAME if username is None else username  # type: ignore
-    sftp_password = config.SFTP_READ_PASSWORD if username is None else password  # type: ignore
+    sftp_host = config.SFTP_HOST
+    sftp_port = config.SFTP_PORT
+    sftp_username = config.SFTP_READ_USERNAME if not username else username
+    sftp_password = config.SFTP_READ_PASSWORD if not username else password
 
     return pysftp.Connection(
         host=sftp_host,
@@ -126,21 +126,24 @@ def get_sftp_connection(config: ModuleType, username: str = None, password: str 
     )
 
 
-def get_config(settings_module: str) -> Tuple[ModuleType, str]:
-    """Get the config for the app by importing a module named by an environmental variable. This
-    allows easy switching between environments and inheriting default config values.
+def get_config(settings_module: str = "") -> Tuple[Config, str]:
+    """Get the config for the app by importing a module named by an environmental variable. This allows easy switching
+    between environments and inheriting default config values.
 
     Arguments:
-        settings_module {str} -- the settings module to load
+        settings_module (str, optional): the settings module to load. Defaults to "".
 
     Returns:
-        Optional[ModuleType] -- the config module loaded and available to use via `config.<param>`
+        Tuple[Config, str]: tuple with the config module loaded and available to use via `config.<param>` and the
+        settings module used
     """
     try:
         if not settings_module:
             settings_module = os.environ["SETTINGS_MODULE"]
 
-        return import_module(settings_module), settings_module  # type: ignore
+        config_module = cast(Config, import_module(settings_module))
+
+        return config_module, settings_module
     except KeyError as e:
         sys.exit(f"{e} required in environmental variables for config")
 
@@ -155,10 +158,8 @@ def map_mongo_to_sql_common(sample: Sample) -> Dict[str, Any]:
         Dict[str, Any] -- Dictionary of MySQL versions of fields
     """
     return {
-        MLWH_MONGODB_ID: str(
-            sample[FIELD_MONGODB_ID]
-        ),  #  hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn
-        # it back
+        # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
+        MLWH_MONGODB_ID: str(sample[FIELD_MONGODB_ID]),
         MLWH_ROOT_SAMPLE_ID: sample[FIELD_ROOT_SAMPLE_ID],
         MLWH_RNA_ID: sample[FIELD_RNA_ID],
         MLWH_PLATE_BARCODE: sample[FIELD_PLATE_BARCODE],
@@ -188,9 +189,15 @@ def map_mongo_to_sql_common(sample: Sample) -> Dict[str, Any]:
     }
 
 
-# Strip any leading zeros from the coordinate
-# eg. A01 => A1
 def unpad_coordinate(coordinate: str) -> str:
+    """Strip any leading zeros from the coordinate, eg. A01 => A1.
+
+    Arguments:
+        coordinate (str): coordinate to strip
+
+    Returns:
+        str: stripped coordinate
+    """
     return re.sub(r"0(\d+)$", r"\1", coordinate) if (coordinate and isinstance(coordinate, str)) else coordinate
 
 
@@ -245,7 +252,7 @@ def parse_date_tested(date_string: str) -> Optional[datetime]:
 
 
 def parse_decimal128(value: Decimal128) -> Optional[Decimal]:
-    """Converts Decimal128 to MySQL compatible Decimal format
+    """Converts mongo Decimal128 to MySQL compatible Decimal format.
 
     Arguments:
         value {Decimal128} -- The number from the document or None
@@ -254,7 +261,7 @@ def parse_decimal128(value: Decimal128) -> Optional[Decimal]:
         Decimal -- converted number
     """
     try:
-        return value.to_decimal()
+        return Decimal(value.to_decimal())
     except Exception:
         return None
 
@@ -302,4 +309,23 @@ def map_mongo_doc_to_dart_well_props(sample: Sample) -> DartWellProp:
         DART_RNA_ID: sample[FIELD_RNA_ID],
         DART_LAB_ID: sample.get(FIELD_LAB_ID, DART_EMPTY_VALUE),
         DART_LH_SAMPLE_UUID: sample.get(FIELD_LH_SAMPLE_UUID, DART_EMPTY_VALUE),
+    }
+
+
+def create_source_plate_doc(plate_barcode: str, lab_id: str) -> SourcePlate:
+    """Creates a new source plate document to be inserted into mongo.
+
+    Arguments:
+        plate_barcode {str} -- The plate barcode to assign to the new source plate.
+        lab_id {str} -- The lab ID to assign to the new source plate.
+
+    Returns:
+        SourcePlate -- The new mongo source plate doc.
+    """
+    return {
+        FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4()),
+        FIELD_BARCODE: plate_barcode,
+        FIELD_LAB_ID: lab_id,
+        FIELD_UPDATED_AT: datetime.now(),
+        FIELD_CREATED_AT: datetime.now(),
     }

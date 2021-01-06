@@ -1,8 +1,8 @@
 import logging
 from datetime import datetime
-from more_itertools import groupby_transform
-from types import ModuleType
 from typing import Dict, List, Optional
+
+from more_itertools import groupby_transform
 
 from crawler.constants import (
     COLLECTION_SAMPLES,
@@ -35,21 +35,18 @@ from crawler.helpers.general_helpers import (
     map_mongo_to_sql_common,
 )
 from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE
-from crawler.types import Sample
-from migrations.helpers.shared_helper import (
-    extract_required_cp_info,
-    get_cherrypicked_samples,
-    remove_cherrypicked_samples as remove_cp_samples,
-)
+from crawler.types import Config, Sample
+from migrations.helpers.shared_helper import extract_required_cp_info, get_cherrypicked_samples
+from migrations.helpers.shared_helper import remove_cherrypicked_samples as remove_cp_samples
 
 logger = logging.getLogger(__name__)
 
 
-def pending_plate_barcodes_from_dart(config: ModuleType) -> List[str]:
+def pending_plate_barcodes_from_dart(config: Config) -> List[str]:
     """Fetch the barcodes of all plates from DART that are in the 'pending' state
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        config {Config} -- application config specifying database details
 
     Returns:
         List[str] -- barcodes of pending plates
@@ -74,11 +71,11 @@ def pending_plate_barcodes_from_dart(config: ModuleType) -> List[str]:
     return plate_barcodes
 
 
-def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: Optional[List[str]] = None) -> List[Sample]:
+def positive_result_samples_from_mongo(config: Config, plate_barcodes: Optional[List[str]] = None) -> List[Sample]:
     """Fetch positive samples from Mongo contained within specified plates.
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        config {Config} -- application config specifying database details
         plate_barcodes {Optional[List[str]]} -- barcodes of plates whose samples we are concerned with
 
     Returns:
@@ -99,11 +96,11 @@ def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: Optio
         return list(samples_collection.aggregate(pipeline))
 
 
-def remove_cherrypicked_samples(config: ModuleType, samples: List[Sample]) -> List[Sample]:
+def remove_cherrypicked_samples(config: Config, samples: List[Sample]) -> List[Sample]:
     """Filters an input list of samples for those that have not been cherrypicked.
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        config {Config} -- application config specifying database details
         samples {List[Sample]} -- the list of samples to filter
 
     Returns:
@@ -147,12 +144,12 @@ def update_filtered_positive_fields(
 
 
 def update_mongo_filtered_positive_fields(
-    config: ModuleType, samples: List[Sample], version: str, update_timestamp: datetime
+    config: Config, samples: List[Sample], version: str, update_timestamp: datetime
 ) -> bool:
     """Bulk updates sample filtered positive fields in the Mongo database
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        config {Config} -- application config specifying database details
         samples {List[Sample]} -- the list of samples whose filtered positive fields should be updated
         version {str} -- the filtered positive identifier version used
         update_timestamp {datetime} -- the timestamp at which the update was performed
@@ -194,11 +191,11 @@ def update_mongo_filtered_positive_fields(
     return True
 
 
-def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Sample]) -> bool:
+def update_mlwh_filtered_positive_fields(config: Config, samples: List[Sample]) -> bool:
     """Bulk updates sample filtered positive fields in the MLWH database
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        config {Config} -- application config specifying database details
         samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields
         should be updated
 
@@ -215,11 +212,11 @@ def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Sampl
         return False
 
 
-def update_dart_fields(config: ModuleType, samples: List[Sample]) -> bool:
+def update_dart_fields(config: Config, samples: List[Sample]) -> bool:
     """Updates DART plates and wells following updates to the filtered positive fields
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        config {Config} -- application config specifying database details
         samples {List[Dict[str, str]]} -- the list of samples to update in DART
 
     Returns:
@@ -230,12 +227,12 @@ def update_dart_fields(config: ModuleType, samples: List[Sample]) -> bool:
         raise ValueError("Unable to establish DART SQL Server connection")
 
     dart_updated_successfully = True
-    labclass_by_centre_name = biomek_labclass_by_centre_name(config.CENTRES)  # type:ignore
+    labclass_by_centre_name = biomek_labclass_by_centre_name(config.CENTRES)
     try:
         cursor = sql_server_connection.cursor()
 
         for plate_barcode, samples_in_plate in groupby_transform(
-            samples, lambda x: x[FIELD_PLATE_BARCODE], reducefunc=lambda x: list(x)
+            samples, lambda x: x[FIELD_PLATE_BARCODE], reducefunc=lambda x: list(x)  # type: ignore
         ):
             try:
                 labware_class = labclass_by_centre_name[samples_in_plate[0][FIELD_SOURCE]]

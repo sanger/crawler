@@ -7,16 +7,16 @@ from migrations import (
     sample_timestamps,
     update_dart,
     update_filtered_positives,
-    update_mlwh_with_legacy_samples,
     update_legacy_filtered_positives,
+    update_mlwh_with_legacy_samples,
 )
 
 config, settings_module = get_config("")
 
 logger = logging.getLogger(__name__)
-config.LOGGING["loggers"]["crawler"]["level"] = "DEBUG"  # type: ignore
-config.LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]  # type: ignore
-logging.config.dictConfig(config.LOGGING)  # type: ignore
+config.LOGGING["loggers"]["crawler"]["level"] = "DEBUG"
+config.LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]
+logging.config.dictConfig(config.LOGGING)
 
 ##
 # Examples of how to run from command line:

@@ -1,37 +1,34 @@
-from types import ModuleType
-from typing import List, Optional, Dict
-from pandas import DataFrame  # type: ignore
+import logging
+from typing import Dict, List, Optional
+
 import pandas as pd
-import sqlalchemy  # type: ignore
-from crawler.types import Sample
+import sqlalchemy
+from pandas import DataFrame
+
+from crawler.constants import (
+    COLLECTION_SAMPLES,
+    FIELD_CREATED_AT,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_PLATE_BARCODE,
+    FIELD_ROOT_SAMPLE_ID,
+    FILTERED_POSITIVE_FIELDS_SET_DATE,
+)
+from crawler.db import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_0,
     FILTERED_POSITIVE_VERSION_1,
     FILTERED_POSITIVE_VERSION_2,
 )
-from crawler.constants import (
-    COLLECTION_SAMPLES,
-    FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_PLATE_BARCODE,
-    FILTERED_POSITIVE_FIELDS_SET_DATE,
-    FIELD_CREATED_AT,
-)
-from crawler.db import (
-    create_mongo_client,
-    get_mongo_collection,
-    get_mongo_db,
-)
-import logging
+from crawler.types import Config, Sample
 
 logger = logging.getLogger(__name__)
 
 
-def legacy_mongo_samples(config: ModuleType) -> List[Sample]:
+def legacy_mongo_samples(config: Config) -> List[Sample]:
     """Gets all samples from Mongo created before Crawler started setting filtered positive fields
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        config {Config} -- application config specifying database details
 
     Returns:
         List[Sample] -- List of Mongo samples created before filtered positive Crawler changes
@@ -43,7 +40,7 @@ def legacy_mongo_samples(config: ModuleType) -> List[Sample]:
 
 
 def get_cherrypicked_samples_by_date(
-    config: ModuleType,
+    config: Config,
     root_sample_ids: List[str],
     plate_barcodes: List[str],
     start_date: str,
@@ -56,7 +53,7 @@ def get_cherrypicked_samples_by_date(
     for the relevant event type in the event warehouse)
 
     Args:
-        config (ModuleType): application config specifying database details
+        config (Config): application config specifying database details
         root_sample_ids (List[str]): [description]
         plate_barcodes (List[str]): [description]
         start_date (str): lower limit on creation date
@@ -80,15 +77,15 @@ def get_cherrypicked_samples_by_date(
 
         sql_engine = sqlalchemy.create_engine(
             (
-                f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}"  # type: ignore # noqa: E501
-                f"@{config.MLWH_DB_HOST}"  # type: ignore
+                f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}"  # noqa: E501
+                f"@{config.MLWH_DB_HOST}"
             ),
             pool_recycle=3600,
         )
         db_connection = sql_engine.connect()
 
-        ml_wh_db = config.MLWH_DB_DBNAME  # type: ignore
-        events_wh_db = config.EVENTS_WH_DB  # type: ignore
+        ml_wh_db = config.MLWH_DB_DBNAME
+        events_wh_db = config.EVENTS_WH_DB
 
         for chunk_root_sample_id in chunk_root_sample_ids:
             sql = (
@@ -133,12 +130,12 @@ def get_cherrypicked_samples_by_date(
             db_connection.close()
 
 
-def v0_version_set(config: ModuleType) -> bool:
+def v0_version_set(config: Config) -> bool:
     """Find if the v0 version has been set in any of the samples.
        This would indicate that the legacy migration has already been run.
 
     Args:
-        config {ModuleType} -- application config specifying database details
+        config {Config} -- application config specifying database details
 
     Returns:
         {bool} -- v0 version set in samples
@@ -151,7 +148,7 @@ def v0_version_set(config: ModuleType) -> bool:
             {FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_0}
         )
 
-        return num_v0_samples > 0
+        return int(num_v0_samples) > 0
 
 
 def split_mongo_samples_by_version(

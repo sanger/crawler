@@ -1,29 +1,27 @@
 import logging
 import logging.config
 from datetime import datetime
-from crawler.helpers.general_helpers import get_config
-from migrations.helpers.update_filtered_positives_helper import (
-    update_filtered_positive_fields,
-    update_mlwh_filtered_positive_fields,
-    update_mongo_filtered_positive_fields,
-)
-from migrations.helpers.update_legacy_filtered_positives_helper import (
-    legacy_mongo_samples,
-    get_cherrypicked_samples_by_date,
-    v0_version_set,
-    split_mongo_samples_by_version,
-)
-from crawler.constants import (
-    V0_V1_CUTOFF_TIMESTAMP,
-    V1_V2_CUTOFF_TIMESTAMP,
-)
+
+from crawler.constants import V0_V1_CUTOFF_TIMESTAMP, V1_V2_CUTOFF_TIMESTAMP
 from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_0,
     FILTERED_POSITIVE_VERSION_1,
     FILTERED_POSITIVE_VERSION_2,
     filtered_positive_identifier_by_version,
 )
+from crawler.helpers.general_helpers import get_config
 from migrations.helpers.shared_helper import extract_required_cp_info
+from migrations.helpers.update_filtered_positives_helper import (
+    update_filtered_positive_fields,
+    update_mlwh_filtered_positive_fields,
+    update_mongo_filtered_positive_fields,
+)
+from migrations.helpers.update_legacy_filtered_positives_helper import (
+    get_cherrypicked_samples_by_date,
+    legacy_mongo_samples,
+    split_mongo_samples_by_version,
+    v0_version_set,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +39,11 @@ def run(settings_module: str = "") -> None:
     """Migrate the existing samples to have the filtered positive values.
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        settings_module {str} -- application config specifying database details
     """
     config, settings_module = get_config(settings_module)
-    logging.config.dictConfig(config.LOGGING)  # type: ignore
+
+    logging.config.dictConfig(config.LOGGING)
 
     logger.info("-" * 80)
     logger.info("STARTING FILTERED POSITIVES LEGACY UPDATE")
