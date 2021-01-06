@@ -88,6 +88,17 @@ AND rna_id = %(rna_id)s
 AND result = %(result)s
 """
 
+
+SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH = """\
+UPDATE lighthouse_sample
+SET
+filtered_positive = "1",
+filtered_positive_version = "v2",
+filtered_positive_timestamp = "2021-01-06 14:20:00"
+WHERE mongodb_id IN (%s)
+"""
+
+
 # DART SQL queries
 SQL_DART_GET_PLATE_PROPERTY = """\
 SET NOCOUNT ON

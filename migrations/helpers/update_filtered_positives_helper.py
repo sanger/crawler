@@ -26,6 +26,7 @@ from crawler.db import (
     get_mongo_collection,
     get_mongo_db,
     run_mysql_executemany_query,
+    run_mysql_execute_query,
     set_dart_well_properties,
 )
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
@@ -34,7 +35,11 @@ from crawler.helpers.general_helpers import (
     map_mongo_doc_to_dart_well_props,
     map_mongo_to_sql_common,
 )
-from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE
+from crawler.sql_queries import (
+    SQL_DART_GET_PLATE_BARCODES,
+    SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE,
+    SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH,
+)
 from crawler.types import Sample
 from migrations.helpers.shared_helper import (
     extract_required_cp_info,
@@ -210,6 +215,27 @@ def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Sampl
     if mysql_conn is not None and mysql_conn.is_connected():
         mlwh_samples = [map_mongo_to_sql_common(sample) for sample in samples]
         run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE, mlwh_samples)
+        return True
+    else:
+        return False
+
+
+def update_mlwh_filtered_positive_fields_batch_query(config: ModuleType, samples: List[Sample]) -> bool:
+    """Bulk updates sample filtered positive fields in the MLWH database
+
+    Arguments:
+        config {ModuleType} -- application config specifying database details
+        samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields
+        should be updated
+
+    Returns:
+        bool -- whether the updates completed successfully
+    """
+    mysql_conn = create_mysql_connection(config, False)
+
+    if mysql_conn is not None and mysql_conn.is_connected():
+        mlwh_samples = [map_mongo_to_sql_common(sample) for sample in samples]
+        run_mysql_execute_query(mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH, mlwh_samples)
         return True
     else:
         return False

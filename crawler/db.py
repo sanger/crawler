@@ -259,6 +259,72 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
         mysql_conn.close()
 
 
+def run_mysql_execute_query(mysql_conn: CMySQLConnection, sql_query: str, values: List[Dict[str, str]]) -> None:
+    """Writes the sample testing information into the MLWH.
+
+    Arguments:
+        mysql_conn {CMySQLConnection} -- a client used to interact with the database server
+        sql_query {str} -- the SQL query to run (see sql_queries.py)
+        values {List[Dict[str, str]]} -- array of value hashes representing documents inserted into
+        the Mongo DB
+    """
+    # fetch the cursor from the DB connection
+    cursor = mysql_conn.cursor()
+
+    try:
+        # executing the query with values
+        num_values = len(values)
+
+        # BN. If ROWS_PER_QUERY value is too high, you may get '2006 (HY000): MySQL server has
+        # gone away' error indicating you've exceeded the max_allowed_packet size for MySQL
+        ROWS_PER_QUERY = 15000
+        values_index = 0
+        total_rows_affected = 0
+        logger.debug(
+            f"Attempting to insert or update {num_values} rows in the MLWH database in batches of {ROWS_PER_QUERY}"
+        )
+
+        while values_index < num_values:
+            logger.debug(f"Inserting records between {values_index} and {values_index + ROWS_PER_QUERY}")
+            
+            samples_batch = values[values_index : (values_index + ROWS_PER_QUERY)]
+            samples_id_batch = []
+            for sample in samples_batch:
+                samples_id_batch.append(sample["mongodb_id"])
+            format_strings = ','.join(['%s'] * len(samples_id_batch))
+
+            cursor.execute(sql_query % format_strings, tuple(samples_id_batch))
+
+            logger.debug(
+                f"{cursor.rowcount} rows affected in MLWH. (Note: each updated row increases the "
+                "count by 2, instead of 1)"
+            )
+            total_rows_affected += cursor.rowcount
+            values_index += ROWS_PER_QUERY
+            logger.debug("Committing changes to MLWH database.")
+            mysql_conn.commit()
+
+        # number of rows affected using cursor.rowcount - not easy to interpret:
+        # reports 1 per inserted row,
+        # 2 per updated existing row,
+        # and 0 per unchanged existing row
+        logger.debug(
+            f"A total of {total_rows_affected} rows were affected in MLWH. (Note: each updated row "
+            "increases the count by 2, instead of 1)"
+        )
+    except Exception:
+        logger.error("MLWH database executemany transaction failed")
+        raise
+    finally:
+        # close the cursor
+        logger.debug("Closing the cursor.")
+        cursor.close()
+
+        # close the connection
+        logger.debug("Closing the MLWH database connection.")
+        mysql_conn.close()
+
+
 def create_dart_sql_server_conn(config: ModuleType) -> Optional[pyodbc.Connection]:
     """Create a SQL Server connection to DART with the given config parameters.
 
