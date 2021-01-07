@@ -262,7 +262,7 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
 
 
 def run_mysql_execute_query(mysql_conn: CMySQLConnection, sql_query: str, values: List[Dict[str, str]], version: str, update_timestamp: datetime) -> None:
-    """Writes the sample testing information into the MLWH.
+    """Writes the sample testing information into the MLWH, batched by positive and negative samples
 
     Arguments:
         mysql_conn {CMySQLConnection} -- a client used to interact with the database server
@@ -298,12 +298,17 @@ def run_mysql_execute_query(mysql_conn: CMySQLConnection, sql_query: str, values
             ]
             filtered_negative_ids = [mongo_id for mongo_id in samples_id_batch if mongo_id not in filtered_positive_ids]
 
-            in_p = ', '.join(list(map(lambda x: '%s', filtered_positive_ids)))
+            positive_in_p = ', '.join(list(map(lambda x: '%s', filtered_positive_ids)))
             positive_args = [True, version, update_timestamp] 
             if len(filtered_positive_ids) > 0:
-                positive_sql_query = sql_query % in_p
+                positive_sql_query = sql_query % positive_in_p
                 positive_string_args = positive_args + filtered_positive_ids
                 cursor.execute(positive_sql_query, tuple(positive_string_args))
+
+            total_rows_affected += cursor.rowcount
+            logger.debug(
+                f"{cursor.rowcount} rows affected in MLWH."
+            )
 
             negative_in_p = ', '.join(list(map(lambda x: '%s', filtered_negative_ids)))
             negative_args = [False, version, update_timestamp]
@@ -313,8 +318,7 @@ def run_mysql_execute_query(mysql_conn: CMySQLConnection, sql_query: str, values
                 cursor.execute(negative_sql_query, tuple(negative_string_args))
 
             logger.debug(
-                f"{cursor.rowcount} rows affected in MLWH. (Note: each updated row increases the "
-                "count by 2, instead of 1)"
+                f"{cursor.rowcount} rows affected in MLWH."
             )
             total_rows_affected += cursor.rowcount
             values_index += ROWS_PER_QUERY
