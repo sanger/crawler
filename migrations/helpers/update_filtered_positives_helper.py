@@ -220,7 +220,7 @@ def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Sampl
         return False
 
 
-def update_mlwh_filtered_positive_fields_batch_query(config: ModuleType, samples: List[Sample]) -> bool:
+def update_mlwh_filtered_positive_fields_batch_query(config: ModuleType, samples: List[Sample], version: str, update_timestamp: datetime) -> bool:
     """Bulk updates sample filtered positive fields in the MLWH database
 
     Arguments:
@@ -235,7 +235,7 @@ def update_mlwh_filtered_positive_fields_batch_query(config: ModuleType, samples
 
     if mysql_conn is not None and mysql_conn.is_connected():
         mlwh_samples = [map_mongo_to_sql_common(sample) for sample in samples]
-        run_mysql_execute_query(mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH, mlwh_samples)
+        run_mysql_execute_query(mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH, mlwh_samples, version, update_timestamp)
         return True
     else:
         return False

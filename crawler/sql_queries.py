@@ -92,9 +92,9 @@ AND result = %(result)s
 SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH = """\
 UPDATE lighthouse_sample
 SET
-filtered_positive = "1",
-filtered_positive_version = "v2",
-filtered_positive_timestamp = "2021-01-06 14:20:00"
+filtered_positive = %%s,
+filtered_positive_version = %%s,
+filtered_positive_timestamp = %%s
 WHERE mongodb_id IN (%s)
 """
 

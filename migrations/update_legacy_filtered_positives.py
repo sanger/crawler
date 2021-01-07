@@ -147,7 +147,7 @@ def run(settings_module: str = "") -> None:
                     logger.info(f"Updating {version} filtered positives in MLWH...")
                     mlwh_update_start_time = time.time()
 
-                    mlwh_updated = update_mlwh_filtered_positive_fields_batch_query(config, version_samples)
+                    mlwh_updated = update_mlwh_filtered_positive_fields_batch_query(config, version_samples, version, update_timestamp)
 
                     if mlwh_updated:
                         logger.info(f"Finished updating {version} filtered positives in MLWH")

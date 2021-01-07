@@ -19,6 +19,8 @@ from crawler.constants import (
     DART_STATE_NO_PLATE,
     DART_STATE_NO_PROP,
     DART_STATE_PENDING,
+    MLWH_MONGODB_ID,
+    FIELD_FILTERED_POSITIVE,
 )
 from crawler.exceptions import DartStateError
 from crawler.sql_queries import (
@@ -259,7 +261,7 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
         mysql_conn.close()
 
 
-def run_mysql_execute_query(mysql_conn: CMySQLConnection, sql_query: str, values: List[Dict[str, str]]) -> None:
+def run_mysql_execute_query(mysql_conn: CMySQLConnection, sql_query: str, values: List[Dict[str, str]], version: str, update_timestamp: datetime) -> None:
     """Writes the sample testing information into the MLWH.
 
     Arguments:
@@ -286,14 +288,29 @@ def run_mysql_execute_query(mysql_conn: CMySQLConnection, sql_query: str, values
 
         while values_index < num_values:
             logger.debug(f"Inserting records between {values_index} and {values_index + ROWS_PER_QUERY}")
-            
-            samples_batch = values[values_index : (values_index + ROWS_PER_QUERY)]
-            samples_id_batch = []
-            for sample in samples_batch:
-                samples_id_batch.append(sample["mongodb_id"])
-            format_strings = ','.join(['%s'] * len(samples_id_batch))
 
-            cursor.execute(sql_query % format_strings, tuple(samples_id_batch))
+            samples_batch = values[values_index : (values_index + ROWS_PER_QUERY)]
+
+            samples_id_batch: List[str] = [sample[MLWH_MONGODB_ID] for sample in samples_batch]
+
+            filtered_positive_ids: List[str] = [
+                sample[MLWH_MONGODB_ID] for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] is True, samples_batch))
+            ]
+            filtered_negative_ids = [mongo_id for mongo_id in samples_id_batch if mongo_id not in filtered_positive_ids]
+
+            in_p = ', '.join(list(map(lambda x: '%s', filtered_positive_ids)))
+            positive_args = [True, version, update_timestamp] 
+            if len(filtered_positive_ids) > 0:
+                positive_sql_query = sql_query % in_p
+                positive_string_args = positive_args + filtered_positive_ids
+                cursor.execute(positive_sql_query, tuple(positive_string_args))
+
+            negative_in_p = ', '.join(list(map(lambda x: '%s', filtered_negative_ids)))
+            negative_args = [False, version, update_timestamp]
+            if len(filtered_negative_ids) > 0:
+                negative_sql_query = sql_query % negative_in_p
+                negative_string_args = negative_args + filtered_negative_ids
+                cursor.execute(negative_sql_query, tuple(negative_string_args))
 
             logger.debug(
                 f"{cursor.rowcount} rows affected in MLWH. (Note: each updated row increases the "
