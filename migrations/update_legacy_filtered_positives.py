@@ -53,16 +53,19 @@ def run(settings_module: str = "") -> None:
     logger.info(f"Time start: {datetime.now()}")
     start_time = time.time()
 
+    updated_key = "Updated"
+    time_key = "Time taken"
+
     mongo_versions_updated = {
-        FILTERED_POSITIVE_VERSION_0: False,
-        FILTERED_POSITIVE_VERSION_1: False,
-        FILTERED_POSITIVE_VERSION_2: False,
+        FILTERED_POSITIVE_VERSION_0: { updated_key: False, time_key: 0.0 },
+        FILTERED_POSITIVE_VERSION_1: { updated_key: False, time_key: 0.0 },
+        FILTERED_POSITIVE_VERSION_2: { updated_key: False, time_key: 0.0 },
     }
 
     mlwh_versions_updated = {
-        FILTERED_POSITIVE_VERSION_0: False,
-        FILTERED_POSITIVE_VERSION_1: False,
-        FILTERED_POSITIVE_VERSION_2: False,
+        FILTERED_POSITIVE_VERSION_0: { updated_key: False, time_key: 0.0 },
+        FILTERED_POSITIVE_VERSION_1: { updated_key: False, time_key: 0.0 },
+        FILTERED_POSITIVE_VERSION_2: { updated_key: False, time_key: 0.0 },
     }
 
     try:
@@ -127,6 +130,7 @@ def run(settings_module: str = "") -> None:
 
             for version, version_samples in samples_by_version.items():
                 logger.info(f"Updating {version} filtered positives in Mongo...")
+                mongo_update_start_time = time.time()
                 mongo_updated = update_mongo_filtered_positive_fields(
                     config,
                     version_samples,
@@ -135,15 +139,22 @@ def run(settings_module: str = "") -> None:
                 )
                 if mongo_updated:
                     logger.info(f"Finished updating {version} filtered positives in Mongo")
-                    mongo_versions_updated[version] = True
+                    
+                    mongo_update_end_time = time.time()
+                    mongo_versions_updated[version][updated_key] = True
+                    mongo_versions_updated[version][time_key] = round(mongo_update_end_time - mongo_update_start_time, 2)
 
                     logger.info(f"Updating {version} filtered positives in MLWH...")
-                    mlwh_updated = update_mlwh_filtered_positive_fields(config, version_samples)
+                    mlwh_update_start_time = time.time()
+
                     mlwh_updated = update_mlwh_filtered_positive_fields_batch_query(config, version_samples)
 
                     if mlwh_updated:
                         logger.info(f"Finished updating {version} filtered positives in MLWH")
-                        mlwh_versions_updated[version] = True
+                        
+                        mlwh_update_end_time = time.time()
+                        mlwh_versions_updated[version][updated_key] = True
+                        mlwh_versions_updated[version][time_key] = round(mlwh_update_end_time - mlwh_update_start_time, 2)
 
             end_time = time.time()
             logger.info("Finished updating databases")
@@ -159,17 +170,29 @@ def run(settings_module: str = "") -> None:
             f"""
         ---------- Processing status of filtered positive field migration: ----------
         -- Mongo updated with v0 filtered positives: \
-{mongo_versions_updated[FILTERED_POSITIVE_VERSION_0]}
+{mongo_versions_updated[FILTERED_POSITIVE_VERSION_0][updated_key]}, \
+time taken: \
+{mongo_versions_updated[FILTERED_POSITIVE_VERSION_0][time_key]}s
         -- Mongo updated with v1 filtered positives: \
-{mongo_versions_updated[FILTERED_POSITIVE_VERSION_1]}
+{mongo_versions_updated[FILTERED_POSITIVE_VERSION_1][updated_key]}, \
+time taken: \
+{mongo_versions_updated[FILTERED_POSITIVE_VERSION_1][time_key]}s
         -- Mongo updated with v2 filtered positives: \
-{mongo_versions_updated[FILTERED_POSITIVE_VERSION_2]}
+{mongo_versions_updated[FILTERED_POSITIVE_VERSION_2][updated_key]}, \
+time taken: \
+{mongo_versions_updated[FILTERED_POSITIVE_VERSION_2][time_key]}s
         -- MLWH updated with v0 filtered positives: \
-{mlwh_versions_updated[FILTERED_POSITIVE_VERSION_0]}
+{mlwh_versions_updated[FILTERED_POSITIVE_VERSION_0][updated_key]}, \
+time taken: \
+{mlwh_versions_updated[FILTERED_POSITIVE_VERSION_0][time_key]}s
         -- MLWH updated with v1 filtered positives: \
-{mlwh_versions_updated[FILTERED_POSITIVE_VERSION_1]}
+{mlwh_versions_updated[FILTERED_POSITIVE_VERSION_1][updated_key]}, \
+time taken: \
+{mlwh_versions_updated[FILTERED_POSITIVE_VERSION_1][time_key]}s
         -- MLWH updated with v2 filtered positives: \
-{mlwh_versions_updated[FILTERED_POSITIVE_VERSION_2]}
+{mlwh_versions_updated[FILTERED_POSITIVE_VERSION_2][updated_key]}, \
+time taken: \
+{mlwh_versions_updated[FILTERED_POSITIVE_VERSION_2][time_key]}s
         """
         )
 
