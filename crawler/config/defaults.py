@@ -1,5 +1,6 @@
-from crawler.constants import BIOMEK_LABWARE_CLASS_BIO, BIOMEK_LABWARE_CLASS_KINGFISHER, FIELD_RNA_ID
 import os
+
+from crawler.constants import BIOMEK_LABWARE_CLASS_BIO, BIOMEK_LABWARE_CLASS_KINGFISHER, FIELD_RNA_ID
 
 # general details
 DIR_DOWNLOADED_DATA = "data/sftp_files/"
@@ -104,6 +105,8 @@ MLWH_DB_RO_USER = "root"
 MLWH_DB_RO_PASSWORD = ROOT_PASSWORD
 MLWH_DB_RW_USER = "root"
 MLWH_DB_RW_PASSWORD = ROOT_PASSWORD
+
+EVENTS_WH_DB = "mlwhd_mlwh_events_proddata"
 
 # DART database details
 DART_DB_DBNAME = "dart_test"
