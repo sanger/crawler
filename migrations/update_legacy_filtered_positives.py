@@ -92,6 +92,7 @@ def run(settings_module: str = "") -> None:
 
             root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
 
+            logger.info("Getting v0 cherrypicked samples from MLWH")
             # Get v0 cherrypicked samples
             v0_cp_samples_df = get_cherrypicked_samples_by_date(
                 config,
@@ -100,7 +101,9 @@ def run(settings_module: str = "") -> None:
                 "1970-01-01 00:00:01",
                 V0_V1_CUTOFF_TIMESTAMP,
             )
+            logger.debug(f"Found {len(v0_cp_samples_df.index)} v0 cherrypicked samples")
 
+            logger.info("Getting v1 cherrypicked samples from MLWH")
             # Get v1 cherrypicked samples
             v1_cp_samples_df = get_cherrypicked_samples_by_date(
                 config,
@@ -109,7 +112,9 @@ def run(settings_module: str = "") -> None:
                 V0_V1_CUTOFF_TIMESTAMP,
                 V1_V2_CUTOFF_TIMESTAMP,
             )
+            logger.debug(f"Found {len(v1_cp_samples_df.index)} v1 cherrypicked samples")
 
+            logger.info("Splitting samples by version...")
             samples_by_version = split_mongo_samples_by_version(samples, v0_cp_samples_df, v1_cp_samples_df)
 
             update_timestamp = datetime.now()
@@ -129,7 +134,7 @@ def run(settings_module: str = "") -> None:
             logger.info("Updating Mongo")
 
             for version, version_samples in samples_by_version.items():
-                logger.info(f"Updating {version} filtered positives in Mongo...")
+                logger.info(f"Updating {version} filtered positives in Mongo, total {len(version_samples)} records...")
                 mongo_update_start_time = time.time()
                 mongo_updated = update_mongo_filtered_positive_fields(
                     config,

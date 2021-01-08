@@ -99,7 +99,10 @@ def get_cherrypicked_samples_by_date(
         ml_wh_db = config.MLWH_DB_DBNAME  # type: ignore
         events_wh_db = config.EVENTS_WH_DB  # type: ignore
 
+        values_index = 0
         for chunk_root_sample_id in chunk_root_sample_ids:
+            logger.debug(f"Querying records between {values_index} and {values_index + chunk_size}")
+
             sql = (
                 f"SELECT mlwh_sample.description as `{FIELD_ROOT_SAMPLE_ID}`, mlwh_stock_resource.labware_human_barcode as `{FIELD_PLATE_BARCODE}`"  # noqa: E501
                 f" FROM {ml_wh_db}.sample as mlwh_sample"
@@ -131,7 +134,7 @@ def get_cherrypicked_samples_by_date(
             # do reset_index after dropping duplicates to make sure the rows are numbered
             # in a way that makes sense
             concat_frame = concat_frame.append(frame).drop_duplicates().reset_index(drop=True)
-
+            values_index += chunk_size
         return concat_frame
     except Exception as e:
         logger.error("Error while connecting to MySQL")
@@ -190,6 +193,7 @@ def split_mongo_samples_by_version(
     v1_samples = []
     v2_samples = []
 
+    counter = 0
     for sample in samples:
         if [sample[FIELD_ROOT_SAMPLE_ID], sample[FIELD_PLATE_BARCODE]] in v0_cp_samples:
             v0_samples.append(sample)
@@ -197,6 +201,10 @@ def split_mongo_samples_by_version(
             v1_samples.append(sample)
         else:
             v2_samples.append(sample)
+        counter += 1
+
+        if counter%10000 == 0:
+            logger.debug(f"Split {counter} samples by version")
 
     samples_by_version = {
         FILTERED_POSITIVE_VERSION_0: v0_samples,
