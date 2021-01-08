@@ -25,7 +25,7 @@ def mock_helper_database_updates():
         "migrations.update_legacy_filtered_positives.update_mongo_filtered_positive_fields"
     ) as mock_update_mongo:
         with patch(
-            "migrations.update_legacy_filtered_positives.update_mlwh_filtered_positive_fields"
+            "migrations.update_legacy_filtered_positives.update_mlwh_filtered_positive_fields_batch_query"
         ) as mock_update_mlwh:
             yield mock_update_mongo, mock_update_mlwh
 
@@ -314,9 +314,9 @@ def test_update_legacy_filtered_positives_outputs_success(
     mock_update_mongo.assert_any_call(config, v2_samples, FILTERED_POSITIVE_VERSION_2, update_timestamp)
 
     assert mock_update_mlwh.call_count == 3
-    mock_update_mlwh.assert_any_call(config, v0_samples)
-    mock_update_mlwh.assert_any_call(config, v1_samples)
-    mock_update_mlwh.assert_any_call(config, v2_samples)
+    mock_update_mlwh.assert_any_call(config, v0_samples, FILTERED_POSITIVE_VERSION_0, update_timestamp)
+    mock_update_mlwh.assert_any_call(config, v1_samples, FILTERED_POSITIVE_VERSION_1, update_timestamp)
+    mock_update_mlwh.assert_any_call(config, v2_samples, FILTERED_POSITIVE_VERSION_2, update_timestamp)
 
 
 def test_update_legacy_filtered_positives_successful_if_user_chooses_to_continue(
@@ -373,6 +373,6 @@ def test_update_legacy_filtered_positives_successful_if_user_chooses_to_continue
     mock_update_mongo.assert_any_call(config, v2_samples, FILTERED_POSITIVE_VERSION_2, update_timestamp)
 
     assert mock_update_mlwh.call_count == 3
-    mock_update_mlwh.assert_any_call(config, v0_samples)
-    mock_update_mlwh.assert_any_call(config, v1_samples)
-    mock_update_mlwh.assert_any_call(config, v2_samples)
+    mock_update_mlwh.assert_any_call(config, v0_samples, FILTERED_POSITIVE_VERSION_0, update_timestamp)
+    mock_update_mlwh.assert_any_call(config, v1_samples, FILTERED_POSITIVE_VERSION_1, update_timestamp)
+    mock_update_mlwh.assert_any_call(config, v2_samples, FILTERED_POSITIVE_VERSION_2, update_timestamp)
