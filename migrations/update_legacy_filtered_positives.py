@@ -156,12 +156,11 @@ def run(settings_module: str = "") -> None:
 
                     if mlwh_updated:
                         logger.info(f"Finished updating {version} filtered positives in MLWH")
-                        
+    
                         mlwh_update_end_time = time.time()
                         mlwh_versions_updated[version][updated_key] = True
                         mlwh_versions_updated[version][time_key] = round(mlwh_update_end_time - mlwh_update_start_time, 2)
 
-            end_time = time.time()
             logger.info("Finished updating databases")
         else:
             logger.info("Now exiting migration")
@@ -171,6 +170,7 @@ def run(settings_module: str = "") -> None:
         logger.exception(e)
         raise
     finally:
+        end_time = time.time()
         logger.info(
             f"""
         ---------- Processing status of filtered positive field migration: ----------
