@@ -101,6 +101,8 @@ def run(settings_module: str = "") -> None:
                 "1970-01-01 00:00:01",
                 V0_V1_CUTOFF_TIMESTAMP,
             )
+            if v0_cp_samples_df is None:
+                raise Exception
             logger.debug(f"Found {len(v0_cp_samples_df.index)} v0 cherrypicked samples")
 
             logger.info("Getting v1 cherrypicked samples from MLWH")
@@ -112,6 +114,8 @@ def run(settings_module: str = "") -> None:
                 V0_V1_CUTOFF_TIMESTAMP,
                 V1_V2_CUTOFF_TIMESTAMP,
             )
+            if v1_cp_samples_df is None:
+                raise Exception
             logger.debug(f"Found {len(v1_cp_samples_df.index)} v1 cherrypicked samples")
 
             logger.info("Splitting samples by version...")
