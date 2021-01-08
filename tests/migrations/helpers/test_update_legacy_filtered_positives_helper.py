@@ -4,7 +4,7 @@ import numpy as np
 from unittest.mock import patch
 from migrations.helpers.update_legacy_filtered_positives_helper import (
     v0_version_set,
-    legacy_mongo_samples,
+    positive_legacy_mongo_samples,
     get_cherrypicked_samples_by_date,
     split_mongo_samples_by_version,
 )
@@ -20,21 +20,21 @@ from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_2,
 )
 
-# ----- legacy_mongo_samples tests -----
+# ----- positive_legacy_mongo_samples tests -----
 
 
-def test_legacy_mongo_samples_error_getting_samples(config):
+def test_positive_legacy_mongo_samples_error_getting_samples(config):
     with patch(
         "migrations.helpers.update_legacy_filtered_positives_helper.create_mongo_client",
         side_effect=ValueError("Boom!"),
     ):
         with pytest.raises(ValueError):
-            legacy_mongo_samples(config)
+            positive_legacy_mongo_samples(config)
 
 
-def test_legacy_mongo_samples_returns_correct_samples_filtered_by_date(config, filtered_positive_testing_samples):
-    result = legacy_mongo_samples(config)
-    expected_samples = filtered_positive_testing_samples[-3:]
+def test_positive_legacy_mongo_samples_returns_correct_samples_filtered_by_date(config, filtered_positive_testing_samples):
+    result = positive_legacy_mongo_samples(config)
+    expected_samples = filtered_positive_testing_samples[-2:]
 
     assert result == expected_samples
 

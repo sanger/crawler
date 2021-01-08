@@ -10,7 +10,7 @@ from migrations.helpers.update_filtered_positives_helper import (
     update_mongo_filtered_positive_fields,
 )
 from migrations.helpers.update_legacy_filtered_positives_helper import (
-    legacy_mongo_samples,
+    positive_legacy_mongo_samples,
     get_cherrypicked_samples_by_date,
     v0_version_set,
     split_mongo_samples_by_version,
@@ -85,7 +85,7 @@ def run(settings_module: str = "") -> None:
 
         if continue_migration:
             logger.info("Selecting legacy samples from Mongo...")
-            samples = legacy_mongo_samples(config)
+            samples = positive_legacy_mongo_samples(config)
 
             legacy_samples_num = len(samples)
             logger.info(f"{legacy_samples_num} samples found from Mongo")

@@ -30,7 +30,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def legacy_mongo_samples(config: ModuleType) -> List[Sample]:
+def positive_legacy_mongo_samples(config: ModuleType) -> List[Sample]:
     """Gets all samples from Mongo created before Crawler started setting filtered positive fields
 
     Arguments:
