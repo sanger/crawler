@@ -293,16 +293,11 @@ def run_mysql_execute_query(mysql_conn: CMySQLConnection, sql_query: str, values
 
             samples_id_batch: List[str] = [sample[MLWH_MONGODB_ID] for sample in samples_batch]
 
-            filtered_positive_ids: List[str] = [
-                sample[MLWH_MONGODB_ID] for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] is True, samples_batch))
-            ]
-            filtered_negative_ids = [mongo_id for mongo_id in samples_id_batch if mongo_id not in filtered_positive_ids]
-
-            positive_in_p = ', '.join(list(map(lambda x: '%s', filtered_positive_ids)))
+            positive_in_p = ', '.join(list(map(lambda x: '%s', samples_id_batch)))
             positive_args = [True, version, update_timestamp] 
-            if len(filtered_positive_ids) > 0:
+            if len(samples_id_batch) > 0:
                 positive_sql_query = sql_query % positive_in_p
-                positive_string_args = positive_args + filtered_positive_ids
+                positive_string_args = positive_args + samples_id_batch
                 cursor.execute(positive_sql_query, tuple(positive_string_args))
 
             total_rows_affected += cursor.rowcount
@@ -310,16 +305,6 @@ def run_mysql_execute_query(mysql_conn: CMySQLConnection, sql_query: str, values
                 f"{cursor.rowcount} rows affected in MLWH."
             )
 
-            negative_in_p = ', '.join(list(map(lambda x: '%s', filtered_negative_ids)))
-            negative_args = [False, version, update_timestamp]
-            if len(filtered_negative_ids) > 0:
-                negative_sql_query = sql_query % negative_in_p
-                negative_string_args = negative_args + filtered_negative_ids
-                cursor.execute(negative_sql_query, tuple(negative_string_args))
-
-            logger.debug(
-                f"{cursor.rowcount} rows affected in MLWH."
-            )
             total_rows_affected += cursor.rowcount
             values_index += ROWS_PER_QUERY
             logger.debug("Committing changes to MLWH database.")
@@ -330,8 +315,7 @@ def run_mysql_execute_query(mysql_conn: CMySQLConnection, sql_query: str, values
         # 2 per updated existing row,
         # and 0 per unchanged existing row
         logger.debug(
-            f"A total of {total_rows_affected} rows were affected in MLWH. (Note: each updated row "
-            "increases the count by 2, instead of 1)"
+            f"A total of {total_rows_affected} rows were affected in MLWH."
         )
     except Exception:
         logger.error("MLWH database executemany transaction failed")

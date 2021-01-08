@@ -17,6 +17,8 @@ from crawler.constants import (
     FIELD_PLATE_BARCODE,
     FILTERED_POSITIVE_FIELDS_SET_DATE,
     FIELD_CREATED_AT,
+    FIELD_RESULT,
+    POSITIVE_RESULT_VALUE,
 )
 from crawler.db import (
     create_mongo_client,
@@ -42,8 +44,10 @@ def legacy_mongo_samples(config: ModuleType) -> List[Sample]:
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
         return list(
             samples_collection.find(
-                {FIELD_CREATED_AT: {"$lt": datetime.strptime(FILTERED_POSITIVE_FIELDS_SET_DATE, "%Y-%m-%d")}}
-            )
+                { "$and": [{FIELD_CREATED_AT: {"$lt": datetime.strptime(FILTERED_POSITIVE_FIELDS_SET_DATE, "%Y-%m-%d")}},
+                           {FIELD_RESULT: {"$eq": POSITIVE_RESULT_VALUE}}]
+                }
+            ).limit(50000)
         )
 
 
