@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime
-from more_itertools import groupby_transform
 from types import ModuleType
 from typing import Dict, List, Optional
 
@@ -36,11 +35,9 @@ from crawler.helpers.general_helpers import (
 )
 from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE
 from crawler.types import Sample
-from migrations.helpers.shared_helper import (
-    extract_required_cp_info,
-    get_cherrypicked_samples,
-    remove_cherrypicked_samples as remove_cp_samples,
-)
+from migrations.helpers.shared_helper import extract_required_cp_info, get_cherrypicked_samples
+from migrations.helpers.shared_helper import remove_cherrypicked_samples as remove_cp_samples
+from more_itertools import groupby_transform
 
 logger = logging.getLogger(__name__)
 
@@ -232,6 +229,8 @@ def update_dart_fields(config: ModuleType, samples: List[Sample]) -> bool:
     dart_updated_successfully = True
     labclass_by_centre_name = biomek_labclass_by_centre_name(config.CENTRES)  # type:ignore
     try:
+        logger.info("Writing to DART")
+
         cursor = sql_server_connection.cursor()
 
         for plate_barcode, samples_in_plate in groupby_transform(
@@ -262,6 +261,8 @@ def update_dart_fields(config: ModuleType, samples: List[Sample]) -> bool:
                 logger.exception(e)
                 cursor.rollback()
                 dart_updated_successfully = False
+
+        logger.info("Updating DART completed")
     except Exception as e:
         logger.error("Failed updating DART")
         logger.exception(e)

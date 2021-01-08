@@ -102,6 +102,9 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
             # 2. of these, find which have been cherry-picked and remove them from the list
             cp_samples_df = get_cherrypicked_samples(config, list(root_sample_ids), list(plate_barcodes))
 
+            if cp_samples_df is None:  # we need to check if it is None explicitly
+                raise Exception("Unable to determine cherry-picked sample - potentially error connecting to MySQL")
+
             # get the samples between those dates minus the cherry-picked ones
             if cp_samples_df is not None and not cp_samples_df.empty:
                 # we need a list of cherry-picked samples with their respective plate barcodes
