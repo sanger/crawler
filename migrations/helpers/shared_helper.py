@@ -1,23 +1,22 @@
-from datetime import datetime
 import logging
-import pandas as pd  # type: ignore
-from pandas import DataFrame
-import sqlalchemy  # type: ignore
 import sys
 import traceback
+from datetime import datetime
 from types import ModuleType
-from typing import Optional, List, Tuple, Set
+from typing import List, Optional, Set, Tuple
 
+import pandas as pd  # type: ignore
+import sqlalchemy  # type: ignore
 from crawler.constants import (
+    EVENT_CHERRYPICK_LAYOUT_SET,
     FIELD_COORDINATE,
     FIELD_PLATE_BARCODE,
     FIELD_ROOT_SAMPLE_ID,
     MONGO_DATETIME_FORMAT,
-    EVENT_CHERRYPICK_LAYOUT_SET,
     PLATE_EVENT_DESTINATION_CREATED,
 )
 from crawler.types import Sample
-
+from pandas import DataFrame
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +86,7 @@ def get_cherrypicked_samples(
         sql_engine = sqlalchemy.create_engine(
             (
                 f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}"  # type: ignore
-                f"@{config.MLWH_DB_HOST}"  # type: ignore
+                f"@{config.MLWH_DB_HOST}:{config.MLWH_DB_PORT}"  # type: ignore
             ),
             pool_recycle=3600,
         )
