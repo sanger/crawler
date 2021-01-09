@@ -57,15 +57,15 @@ def run(settings_module: str = "") -> None:
     time_key = "Time taken"
 
     mongo_versions_updated = {
-        FILTERED_POSITIVE_VERSION_0: { updated_key: False, time_key: 0.0 },
-        FILTERED_POSITIVE_VERSION_1: { updated_key: False, time_key: 0.0 },
-        FILTERED_POSITIVE_VERSION_2: { updated_key: False, time_key: 0.0 },
+        FILTERED_POSITIVE_VERSION_0: {updated_key: False, time_key: 0.0},
+        FILTERED_POSITIVE_VERSION_1: {updated_key: False, time_key: 0.0},
+        FILTERED_POSITIVE_VERSION_2: {updated_key: False, time_key: 0.0},
     }
 
     mlwh_versions_updated = {
-        FILTERED_POSITIVE_VERSION_0: { updated_key: False, time_key: 0.0 },
-        FILTERED_POSITIVE_VERSION_1: { updated_key: False, time_key: 0.0 },
-        FILTERED_POSITIVE_VERSION_2: { updated_key: False, time_key: 0.0 },
+        FILTERED_POSITIVE_VERSION_0: {updated_key: False, time_key: 0.0},
+        FILTERED_POSITIVE_VERSION_1: {updated_key: False, time_key: 0.0},
+        FILTERED_POSITIVE_VERSION_2: {updated_key: False, time_key: 0.0},
     }
 
     try:
@@ -148,22 +148,28 @@ def run(settings_module: str = "") -> None:
                 )
                 if mongo_updated:
                     logger.info(f"Finished updating {version} filtered positives in Mongo")
-                    
+
                     mongo_update_end_time = time.time()
                     mongo_versions_updated[version][updated_key] = True
-                    mongo_versions_updated[version][time_key] = round(mongo_update_end_time - mongo_update_start_time, 2)
+                    mongo_versions_updated[version][time_key] = round(
+                        mongo_update_end_time - mongo_update_start_time, 2
+                    )
 
                     logger.info(f"Updating {version} filtered positives in MLWH...")
                     mlwh_update_start_time = time.time()
 
-                    mlwh_updated = update_mlwh_filtered_positive_fields_batch_query(config, version_samples, version, update_timestamp)
+                    mlwh_updated = update_mlwh_filtered_positive_fields_batch_query(
+                        config, version_samples, version, update_timestamp
+                    )
 
                     if mlwh_updated:
                         logger.info(f"Finished updating {version} filtered positives in MLWH")
-    
+
                         mlwh_update_end_time = time.time()
                         mlwh_versions_updated[version][updated_key] = True
-                        mlwh_versions_updated[version][time_key] = round(mlwh_update_end_time - mlwh_update_start_time, 2)
+                        mlwh_versions_updated[version][time_key] = round(
+                            mlwh_update_end_time - mlwh_update_start_time, 2
+                        )
 
             logger.info("Finished updating databases")
         else:

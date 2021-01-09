@@ -32,7 +32,9 @@ def test_positive_legacy_mongo_samples_error_getting_samples(config):
             positive_legacy_mongo_samples(config)
 
 
-def test_positive_legacy_mongo_samples_returns_correct_samples_filtered_by_date(config, filtered_positive_testing_samples):
+def test_positive_legacy_mongo_samples_returns_correct_samples_filtered_by_date(
+    config, filtered_positive_testing_samples
+):
     result = positive_legacy_mongo_samples(config)
     expected_samples = filtered_positive_testing_samples[-2:]
 
@@ -46,7 +48,10 @@ def test_check_versions_set_returns_true_with_v0(config, filtered_positive_testi
     assert v0_version_set(config) is True
 
 
-def test_check_versions_set_returns_false_with_no_v0_samples(config, filtered_positive_testing_samples_no_v0):
+def test_check_versions_set_returns_false_with_no_v0_samples(
+    config,
+    filtered_positive_testing_samples_no_v0,
+):
     assert v0_version_set(config) is False
 
 

@@ -2,7 +2,7 @@ import logging
 from contextlib import contextmanager
 from datetime import datetime
 from types import ModuleType
-from typing import Dict, Iterator, List, Optional
+from typing import Dict, Iterator, List, Optional, Any
 
 import mysql.connector as mysql  # type: ignore
 import pyodbc  # type: ignore
@@ -261,7 +261,9 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
         mysql_conn.close()
 
 
-def run_mysql_execute_query(mysql_conn: CMySQLConnection, sql_query: str, values: List[Dict[str, str]], version: str, update_timestamp: datetime) -> None:
+def run_mysql_execute_query(
+    mysql_conn: CMySQLConnection, sql_query: str, values: List[Dict[str, str]], version: str, update_timestamp: datetime
+) -> None:
     """Writes the sample testing information into the MLWH, batched by positive and negative samples
 
     Arguments:
@@ -293,17 +295,15 @@ def run_mysql_execute_query(mysql_conn: CMySQLConnection, sql_query: str, values
 
             samples_id_batch: List[str] = [sample[MLWH_MONGODB_ID] for sample in samples_batch]
 
-            positive_in_p = ', '.join(list(map(lambda x: '%s', samples_id_batch)))
-            positive_args = [True, version, update_timestamp] 
+            positive_in_p = ", ".join(list(map(lambda x: "%s", samples_id_batch)))
+            positive_args: List[Any] = [True, version, update_timestamp]
             if len(samples_id_batch) > 0:
                 positive_sql_query = sql_query % positive_in_p
                 positive_string_args = positive_args + samples_id_batch
                 cursor.execute(positive_sql_query, tuple(positive_string_args))
 
             total_rows_affected += cursor.rowcount
-            logger.debug(
-                f"{cursor.rowcount} rows affected in MLWH."
-            )
+            logger.debug(f"{cursor.rowcount} rows affected in MLWH.")
 
             total_rows_affected += cursor.rowcount
             values_index += ROWS_PER_QUERY
@@ -314,9 +314,7 @@ def run_mysql_execute_query(mysql_conn: CMySQLConnection, sql_query: str, values
         # reports 1 per inserted row,
         # 2 per updated existing row,
         # and 0 per unchanged existing row
-        logger.debug(
-            f"A total of {total_rows_affected} rows were affected in MLWH."
-        )
+        logger.debug(f"A total of {total_rows_affected} rows were affected in MLWH.")
     except Exception:
         logger.error("MLWH database executemany transaction failed")
         raise
