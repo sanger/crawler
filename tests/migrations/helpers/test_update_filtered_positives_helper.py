@@ -13,6 +13,7 @@ from crawler.constants import (
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
+    FIELD_RESULT,
     MLWH_COORDINATE,
     MLWH_FILTERED_POSITIVE,
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
@@ -373,28 +374,28 @@ def test_biomek_labclass_by_centre_name(config):
     assert labclass_by_name["test centre 2"] == "test class 2"
 
 
-# ----- test update_dart_filtered_positive_fields method -----
+# ----- test update_dart_fields method -----
 
 
-def test_update_dart_filtered_positive_fields_throws_with_error_connecting_to_dart(config, mock_dart_conn):
+def test_update_dart_fields_throws_with_error_connecting_to_dart(config, mock_dart_conn):
     mock_dart_conn.side_effect = NotImplementedError("Boom!")
     with pytest.raises(Exception):
         update_dart_fields(config, [])
 
 
-def test_update_dart_filtered_positive_fields_throws_no_dart_connection(config, mock_dart_conn):
+def test_update_dart_fields_throws_no_dart_connection(config, mock_dart_conn):
     mock_dart_conn.return_value = None
     with pytest.raises(ValueError):
         update_dart_fields(config, [])
 
 
-def test_update_dart_filtered_positive_fields_returns_false_with_error_creating_cursor(config, mock_dart_conn):
+def test_update_dart_fields_returns_false_with_error_creating_cursor(config, mock_dart_conn):
     mock_dart_conn().cursor.side_effect = NotImplementedError("Boom!")
     result = update_dart_fields(config, [])
     assert result is False
 
 
-def test_update_dart_filtered_positive_fields_returns_false_error_adding_plate(config, mock_dart_conn):
+def test_update_dart_fields_returns_false_error_adding_plate(config, mock_dart_conn):
     with patch(
         "migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist",
         side_effect=Exception("Boom!"),
@@ -404,7 +405,7 @@ def test_update_dart_filtered_positive_fields_returns_false_error_adding_plate(c
         assert result is False
 
 
-def test_update_dart_filtered_positive_fields_non_pending_plate_does_not_update_wells(config, mock_dart_conn):
+def test_update_dart_fields_non_pending_plate_does_not_update_wells(config, mock_dart_conn):
     with patch(
         "migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist",
         return_value="not pending",
@@ -420,7 +421,7 @@ def test_update_dart_filtered_positive_fields_non_pending_plate_does_not_update_
             assert result is True
 
 
-def test_update_dart_filtered_positive_fields_returns_false_unable_to_determine_well_index(config, mock_dart_conn):
+def test_update_dart_fields_returns_false_unable_to_determine_well_index(config, mock_dart_conn):
     with patch(
         "migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist",
         return_value=DART_STATE_PENDING,
@@ -440,7 +441,7 @@ def test_update_dart_filtered_positive_fields_returns_false_unable_to_determine_
                 assert result is False
 
 
-def test_update_dart_filtered_positive_fields_returns_false_error_mapping_to_well_props(config, mock_dart_conn):
+def test_update_dart_fields_returns_false_error_mapping_to_well_props(config, mock_dart_conn):
     with patch(
         "migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist",
         return_value=DART_STATE_PENDING,
@@ -464,7 +465,7 @@ def test_update_dart_filtered_positive_fields_returns_false_error_mapping_to_wel
                     assert result is False
 
 
-def test_update_dart_filtered_positive_fields_returns_false_error_adding_well_properties(config, mock_dart_conn):
+def test_update_dart_fields_returns_false_error_adding_well_properties(config, mock_dart_conn):
     with patch(
         "migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist",
         return_value=DART_STATE_PENDING,
@@ -487,7 +488,7 @@ def test_update_dart_filtered_positive_fields_returns_false_error_adding_well_pr
                     assert result is False
 
 
-def test_update_dart_filtered_positive_fields_returns_true_multiple_new_plates(config, mock_dart_conn):
+def test_update_dart_fields_returns_true_multiple_new_plates(config, mock_dart_conn):
     with patch("migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist") as mock_add_plate:
         mock_add_plate.return_value = DART_STATE_PENDING
         with patch("migrations.helpers.update_filtered_positives_helper.get_dart_well_index") as mock_get_well_index:
@@ -508,16 +509,19 @@ def test_update_dart_filtered_positive_fields_returns_true_multiple_new_plates(c
                             FIELD_PLATE_BARCODE: "123",
                             FIELD_SOURCE: test_centre_name,
                             FIELD_COORDINATE: "A01",
+                            FIELD_RESULT: POSITIVE_RESULT_VALUE,
                         },
                         {
                             FIELD_PLATE_BARCODE: "ABC",
                             FIELD_SOURCE: test_centre_name,
                             FIELD_COORDINATE: "B03",
+                            FIELD_RESULT: POSITIVE_RESULT_VALUE,
                         },
                         {
                             FIELD_PLATE_BARCODE: "XYZ",
                             FIELD_SOURCE: test_centre_name,
                             FIELD_COORDINATE: "E11",
+                            FIELD_RESULT: POSITIVE_RESULT_VALUE,
                         },
                     ]
 
@@ -546,7 +550,7 @@ def test_update_dart_filtered_positive_fields_returns_true_multiple_new_plates(c
                     assert result is True
 
 
-def test_update_dart_filtered_positive_fields_returns_true_single_new_plate_multiple_wells(config, mock_dart_conn):
+def test_update_dart_fields_returns_true_single_new_plate_multiple_wells(config, mock_dart_conn):
     with patch("migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist") as mock_add_plate:
         mock_add_plate.return_value = DART_STATE_PENDING
         with patch("migrations.helpers.update_filtered_positives_helper.get_dart_well_index") as mock_get_well_index:
@@ -568,16 +572,25 @@ def test_update_dart_filtered_positive_fields_returns_true_single_new_plate_mult
                             FIELD_PLATE_BARCODE: test_plate_barcode,
                             FIELD_SOURCE: test_centre_name,
                             FIELD_COORDINATE: "A01",
+                            FIELD_RESULT: POSITIVE_RESULT_VALUE,
                         },
                         {
                             FIELD_PLATE_BARCODE: test_plate_barcode,
                             FIELD_SOURCE: test_centre_name,
                             FIELD_COORDINATE: "B03",
+                            FIELD_RESULT: POSITIVE_RESULT_VALUE,
                         },
                         {
                             FIELD_PLATE_BARCODE: test_plate_barcode,
                             FIELD_SOURCE: test_centre_name,
                             FIELD_COORDINATE: "E11",
+                            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+                        },
+                        {
+                            FIELD_PLATE_BARCODE: test_plate_barcode,
+                            FIELD_SOURCE: test_centre_name,
+                            FIELD_COORDINATE: "G07",
+                            FIELD_RESULT: "not positive",
                         },
                     ]
 
@@ -587,11 +600,12 @@ def test_update_dart_filtered_positive_fields_returns_true_single_new_plate_mult
                         mock_dart_conn().cursor(), test_plate_barcode, test_labware_class
                     )
 
-                    num_samples = len(samples)
-                    assert mock_get_well_index.call_count == num_samples
-                    assert mock_map.call_count == num_samples
-                    assert mock_set_well_props.call_count == num_samples
-                    for sample in samples:
+                    pos_samples = samples[:-1]
+                    num_pos_samples = len(pos_samples)
+                    assert mock_get_well_index.call_count == num_pos_samples 
+                    assert mock_map.call_count == num_pos_samples
+                    assert mock_set_well_props.call_count == num_pos_samples
+                    for sample in pos_samples:
                         mock_get_well_index.assert_any_call(sample[FIELD_COORDINATE])
                         mock_map.assert_any_call(sample)
                         mock_set_well_props.assert_any_call(
