@@ -193,22 +193,22 @@ def split_mongo_samples_by_version(
     samples_df = pd.DataFrame(samples)
 
     logger.debug("Merging sample and cherrypicked sample dataframes")
-    samples_merged = samples_df.merge(
-        cherrypicked_samples_df, how='outer', on=[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE], indicator=True
+    samples_merged_df = samples_df.merge(
+        cherrypicked_samples_df, how='outer', on=[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]
     )
 
+    samples_merged_df.loc[samples_merged_df['version'].isnull(), 'version'] = FILTERED_POSITIVE_VERSION_2
+
     logger.debug("Filtering sample dataframe for each version")
-    v0_samples_df = samples_merged[samples_merged['version'] == FILTERED_POSITIVE_VERSION_0]
-    v1_samples_df = samples_merged[samples_merged['version'] == FILTERED_POSITIVE_VERSION_1]
-    v2_samples_df = samples_merged[samples_merged['version'].isnull()]
 
-    for version_df in [v0_samples_df, v1_samples_df, v2_samples_df]:
-        version_df_dropped = version_df.drop(['version', '_merge'], axis=1, inplace=True)
+    samples_by_version = {}
 
-    samples_by_version = {
-        FILTERED_POSITIVE_VERSION_0: v0_samples_df.to_dict('records'),
-        FILTERED_POSITIVE_VERSION_1: v1_samples_df.to_dict('records'),
-        FILTERED_POSITIVE_VERSION_2: v2_samples_df.to_dict('records'),
-    }
+    for version in [FILTERED_POSITIVE_VERSION_0, FILTERED_POSITIVE_VERSION_1, FILTERED_POSITIVE_VERSION_2]:
+        version_samples_df = samples_merged_df[samples_merged_df['version'] == version]
+        version_df_dropped = version_samples_df.drop(['version'], axis=1)
+
+        version_samples = [ v.dropna().to_dict() for k,v in version_df_dropped.iterrows() ]
+
+        samples_by_version[version] = version_samples
 
     return samples_by_version
