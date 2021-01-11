@@ -11,7 +11,8 @@ from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.results import InsertOneResult
-
+import sqlalchemy  # type: ignore
+from sqlalchemy.engine.base import Engine  # type: ignore
 from crawler.constants import (
     DART_SET_PROP_STATUS_SUCCESS,
     DART_STATE,
@@ -20,13 +21,11 @@ from crawler.constants import (
     DART_STATE_PENDING,
 )
 from crawler.exceptions import DartStateError
-from crawler.helpers.general_helpers import get_config
 from crawler.sql_queries import (
     SQL_DART_ADD_PLATE,
     SQL_DART_GET_PLATE_PROPERTY,
     SQL_DART_SET_PLATE_PROPERTY,
     SQL_DART_SET_WELL_PROPERTY,
-    SQL_TEST_MLWH_CREATE,
 )
 
 logger = logging.getLogger(__name__)
@@ -127,9 +126,11 @@ def create_import_record(
     Returns:
         InsertOneResult -- the result of inserting this document
     """
-    logger.debug(f"Creating the status record for {centre['name']}")
+    logger.debug(f"Creating the import record for {centre['name']}")
+    logger.info(f"{docs_inserted} documents inserted into sample collection")
+    logger.debug(f"CSV file used: {file_name}")
 
-    status_doc = {
+    import_doc = {
         "date": datetime.now().isoformat(timespec="seconds"),
         "centre_name": centre["name"],
         "csv_file_used": file_name,
@@ -137,7 +138,7 @@ def create_import_record(
         "errors": errors,
     }
 
-    return import_collection.insert_one(status_doc)
+    return import_collection.insert_one(import_doc)
 
 
 def populate_centres_collection(collection: Collection, documents: List[Dict[str, str]], filter_field: str) -> None:
@@ -258,25 +259,6 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
         mysql_conn.close()
 
 
-# Set up a basic MLWH db for testing
-def init_warehouse_db_command():
-    """Drop and recreate required tables."""
-    logger.debug("Initialising the test MySQL warehouse database")
-    config, _settings_module = get_config("crawler.config.development")
-    mysql_conn = create_mysql_connection(config, False)
-    mysql_cursor = mysql_conn.cursor()
-
-    for result in mysql_cursor.execute(SQL_TEST_MLWH_CREATE, multi=True):
-        if result.with_rows:
-            result.fetchall()
-
-    mysql_conn.commit()
-    mysql_cursor.close()
-    mysql_conn.close()
-
-    logger.debug("Done")
-
-
 def create_dart_sql_server_conn(config: ModuleType) -> Optional[pyodbc.Connection]:
     """Create a SQL Server connection to DART with the given config parameters.
 
@@ -387,3 +369,10 @@ def add_dart_plate_if_doesnt_exist(cursor: pyodbc.Cursor, plate_barcode: str, bi
         raise DartStateError(f"DART plate {plate_barcode} should have a state")
 
     return state
+
+
+def create_mysql_connection_engine(connection_string: str, database: Optional[str] = None) -> Engine:
+    create_engine_string = f"mysql+pymysql://{connection_string}"
+    if database:
+        create_engine_string += f"/{database}"
+    return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)

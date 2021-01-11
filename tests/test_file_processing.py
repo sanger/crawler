@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, patch
 from bson.decimal128 import Decimal128  # type: ignore
 from bson.objectid import ObjectId
 from crawler.constants import (
-    COLLECTION_SAMPLES,
     COLLECTION_IMPORTS,
+    COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
     DART_STATE_PENDING,
     FIELD_BARCODE,
@@ -144,15 +144,14 @@ def test_process_files_dont_add_to_dart_mlwh_failed(
 
 
 def test_process_files_one_wrong_format(mongo_database, config, testing_files_for_process, testing_centres):
-    # Test using files in the files/TEST directory
-    # They include a rogue xlsx file dressed as csv file
-
+    """Test using files in the files/TEST directory; they include a rogue XLSX file dressed as CSV file."""
     _, mongo_database = mongo_database
 
-    centre_config = config.CENTRES[2]
+    # get the TEST centre
+    centre_config = next(filter(lambda centre: centre["prefix"] == "TEST", config.CENTRES))
     centre_config["sftp_root_read"] = "tmp/files"
     centre = Centre(config, centre_config)
-    centre.process_files(False)
+    centre.process_files(add_to_dart=False)
 
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
@@ -264,104 +263,123 @@ def test_row_required_fields_present(config):
 
 # tests for extracting information from field values
 def test_extract_plate_barcode_and_coordinate(config):
-    centre = Centre(config, config.CENTRES[0])
+    test_centre = config.CENTRES[0]
+    centre = Centre(config, test_centre)
     centre_file = CentreFile("some file", centre)
 
-    barcode_field = "RNA ID"
-    barcode_regex = r"^(.*)_([A-Z]\d\d)$"
+    barcode_field = test_centre["barcode_field"]
+    barcode_regex = test_centre["barcode_regex"]
 
     # typical format
-    assert centre_file.extract_plate_barcode_and_coordinate(
-        {"RNA ID": "AP-abc-12345678_H01"}, 0, barcode_field, barcode_regex
-    ) == (
+    typical = {"RNA ID": "AP-abc-12345678_H01"}
+    assert centre_file.extract_plate_barcode_and_coordinate(typical, 0, barcode_field, barcode_regex) == (
         "AP-abc-12345678",
         "H01",
     )
 
     # coordinate zero
-    assert centre_file.extract_plate_barcode_and_coordinate(
-        {"RNA ID": "AP-abc-12345678_A00"}, 0, barcode_field, barcode_regex
-    ) == (
+    coord_zero = {"RNA ID": "AP-abc-12345678_A00"}
+    assert centre_file.extract_plate_barcode_and_coordinate(coord_zero, 0, barcode_field, barcode_regex) == (
         "AP-abc-12345678",
         "A00",
     )
 
     # invalid coordinate format
-    assert centre_file.extract_plate_barcode_and_coordinate(
-        {"RNA ID": "AP-abc-12345678_H0"}, 0, barcode_field, barcode_regex
-    ) == (
+    invalid_coord = {"RNA ID": "AP-abc-12345678_H0"}
+    assert centre_file.extract_plate_barcode_and_coordinate(invalid_coord, 0, barcode_field, barcode_regex) == (
         "",
         "",
     )
 
     # missing underscore between plate barcode and coordinate
-    assert centre_file.extract_plate_barcode_and_coordinate(
-        {"RNA ID": "AP-abc-12345678H0"}, 0, barcode_field, barcode_regex
-    ) == (
+    missing = {"RNA ID": "AP-abc-12345678H0"}
+    assert centre_file.extract_plate_barcode_and_coordinate(missing, 0, barcode_field, barcode_regex) == (
         "",
         "",
     )
 
     # shorter plate barcode
-    assert centre_file.extract_plate_barcode_and_coordinate(
-        {"RNA ID": "DN1234567_H01"}, 0, barcode_field, barcode_regex
-    ) == (
+    short = {"RNA ID": "DN1234567_H01"}
+    assert centre_file.extract_plate_barcode_and_coordinate(short, 0, barcode_field, barcode_regex) == (
         "DN1234567",
         "H01",
     )
 
+    # from RT
+    rt = {"RNA ID": "`AP-abc-00020028_C11"}
+    assert centre_file.extract_plate_barcode_and_coordinate(rt, 0, barcode_field, barcode_regex) == (
+        "AP-abc-00020028",
+        "C11",
+    )
+
+    # white space and garbage characters
+    garbage = {"RNA ID": "   `£$%^&AP-abc-12345678_H01(*&^%$ ` `"}
+    assert centre_file.extract_plate_barcode_and_coordinate(garbage, 0, barcode_field, barcode_regex) == (
+        "AP-abc-12345678",
+        "H01",
+    )
+
+    # lowercase coordinates
+    lower_coord = {"RNA ID": "AP-abc-12345678_h01"}
+    assert centre_file.extract_plate_barcode_and_coordinate(lower_coord, 0, barcode_field, barcode_regex) == (
+        "",
+        "",
+    )
+
 
 # tests for parsing and formatting the csv file rows
-def test_parse_and_format_file_rows(config):
-    timestamp = "some timestamp"
+def test_parse_and_format_file_rows(config, freezer):
+    now = datetime.now()
     test_uuid = uuid.uuid4()
     centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "some file")
-    with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
-        with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
-            extra_fields_added = [
-                {
-                    "Root Sample ID": "1",
-                    "RNA ID": "RNA_0043_H09",
-                    "plate_barcode": "RNA_0043",
-                    "source": "Alderley",
-                    "coordinate": "H09",
-                    "line_number": 2,
-                    "Result": "Positive",
-                    "file_name": "some file",
-                    "file_name_date": None,
-                    "created_at": timestamp,
-                    "updated_at": timestamp,
-                    "Lab ID": None,
-                    "filtered_positive": True,
-                    "filtered_positive_version": "v2.3",
-                    "filtered_positive_timestamp": timestamp,
-                    "lh_sample_uuid": str(test_uuid),
-                }
-            ]
+    with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
+        extra_fields_added = [
+            {
+                "Root Sample ID": "1",
+                "RNA ID": "RNA_0043_H09",
+                "plate_barcode": "RNA_0043",
+                "source": "Alderley",
+                "coordinate": "H09",
+                "line_number": 2,
+                "Result": "Positive",
+                "file_name": "some file",
+                "file_name_date": None,
+                "created_at": now,
+                "updated_at": now,
+                "Lab ID": None,
+                "filtered_positive": True,
+                "filtered_positive_version": "v2.3",
+                "filtered_positive_timestamp": now,
+                "lh_sample_uuid": str(test_uuid),
+            }
+        ]
 
-            with StringIO() as fake_csv:
-                fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-                fake_csv.write("1,RNA_0043_H09,Positive\n")
-                fake_csv.seek(0)
+        with StringIO() as fake_csv:
+            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
+            fake_csv.write("1,RNA_0043_H09,Positive\n")
+            fake_csv.seek(0)
 
-                csv_to_test_reader = DictReader(fake_csv)
+            csv_to_test_reader = DictReader(fake_csv)
 
-                augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
-                assert augmented_data == extra_fields_added
-                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+            assert augmented_data == extra_fields_added
+            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
-            with StringIO() as fake_csv:
-                fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-                fake_csv.write("1,RNA_0043_,Positive\n")
-                fake_csv.seek(0)
 
-                csv_to_test_reader = DictReader(fake_csv)
+def test_parse_and_format_file_rows_with_invalid_rna_id(config):
+    centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "some file")
+    with StringIO() as fake_csv:
+        fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
+        fake_csv.write("1,RNA_0043_,Positive\n")
+        fake_csv.seek(0)
 
-                augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
-                assert augmented_data == []
+        csv_to_test_reader = DictReader(fake_csv)
 
-                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
-                assert centre_file.logging_collection.aggregator_types["TYPE 9"].count_errors == 1
+        augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+
+    assert augmented_data == []
+    assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+    assert centre_file.logging_collection.aggregator_types["TYPE 9"].count_errors == 1
 
 
 def test_filtered_row_with_extra_unrecognised_columns(config):
@@ -545,236 +563,229 @@ def test_filtered_row_with_ct_channel_columns(config):
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
-def test_parse_and_format_file_rows_to_add_file_details(config):
-    timestamp = "some timestamp"
+def test_parse_and_format_file_rows_to_add_file_details(config, freezer):
+    now = datetime.now()
     test_uuid = uuid.uuid4()
     centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "ASDF_200507_1340.csv")
-    with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
-        with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
+    with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
 
-            extra_fields_added = [
-                {
-                    "Root Sample ID": "1",
-                    "RNA ID": "RNA_0043_H09",
-                    "plate_barcode": "RNA_0043",
-                    "source": "Alderley",
-                    "coordinate": "H09",
-                    "line_number": 2,
-                    "file_name": "ASDF_200507_1340.csv",
-                    "file_name_date": datetime(2020, 5, 7, 13, 40),
-                    "created_at": timestamp,
-                    "updated_at": timestamp,
-                    "Result": "Positive",
-                    "Lab ID": None,
-                    "filtered_positive": True,
-                    "filtered_positive_version": "v2.3",
-                    "filtered_positive_timestamp": timestamp,
-                    "lh_sample_uuid": str(test_uuid),
-                },
-                {
-                    "Root Sample ID": "2",
-                    "RNA ID": "RNA_0043_B08",
-                    "plate_barcode": "RNA_0043",
-                    "source": "Alderley",
-                    "coordinate": "B08",
-                    "line_number": 3,
-                    "file_name": "ASDF_200507_1340.csv",
-                    "file_name_date": datetime(2020, 5, 7, 13, 40),
-                    "created_at": timestamp,
-                    "updated_at": timestamp,
-                    "Result": "Negative",
-                    "Lab ID": None,
-                    "filtered_positive": True,
-                    "filtered_positive_version": "v2.3",
-                    "filtered_positive_timestamp": timestamp,
-                    "lh_sample_uuid": str(test_uuid),
-                },
-            ]
+        extra_fields_added = [
+            {
+                "Root Sample ID": "1",
+                "RNA ID": "RNA_0043_H09",
+                "plate_barcode": "RNA_0043",
+                "source": "Alderley",
+                "coordinate": "H09",
+                "line_number": 2,
+                "file_name": "ASDF_200507_1340.csv",
+                "file_name_date": datetime(2020, 5, 7, 13, 40),
+                "created_at": now,
+                "updated_at": now,
+                "Result": "Positive",
+                "Lab ID": None,
+                "filtered_positive": True,
+                "filtered_positive_version": "v2.3",
+                "filtered_positive_timestamp": now,
+                "lh_sample_uuid": str(test_uuid),
+            },
+            {
+                "Root Sample ID": "2",
+                "RNA ID": "RNA_0043_B08",
+                "plate_barcode": "RNA_0043",
+                "source": "Alderley",
+                "coordinate": "B08",
+                "line_number": 3,
+                "file_name": "ASDF_200507_1340.csv",
+                "file_name_date": datetime(2020, 5, 7, 13, 40),
+                "created_at": now,
+                "updated_at": now,
+                "Result": "Negative",
+                "Lab ID": None,
+                "filtered_positive": True,
+                "filtered_positive_version": "v2.3",
+                "filtered_positive_timestamp": now,
+                "lh_sample_uuid": str(test_uuid),
+            },
+        ]
 
-            with StringIO() as fake_csv:
-                fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-                fake_csv.write("1,RNA_0043_H09,Positive\n")
-                fake_csv.write("2,RNA_0043_B08,Negative\n")
-                fake_csv.seek(0)
+        with StringIO() as fake_csv:
+            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
+            fake_csv.write("1,RNA_0043_H09,Positive\n")
+            fake_csv.write("2,RNA_0043_B08,Negative\n")
+            fake_csv.seek(0)
 
-                csv_to_test_reader = DictReader(fake_csv)
+            csv_to_test_reader = DictReader(fake_csv)
 
-                augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
-                assert augmented_data == extra_fields_added
-                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+            assert augmented_data == extra_fields_added
+            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
-def test_parse_and_format_file_rows_detects_duplicates(config):
-    timestamp = "some timestamp"
+def test_parse_and_format_file_rows_detects_duplicates(config, freezer):
+    now = datetime.now()
     test_uuid = uuid.uuid4()
     centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "ASDF_200507_1340.csv")
-    with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
-        with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
+    with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
 
-            extra_fields_added = [
-                {
-                    "Root Sample ID": "1",
-                    "RNA ID": "RNA_0043_H09",
-                    "plate_barcode": "RNA_0043",
-                    "source": "Alderley",
-                    "coordinate": "H09",
-                    "line_number": 2,
-                    "file_name": "ASDF_200507_1340.csv",
-                    "file_name_date": datetime(2020, 5, 7, 13, 40),
-                    "created_at": timestamp,
-                    "updated_at": timestamp,
-                    "Result": "Positive",
-                    "Lab ID": "Val",
-                    "filtered_positive": True,
-                    "filtered_positive_version": "v2.3",
-                    "filtered_positive_timestamp": timestamp,
-                    "lh_sample_uuid": str(test_uuid),
-                },
-            ]
+        extra_fields_added = [
+            {
+                "Root Sample ID": "1",
+                "RNA ID": "RNA_0043_H09",
+                "plate_barcode": "RNA_0043",
+                "source": "Alderley",
+                "coordinate": "H09",
+                "line_number": 2,
+                "file_name": "ASDF_200507_1340.csv",
+                "file_name_date": datetime(2020, 5, 7, 13, 40),
+                "created_at": now,
+                "updated_at": now,
+                "Result": "Positive",
+                "Lab ID": "Val",
+                "filtered_positive": True,
+                "filtered_positive_version": "v2.3",
+                "filtered_positive_timestamp": now,
+                "lh_sample_uuid": str(test_uuid),
+            },
+        ]
 
-            with StringIO() as fake_csv:
-                fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-                fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
-                fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
-                fake_csv.seek(0)
+        with StringIO() as fake_csv:
+            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
+            fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
+            fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
+            fake_csv.seek(0)
 
-                csv_to_test_reader = DictReader(fake_csv)
+            csv_to_test_reader = DictReader(fake_csv)
 
-                augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
-                assert augmented_data == extra_fields_added
+            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+            assert augmented_data == extra_fields_added
 
-                assert centre_file.logging_collection.aggregator_types["TYPE 5"].count_errors == 1
-                assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+            assert centre_file.logging_collection.aggregator_types["TYPE 5"].count_errors == 1
+            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
 def test_where_result_has_unexpected_value(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
 
-    with patch.object(centre_file, "get_now_timestamp", return_value="some timestamp"):
-        with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
+    with StringIO() as fake_csv:
+        fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
 
-            # where row has valid value - should pass
-            fake_csv.write("1,RNA_0043_H06,Positive,Val\n")
+        # where row has valid value - should pass
+        fake_csv.write("1,RNA_0043_H06,Positive,Val\n")
 
-            # where row has valid value - should pass
-            fake_csv.write("2,RNA_0043_H07,Negative,Val\n")
+        # where row has valid value - should pass
+        fake_csv.write("2,RNA_0043_H07,Negative,Val\n")
 
-            # where row has valid value - should pass
-            fake_csv.write("3,RNA_0043_H08,limit of detection,Val\n")
+        # where row has valid value - should pass
+        fake_csv.write("3,RNA_0043_H08,limit of detection,Val\n")
 
-            # where row has valid value - should pass
-            fake_csv.write("4,RNA_0043_H09,Void,Val\n")
+        # where row has valid value - should pass
+        fake_csv.write("4,RNA_0043_H09,Void,Val\n")
 
-            # where row has invalid value - should error
-            fake_csv.write("5,RNA_0043_H10,NotAValidResult,Val\n")
-            fake_csv.seek(0)
+        # where row has invalid value - should error
+        fake_csv.write("5,RNA_0043_H10,NotAValidResult,Val\n")
+        fake_csv.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv)
-            centre_file.parse_and_format_file_rows(csv_to_test_reader)
+        csv_to_test_reader = DictReader(fake_csv)
+        centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
-            # should create a specific error type for the row
-            assert centre_file.logging_collection.aggregator_types["TYPE 16"].count_errors == 1
-            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+        # should create a specific error type for the row
+        assert centre_file.logging_collection.aggregator_types["TYPE 16"].count_errors == 1
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
 
 def test_where_ct_channel_target_has_unexpected_value(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
 
-    with patch.object(centre_file, "get_now_timestamp", return_value="some timestamp"):
-        with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Target\n")
+    with StringIO() as fake_csv:
+        fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Target\n")
 
-            # where row has valid value - should pass
-            fake_csv.write("1,RNA_0043_H09,Positive,Val,S gene\n")
+        # where row has valid value - should pass
+        fake_csv.write("1,RNA_0043_H09,Positive,Val,S gene\n")
 
-            # where row is empty - should pass
-            fake_csv.write("2,RNA_0043_H10,Positive,Val,\n")
+        # where row is empty - should pass
+        fake_csv.write("2,RNA_0043_H10,Positive,Val,\n")
 
-            # where row has invalid value - should error
-            fake_csv.write("2,RNA_0043_H11,Positive,Val,NotATarget\n")
-            fake_csv.seek(0)
+        # where row has invalid value - should error
+        fake_csv.write("2,RNA_0043_H11,Positive,Val,NotATarget\n")
+        fake_csv.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv)
-            centre_file.parse_and_format_file_rows(csv_to_test_reader)
+        csv_to_test_reader = DictReader(fake_csv)
+        centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
-            # should create a specific error type for the row
-            assert centre_file.logging_collection.aggregator_types["TYPE 17"].count_errors == 1
-            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+        # should create a specific error type for the row
+        assert centre_file.logging_collection.aggregator_types["TYPE 17"].count_errors == 1
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
 
 def test_where_ct_channel_result_has_unexpected_value(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
 
-    with patch.object(centre_file, "get_now_timestamp", return_value="some timestamp"):
-        with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Result\n")
-            # row with valid value - should pass
-            fake_csv.write("1,RNA_0043_H09,Negative,Val,Inconclusive\n")
+    with StringIO() as fake_csv:
+        fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Result\n")
+        # row with valid value - should pass
+        fake_csv.write("1,RNA_0043_H09,Negative,Val,Inconclusive\n")
 
-            # row with invalid value - should error
-            fake_csv.write("2,RNA_0043_H10,Negative,Val,NotAResult\n")
+        # row with invalid value - should error
+        fake_csv.write("2,RNA_0043_H10,Negative,Val,NotAResult\n")
 
-            # row with empty value - should pass
-            fake_csv.write("2,RNA_0043_H11,Negative,Val,\n")
-            fake_csv.seek(0)
+        # row with empty value - should pass
+        fake_csv.write("2,RNA_0043_H11,Negative,Val,\n")
+        fake_csv.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv)
-            centre_file.parse_and_format_file_rows(csv_to_test_reader)
+        csv_to_test_reader = DictReader(fake_csv)
+        centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
-            # should create a specific error type for the row
-            assert centre_file.logging_collection.aggregator_types["TYPE 18"].count_errors == 1
-            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+        # should create a specific error type for the row
+        assert centre_file.logging_collection.aggregator_types["TYPE 18"].count_errors == 1
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
 
 def test_changes_ct_channel_cq_value_data_type(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
 
-    with patch.object(centre_file, "get_now_timestamp", return_value="some timestamp"):
-        with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Cq,CH2-Cq,CH3-Cq,CH4-Cq\n")
+    with StringIO() as fake_csv:
+        fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Cq,CH2-Cq,CH3-Cq,CH4-Cq\n")
 
-            fake_csv.write("1,RNA_0043_H09,Positive,Val,24.012833772,25.012833772,26.012833772,27.012833772\n")
-            fake_csv.seek(0)
+        fake_csv.write("1,RNA_0043_H09,Positive,Val,24.012833772,25.012833772,26.012833772,27.012833772\n")
+        fake_csv.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv)
+        csv_to_test_reader = DictReader(fake_csv)
 
-            augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
-            assert type(augmented_data[0][FIELD_CH1_CQ]) == Decimal128
-            assert type(augmented_data[0][FIELD_CH2_CQ]) == Decimal128
-            assert type(augmented_data[0][FIELD_CH3_CQ]) == Decimal128
-            assert type(augmented_data[0][FIELD_CH4_CQ]) == Decimal128
+        augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+        assert type(augmented_data[0][FIELD_CH1_CQ]) == Decimal128
+        assert type(augmented_data[0][FIELD_CH2_CQ]) == Decimal128
+        assert type(augmented_data[0][FIELD_CH3_CQ]) == Decimal128
+        assert type(augmented_data[0][FIELD_CH4_CQ]) == Decimal128
 
 
 def test_where_ct_channel_cq_value_is_not_numeric(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
 
-    with patch.object(centre_file, "get_now_timestamp", return_value="some timestamp"):
-        with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Cq\n")
+    with StringIO() as fake_csv:
+        fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Cq\n")
 
-            # where row has valid value - should pass
-            fake_csv.write("1,RNA_0043_H09,Positive,Val,24.012833772\n")
+        # where row has valid value - should pass
+        fake_csv.write("1,RNA_0043_H09,Positive,Val,24.012833772\n")
 
-            # where row has missing value - should pass
-            fake_csv.write("1,RNA_0043_H09,Positive,Val,\n")
+        # where row has missing value - should pass
+        fake_csv.write("1,RNA_0043_H09,Positive,Val,\n")
 
-            # where row has invalid value - should error
-            fake_csv.write("2,RNA_0043_H10,Positive,Val,NotANumber\n")
-            fake_csv.seek(0)
+        # where row has invalid value - should error
+        fake_csv.write("2,RNA_0043_H10,Positive,Val,NotANumber\n")
+        fake_csv.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv)
-            centre_file.parse_and_format_file_rows(csv_to_test_reader)
+        csv_to_test_reader = DictReader(fake_csv)
+        centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
-            # should create a specific error type for the row
-            assert centre_file.logging_collection.aggregator_types["TYPE 19"].count_errors == 1
-            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+        # should create a specific error type for the row
+        assert centre_file.logging_collection.aggregator_types["TYPE 19"].count_errors == 1
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
 
 def test_is_within_cq_range(config):
@@ -793,58 +804,56 @@ def test_where_ct_channel_cq_value_is_not_within_range(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
 
-    with patch.object(centre_file, "get_now_timestamp", return_value="some timestamp"):
-        with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Cq\n")
+    with StringIO() as fake_csv:
+        fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Cq\n")
 
-            # where row has valid value - should pass
-            fake_csv.write("1,RNA_0043_H09,Positive,Val,24.012833772\n")
+        # where row has valid value - should pass
+        fake_csv.write("1,RNA_0043_H09,Positive,Val,24.012833772\n")
 
-            # where row has missing value - should pass
-            fake_csv.write("1,RNA_0043_H09,Positive,Val,\n")
+        # where row has missing value - should pass
+        fake_csv.write("1,RNA_0043_H09,Positive,Val,\n")
 
-            # where row has low value - should error
-            fake_csv.write("2,RNA_0043_H10,Positive,Val,-12.18282273\n")
+        # where row has low value - should error
+        fake_csv.write("2,RNA_0043_H10,Positive,Val,-12.18282273\n")
 
-            # where row has low value - should error
-            fake_csv.write("3,RNA_0043_H11,Positive,Val,100.01290002\n")
-            fake_csv.seek(0)
+        # where row has low value - should error
+        fake_csv.write("3,RNA_0043_H11,Positive,Val,100.01290002\n")
+        fake_csv.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv)
-            centre_file.parse_and_format_file_rows(csv_to_test_reader)
+        csv_to_test_reader = DictReader(fake_csv)
+        centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
-            # should create a specific error type for the row
-            assert centre_file.logging_collection.aggregator_types["TYPE 20"].count_errors == 2
-            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 2
+        # should create a specific error type for the row
+        assert centre_file.logging_collection.aggregator_types["TYPE 20"].count_errors == 2
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 2
 
 
 def test_where_positive_result_does_not_align_with_ct_channel_results(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
 
-    with patch.object(centre_file, "get_now_timestamp", return_value="some timestamp"):
-        with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Result,CH2-Result,CH3-Result,CH4-Result\n")
+    with StringIO() as fake_csv:
+        fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Result,CH2-Result,CH3-Result,CH4-Result\n")
 
-            # row where no values for channel results - should pass
-            fake_csv.write("1,RNA_0043_H09,Positive,Val,,,,\n")
+        # row where no values for channel results - should pass
+        fake_csv.write("1,RNA_0043_H09,Positive,Val,,,,\n")
 
-            # row where result value and channel values all positive - should pass
-            fake_csv.write("2,RNA_0043_H10,Positive,Val,Positive,Positive,Positive,Positive\n")
+        # row where result value and channel values all positive - should pass
+        fake_csv.write("2,RNA_0043_H10,Positive,Val,Positive,Positive,Positive,Positive\n")
 
-            # row where channel values are mixed but at least one is positive - should pass
-            fake_csv.write("3,RNA_0043_H11,Positive,Val,Positive,Negative,Inconclusive,Void\n")
+        # row where channel values are mixed but at least one is positive - should pass
+        fake_csv.write("3,RNA_0043_H11,Positive,Val,Positive,Negative,Inconclusive,Void\n")
 
-            # row where channel values are all negative, inconclusive or void - should fail
-            fake_csv.write("4,RNA_0043_H12,Positive,Val,Negative,Negative,Inconclusive,Void\n")
-            fake_csv.seek(0)
+        # row where channel values are all negative, inconclusive or void - should fail
+        fake_csv.write("4,RNA_0043_H12,Positive,Val,Negative,Negative,Inconclusive,Void\n")
+        fake_csv.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv)
-            centre_file.parse_and_format_file_rows(csv_to_test_reader)
+        csv_to_test_reader = DictReader(fake_csv)
+        centre_file.parse_and_format_file_rows(csv_to_test_reader)
 
-            # should create a specific error type for the row
-            assert centre_file.logging_collection.aggregator_types["TYPE 21"].count_errors == 1
-            assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+        # should create a specific error type for the row
+        assert centre_file.logging_collection.aggregator_types["TYPE 21"].count_errors == 1
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
 
 def test_check_for_required_headers(config):
@@ -1566,22 +1575,21 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
 
 
 # tests for updating docs with source plate uuids
-def test_new_mongo_source_plate(config):
+def test_new_mongo_source_plate(config, freezer):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
-    timestamp = datetime.now()
+    now = datetime.now()
     test_uuid = uuid.uuid4()
-    with patch.object(centre_file, "get_now_timestamp", return_value=timestamp):
-        with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
-            plate_barcode = "abc123"
-            lab_id = "AP"
-            source_plate = centre_file.new_mongo_source_plate(plate_barcode, lab_id)
+    with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
+        plate_barcode = "abc123"
+        lab_id = "AP"
+        source_plate = centre_file.new_mongo_source_plate(plate_barcode, lab_id)
 
-            assert source_plate[FIELD_LH_SOURCE_PLATE_UUID] == str(test_uuid)
-            assert source_plate[FIELD_BARCODE] == plate_barcode
-            assert source_plate[FIELD_LAB_ID] == lab_id
-            assert source_plate[FIELD_UPDATED_AT] == timestamp
-            assert source_plate[FIELD_CREATED_AT] == timestamp
+        assert source_plate[FIELD_LH_SOURCE_PLATE_UUID] == str(test_uuid)
+        assert source_plate[FIELD_BARCODE] == plate_barcode
+        assert source_plate[FIELD_LAB_ID] == lab_id
+        assert source_plate[FIELD_UPDATED_AT] == now
+        assert source_plate[FIELD_CREATED_AT] == now
 
 
 def test_docs_to_insert_updated_with_source_plate_uuids_handles_mongo_collection_error(config):

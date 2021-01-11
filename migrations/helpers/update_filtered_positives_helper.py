@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from types import ModuleType
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from crawler.constants import (
     COLLECTION_SAMPLES,
@@ -35,6 +35,8 @@ from crawler.helpers.general_helpers import (
 )
 from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE
 from crawler.types import Sample
+from migrations.helpers.shared_helper import extract_required_cp_info, get_cherrypicked_samples
+from migrations.helpers.shared_helper import remove_cherrypicked_samples as remove_cp_samples
 from more_itertools import groupby_transform
 
 logger = logging.getLogger(__name__)
@@ -69,12 +71,12 @@ def pending_plate_barcodes_from_dart(config: ModuleType) -> List[str]:
     return plate_barcodes
 
 
-def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[str]) -> List[Sample]:
+def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: Optional[List[str]] = None) -> List[Sample]:
     """Fetch positive samples from Mongo contained within specified plates.
 
     Arguments:
         config {ModuleType} -- application config specifying database details
-        plate_barcodes {List[str]} -- barcodes of plates whose samples we are concerned with
+        plate_barcodes {Optional[List[str]]} -- barcodes of plates whose samples we are concerned with
 
     Returns:
         List[Dict[str, str]] -- List of positive samples contained within specified plates
@@ -83,17 +85,35 @@ def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: List[
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
+        pipeline = [{"$match": {FIELD_RESULT: {"$eq": POSITIVE_RESULT_VALUE}}}]
+
+        if plate_barcodes is not None:
+            pipeline.append({"$match": {FIELD_PLATE_BARCODE: {"$in": plate_barcodes}}})  # type: ignore
+
         # this should take everything from the cursor find into RAM memory
         # (assuming you have enough memory)
         # should we project to an object that has fewer fields?
-        return list(
-            samples_collection.find(
-                {
-                    FIELD_RESULT: {"$eq": POSITIVE_RESULT_VALUE},
-                    FIELD_PLATE_BARCODE: {"$in": plate_barcodes},
-                }
-            )
-        )
+        return list(samples_collection.aggregate(pipeline))
+
+
+def remove_cherrypicked_samples(config: ModuleType, samples: List[Sample]) -> List[Sample]:
+    """Filters an input list of samples for those that have not been cherrypicked.
+
+    Arguments:
+        config {ModuleType} -- application config specifying database details
+        samples {List[Sample]} -- the list of samples to filter
+
+    Returns:
+        List[Sample] -- non-cherrypicked samples
+    """
+    root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
+    cp_samples_df = get_cherrypicked_samples(config, list(root_sample_ids), list(plate_barcodes))
+
+    if cp_samples_df is not None and not cp_samples_df.empty:
+        cp_samples = cp_samples_df[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()
+        return remove_cp_samples(samples, cp_samples)
+    else:
+        return samples
 
 
 def update_filtered_positive_fields(
@@ -209,6 +229,8 @@ def update_dart_fields(config: ModuleType, samples: List[Sample]) -> bool:
     dart_updated_successfully = True
     labclass_by_centre_name = biomek_labclass_by_centre_name(config.CENTRES)  # type:ignore
     try:
+        logger.info("Writing to DART")
+
         cursor = sql_server_connection.cursor()
 
         for plate_barcode, samples_in_plate in groupby_transform(
@@ -239,6 +261,8 @@ def update_dart_fields(config: ModuleType, samples: List[Sample]) -> bool:
                 logger.exception(e)
                 cursor.rollback()
                 dart_updated_successfully = False
+
+        logger.info("Updating DART completed")
     except Exception as e:
         logger.error("Failed updating DART")
         logger.exception(e)

@@ -136,19 +136,23 @@ A sample is filtered positive if:
 More information on this version can be found on [this](https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/Fit+to+pick+-+v2)
 Confluence page.
 
-#### Propagating Filtered Positive version changes to MongoDB, MLWH and DART
+#### Propagating Filtered Positive version changes to MongoDB, MLWH and (optional) DART 
 
 On changing the positive filtering version/definition, all unpicked samples stored in MongoDB, MLWH and DART need
-updating to determine whether they are still filtered positive under the new rules, and can therefore be picked in DART.
+updating to determine whether they are still filtered positive under the new rules, and can therefore be cherrypicked.
 In order to keep the databases in sync, the update process for all is performed in a single manual migration
-(update_filtered_positives) which identifies unpicked wells, re-determines their filtered positive value, and updates
+(update_filtered_positives) which identifies unpicked samples, re-determines their filtered positive value, and updates
 the databases.
 
 Usage (inside pipenv shell):
 
     python run_migration.py update_filtered_positives
+    OR
+    python run_migration.py update_filtered_positives omit_dart
 
-The process does not duplicate any data, instead updates existing entries.
+By default, the migration will attempt to use DART, as it will safely fail if DART cannot be accessed, hence warning
+the user to reconsider what they are doing. However, using DART can be omitted by including the `omit_dart` flag.
+Neither process duplicates any data, instead updating existing entries.
 
 ### Migrating legacy data to DART
 
@@ -210,6 +214,23 @@ Flake8 is used for linting, to execute:
 A little convenience script can be used to run the formatting, type checking and linting:
 
     ./forlint.sh
+
+## Docker
+
+If you do not have root access pyodbc will not work if you use brew
+Using the docker compose you can set up the full stack and it will also set the correct environment variables
+
+To build the containers:
+
+    docker-compose up
+
+To run the tests:
+
+You will need to find the id of the container with image name crawler_runner
+
+    docker exec -ti <container_id> python -m pytest -vs
+
+There is now a volume for the runner so there is hot reloading i.e. changes in the code and tests will be updated when you rerun tests.
 
 ## Miscellaneous
 
