@@ -602,7 +602,7 @@ def test_update_dart_fields_returns_true_single_new_plate_multiple_wells(config,
 
                     pos_samples = samples[:-1]
                     num_pos_samples = len(pos_samples)
-                    assert mock_get_well_index.call_count == num_pos_samples 
+                    assert mock_get_well_index.call_count == num_pos_samples
                     assert mock_map.call_count == num_pos_samples
                     assert mock_set_well_props.call_count == num_pos_samples
                     for sample in pos_samples:

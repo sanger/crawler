@@ -13,7 +13,6 @@ from crawler.constants import (
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_MONGODB_ID,
     FIELD_PLATE_BARCODE,
-    FIELD_RESULT,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_UPDATED_AT,
     MONGO_DATETIME_FORMAT,
@@ -150,9 +149,7 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
         logger.exception(e)
 
 
-def get_samples(
-    samples_collection: Collection, start_datetime: datetime, end_datetime: datetime
-) -> List[Sample]:
+def get_samples(samples_collection: Collection, start_datetime: datetime, end_datetime: datetime) -> List[Sample]:
     logger.debug(f"Selecting positive samples between {start_datetime} and {end_datetime}")
 
     match = {
