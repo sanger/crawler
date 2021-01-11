@@ -43,7 +43,7 @@ from pymongo.operations import UpdateOne
 # * Do not add samples to DART which have already been cherry-picked
 # * Only add positive samples to DART
 ####
-# 1. get samples from mongo between these time ranges that are positive
+# 1. get samples from mongo between these time ranges
 # 2. of these, find which have been cherry-picked and remove them from the list
 # 3. add the UUID fields if not present
 # 4. update samples in mongo updated in either of the above two steps (would expect the same set of samples from both
@@ -86,8 +86,8 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
 
             samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-            # 1. get samples from mongo between these time ranges that are positive
-            samples = get_positive_samples(samples_collection, start_datetime, end_datetime)
+            # 1. get samples from mongo between these time ranges
+            samples = get_samples(samples_collection, start_datetime, end_datetime)
 
             if not samples:
                 logger.info("No samples in this time range.")
@@ -150,16 +150,15 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
         logger.exception(e)
 
 
-def get_positive_samples(
+def get_samples(
     samples_collection: Collection, start_datetime: datetime, end_datetime: datetime
 ) -> List[Sample]:
     logger.debug(f"Selecting positive samples between {start_datetime} and {end_datetime}")
 
     match = {
         "$match": {
-            # 1. First filter by the start and end dates
+            # Filter by the start and end dates
             FIELD_CREATED_AT: {"$gte": start_datetime, "$lte": end_datetime},
-            FIELD_RESULT: {"$regex": "^positive", "$options": "i"},
         }
     }
 

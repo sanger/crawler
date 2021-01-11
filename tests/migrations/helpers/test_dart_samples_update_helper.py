@@ -21,7 +21,7 @@ from crawler.constants import (
 )
 from migrations.helpers.dart_samples_update_helper import (
     add_sample_uuid_field,
-    get_positive_samples,
+    get_samples,
     migrate_all_dbs,
     new_mongo_source_plate,
     samples_updated_with_source_plate_uuids,
@@ -99,7 +99,7 @@ def generate_example_samples(range, start_datetime):
 # ----- helper method tests -----
 
 
-def test_get_positive_samples(mongo_database):
+def test_get_samples(mongo_database):
     _, mongo_db = mongo_database
 
     start_datetime = datetime(year=2020, month=5, day=10, hour=15, minute=10)
@@ -110,8 +110,8 @@ def test_get_positive_samples(mongo_database):
 
     assert mongo_db.samples.count_documents({}) == 8
 
-    # although 6 samples would be created, test that we are selecting only a subset using dates
-    assert len(get_positive_samples(mongo_db.samples, start_datetime, (start_datetime + timedelta(days=2)))) == 4
+    # although 6 samples would be created, test that we are selecting only a subset using dates, including the -ve one
+    assert len(get_samples(mongo_db.samples, start_datetime, (start_datetime + timedelta(days=2)))) == 5
 
 
 def test_add_sample_uuid_field():
@@ -346,7 +346,7 @@ def test_migrate_all_dbs_with_cherry_picked_samples_mocked(
 
             migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))
 
-            samples = get_positive_samples(mongo_db.samples, start_datetime, end_datetime)
+            samples = get_samples(mongo_db.samples, start_datetime, end_datetime)
 
             mock_remove_cherrypicked_samples.assert_called_once_with(
                 samples, [[cherry_picked_sample[FIELD_ROOT_SAMPLE_ID][0], cherry_picked_sample[FIELD_PLATE_BARCODE][0]]]
