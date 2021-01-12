@@ -47,7 +47,7 @@ def mongo_samples_by_date(config: ModuleType, start_datetime: datetime, end_date
         return list(
             samples_collection.find(
                 {
-                    FIELD_CREATED_AT: {"$gte": start_datetime, "$lte": end_datetime},
+                    FIELD_CREATED_AT: {"$gte": start_datetime, "$lt": end_datetime},
                 }
             )
         )

@@ -109,7 +109,7 @@ def run(settings_module: str = "", s_start_datetime: str = "", s_end_datetime: s
                 continue_migration = False
 
         if continue_migration:
-            logger.info("Selecting legacy samples from Mongo...")
+            logger.info(f"Selecting legacy samples from Mongo between {start_datetime} and {end_datetime}...")
             samples = mongo_samples_by_date(config, start_datetime, end_datetime)
 
             legacy_samples_num = len(samples)
