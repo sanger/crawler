@@ -127,7 +127,8 @@ run before - do you still wish to proceed? (yes/no):"
                 V0_V1_CUTOFF_TIMESTAMP,
             )
             if v0_cp_samples_df is None:
-                raise Exception
+                raise Exception("Unable to determine cherry-picked sample - potentially error connecting to MySQL")
+
             logger.debug(f"Found {len(v0_cp_samples_df.index)} v0 cherrypicked samples")
 
             logger.info("Getting v1 cherrypicked samples from MLWH")
@@ -140,7 +141,8 @@ run before - do you still wish to proceed? (yes/no):"
                 V1_V2_CUTOFF_TIMESTAMP,
             )
             if v1_cp_samples_df is None:
-                raise Exception
+                raise Exception("Unable to determine cherry-picked sample - potentially error connecting to MySQL")
+
             logger.debug(f"Found {len(v1_cp_samples_df.index)} v1 cherrypicked samples")
 
             logger.info("Splitting samples by version...")
