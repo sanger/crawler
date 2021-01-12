@@ -49,7 +49,7 @@ def mongo_samples_by_date(config: ModuleType, start_datetime: datetime, end_date
                 {
                     FIELD_CREATED_AT: {"$gte": start_datetime, "$lte": end_datetime},
                 }
-            ).limit(100000)
+            )
         )
 
 
@@ -183,29 +183,35 @@ def split_mongo_samples_by_version(
     Returns:
         samples_by_version {Dict[List[Sample]]} -- Samples split by version
     """
-    cp_samples_df_v0["version"] = FILTERED_POSITIVE_VERSION_0
-    cp_samples_df_v1["version"] = FILTERED_POSITIVE_VERSION_1
-    
-    cherrypicked_samples_df = pd.concat([cp_samples_df_v0, cp_samples_df_v1])
-    samples_df = pd.DataFrame(samples)
+    v0_cp_samples = []
+    if not cp_samples_df_v0.empty:
+        v0_cp_samples = cp_samples_df_v0[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()  # noqa: E501
 
-    logger.debug("Merging sample and cherrypicked sample dataframes")
-    samples_merged_df = samples_df.merge(
-        cherrypicked_samples_df, how='outer', on=[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]
-    )
+    v1_cp_samples = []
+    if not cp_samples_df_v1.empty:
+        v1_cp_samples = cp_samples_df_v1[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()  # noqa: E501
 
-    samples_merged_df.loc[samples_merged_df['version'].isnull(), 'version'] = FILTERED_POSITIVE_VERSION_2
+    v0_samples = []
+    v1_samples = []
+    v2_samples = []
 
-    logger.debug("Filtering sample dataframe for each version")
+    counter = 0
+    for sample in samples:
+        if [sample[FIELD_ROOT_SAMPLE_ID], sample[FIELD_PLATE_BARCODE]] in v0_cp_samples:
+            v0_samples.append(sample)
+        elif [sample[FIELD_ROOT_SAMPLE_ID], sample[FIELD_PLATE_BARCODE]] in v1_cp_samples:
+            v1_samples.append(sample)
+        else:
+            v2_samples.append(sample)
+        counter += 1
 
-    samples_by_version = {}
+        if counter%10000 == 0:
+            logger.debug(f"Split {counter} samples by version")
 
-    for version in [FILTERED_POSITIVE_VERSION_0, FILTERED_POSITIVE_VERSION_1, FILTERED_POSITIVE_VERSION_2]:
-        version_samples_df = samples_merged_df[samples_merged_df['version'] == version]
-        version_df_dropped = version_samples_df.drop(['version'], axis=1)
-
-        version_samples = [ v.dropna().to_dict() for k,v in version_df_dropped.iterrows() ]
-
-        samples_by_version[version] = version_samples
+    samples_by_version = {
+        FILTERED_POSITIVE_VERSION_0: v0_samples,
+        FILTERED_POSITIVE_VERSION_1: v1_samples,
+        FILTERED_POSITIVE_VERSION_2: v2_samples,
+     }
 
     return samples_by_version
