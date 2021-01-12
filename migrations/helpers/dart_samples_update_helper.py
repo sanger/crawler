@@ -48,7 +48,8 @@ from pymongo.operations import UpdateOne
 # 4. update samples in mongo updated in either of the above two steps (would expect the same set of samples from both
 #       steps)
 # 5. update the MLWH (should be an idempotent operation)
-# 6. add all the plates of the positive samples we've selected in step 1 above, to DART
+# 6. add all the plates with non-cherrypicked samples (determined in step 2) to DART, as well as any positive samples
+#       in these plates
 
 
 logger = logging.getLogger(__name__)
@@ -140,7 +141,8 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
                 # 5. update the MLWH (should be an idempotent operation)
                 run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
 
-            # 6. add all the plates of the positive samples we've selected in step 1 above, to DART
+            # 6. add all the plates with non-cherrypicked samples (determined in step 2) to DART, as well as any
+            #       positive samples in these plates
             update_dart_fields(config, samples)
         else:
             logger.info("No documents found for this timestamp range, nothing to insert or update in MLWH or DART")
