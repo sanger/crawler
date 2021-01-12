@@ -26,7 +26,6 @@ from crawler.db import (
     get_mongo_collection,
     get_mongo_db,
     run_mysql_executemany_query,
-    run_mysql_execute_query,
     set_dart_well_properties,
 )
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
@@ -144,7 +143,6 @@ def update_filtered_positive_fields(
 
     version = filtered_positive_identifier.version
 
-    # Expect all samples to be passed into here to have a positive result
     for sample in samples:
         sample[FIELD_FILTERED_POSITIVE] = filtered_positive_identifier.is_positive(sample)
         sample[FIELD_FILTERED_POSITIVE_VERSION] = version
@@ -167,36 +165,51 @@ def update_mongo_filtered_positive_fields(
     """
     with create_mongo_client(config) as client:
         mongo_db = get_mongo_db(config, client)
-
-        # get ids of those that are filtered positive, and those that aren't
-        all_ids: List[str] = [sample[FIELD_MONGODB_ID] for sample in samples]
-        filtered_positive_ids: List[str] = [
-            sample[FIELD_MONGODB_ID] for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] is True, samples))
-        ]
-        filtered_negative_ids = [mongo_id for mongo_id in all_ids if mongo_id not in filtered_positive_ids]
-
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
-        samples_collection.update_many(
-            {FIELD_MONGODB_ID: {"$in": filtered_positive_ids}},
-            {
-                "$set": {
-                    FIELD_FILTERED_POSITIVE: True,
-                    FIELD_FILTERED_POSITIVE_VERSION: version,
-                    FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
-                }
-            },
+
+        num_samples = len(samples)
+        SAMPLES_PER_QUERY = 15000
+        samples_index = 0
+        logger.debug(
+            f"Attempting to update {num_samples} rows in Mongo in batches of {SAMPLES_PER_QUERY}"
         )
-        samples_collection.update_many(
-            {FIELD_MONGODB_ID: {"$in": filtered_negative_ids}},
-            {
-                "$set": {
-                    FIELD_FILTERED_POSITIVE: False,
-                    FIELD_FILTERED_POSITIVE_VERSION: version,
-                    FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
-                }
-            },
-        )
-    return True
+        while samples_index < num_samples:
+            logger.debug(f"Updating records between {samples_index} and {samples_index + SAMPLES_PER_QUERY}")
+
+            samples_batch = samples[samples_index : (samples_index + SAMPLES_PER_QUERY)]
+
+            # get ids of those that are filtered positive, and those that aren't
+            batch_ids: List[str] = [sample[FIELD_MONGODB_ID] for sample in samples_batch]
+            filtered_positive_ids: List[str] = [
+                sample[FIELD_MONGODB_ID] for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] is True, samples_batch))
+            ]
+
+            filtered_negative_ids = [mongo_id for mongo_id in batch_ids if mongo_id not in filtered_positive_ids]
+            samples_collection.update_many(
+                {FIELD_MONGODB_ID: {"$in": filtered_positive_ids}},
+                {
+                    "$set": {
+                        FIELD_FILTERED_POSITIVE: True,
+                        FIELD_FILTERED_POSITIVE_VERSION: version,
+                        FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
+                    }
+                },
+            )
+
+            samples_collection.update_many(
+                {FIELD_MONGODB_ID: {"$in": filtered_negative_ids}},
+                {
+                    "$set": {
+                        FIELD_FILTERED_POSITIVE: False,
+                        FIELD_FILTERED_POSITIVE_VERSION: version,
+                        FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
+                    }
+                },
+            )
+
+            samples_index += SAMPLES_PER_QUERY
+            logger.debug("")
+        return True
 
 
 def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Sample]) -> bool:
