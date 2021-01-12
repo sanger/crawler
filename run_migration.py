@@ -73,8 +73,17 @@ def migration_update_filtered_positives():
 
 
 def migration_update_legacy_filtered_positives():
+    if not len(sys.argv) == 4:
+        print(
+            "Please add both start and end datetime range arguments for this migration "
+            "(format YYMMDD_HHmm e.g. 200115_1200, inclusive), aborting"
+        )
+        return
+
+    s_start_datetime = sys.argv[2]
+    s_end_datetime = sys.argv[3]
     print("Running update_legacy_filtered_positives migration")
-    update_legacy_filtered_positives.run()
+    update_legacy_filtered_positives.run(s_start_datetime=s_start_datetime, s_end_datetime=s_end_datetime)
 
 
 def migration_by_name(migration_name):

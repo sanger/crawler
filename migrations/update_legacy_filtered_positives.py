@@ -10,7 +10,7 @@ from migrations.helpers.update_filtered_positives_helper import (
     update_mongo_filtered_positive_fields,
 )
 from migrations.helpers.update_legacy_filtered_positives_helper import (
-    positive_legacy_mongo_samples,
+    mongo_samples_by_date,
     get_cherrypicked_samples_by_date,
     v0_version_set,
     split_mongo_samples_by_version,
@@ -18,6 +18,8 @@ from migrations.helpers.update_legacy_filtered_positives_helper import (
 from crawler.constants import (
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
+    MONGO_DATETIME_FORMAT,
+    FILTERED_POSITIVE_FIELDS_SET_DATE,
 )
 from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_0,
@@ -25,7 +27,10 @@ from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_2,
     filtered_positive_identifier_by_version,
 )
-from migrations.helpers.shared_helper import extract_required_cp_info
+from migrations.helpers.shared_helper import (
+    extract_required_cp_info,
+    valid_datetime_string,
+) 
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +44,32 @@ logger = logging.getLogger(__name__)
 # 4. Update Mongo and MLWH with these filtered positive fields
 
 
-def run(settings_module: str = "") -> None:
+def run(settings_module: str = "", s_start_datetime: str = "", s_end_datetime: str = "") -> None:
     """Migrate the existing samples to have the filtered positive values.
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        settings_module {str} -- settings module from which to generate the app config
     """
+    if not valid_datetime_string(s_start_datetime):
+        logger.error("Aborting run: Expected format of Start datetime is YYMMDD_HHmm")
+        return
+
+    if not valid_datetime_string(s_end_datetime):
+        logger.error("Aborting run: Expected format of End datetime is YYMMDD_HHmm")
+        return
+
+    start_datetime = datetime.strptime(s_start_datetime, MONGO_DATETIME_FORMAT)
+    end_datetime = datetime.strptime(s_end_datetime, MONGO_DATETIME_FORMAT)
+    fields_set_datetime = datetime.strptime(FILTERED_POSITIVE_FIELDS_SET_DATE, "%Y-%m-%d")
+
+    if start_datetime > end_datetime:
+        logger.error("Aborting run: End datetime must be greater than Start datetime")
+        return
+
+    if not end_datetime <= fields_set_datetime:
+        logger.error("Aborting run: Date range must be prior to the 17th December")
+        return
+
     config, settings_module = get_config(settings_module)
     logging.config.dictConfig(config.LOGGING)  # type: ignore
 
@@ -85,7 +110,7 @@ def run(settings_module: str = "") -> None:
 
         if continue_migration:
             logger.info("Selecting legacy samples from Mongo...")
-            samples = positive_legacy_mongo_samples(config)
+            samples = mongo_samples_by_date(config, start_datetime, end_datetime)
 
             legacy_samples_num = len(samples)
             logger.info(f"{legacy_samples_num} samples found from Mongo")

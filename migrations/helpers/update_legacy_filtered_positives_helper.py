@@ -32,7 +32,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def positive_legacy_mongo_samples(config: ModuleType) -> List[Sample]:
+def mongo_samples_by_date(config: ModuleType, start_datetime: datetime, end_datetime: datetime) -> List[Sample]:
     """Gets all samples from Mongo created before Crawler started setting filtered positive fields
 
     Arguments:
@@ -47,12 +47,9 @@ def positive_legacy_mongo_samples(config: ModuleType) -> List[Sample]:
         return list(
             samples_collection.find(
                 {
-                    "$and": [
-                        {FIELD_CREATED_AT: {"$lt": datetime.strptime(FILTERED_POSITIVE_FIELDS_SET_DATE, "%Y-%m-%d")}},
-                        {FIELD_RESULT: {"$eq": POSITIVE_RESULT_VALUE}},
-                    ]
+                    FIELD_CREATED_AT: {"$gte": start_datetime, "$lte": end_datetime},
                 }
-            )
+            ).limit(100000)
         )
 
 
