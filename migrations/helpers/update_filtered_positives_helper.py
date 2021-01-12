@@ -220,31 +220,6 @@ def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Sampl
         return False
 
 
-def update_mlwh_filtered_positive_fields_batch_query(
-    config: ModuleType, samples: List[Sample], version: str, update_timestamp: datetime
-) -> bool:
-    """Bulk updates sample filtered positive fields in the MLWH database
-
-    Arguments:
-        config {ModuleType} -- application config specifying database details
-        samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields
-        should be updated
-
-    Returns:
-        bool -- whether the updates completed successfully
-    """
-    mysql_conn = create_mysql_connection(config, False)
-
-    if mysql_conn is not None and mysql_conn.is_connected():
-        mlwh_samples = [map_mongo_to_sql_common(sample) for sample in samples]
-        run_mysql_execute_query(
-            mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH, mlwh_samples, version, update_timestamp
-        )
-        return True
-    else:
-        return False
-
-
 def update_dart_fields(config: ModuleType, samples: List[Sample]) -> bool:
     """Updates DART plates and wells following updates to the filtered positive fields
 

@@ -261,52 +261,49 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
         mysql_conn.close()
 
 
-def run_mysql_execute_query(
-    mysql_conn: CMySQLConnection, sql_query: str, values: List[Dict[str, str]], version: str, update_timestamp: datetime
+def run_mysql_execute_formatted_query(
+    mysql_conn: CMySQLConnection, formatted_sql_query: str, formatting_args: List[str], query_args: List[Any]
 ) -> None:
-    """Writes the sample testing information into the MLWH, batched by positive and negative samples
+    """Executes formatted sql query, unwrapping and batching based on number of input arguments
 
     Arguments:
         mysql_conn {CMySQLConnection} -- a client used to interact with the database server
-        sql_query {str} -- the SQL query to run (see sql_queries.py)
-        values {List[Dict[str, str]]} -- array of value hashes representing documents inserted into
-        the Mongo DB
+        formatted_sql_query {str} -- the formatted SQL query to run (unwrapped using % workflow)
+        formatting_args {List[str]} -- arguments to batch and unwrap the formatted sql query
+        query_args {List[Any]} -- additional sql query arguments
     """
     # fetch the cursor from the DB connection
     cursor = mysql_conn.cursor()
 
     try:
         # executing the query with values
-        num_values = len(values)
+        num_formatting_args = len(formatting_args)
 
         # BN. If ROWS_PER_QUERY value is too high, you may get '2006 (HY000): MySQL server has
         # gone away' error indicating you've exceeded the max_allowed_packet size for MySQL
-        ROWS_PER_QUERY = 15000
-        values_index = 0
+        FORMATTING_ARGS_PER_QUERY = 15000
+        formatting_args_index = 0
         total_rows_affected = 0
         logger.debug(
-            f"Attempting to insert or update {num_values} rows in the MLWH database in batches of {ROWS_PER_QUERY}"
+            f"Attempting to execute formatted sql on the MLWH database in batches of {FORMATTING_ARGS_PER_QUERY}"
         )
 
-        while values_index < num_values:
-            logger.debug(f"Inserting records between {values_index} and {values_index + ROWS_PER_QUERY}")
+        while formatting_args_index < num_formatting_args:
+            logger.debug(f"Executing sql for formatting args between {formatting_args_index} and {formatting_args_index + FORMATTING_ARGS_PER_QUERY}")
 
-            samples_batch = values[values_index : (values_index + ROWS_PER_QUERY)]
+            formatting_args_batch = formatting_args[formatting_args_index : (formatting_args_index + FORMATTING_ARGS_PER_QUERY)]
 
-            samples_id_batch: List[str] = [sample[MLWH_MONGODB_ID] for sample in samples_batch]
-
-            positive_in_p = ", ".join(list(map(lambda x: "%s", samples_id_batch)))
-            positive_args: List[Any] = [True, version, update_timestamp]
+            sql_unwrap_formatted_args = ", ".join(list(map(lambda x: "%s", formatting_args_batch)))
             if len(samples_id_batch) > 0:
-                positive_sql_query = sql_query % positive_in_p
-                positive_string_args = positive_args + samples_id_batch
-                cursor.execute(positive_sql_query, tuple(positive_string_args))
+                sql_query = formatted_sql_query % sql_unwrap_formatted_args
+                string_args = query_args + formatting_args_batch
+                cursor.execute(sql_query, tuple(string_args))
 
             total_rows_affected += cursor.rowcount
             logger.debug(f"{cursor.rowcount} rows affected in MLWH.")
 
             total_rows_affected += cursor.rowcount
-            values_index += ROWS_PER_QUERY
+            formatting_args_index += FORMATTING_ARGS_PER_QUERY
             logger.debug("Committing changes to MLWH database.")
             mysql_conn.commit()
 

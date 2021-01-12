@@ -6,7 +6,6 @@ from crawler.helpers.general_helpers import get_config
 from migrations.helpers.update_filtered_positives_helper import (
     update_filtered_positive_fields,
     update_mlwh_filtered_positive_fields,
-    update_mlwh_filtered_positive_fields_batch_query,
     update_mongo_filtered_positive_fields,
 )
 from migrations.helpers.update_legacy_filtered_positives_helper import (
@@ -14,6 +13,7 @@ from migrations.helpers.update_legacy_filtered_positives_helper import (
     get_cherrypicked_samples_by_date,
     v0_version_set,
     split_mongo_samples_by_version,
+    update_mlwh_filtered_positive_fields_batch_query,
 )
 from crawler.constants import (
     V0_V1_CUTOFF_TIMESTAMP,
@@ -97,7 +97,7 @@ def run(settings_module: str = "", s_start_datetime: str = "", s_end_datetime: s
         continue_migration = True
         if v0_version_set(config):
             question = "v0 version has been set on some samples. This migration has likely been \
-                        run before - do you still wish to proceed? (yes/no):"
+run before - do you still wish to proceed? (yes/no):"
             response = get_input(question)
 
             if response == "yes":
