@@ -76,11 +76,15 @@ def test_create_import_record(freezer, mongo_database):
         assert import_doc["errors"] == error_collection.get_messages_for_import()
 
 
+def test_create_mysql_connection_none(config):
+    with patch("mysql.connector.connect", return_value=None):
+        assert create_mysql_connection(config) is None
+
+
 def test_create_mysql_connection_exception(config):
-    """For example, if the credentials in the config are wrong"""
-    with patch("mysql.connector.connect", side_effect=mysql.Error):
-        with pytest.raises(mysql.Error):
-            create_mysql_connection(config)
+    # For example, if the credentials in the config are wrong
+    with patch("mysql.connector.connect", side_effect=mysql.Error()):
+        assert create_mysql_connection(config) is None
 
 
 def test_run_mysql_executemany_query_success(config):
