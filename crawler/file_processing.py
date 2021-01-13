@@ -314,7 +314,7 @@ class CentreFile:
         return False
 
     def get_centre_from_db(self) -> Dict[str, Any]:
-        """Gets a document from the mongo centre collection which desctibes a lighthouse centre.
+        """Gets a document from the mongo centre collection which describes a lighthouse centre.
 
         Raises:
             Exception: if no centre is found, raise an exception
