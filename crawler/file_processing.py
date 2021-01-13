@@ -9,6 +9,7 @@ from csv import DictReader
 from datetime import datetime
 from decimal import Decimal
 from hashlib import md5
+from logging import INFO, WARN
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
@@ -375,19 +376,25 @@ class CentreFile:
         # Internally traps TYPE 26 failed assigning source plate UUIDs error and returns []
         docs_to_insert = self.docs_to_insert_updated_with_source_plate_uuids(docs_to_insert)
 
-        mongo_ids_of_inserted = []
-        if len(docs_to_insert) > 0:
+        if (num_docs_to_insert := len(docs_to_insert)) > 0:
+            logger.debug(f"{num_docs_to_insert} docs to insert")
             mongo_ids_of_inserted = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
 
-        if len(mongo_ids_of_inserted) > 0:
-            # filter out docs which failed to insert into mongo - we don't want to create mlwh
-            # records for these
-            docs_to_insert_mlwh = list(filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert))
+            if len(mongo_ids_of_inserted) > 0:
+                # filter out docs which failed to insert into mongo - we don't want to create mlwh
+                # records for these
+                docs_to_insert_mlwh = list(
+                    filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert)
+                )
 
-            mlwh_success = self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
+                mlwh_success = self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
-            if add_to_dart and mlwh_success:
-                self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
+                if add_to_dart and mlwh_success:
+                    logger.info("MLWH insert successful and adding to DART")
+
+                    self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
+        else:
+            logger.info("No new docs to insert")
 
         self.backup_file()
         self.create_import_record_for_file()
@@ -938,8 +945,14 @@ class CentreFile:
 
             line_number += 1
 
-        logger.info(f"Rows with invalid structure in this file = {invalid_rows_count}")
-        logger.info(f"Rows that failed validation in this file = {failed_validation_count}")
+        logger.log(
+            INFO if invalid_rows_count == 0 else WARN,
+            f"Rows with invalid structure in this file = {invalid_rows_count}",
+        )
+        logger.log(
+            INFO if failed_validation_count == 0 else WARN,
+            f"Rows that failed validation in this file = {failed_validation_count}",
+        )
 
         return verified_rows
 
@@ -1079,7 +1092,7 @@ class CentreFile:
         Returns:
             bool - whether the value is valid
         """
-        if (ch_target_value := row.get(fieldname)) not in ALLOWED_CH_TARGET_VALUES:
+        if (ch_target_value := row.get(fieldname)) is not None and ch_target_value not in ALLOWED_CH_TARGET_VALUES:
             self.logging_collection.add_error(
                 "TYPE 17",
                 f"{fieldname} invalid, line: {line_number}, result: {ch_target_value}",
