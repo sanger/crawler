@@ -155,8 +155,8 @@ def test_remove_cherrypicked_samples_throws_for_error_getting_cherrypicked_sampl
 
 def test_remove_cherrypicked_samples_returns_input_samples_with_none_cp_samples_df(config, testing_samples):
     with patch("migrations.helpers.update_filtered_positives_helper.get_cherrypicked_samples", return_value=None):
-        result = remove_cherrypicked_samples(config, testing_samples)
-        assert result == testing_samples
+        with pytest.raises(Exception):
+            remove_cherrypicked_samples(config, testing_samples)
 
 
 def test_remove_cherrypicked_samples_returns_input_samples_with_empty_cp_samples_df(config, testing_samples):
