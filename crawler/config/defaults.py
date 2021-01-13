@@ -34,7 +34,7 @@ MLWH_DB_RO_PASSWORD = ROOT_PASSWORD
 MLWH_DB_RW_USER = "root"
 MLWH_DB_RW_PASSWORD = ROOT_PASSWORD
 
-EVENTS_WH_DB = ""
+EVENTS_WH_DB = "event_warehouse_development"
 
 # DART database details
 DART_DB_DBNAME = "dart_test"

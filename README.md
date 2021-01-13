@@ -236,9 +236,14 @@ There is now a volume for the runner so there is hot reloading i.e. changes in t
 
 ## Miscellaneous
 
-### Naming conventions
+### Mongo naming conventions
 
 [This](https://stackoverflow.com/a/45335909) post was used for the naming conventions within mongo.
+
+### MonkeyType
+
+[MonkeyType](https://github.com/Instagram/MonkeyType) is useful to automatically create type annotations. View it's
+README for updated instructions on how to use it.
 
 ### Updating the table of contents
 

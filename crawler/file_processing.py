@@ -1079,7 +1079,7 @@ class CentreFile:
         Returns:
             bool - whether the value is valid
         """
-        if fieldname in row and ((ch_target_value := row[fieldname]) not in ALLOWED_CH_TARGET_VALUES):
+        if (ch_target_value := row.get(fieldname)) not in ALLOWED_CH_TARGET_VALUES:
             self.logging_collection.add_error(
                 "TYPE 17",
                 f"{fieldname} invalid, line: {line_number}, result: {ch_target_value}",

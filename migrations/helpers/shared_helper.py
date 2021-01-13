@@ -81,7 +81,10 @@ def get_cherrypicked_samples(
         ]
 
         sql_engine = sqlalchemy.create_engine(
-            (f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}" f"@{config.MLWH_DB_HOST}"),
+            (
+                f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}"
+                f"@{config.MLWH_DB_HOST}:{config.MLWH_DB_PORT}"
+            ),
             pool_recycle=3600,
         )
         db_connection = sql_engine.connect()

@@ -180,6 +180,7 @@ def create_mysql_connection(config: Config, readonly: bool = True) -> CMySQLConn
 
     logger.debug(f"Attempting to connect to {mlwh_db_host} on port {mlwh_db_port}")
 
+    mysql_conn = None
     try:
         mysql_conn = mysql.connect(
             host=mlwh_db_host,
@@ -191,12 +192,16 @@ def create_mysql_connection(config: Config, readonly: bool = True) -> CMySQLConn
             # default is false, but specify it so more predictable
             use_pure=False,
         )
-        logger.debug("MySQL Connection Successful")
+        if mysql_conn is not None:
+            if mysql_conn.is_connected():
+                logger.debug("MySQL Connection Successful")
+            else:
+                logger.error("MySQL Connection Failed")
 
-        return cast(CMySQLConnection, mysql_conn)
     except mysql.Error as e:
-        logger.error(f"Exception while connecting to MySQL database: {e}")
-        raise
+        logger.error(f"Exception on connecting to MySQL database: {e}")
+
+    return cast(CMySQLConnection, mysql_conn)
 
 
 def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, values: List[Dict[str, str]]) -> None:
@@ -284,21 +289,19 @@ def create_dart_sql_server_conn(config: Config) -> Optional[pyodbc.Connection]:
 
     logger.debug(f"Attempting to connect to {dart_db_host} on port {dart_db_port}")
 
+    sql_server_conn = None
     try:
         sql_server_conn = pyodbc.connect(connection_string)
 
-        if sql_server_conn:
+        if sql_server_conn is not None:
             logger.debug("DART Connection Successful")
-
-            return sql_server_conn
         else:
             logger.error("DART Connection Failed")
 
-            return None
     except pyodbc.Error as e:
         logger.error(f"Exception on connecting to DART database: {e}")
 
-        return None
+    return sql_server_conn
 
 
 def get_dart_plate_state(cursor: pyodbc.Cursor, plate_barcode: str) -> str:
