@@ -16,7 +16,7 @@ from crawler.constants import (
     MONGO_DATETIME_FORMAT,
     PLATE_EVENT_DESTINATION_CREATED,
 )
-from crawler.types import Sample
+from crawler.types import Config, Sample
 
 logger = logging.getLogger(__name__)
 

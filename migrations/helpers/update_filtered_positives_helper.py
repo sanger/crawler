@@ -35,7 +35,7 @@ from crawler.helpers.general_helpers import (
     map_mongo_to_sql_common,
 )
 from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE
-from crawler.types import Sample
+from crawler.types import Config, Sample
 from migrations.helpers.shared_helper import extract_required_cp_info, get_cherrypicked_samples
 from migrations.helpers.shared_helper import remove_cherrypicked_samples as remove_cp_samples
 
