@@ -152,7 +152,7 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
 
 
 def get_samples(samples_collection: Collection, start_datetime: datetime, end_datetime: datetime) -> List[Sample]:
-    logger.debug(f"Selecting positive samples between {start_datetime} and {end_datetime}")
+    logger.debug(f"Selecting samples between {start_datetime} and {end_datetime}")
 
     match = {
         "$match": {
