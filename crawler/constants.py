@@ -137,3 +137,9 @@ FILTERED_POSITIVE_FIELDS_SET_DATE: Final[str] = "2020-12-17 00:00:00"
 # Beckman labware
 BIOMEK_LABWARE_CLASS_KINGFISHER: Final[str] = "KingFisher_96_2ml"
 BIOMEK_LABWARE_CLASS_BIO: Final[str] = "Bio-Rad_96PCR"
+
+# Sentinel workflow event to help determine sample cherrypicked status
+EVENT_CHERRYPICK_LAYOUT_SET: Final[str] = "cherrypick_layout_set"
+
+# As per Beckman events detailed in https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/Cherrypicking+Events
+PLATE_EVENT_DESTINATION_CREATED: Final[str] = "lh_beckman_cp_destination_created"

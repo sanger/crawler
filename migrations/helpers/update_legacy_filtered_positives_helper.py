@@ -7,6 +7,7 @@ from pandas import DataFrame
 
 from crawler.constants import (
     COLLECTION_SAMPLES,
+    EVENT_CHERRYPICK_LAYOUT_SET,
     FIELD_CREATED_AT,
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_PLATE_BARCODE,
@@ -88,6 +89,8 @@ def get_cherrypicked_samples_by_date(
         events_wh_db = config.EVENTS_WH_DB
 
         for chunk_root_sample_id in chunk_root_sample_ids:
+            # Note we only querying for Sentinel cherrypicked samples as we expect the timestamps used in the query
+            # to all be earlier than when the Beckman workflow was adopted
             sql = (
                 f"SELECT mlwh_sample.description as `{FIELD_ROOT_SAMPLE_ID}`, mlwh_stock_resource.labware_human_barcode as `{FIELD_PLATE_BARCODE}`"  # noqa: E501
                 f" FROM {ml_wh_db}.sample as mlwh_sample"
@@ -100,7 +103,7 @@ def get_cherrypicked_samples_by_date(
                 f" AND mlwh_sample.created >= '{start_date}'"
                 f" AND mlwh_sample.created < '{end_date}'"
                 f" AND mlwh_stock_resource.labware_human_barcode IN %(plate_barcodes)s"
-                " AND mlwh_events_event_types.key = 'cherrypick_layout_set'"
+                f" AND mlwh_events_event_types.key = '{EVENT_CHERRYPICK_LAYOUT_SET}'"
                 " GROUP BY mlwh_sample.description, mlwh_stock_resource.labware_human_barcode, mlwh_sample.phenotype, mlwh_stock_resource.labware_coordinate"  # noqa: E501
             )
 

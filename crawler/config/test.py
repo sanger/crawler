@@ -66,6 +66,7 @@ ML_WH_DB = "unified_warehouse_test"
 MLWH_SAMPLE_TABLE = "sample"
 MLWH_STOCK_RESOURCES_TABLE = "stock_resource"
 MLWH_STUDY_TABLE = "study"
+MLWH_LIGHTHOUSE_SAMPLE_TABLE = "lighthouse_sample"
 
 # Event warehouse database details
 # Only used for setting up test environment
