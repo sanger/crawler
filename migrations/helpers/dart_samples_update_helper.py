@@ -173,11 +173,11 @@ def add_sample_uuid_field(samples: List[Sample]) -> List[Sample]:
 
 
 def update_mongo_fields(mongo_db, samples: List[Sample]) -> bool:
-    """Bulk updates sample filtered positive fields in the Mongo database
+    """Bulk updates sample uuid fields in the Mongo database
 
     Arguments:
         config {ModuleType} -- application config specifying database details
-        samples {List[Sample]} -- the list of samples whose filtered positive fields should be updated
+        samples {List[Sample]} -- the list of samples whose uuid fields should be updated
 
     Returns:
         bool -- whether the updates completed successfully
