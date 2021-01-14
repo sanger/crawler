@@ -46,11 +46,11 @@ def mock_filtered_positive_fields_set():
 def mock_query_helper_functions():
     with patch(
         "migrations.update_legacy_filtered_positives.mongo_samples_by_date"
-    ) as mock_legacy_mongo_samples:  # noqa: E501
+    ) as mock_mongo_samples_by_date:  # noqa: E501
         with patch(
             "migrations.update_legacy_filtered_positives.get_cherrypicked_samples_by_date"
         ) as mock_get_cherrypicked_samples_by_date:
-            yield mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date
+            yield mock_mongo_samples_by_date, mock_get_cherrypicked_samples_by_date
 
 
 @pytest.fixture
@@ -136,10 +136,10 @@ def test_get_cherrypicked_samples_by_date_error_raises_exception(
     mock_extract_required_cp_info,
 ):
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
-    mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
+    mock_mongo_samples_by_date, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
 
     mock_filtered_positive_fields_set.return_value = False
-    mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
+    mock_mongo_samples_by_date.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.side_effect = Exception("Boom!")
 
@@ -156,10 +156,10 @@ def test_extract_required_cp_info_error_raises_exception(
     mock_extract_required_cp_info,
 ):
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
-    mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
+    mock_mongo_samples_by_date, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
 
     mock_filtered_positive_fields_set.return_value = False
-    mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
+    mock_mongo_samples_by_date.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.side_effect = Exception("Boom!")
 
     with pytest.raises(Exception):
@@ -176,10 +176,10 @@ def test_split_mongo_samples_by_version_error_raises_exception(
     mock_split_mongo_samples_by_version,
 ):
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
-    mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
+    mock_mongo_samples_by_date, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
 
     mock_filtered_positive_fields_set.return_value = False
-    mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
+    mock_mongo_samples_by_date.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.return_value = pd.DataFrame({"id": ["s1", "s2"]})
 
@@ -204,10 +204,10 @@ def test_filtered_positive_indentifier_by_version_error_raises_exception(
     v2_samples = [{"plate_barcode": "2"}]
 
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
-    mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
+    mock_mongo_samples_by_date, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
 
     mock_filtered_positive_fields_set.return_value = False
-    mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
+    mock_mongo_samples_by_date.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.return_value = pd.DataFrame({"id": ["s1", "s2"]})
 
@@ -239,10 +239,10 @@ def test_update_filtered_positive_fields_error_raises_exception(
     v2_samples = [{"plate_barcode": "2"}]
 
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
-    mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
+    mock_mongo_samples_by_date, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
 
     mock_filtered_positive_fields_set.return_value = False
-    mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
+    mock_mongo_samples_by_date.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.return_value = pd.DataFrame({"id": ["s1", "s2"]})
 
@@ -278,11 +278,11 @@ def test_update_legacy_filtered_positives_outputs_success(
     v2_samples = [{"plate_barcode": "2"}]
 
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
-    mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
+    mock_mongo_samples_by_date, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
     mock_split_mongo_samples_by_version = mock_split_mongo_samples_by_version
 
     mock_filtered_positive_fields_set.return_value = False
-    mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
+    mock_mongo_samples_by_date.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.return_value = pd.DataFrame({"id": ["s1", "s2"]})
 
@@ -337,12 +337,12 @@ def test_update_legacy_filtered_positives_successful_if_user_chooses_to_continue
     v2_samples = [{"plate_barcode": "2"}]
 
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
-    mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
+    mock_mongo_samples_by_date, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
     mock_split_mongo_samples_by_version = mock_split_mongo_samples_by_version
 
     mock_filtered_positive_fields_set.return_value = True
     mock_user_input.return_value = "yes"
-    mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
+    mock_mongo_samples_by_date.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.return_value = pd.DataFrame({"id": ["s1", "s2"]})
     mock_split_mongo_samples_by_version.return_value = {
