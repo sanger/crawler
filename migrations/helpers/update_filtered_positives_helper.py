@@ -152,7 +152,7 @@ def update_filtered_positive_fields(
 def update_mongo_filtered_positive_fields(
     config: ModuleType, samples: List[Sample], version: str, update_timestamp: datetime
 ) -> bool:
-    """Bulk updates sample filtered positive fields in the Mongo database
+    """Batch updates sample filtered positive fields in the Mongo database
 
     Arguments:
         config {ModuleType} -- application config specifying database details
@@ -208,7 +208,6 @@ def update_mongo_filtered_positive_fields(
             )
 
             samples_index += SAMPLES_PER_QUERY
-            logger.debug("")
         return True
 
 

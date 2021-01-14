@@ -95,6 +95,8 @@ def run(settings_module: str = "", s_start_datetime: str = "", s_end_datetime: s
 
     try:
         continue_migration = True
+        
+        logger.info("Checking whether v0 version has been set on any samples...")
         if v0_version_set(config):
             question = "v0 version has been set on some samples. This migration has likely been \
 run before - do you still wish to proceed? (yes/no):"
