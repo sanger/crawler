@@ -10,9 +10,11 @@ from crawler.filtered_positive_identifier import (
     FilteredPositiveIdentifierV1,
     FilteredPositiveIdentifierV2,
 )
-
+from crawler.constants import MONGO_DATETIME_FORMAT
 from migrations import update_legacy_filtered_positives
 
+start_date_input = "201209_0000"
+end_date_input = "201217_0000"
 
 identifier_v0 = FilteredPositiveIdentifierV0()
 identifier_v1 = FilteredPositiveIdentifierV1()
@@ -95,7 +97,7 @@ def test_update_legacy_filtered_positives_exception_raised_if_user_cancels_migra
     mock_user_input.return_value = "no"
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
 
-    update_legacy_filtered_positives.run("crawler.config.integration")
+    update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
 
     mock_update_mongo.assert_not_called()
     mock_update_mlwh.assert_not_called()
@@ -107,7 +109,7 @@ def test_update_legacy_filtered_positives_exception_raised_if_user_enters_invali
     mock_user_input.return_value = "invalid_input"
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
 
-    update_legacy_filtered_positives.run("crawler.config.integration")
+    update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
 
     mock_update_mongo.assert_not_called()
     mock_update_mlwh.assert_not_called()
@@ -118,12 +120,12 @@ def test_update_legacy_filtered_positives_catches_error_connecting_to_mongo(
 ):
     with pytest.raises(Exception):
         with patch(
-            "migrations.update_legacy_filtered_positives.mongo_samples_by_date",
+            mock_update_mongo,
             side_effect=Exception("Boom!"),
         ):
             mock_filtered_positive_fields_set.return_value = False
             mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
-            update_legacy_filtered_positives.run("crawler.config.integration")
+            update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
 
             mock_update_mongo.assert_not_called()
             mock_update_mlwh.assert_not_called()
@@ -144,7 +146,7 @@ def test_get_cherrypicked_samples_by_date_error_raises_exception(
     mock_get_cherrypicked_samples_by_date.side_effect = Exception("Boom!")
 
     with pytest.raises(Exception):
-        update_legacy_filtered_positives.run("crawler.config.integration")
+        update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
         mock_update_mongo.assert_not_called()
         mock_update_mlwh.assert_not_called()
 
@@ -163,7 +165,7 @@ def test_extract_required_cp_info_error_raises_exception(
     mock_extract_required_cp_info.side_effect = Exception("Boom!")
 
     with pytest.raises(Exception):
-        update_legacy_filtered_positives.run("crawler.config.integration")
+        update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
         mock_update_mongo.assert_not_called()
         mock_update_mlwh.assert_not_called()
 
@@ -186,7 +188,7 @@ def test_split_mongo_samples_by_version_error_raises_exception(
     mock_split_mongo_samples_by_version.side_effect = Exception("Boom!")
 
     with pytest.raises(Exception):
-        update_legacy_filtered_positives.run("crawler.config.integration")
+        update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
         mock_update_mongo.assert_not_called()
         mock_update_mlwh.assert_not_called()
 
@@ -220,7 +222,7 @@ def test_filtered_positive_indentifier_by_version_error_raises_exception(
     mock_filtered_positive_identifier_by_version.side_effect = ValueError("Boom!")
 
     with pytest.raises(ValueError):
-        update_legacy_filtered_positives.run("crawler.config.integration")
+        update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
         mock_update_mongo.assert_not_called()
         mock_update_mlwh.assert_not_called()
 
@@ -256,7 +258,7 @@ def test_update_filtered_positive_fields_error_raises_exception(
     mock_update_filtered_positive_fields.side_effect = Exception("Boom!")
 
     with pytest.raises(Exception):
-        update_legacy_filtered_positives.run("crawler.config.integration")
+        update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
         mock_update_mongo.assert_not_called()
         mock_update_mlwh.assert_not_called()
 
@@ -295,7 +297,7 @@ def test_update_legacy_filtered_positives_outputs_success(
     mock_update_mongo.return_value = True
     mock_update_mlwh.return_value = True
 
-    update_legacy_filtered_positives.run("crawler.config.test")
+    update_legacy_filtered_positives.run("crawler.config.test", start_date_input, end_date_input)
 
     assert mock_update_filtered_positive_fields.call_count == 3
     mock_update_filtered_positive_fields.assert_any_call(
@@ -354,7 +356,7 @@ def test_update_legacy_filtered_positives_successful_if_user_chooses_to_continue
     mock_update_mongo.return_value = True
     mock_update_mlwh.return_value = True
 
-    update_legacy_filtered_positives.run("crawler.config.test")
+    update_legacy_filtered_positives.run("crawler.config.test", start_date_input, end_date_input)
 
     assert mock_update_filtered_positive_fields.call_count == 3
     mock_update_filtered_positive_fields.assert_any_call(
