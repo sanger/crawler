@@ -43,7 +43,8 @@ def mongo_samples_by_date(config: ModuleType, start_datetime: datetime, end_date
 
     Arguments:
         config {ModuleType} -- application config specifying database details
-
+        start_datetime {datetime} -- lower limit of sample creation date
+        end_datetime {datetime} -- upper limit of sample creation date
     Returns:
         List[Sample] -- List of Mongo samples created before filtered positive Crawler changes
     """

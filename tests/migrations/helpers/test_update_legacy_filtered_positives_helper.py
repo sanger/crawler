@@ -1,10 +1,12 @@
 import pandas as pd
 import pytest
 import numpy as np
+from datetime import datetime
 from unittest.mock import patch
 from migrations.helpers.update_legacy_filtered_positives_helper import (
     v0_version_set,
     positive_legacy_mongo_samples,
+    mongo_samples_by_date,
     get_cherrypicked_samples_by_date,
     split_mongo_samples_by_version,
 )
@@ -13,6 +15,7 @@ from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
+    MONGO_DATETIME_FORMAT,
 )
 from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_0,
@@ -20,16 +23,19 @@ from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_2,
 )
 
-# ----- positive_legacy_mongo_samples tests -----
+# ----- mongo_samples_by_date tests -----
 
 
-def test_positive_legacy_mongo_samples_error_getting_samples(config):
+def test_mongo_samples_by_date_error_getting_samples(config):
+    start_datetime = datetime.strptime("201209_0000", MONGO_DATETIME_FORMAT)
+    end_datetime = datetime.strptime("201217_0000", MONGO_DATETIME_FORMAT)
+
     with patch(
         "migrations.helpers.update_legacy_filtered_positives_helper.create_mongo_client",
         side_effect=ValueError("Boom!"),
     ):
         with pytest.raises(ValueError):
-            positive_legacy_mongo_samples(config)
+            mongo_samples_by_date(config, start_datetime, end_datetime)
 
 
 def test_positive_legacy_mongo_samples_returns_correct_samples_filtered_by_date(
