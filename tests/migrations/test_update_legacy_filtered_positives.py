@@ -25,7 +25,7 @@ def mock_helper_database_updates():
         "migrations.update_legacy_filtered_positives.update_mongo_filtered_positive_fields"
     ) as mock_update_mongo:
         with patch(
-            "migrations.update_legacy_filtered_positives.update_mlwh_filtered_positive_fields_batch_query"
+            "migrations.update_legacy_filtered_positives.update_mlwh_filtered_positive_fields_batched"
         ) as mock_update_mlwh:
             yield mock_update_mongo, mock_update_mlwh
 
