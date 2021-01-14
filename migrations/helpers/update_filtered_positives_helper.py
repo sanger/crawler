@@ -177,13 +177,14 @@ def update_mongo_filtered_positive_fields(
             samples_batch = samples[samples_index : (samples_index + SAMPLES_PER_QUERY)]
 
             # get ids of those that are filtered positive, and those that aren't
-            batch_ids: List[str] = [sample[FIELD_MONGODB_ID] for sample in samples_batch]
-            filtered_positive_ids: List[str] = [
-                sample[FIELD_MONGODB_ID]
-                for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] is True, samples_batch))
-            ]
+            filtered_positive_ids = []
+            filtered_negative_ids = []
+            for sample in samples_batch:
+                if sample[FIELD_FILTERED_POSITIVE] is True:
+                    filtered_positive_ids.append(sample[FIELD_MONGODB_ID])
+                else:
+                    filtered_negative_ids.append(sample[FIELD_MONGODB_ID])
 
-            filtered_negative_ids = [mongo_id for mongo_id in batch_ids if mongo_id not in filtered_positive_ids]
             samples_collection.update_many(
                 {FIELD_MONGODB_ID: {"$in": filtered_positive_ids}},
                 {
