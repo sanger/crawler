@@ -174,7 +174,7 @@ def filtered_positive_fields_set(config: ModuleType, start_datetime: datetime, e
         num_versioned_samples = samples_collection.count_documents(
             {
                 FIELD_CREATED_AT: {"$gte": start_datetime, "$lt": end_datetime},
-                FIELD_FILTERED_POSITIVE : { "$exists": True }, 
+                FIELD_FILTERED_POSITIVE: {"$exists": True},
             }
         )
 

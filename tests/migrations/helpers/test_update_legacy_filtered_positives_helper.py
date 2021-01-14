@@ -37,9 +37,7 @@ def test_mongo_samples_by_date_error_getting_samples(config):
             mongo_samples_by_date(config, start_datetime, end_datetime)
 
 
-def test_mongo_samples_by_date_returns_correct_samples(
-    config, filtered_positive_testing_samples
-):
+def test_mongo_samples_by_date_returns_correct_samples(config, filtered_positive_testing_samples):
     result = mongo_samples_by_date(config, start_datetime, end_datetime)
     expected_samples = filtered_positive_testing_samples[-3:]
 
