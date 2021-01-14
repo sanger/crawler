@@ -153,6 +153,21 @@ def test_update_legacy_filtered_positives_returns_early_invalid_end_datetime(
     mock_update_mlwh.assert_not_called()
 
 
+def test_update_legacy_filtered_positives_returns_early_datetime_post_fields_set_date(
+    config, mock_helper_database_updates
+):
+    mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
+    start_datetime = "201016_1600"
+    end_datetime = "201217_1600"
+
+    mock_valid_datetime_string.return_value = True
+    update_legacy_filtered_positives.run("crawler.config.integration", start_datetime, end_datetime)
+
+    # ensure no database connections/updates are made
+    mock_update_mongo.assert_not_called()
+    mock_update_mlwh.assert_not_called()
+
+
 def test_update_legacy_filtered_positives_returns_early_start_datetime_after_end_datetime(
     config, mock_helper_database_updates
 ):

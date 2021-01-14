@@ -66,7 +66,7 @@ def run(settings_module: str = "", s_start_datetime: str = "", s_end_datetime: s
         logger.error("Aborting run: End datetime must be greater than Start datetime")
         return
 
-    if not end_datetime <= fields_set_datetime:
+    if end_datetime > fields_set_datetime:
         logger.error("Aborting run: Date range must be prior to the 17th December")
         return
 
