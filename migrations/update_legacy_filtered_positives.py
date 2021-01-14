@@ -119,7 +119,7 @@ run before - do you still wish to proceed? (yes/no):"
 
             root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
 
-            logger.info("Getting v0 cherrypicked samples from MLWH")
+            logger.info("Querying for v0 cherrypicked samples from MLWH")
             # Get v0 cherrypicked samples
             v0_cp_samples_df = get_cherrypicked_samples_by_date(
                 config,
@@ -133,7 +133,7 @@ run before - do you still wish to proceed? (yes/no):"
 
             logger.debug(f"Found {len(v0_cp_samples_df.index)} v0 cherrypicked samples")
 
-            logger.info("Getting v1 cherrypicked samples from MLWH")
+            logger.info("Querying for cherrypicked samples from MLWH")
             # Get v1 cherrypicked samples
             v1_cp_samples_df = get_cherrypicked_samples_by_date(
                 config,
