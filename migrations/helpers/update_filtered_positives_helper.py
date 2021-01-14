@@ -109,7 +109,9 @@ def remove_cherrypicked_samples(config: ModuleType, samples: List[Sample]) -> Li
     root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
     cp_samples_df = get_cherrypicked_samples(config, list(root_sample_ids), list(plate_barcodes))
 
-    if cp_samples_df is not None and not cp_samples_df.empty:
+    if cp_samples_df is None:
+        raise Exception("Unable to determine cherry-picked samples - potentially error connecting to MySQL")
+    elif not cp_samples_df.empty:
         cp_samples = cp_samples_df[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()
         return remove_cp_samples(samples, cp_samples)
     else:
@@ -243,17 +245,18 @@ def update_dart_fields(config: ModuleType, samples: List[Sample]) -> bool:
                 )
                 if plate_state == DART_STATE_PENDING:
                     for sample in samples_in_plate:
-                        well_index = get_dart_well_index(sample.get(FIELD_COORDINATE, None))
-                        if well_index is not None:
-                            well_props = map_mongo_doc_to_dart_well_props(sample)
-                            set_dart_well_properties(
-                                cursor, plate_barcode, well_props, well_index  # type:ignore
-                            )
-                        else:
-                            raise ValueError(
-                                "Unable to determine DART well index for sample "
-                                f"{sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
-                            )
+                        if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
+                            well_index = get_dart_well_index(sample.get(FIELD_COORDINATE, None))
+                            if well_index is not None:
+                                well_props = map_mongo_doc_to_dart_well_props(sample)
+                                set_dart_well_properties(
+                                    cursor, plate_barcode, well_props, well_index  # type:ignore
+                                )
+                            else:
+                                raise ValueError(
+                                    "Unable to determine DART well index for sample "
+                                    f"{sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
+                                )
                 cursor.commit()
                 dart_updated_successfully &= True
             except Exception as e:

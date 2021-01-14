@@ -13,7 +13,6 @@ from crawler.constants import (
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_MONGODB_ID,
     FIELD_PLATE_BARCODE,
-    FIELD_RESULT,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_UPDATED_AT,
     MONGO_DATETIME_FORMAT,
@@ -43,13 +42,14 @@ from pymongo.operations import UpdateOne
 # * Do not add samples to DART which have already been cherry-picked
 # * Only add positive samples to DART
 ####
-# 1. get samples from mongo between these time ranges that are positive
+# 1. get samples from mongo between these time ranges
 # 2. of these, find which have been cherry-picked and remove them from the list
 # 3. add the UUID fields if not present
 # 4. update samples in mongo updated in either of the above two steps (would expect the same set of samples from both
 #       steps)
 # 5. update the MLWH (should be an idempotent operation)
-# 6. add all the plates of the positive samples we've selected in step 1 above, to DART
+# 6. add all the plates with non-cherrypicked samples (determined in step 2) to DART, as well as any positive samples
+#       in these plates
 
 
 logger = logging.getLogger(__name__)
@@ -86,8 +86,8 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
 
             samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-            # 1. get samples from mongo between these time ranges that are positive
-            samples = get_positive_samples(samples_collection, start_datetime, end_datetime)
+            # 1. get samples from mongo between these time ranges
+            samples = get_samples(samples_collection, start_datetime, end_datetime)
 
             if not samples:
                 logger.info("No samples in this time range.")
@@ -141,7 +141,8 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
                 # 5. update the MLWH (should be an idempotent operation)
                 run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
 
-            # 6. add all the plates of the positive samples we've selected in step 1 above, to DART
+            # 6. add all the plates with non-cherrypicked samples (determined in step 2) to DART, as well as any
+            #       positive samples in these plates
             update_dart_fields(config, samples)
         else:
             logger.info("No documents found for this timestamp range, nothing to insert or update in MLWH or DART")
@@ -150,16 +151,13 @@ def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = ""
         logger.exception(e)
 
 
-def get_positive_samples(
-    samples_collection: Collection, start_datetime: datetime, end_datetime: datetime
-) -> List[Sample]:
-    logger.debug(f"Selecting positive samples between {start_datetime} and {end_datetime}")
+def get_samples(samples_collection: Collection, start_datetime: datetime, end_datetime: datetime) -> List[Sample]:
+    logger.debug(f"Selecting samples between {start_datetime} and {end_datetime}")
 
     match = {
         "$match": {
-            # 1. First filter by the start and end dates
+            # Filter by the start and end dates
             FIELD_CREATED_AT: {"$gte": start_datetime, "$lte": end_datetime},
-            FIELD_RESULT: {"$regex": "^positive", "$options": "i"},
         }
     }
 
@@ -175,11 +173,11 @@ def add_sample_uuid_field(samples: List[Sample]) -> List[Sample]:
 
 
 def update_mongo_fields(mongo_db, samples: List[Sample]) -> bool:
-    """Bulk updates sample filtered positive fields in the Mongo database
+    """Bulk updates sample uuid fields in the Mongo database
 
     Arguments:
         config {ModuleType} -- application config specifying database details
-        samples {List[Sample]} -- the list of samples whose filtered positive fields should be updated
+        samples {List[Sample]} -- the list of samples whose uuid fields should be updated
 
     Returns:
         bool -- whether the updates completed successfully
