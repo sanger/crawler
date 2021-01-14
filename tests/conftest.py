@@ -202,7 +202,7 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_RESULT: POSITIVE_RESULT_VALUE,
         FIELD_PLATE_BARCODE: "456",
         FIELD_ROOT_SAMPLE_ID: "MCM004",
-        FIELD_CREATED_AT: dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) - timedelta(days=1),
+        FIELD_CREATED_AT: dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) - timedelta(days=2),
     },
 ]
 

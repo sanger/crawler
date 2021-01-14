@@ -154,12 +154,14 @@ def get_cherrypicked_samples_by_date(
             db_connection.close()
 
 
-def v0_version_set(config: ModuleType) -> bool:
-    """Find if the v0 version has been set in any of the samples.
-       This would indicate that the legacy migration has already been run.
+def filtered_positive_fields_set(config: ModuleType, start_datetime: datetime, end_datetime: datetime) -> bool:
+    """Find if the filtered positive version field has been set on any of samples in date range.
+       This would indicate that the migration has already been run on those samples.
 
     Args:
         config {ModuleType} -- application config specifying database details
+        start_datetime {datetime} -- lower limit of sample creation date
+        end_datetime {datetime} -- upper limit of sample creation date
 
     Returns:
         {bool} -- v0 version set in samples
@@ -168,11 +170,14 @@ def v0_version_set(config: ModuleType) -> bool:
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-        num_v0_samples = samples_collection.count_documents(
-            {FIELD_FILTERED_POSITIVE_VERSION: FILTERED_POSITIVE_VERSION_0}
+        num_versioned_samples = samples_collection.count_documents(
+            {
+                FIELD_CREATED_AT: {"$gte": start_datetime, "$lt": end_datetime},
+                FIELD_FILTERED_POSITIVE : { "$exists": True }, 
+            }
         )
 
-        return num_v0_samples > 0
+        return num_versioned_samples > 0
 
 
 def split_mongo_samples_by_version(

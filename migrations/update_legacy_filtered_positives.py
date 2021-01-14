@@ -11,7 +11,7 @@ from migrations.helpers.update_filtered_positives_helper import (
 from migrations.helpers.update_legacy_filtered_positives_helper import (
     mongo_samples_by_date,
     get_cherrypicked_samples_by_date,
-    v0_version_set,
+    filtered_positive_fields_set,
     split_mongo_samples_by_version,
     update_mlwh_filtered_positive_fields_batched,
 )
@@ -96,8 +96,8 @@ def run(settings_module: str = "", s_start_datetime: str = "", s_end_datetime: s
     try:
         continue_migration = True
 
-        logger.info("Checking whether v0 version has been set on any samples...")
-        if v0_version_set(config):
+        logger.info("Checking whether filtered positive version has been set on any samples...")
+        if filtered_positive_fields_set(config, start_datetime, end_datetime):
             question = "v0 version has been set on some samples. This migration has likely been \
 run before - do you still wish to proceed? (yes/no):"
             response = get_input(question)
