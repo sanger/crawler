@@ -47,7 +47,10 @@ def test_mongo_samples_by_date_returns_correct_samples(config, filtered_positive
 # ----- filtered_positive_fields_set tests -----
 
 
-def test_filtered_positive_fields_set_returns_true_with_fields_set(config, filtered_positive_testing_samples):
+def test_filtered_positive_fields_set_returns_true_with_fields_set(
+    config,
+    filtered_positive_testing_samples,
+):
     assert filtered_positive_fields_set(config, start_datetime, end_datetime) is True
 
 
@@ -83,7 +86,11 @@ def test_get_cherrypicked_samples_by_date_error_connecting_returns_none(config):
         assert returned_samples is None
 
 
-def test_get_cherrypicked_samples_by_date_v0_returns_expected(config, event_wh_data, mlwh_sample_stock_resource):
+def test_get_cherrypicked_samples_by_date_v0_returns_expected(
+    config,
+    event_wh_data,
+    mlwh_sample_stock_resource,
+):
     root_sample_ids = ["root_1", "root_2", "root_3", "root_4"]
     plate_barcodes = ["pb_1", "pb_2", "pb_3", "pb_4"]
 
@@ -97,7 +104,11 @@ def test_get_cherrypicked_samples_by_date_v0_returns_expected(config, event_wh_d
     pd.testing.assert_frame_equal(expected, returned_samples)
 
 
-def test_get_cherrypicked_samples_by_date_v1_returns_expected(config, event_wh_data, mlwh_sample_stock_resource):
+def test_get_cherrypicked_samples_by_date_v1_returns_expected(
+    config,
+    event_wh_data,
+    mlwh_sample_stock_resource,
+):
     root_sample_ids = ["root_1", "root_2", "root_3", "root_4"]
     plate_barcodes = ["pb_1", "pb_2", "pb_3", "pb_4"]
 
