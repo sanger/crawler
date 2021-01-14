@@ -37,9 +37,9 @@ def mock_user_input():
 
 
 @pytest.fixture
-def mock_v0_version_set():
-    with patch("migrations.update_legacy_filtered_positives.v0_version_set") as mock_v0_version_set:
-        yield mock_v0_version_set
+def mock_filtered_positive_fields_set():
+    with patch("migrations.update_legacy_filtered_positives.filtered_positive_fields_set") as mock_filtered_positive_fields_set:
+        yield mock_filtered_positive_fields_set
 
 
 @pytest.fixture
@@ -114,14 +114,14 @@ def test_update_legacy_filtered_positives_exception_raised_if_user_enters_invali
 
 
 def test_update_legacy_filtered_positives_catches_error_connecting_to_mongo(
-    mock_helper_database_updates, mock_v0_version_set
+    mock_helper_database_updates, mock_filtered_positive_fields_set
 ):
     with pytest.raises(Exception):
         with patch(
             "migrations.update_legacy_filtered_positives.positive_legacy_mongo_samples",
             side_effect=Exception("Boom!"),
         ):
-            mock_v0_version_set.return_value = False
+            mock_filtered_positive_fields_set.return_value = False
             mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
             update_legacy_filtered_positives.run("crawler.config.integration")
 
@@ -130,7 +130,7 @@ def test_update_legacy_filtered_positives_catches_error_connecting_to_mongo(
 
 
 def test_get_cherrypicked_samples_by_date_error_raises_exception(
-    mock_v0_version_set,
+    mock_filtered_positive_fields_set,
     mock_helper_database_updates,
     mock_query_helper_functions,
     mock_extract_required_cp_info,
@@ -138,7 +138,7 @@ def test_get_cherrypicked_samples_by_date_error_raises_exception(
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
     mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
 
-    mock_v0_version_set.return_value = False
+    mock_filtered_positive_fields_set.return_value = False
     mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.side_effect = Exception("Boom!")
@@ -150,7 +150,7 @@ def test_get_cherrypicked_samples_by_date_error_raises_exception(
 
 
 def test_extract_required_cp_info_error_raises_exception(
-    mock_v0_version_set,
+    mock_filtered_positive_fields_set,
     mock_helper_database_updates,
     mock_query_helper_functions,
     mock_extract_required_cp_info,
@@ -158,7 +158,7 @@ def test_extract_required_cp_info_error_raises_exception(
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
     mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
 
-    mock_v0_version_set.return_value = False
+    mock_filtered_positive_fields_set.return_value = False
     mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.side_effect = Exception("Boom!")
 
@@ -169,7 +169,7 @@ def test_extract_required_cp_info_error_raises_exception(
 
 
 def test_split_mongo_samples_by_version_error_raises_exception(
-    mock_v0_version_set,
+    mock_filtered_positive_fields_set,
     mock_helper_database_updates,
     mock_query_helper_functions,
     mock_extract_required_cp_info,
@@ -178,7 +178,7 @@ def test_split_mongo_samples_by_version_error_raises_exception(
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
     mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
 
-    mock_v0_version_set.return_value = False
+    mock_filtered_positive_fields_set.return_value = False
     mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.return_value = pd.DataFrame({"id": ["s1", "s2"]})
@@ -192,7 +192,7 @@ def test_split_mongo_samples_by_version_error_raises_exception(
 
 
 def test_filtered_positive_indentifier_by_version_error_raises_exception(
-    mock_v0_version_set,
+    mock_filtered_positive_fields_set,
     mock_helper_database_updates,
     mock_query_helper_functions,
     mock_extract_required_cp_info,
@@ -206,7 +206,7 @@ def test_filtered_positive_indentifier_by_version_error_raises_exception(
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
     mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
 
-    mock_v0_version_set.return_value = False
+    mock_filtered_positive_fields_set.return_value = False
     mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.return_value = pd.DataFrame({"id": ["s1", "s2"]})
@@ -226,7 +226,7 @@ def test_filtered_positive_indentifier_by_version_error_raises_exception(
 
 
 def test_update_filtered_positive_fields_error_raises_exception(
-    mock_v0_version_set,
+    mock_filtered_positive_fields_set,
     mock_helper_database_updates,
     mock_query_helper_functions,
     mock_extract_required_cp_info,
@@ -241,7 +241,7 @@ def test_update_filtered_positive_fields_error_raises_exception(
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
     mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
 
-    mock_v0_version_set.return_value = False
+    mock_filtered_positive_fields_set.return_value = False
     mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.return_value = pd.DataFrame({"id": ["s1", "s2"]})
@@ -264,7 +264,7 @@ def test_update_filtered_positive_fields_error_raises_exception(
 def test_update_legacy_filtered_positives_outputs_success(
     config,
     freezer,
-    mock_v0_version_set,
+    mock_filtered_positive_fields_set,
     mock_helper_database_updates,
     mock_query_helper_functions,
     mock_extract_required_cp_info,
@@ -281,7 +281,7 @@ def test_update_legacy_filtered_positives_outputs_success(
     mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
     mock_split_mongo_samples_by_version = mock_split_mongo_samples_by_version
 
-    mock_v0_version_set.return_value = False
+    mock_filtered_positive_fields_set.return_value = False
     mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.return_value = pd.DataFrame({"id": ["s1", "s2"]})
@@ -323,7 +323,7 @@ def test_update_legacy_filtered_positives_successful_if_user_chooses_to_continue
     config,
     freezer,
     mock_user_input,
-    mock_v0_version_set,
+    mock_filtered_positive_fields_set,
     mock_helper_database_updates,
     mock_query_helper_functions,
     mock_extract_required_cp_info,
@@ -340,7 +340,7 @@ def test_update_legacy_filtered_positives_successful_if_user_chooses_to_continue
     mock_legacy_mongo_samples, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
     mock_split_mongo_samples_by_version = mock_split_mongo_samples_by_version
 
-    mock_v0_version_set.return_value = True
+    mock_filtered_positive_fields_set.return_value = True
     mock_user_input.return_value = "yes"
     mock_legacy_mongo_samples.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
