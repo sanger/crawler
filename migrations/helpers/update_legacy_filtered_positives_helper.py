@@ -237,36 +237,50 @@ def update_mlwh_filtered_positive_fields_batched(
         bool -- whether the updates completed successfully
     """
     mysql_conn = create_mysql_connection(config, False)
+    completed_successfully = False
+    try:
+        if mysql_conn is not None and mysql_conn.is_connected():
+            num_samples = len(samples)
+            ROWS_PER_QUERY = 15000
+            samples_index = 0
+            logger.debug(f"Attempting to update {num_samples} rows in the MLWH database in batches of {ROWS_PER_QUERY}")
+            while samples_index < num_samples:
+                samples_batch = samples[samples_index : (samples_index + ROWS_PER_QUERY)]
+                mlwh_samples_batch = [map_mongo_to_sql_common(sample) for sample in samples_batch]
 
-    if mysql_conn is not None and mysql_conn.is_connected():
-        num_samples = len(samples)
-        ROWS_PER_QUERY = 15000
-        samples_index = 0
-        logger.debug(f"Attempting to update {num_samples} rows in the MLWH database in batches of {ROWS_PER_QUERY}")
-        while samples_index < num_samples:
-            samples_batch = samples[samples_index : (samples_index + ROWS_PER_QUERY)]
-            mlwh_samples = [map_mongo_to_sql_common(sample) for sample in samples_batch]
-            samples_id_batch: List[str] = [sample[MLWH_MONGODB_ID] for sample in samples_batch]
+                filtered_positive_ids = []
+                filtered_negative_ids = []
+                for sample in mlwh_samples_batch:
+                    if sample[MLWH_FILTERED_POSITIVE] is True:
+                        filtered_positive_ids.append(sample[MLWH_MONGODB_ID])
+                    else:
+                        filtered_negative_ids.append(sample[MLWH_MONGODB_ID])
 
-            filtered_positive_ids: List[str] = [
-                sample[MLWH_MONGODB_ID]
-                for sample in list(filter(lambda x: x[MLWH_FILTERED_POSITIVE] is True, samples_batch))
-            ]
-            filtered_negative_ids = [mongo_id for mongo_id in samples_id_batch if mongo_id not in filtered_positive_ids]
+                filtered_positive_num = len(filtered_positive_ids)
+                logger.info(f"Attempting to update {filtered_positive_num} {version} filtered positive samples in MLWH")
 
-            if len(filtered_positive_ids) > 0:
-                positive_args: List[Any] = [True, version, update_timestamp]
-                run_mysql_execute_formatted_query(
-                    mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH, filtered_positive_ids, positive_args
-                )
+                if filtered_positive_num > 0:
+                    positive_args: List[Any] = [True, version, update_timestamp]
+                    run_mysql_execute_formatted_query(
+                        mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH, filtered_positive_ids, positive_args
+                    )
 
-            if len(filtered_negative_ids) > 0:
-                negative_args: List[Any] = [False, version, update_timestamp]
-                run_mysql_execute_formatted_query(
-                    mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH, filtered_negative_ids, negative_args
-                )
+                filtered_negative_num = len(filtered_negative_ids)
+                logger.info(f"Attempting to update {filtered_negative_num} {version} filtered positive false samples in MLWH")
 
-            samples_index += ROWS_PER_QUERY
-        return True
-    else:
-        return False
+                if filtered_negative_num > 0:
+                    negative_args: List[Any] = [False, version, update_timestamp]
+                    run_mysql_execute_formatted_query(
+                        mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH, filtered_negative_ids, negative_args
+                    )
+
+                samples_index += ROWS_PER_QUERY
+            completed_successfully = True
+    except Exception:
+        logger.error("MLWH filtered positive field batched updates failed")
+        raise
+    finally:
+        # close the connection
+        logger.debug("Closing the MLWH database connection.")
+        mysql_conn.close()
+        return completed_successfully

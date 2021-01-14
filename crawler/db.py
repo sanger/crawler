@@ -311,27 +311,18 @@ def run_mysql_execute_formatted_query(
             total_rows_affected += cursor.rowcount
             logger.debug(f"{cursor.rowcount} rows affected in MLWH.")
 
-            total_rows_affected += cursor.rowcount
             formatting_args_index += FORMATTING_ARGS_PER_QUERY
             logger.debug("Committing changes to MLWH database.")
             mysql_conn.commit()
 
-        # number of rows affected using cursor.rowcount - not easy to interpret:
-        # reports 1 per inserted row,
-        # 2 per updated existing row,
-        # and 0 per unchanged existing row
-        logger.debug(f"A total of {total_rows_affected} rows were affected in MLWH.")
+        logger.debug(f"Successfully affected a total of {total_rows_affected} rows in MLWH.")
     except Exception:
-        logger.error("MLWH database executemany transaction failed")
+        logger.error("MLWH database execute transaction failed")
         raise
     finally:
         # close the cursor
         logger.debug("Closing the cursor.")
         cursor.close()
-
-        # close the connection
-        logger.debug("Closing the MLWH database connection.")
-        mysql_conn.close()
 
 
 def create_dart_sql_server_conn(config: ModuleType) -> Optional[pyodbc.Connection]:
