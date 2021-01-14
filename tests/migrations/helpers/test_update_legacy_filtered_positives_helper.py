@@ -22,13 +22,13 @@ from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_2,
 )
 
+start_datetime = datetime.strptime("201209_0000", MONGO_DATETIME_FORMAT)
+end_datetime = datetime.strptime("201217_0000", MONGO_DATETIME_FORMAT)
+
 # ----- mongo_samples_by_date tests -----
 
 
 def test_mongo_samples_by_date_error_getting_samples(config):
-    start_datetime = datetime.strptime("201209_0000", MONGO_DATETIME_FORMAT)
-    end_datetime = datetime.strptime("201217_0000", MONGO_DATETIME_FORMAT)
-
     with patch(
         "migrations.helpers.update_legacy_filtered_positives_helper.create_mongo_client",
         side_effect=ValueError("Boom!"),
@@ -40,9 +40,6 @@ def test_mongo_samples_by_date_error_getting_samples(config):
 def test_mongo_samples_by_date_returns_correct_samples(
     config, filtered_positive_testing_samples
 ):
-    start_datetime = datetime.strptime("201209_0000", MONGO_DATETIME_FORMAT)
-    end_datetime = datetime.strptime("201217_0000", MONGO_DATETIME_FORMAT)
-
     result = mongo_samples_by_date(config, start_datetime, end_datetime)
     expected_samples = filtered_positive_testing_samples[-3:]
 
@@ -52,15 +49,15 @@ def test_mongo_samples_by_date_returns_correct_samples(
 # ----- filtered_positive_fields_set tests -----
 
 
-def test_filtered_positive_fields_set_returns_true_with_v0(config, filtered_positive_testing_samples):
-    assert filtered_positive_fields_set(config) is True
+def test_filtered_positive_fields_set_returns_true_with_fields_set(config, filtered_positive_testing_samples):
+    assert filtered_positive_fields_set(config, start_datetime, end_datetime) is True
 
 
-def test_filtered_positive_fields_set_returns_false_with_no_v0_samples(
+def test_filtered_positive_fields_set_returns_false_with_no_fields_set(
     config,
-    filtered_positive_testing_samples_no_v0,
+    filtered_positive_testing_samples_no_version_set,
 ):
-    assert filtered_positive_fields_set(config) is False
+    assert filtered_positive_fields_set(config, start_datetime, end_datetime) is False
 
 
 # ----- get_cherrypicked_samples_by_date tests -----
