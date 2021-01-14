@@ -40,7 +40,9 @@ def mock_user_input():
 
 @pytest.fixture
 def mock_filtered_positive_fields_set():
-    with patch("migrations.update_legacy_filtered_positives.filtered_positive_fields_set") as mock_filtered_positive_fields_set:
+    with patch(
+        "migrations.update_legacy_filtered_positives.filtered_positive_fields_set"
+    ) as mock_filtered_positive_fields_set:
         yield mock_filtered_positive_fields_set
 
 
@@ -89,9 +91,7 @@ def mock_update_filtered_positive_fields():
 
 @pytest.fixture
 def mock_valid_datetime_string():
-    with patch(
-        "migrations.update_legacy_filtered_positives.valid_datetime_string"
-    ) as mock_valid_datetime_string:
+    with patch("migrations.update_legacy_filtered_positives.valid_datetime_string") as mock_valid_datetime_string:
         yield mock_valid_datetime_string
 
 
@@ -123,14 +123,12 @@ def test_update_legacy_filtered_positives_exception_raised_if_user_enters_invali
     mock_update_mlwh.assert_not_called()
 
 
-def test_update_legacy_filtered_positives_returns_early_invalid_start_datetime(
-    config, mock_helper_database_updates
-):
+def test_update_legacy_filtered_positives_returns_early_invalid_start_datetime(config, mock_helper_database_updates):
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
     start_datetime = "not a real datetime"
     end_datetime = "201017_1200"
 
-    mock_valid_datetime_string.return_value=False
+    mock_valid_datetime_string.return_value = False
     update_legacy_filtered_positives.run("crawler.config.integration", start_datetime, end_datetime)
 
     # ensure no database connections/updates are made
@@ -138,14 +136,12 @@ def test_update_legacy_filtered_positives_returns_early_invalid_start_datetime(
     mock_update_mlwh.assert_not_called()
 
 
-def test_update_legacy_filtered_positives_returns_early_invalid_end_datetime(
-    config, mock_helper_database_updates
-):
+def test_update_legacy_filtered_positives_returns_early_invalid_end_datetime(config, mock_helper_database_updates):
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
     start_datetime = "201016_1600"
     end_datetime = "not a real datetime"
 
-    mock_valid_datetime_string.side_effect=[True, False]
+    mock_valid_datetime_string.side_effect = [True, False]
     update_legacy_filtered_positives.run("crawler.config.integration", start_datetime, end_datetime)
 
     # ensure no database connections/updates are made
