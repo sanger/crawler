@@ -217,6 +217,26 @@ def test_get_cherrypicked_samples_by_date_error_raises_exception(
         mock_update_mlwh.assert_not_called()
 
 
+def test_get_cherrypicked_samples_by_date_connection_error_raises_exception(
+    mock_filtered_positive_fields_set,
+    mock_helper_database_updates,
+    mock_query_helper_functions,
+    mock_extract_required_cp_info,
+):
+    mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
+    mock_mongo_samples_by_date, mock_get_cherrypicked_samples_by_date = mock_query_helper_functions
+
+    mock_filtered_positive_fields_set.return_value = False
+    mock_mongo_samples_by_date.return_value = [{"plate_barcode": "1"}]
+    mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
+    mock_get_cherrypicked_samples_by_date.return_value = None
+
+    with pytest.raises(Exception):
+        update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
+        mock_update_mongo.assert_not_called()
+        mock_update_mlwh.assert_not_called()
+
+
 def test_extract_required_cp_info_error_raises_exception(
     mock_filtered_positive_fields_set,
     mock_helper_database_updates,
