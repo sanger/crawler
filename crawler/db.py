@@ -293,10 +293,10 @@ def run_mysql_execute_formatted_query(
 
             formatting_args_batch = formatting_args[formatting_args_index : (formatting_args_index + FORMATTING_ARGS_PER_QUERY)]
 
-            sql_unwrap_formatted_args = ", ".join(list(map(lambda x: "%s", formatting_args_batch)))
-            if len(samples_id_batch) > 0:
-                sql_query = formatted_sql_query % sql_unwrap_formatted_args
-                string_args = query_args + formatting_args_batch
+            sql_unwrap_formatted_args = ", ".join(list(map(lambda x: "%s", formatting_args_batch))) # e.g. for 3 ids, this would look like "%s,%s,%s"
+            if len(formatting_args_batch) > 0:
+                sql_query = formatted_sql_query % sql_unwrap_formatted_args # formats the query to have the correct number of formatting args for the ids
+                string_args = query_args + formatting_args_batch # adds the filtered positive args to the id args
                 cursor.execute(sql_query, tuple(string_args))
 
             total_rows_affected += cursor.rowcount
