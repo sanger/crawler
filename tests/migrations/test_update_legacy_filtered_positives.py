@@ -45,7 +45,7 @@ def mock_filtered_positive_fields_set():
 @pytest.fixture
 def mock_query_helper_functions():
     with patch(
-        "migrations.update_legacy_filtered_positives.positive_legacy_mongo_samples"
+        "migrations.update_legacy_filtered_positives.mongo_samples_by_date"
     ) as mock_legacy_mongo_samples:  # noqa: E501
         with patch(
             "migrations.update_legacy_filtered_positives.get_cherrypicked_samples_by_date"
@@ -118,7 +118,7 @@ def test_update_legacy_filtered_positives_catches_error_connecting_to_mongo(
 ):
     with pytest.raises(Exception):
         with patch(
-            "migrations.update_legacy_filtered_positives.positive_legacy_mongo_samples",
+            "migrations.update_legacy_filtered_positives.mongo_samples_by_date",
             side_effect=Exception("Boom!"),
         ):
             mock_filtered_positive_fields_set.return_value = False
