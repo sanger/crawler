@@ -305,7 +305,9 @@ def run_mysql_execute_formatted_query(
                 sql_query = (
                     formatted_sql_query % sql_unwrap_formatted_args
                 )  # formats the query to have the correct number of formatting arguments for the ids
-                string_args = query_args + formatting_args_batch  # adds the filtered positive arguments to the id arguments
+                string_args = (
+                    query_args + formatting_args_batch
+                )  # adds the filtered positive arguments to the id arguments
                 cursor.execute(sql_query, tuple(string_args))
 
             total_rows_affected += cursor.rowcount

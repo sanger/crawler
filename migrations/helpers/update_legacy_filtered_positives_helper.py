@@ -262,16 +262,24 @@ def update_mlwh_filtered_positive_fields_batched(
                 if filtered_positive_num > 0:
                     positive_args: List[Any] = [True, version, update_timestamp]
                     run_mysql_execute_formatted_query(
-                        mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH, filtered_positive_ids, positive_args
+                        mysql_conn,
+                        SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH,
+                        filtered_positive_ids,
+                        positive_args,
                     )
 
                 filtered_negative_num = len(filtered_negative_ids)
-                logger.info(f"Attempting to update {filtered_negative_num} {version} filtered positive false samples in MLWH")
+                logger.info(
+                    f"Attempting to update {filtered_negative_num} {version} filtered positive false samples in MLWH"
+                )
 
                 if filtered_negative_num > 0:
                     negative_args: List[Any] = [False, version, update_timestamp]
                     run_mysql_execute_formatted_query(
-                        mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH, filtered_negative_ids, negative_args
+                        mysql_conn,
+                        SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH,
+                        filtered_negative_ids,
+                        negative_args,
                     )
 
                 samples_index += ROWS_PER_QUERY
