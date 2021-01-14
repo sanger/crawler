@@ -98,7 +98,7 @@ def run(settings_module: str = "", s_start_datetime: str = "", s_end_datetime: s
 
         logger.info("Checking whether filtered positive version has been set on any samples...")
         if filtered_positive_fields_set(config, start_datetime, end_datetime):
-            question = "v0 version has been set on some samples. This migration has likely been \
+            question = "The filtered positive field has been set on some samples. This migration has likely been \
 run before - do you still wish to proceed? (yes/no):"
             response = get_input(question)
 
