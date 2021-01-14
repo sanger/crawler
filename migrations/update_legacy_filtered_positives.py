@@ -30,7 +30,7 @@ from crawler.filtered_positive_identifier import (
 from migrations.helpers.shared_helper import (
     extract_required_cp_info,
     valid_datetime_string,
-) 
+)
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ def run(settings_module: str = "", s_start_datetime: str = "", s_end_datetime: s
 
     try:
         continue_migration = True
-        
+
         logger.info("Checking whether v0 version has been set on any samples...")
         if v0_version_set(config):
             question = "v0 version has been set on some samples. This migration has likely been \
@@ -188,7 +188,7 @@ run before - do you still wish to proceed? (yes/no):"
                     mlwh_update_start_time = time.time()
 
                     mlwh_updated = update_mlwh_filtered_positive_fields_batched(
-                         config, version_samples, version, update_timestamp
+                        config, version_samples, version, update_timestamp
                     )
 
                     if mlwh_updated:

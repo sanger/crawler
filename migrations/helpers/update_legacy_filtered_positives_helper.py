@@ -211,14 +211,14 @@ def split_mongo_samples_by_version(
             v2_samples.append(sample)
         counter += 1
 
-        if counter%10000 == 0:
+        if counter % 10000 == 0:
             logger.debug(f"Split {counter} samples by version")
 
     samples_by_version = {
         FILTERED_POSITIVE_VERSION_0: v0_samples,
         FILTERED_POSITIVE_VERSION_1: v1_samples,
         FILTERED_POSITIVE_VERSION_2: v2_samples,
-     }
+    }
 
     return samples_by_version
 
@@ -242,16 +242,15 @@ def update_mlwh_filtered_positive_fields_batched(
         num_samples = len(samples)
         ROWS_PER_QUERY = 15000
         samples_index = 0
-        logger.debug(
-            f"Attempting to update {num_samples} rows in the MLWH database in batches of {ROWS_PER_QUERY}"
-        )
+        logger.debug(f"Attempting to update {num_samples} rows in the MLWH database in batches of {ROWS_PER_QUERY}")
         while samples_index < num_samples:
             samples_batch = samples[samples_index : (samples_index + ROWS_PER_QUERY)]
             mlwh_samples = [map_mongo_to_sql_common(sample) for sample in samples_batch]
             samples_id_batch: List[str] = [sample[MLWH_MONGODB_ID] for sample in samples_batch]
 
             filtered_positive_ids: List[str] = [
-                sample[MLWH_MONGODB_ID] for sample in list(filter(lambda x: x[MLWH_FILTERED_POSITIVE] is True, samples_batch))
+                sample[MLWH_MONGODB_ID]
+                for sample in list(filter(lambda x: x[MLWH_FILTERED_POSITIVE] is True, samples_batch))
             ]
             filtered_negative_ids = [mongo_id for mongo_id in samples_id_batch if mongo_id not in filtered_positive_ids]
 
@@ -271,4 +270,3 @@ def update_mlwh_filtered_positive_fields_batched(
         return True
     else:
         return False
-

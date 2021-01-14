@@ -170,9 +170,7 @@ def update_mongo_filtered_positive_fields(
         num_samples = len(samples)
         SAMPLES_PER_QUERY = 15000
         samples_index = 0
-        logger.debug(
-            f"Attempting to update {num_samples} rows in Mongo in batches of {SAMPLES_PER_QUERY}"
-        )
+        logger.debug(f"Attempting to update {num_samples} rows in Mongo in batches of {SAMPLES_PER_QUERY}")
         while samples_index < num_samples:
             logger.debug(f"Updating records between {samples_index} and {samples_index + SAMPLES_PER_QUERY}")
 
@@ -181,7 +179,8 @@ def update_mongo_filtered_positive_fields(
             # get ids of those that are filtered positive, and those that aren't
             batch_ids: List[str] = [sample[FIELD_MONGODB_ID] for sample in samples_batch]
             filtered_positive_ids: List[str] = [
-                sample[FIELD_MONGODB_ID] for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] is True, samples_batch))
+                sample[FIELD_MONGODB_ID]
+                for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] is True, samples_batch))
             ]
 
             filtered_negative_ids = [mongo_id for mongo_id in batch_ids if mongo_id not in filtered_positive_ids]
