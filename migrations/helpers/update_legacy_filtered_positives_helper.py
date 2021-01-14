@@ -1,5 +1,5 @@
 from types import ModuleType
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from pandas import DataFrame  # type: ignore
 import pandas as pd
 from datetime import datetime
@@ -21,13 +21,18 @@ from crawler.constants import (
     POSITIVE_RESULT_VALUE,
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
+    MLWH_MONGODB_ID,
+    MLWH_FILTERED_POSITIVE,
 )
 from crawler.db import (
     create_mongo_client,
     get_mongo_collection,
     get_mongo_db,
     run_mysql_execute_formatted_query,
+    create_mysql_connection,
 )
+from crawler.helpers.general_helpers import map_mongo_to_sql_common
+from crawler.sql_queries import SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH
 import logging
 
 logger = logging.getLogger(__name__)
@@ -218,7 +223,7 @@ def split_mongo_samples_by_version(
     return samples_by_version
 
 
-def update_mlwh_filtered_positive_fields_batch_query(
+def update_mlwh_filtered_positive_fields_batched(
     config: ModuleType, samples: List[Sample], version: str, update_timestamp: datetime
 ) -> bool:
     """Bulk updates sample filtered positive fields in the MLWH database
@@ -262,7 +267,7 @@ def update_mlwh_filtered_positive_fields_batch_query(
                     mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH, filtered_negative_ids, negative_args
                 )
 
-            values_index += ROWS_PER_QUERY
+            samples_index += ROWS_PER_QUERY
         return True
     else:
         return False

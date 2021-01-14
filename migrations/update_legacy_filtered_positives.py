@@ -13,7 +13,7 @@ from migrations.helpers.update_legacy_filtered_positives_helper import (
     get_cherrypicked_samples_by_date,
     v0_version_set,
     split_mongo_samples_by_version,
-    update_mlwh_filtered_positive_fields_batch_query,
+    update_mlwh_filtered_positive_fields_batched,
 )
 from crawler.constants import (
     V0_V1_CUTOFF_TIMESTAMP,
@@ -185,8 +185,8 @@ run before - do you still wish to proceed? (yes/no):"
                     logger.info(f"Updating {version} filtered positives in MLWH...")
                     mlwh_update_start_time = time.time()
 
-                    mlwh_updated = update_mlwh_filtered_positive_fields_batch_query(
-                        config, version_samples, version, update_timestamp
+                    mlwh_updated = update_mlwh_filtered_positive_fields_batched(
+                         config, version_samples, version, update_timestamp
                     )
 
                     if mlwh_updated:
