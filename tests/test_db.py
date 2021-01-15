@@ -23,6 +23,7 @@ from crawler.db import (
     set_dart_plate_state_pending,
     set_dart_well_properties,
     create_mysql_connection_engine,
+    run_mysql_execute_formatted_query,
 )
 from crawler.exceptions import DartStateError
 from crawler.helpers.logging_helpers import LoggingCollection
@@ -32,6 +33,7 @@ from crawler.sql_queries import (
     SQL_DART_SET_PLATE_PROPERTY,
     SQL_DART_SET_WELL_PROPERTY,
     SQL_MLWH_MULTIPLE_INSERT,
+    SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH,
 )
 from mysql.connector.connection_cext import CMySQLConnection
 from pymongo import MongoClient
@@ -134,6 +136,59 @@ def test_run_mysql_executemany_query_execute_error(config):
         # check connection is closed
         assert cursor.close.called is True
         assert conn.close.called is True
+
+
+def test_run_mysql_execute_formatted_query_success(config):
+    conn = CMySQLConnection()
+
+    conn.cursor = MagicMock()
+    conn.commit = MagicMock()
+    conn.rollback = MagicMock()
+    conn.close = MagicMock()
+
+    cursor = conn.cursor.return_value
+    cursor.execute = MagicMock()
+    cursor.close = MagicMock()
+
+    run_mysql_execute_formatted_query(
+        mysql_conn=conn,
+        formatted_sql_query=SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH,
+        formatting_args=["1", "2"],
+        query_args=[True, "v2", "2020-01-01"],
+    )
+
+    # check transaction is committed
+    assert conn.commit.called is True
+
+    # check connection is closed
+    assert cursor.close.called is True
+
+
+def test_run_mysql_execute_formatted_query_execute_error(config):
+    conn = CMySQLConnection()
+
+    conn.cursor = MagicMock()
+    conn.commit = MagicMock()
+    conn.rollback = MagicMock()
+    conn.close = MagicMock()
+
+    cursor = conn.cursor.return_value
+    cursor.execute = MagicMock(side_effect=Exception("Boom!"))
+    cursor.close = MagicMock()
+
+    with pytest.raises(Exception):
+        run_mysql_execute_formatted_query(
+            mysql_conn=conn,
+            formatted_sql_query=SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH,
+            formatting_args=["1", "2"],
+            query_args=[True, "v2", "2020-01-01"],
+        )
+
+        # check transaction is not committed
+        assert conn.commit.called is False
+
+        # check connection is closed
+        assert cursor.close.called is True
 
 
 def test_create_dart_sql_server_conn(config):
