@@ -277,7 +277,7 @@ def run_mysql_execute_formatted_query(
         # executing the query with values
         num_formatting_args = len(formatting_args)
 
-        # BN. If ROWS_PER_QUERY value is too high, you may get '2006 (HY000): MySQL server has
+        # BN. If FORMATTING_ARGS_PER_QUERY value is too high, you may get '2006 (HY000): MySQL server has
         # gone away' error indicating you've exceeded the max_allowed_packet size for MySQL
         FORMATTING_ARGS_PER_QUERY = 15000
         formatting_args_index = 0
