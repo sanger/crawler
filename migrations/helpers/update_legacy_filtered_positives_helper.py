@@ -153,7 +153,7 @@ def get_cherrypicked_samples_by_date(
     except Exception as e:
         logger.error("Error while connecting to MySQL")
         logger.exception(e)
-        return None
+        raise
     finally:
         if db_connection:
             db_connection.close()

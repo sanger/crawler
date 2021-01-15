@@ -5,7 +5,6 @@ from datetime import datetime
 from crawler.helpers.general_helpers import get_config
 from migrations.helpers.update_filtered_positives_helper import (
     update_filtered_positive_fields,
-    update_mlwh_filtered_positive_fields,
     update_mongo_filtered_positive_fields,
 )
 from migrations.helpers.update_legacy_filtered_positives_helper import (
@@ -94,24 +93,11 @@ def run(settings_module: str = "", s_start_datetime: str = "", s_end_datetime: s
     }
 
     try:
-        continue_migration = True
-
         logger.info(
             f"Checking whether filtered positive version has been set on any samples between \
 {start_datetime} and {end_datetime}..."
         )
-        if filtered_positive_fields_set(config, start_datetime, end_datetime):
-            question = "The filtered positive field has been set on some samples. This migration has likely been \
-run before - do you still wish to proceed? (yes/no):"
-            response = get_input(question)
-
-            if response == "yes":
-                pass
-            elif response == "no":
-                continue_migration = False
-            else:
-                logger.warning("Invalid input, please enter 'yes' or 'no'. Now exiting migration")
-                continue_migration = False
+        continue_migration = pre_migration_filtered_positive_check(config, start_datetime, end_datetime)
 
         if continue_migration:
             logger.info(f"Selecting legacy samples from Mongo between {start_datetime} and {end_datetime}...")
@@ -131,8 +117,6 @@ run before - do you still wish to proceed? (yes/no):"
                 "1970-01-01 00:00:01",
                 V0_V1_CUTOFF_TIMESTAMP,
             )
-            if v0_cp_samples_df is None:
-                raise Exception("Unable to determine cherry-picked sample - potentially error connecting to MySQL")
 
             logger.debug(f"Found {len(v0_cp_samples_df.index)} v0 cherrypicked samples")
 
@@ -145,8 +129,6 @@ run before - do you still wish to proceed? (yes/no):"
                 V0_V1_CUTOFF_TIMESTAMP,
                 V1_V2_CUTOFF_TIMESTAMP,
             )
-            if v1_cp_samples_df is None:
-                raise Exception("Unable to determine cherry-picked sample - potentially error connecting to MySQL")
 
             logger.debug(f"Found {len(v1_cp_samples_df.index)} v1 cherrypicked samples")
 
@@ -246,6 +228,31 @@ time taken: \
     logger.info(f"Time finished: {datetime.now()}")
     logger.info(f"Migration complete in {round(end_time - start_time, 2)}s")
     logger.info("=" * 80)
+
+
+# Private, not explicitly tested methods
+
+
+def pre_migration_filtered_positive_check(config, start_datetime, end_datetime):
+    logger.info(
+        f"Checking whether filtered positive version has been set on any samples between \
+{start_datetime} and {end_datetime}..."
+    )
+
+    if filtered_positive_fields_set(config, start_datetime, end_datetime):
+        question = "The filtered positive field has been set on some samples. This migration has likely been \
+run before - do you still wish to proceed? (yes/no):"
+        response = get_input(question)
+
+        if response == "yes":
+            return True
+        elif response == "no":
+            return False
+        else:
+            logger.warning("Invalid input, please enter 'yes' or 'no'. Now exiting migration")
+            return False
+    else:
+        return True
 
 
 def get_input(text):
