@@ -374,10 +374,6 @@ EVENT_WH_DATA: Dict[str, Any] = {
 }
 
 
-def to_datetime(date_string):
-    return datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S")
-
-
 MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
     "sample": [
         {
@@ -390,7 +386,9 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": str(to_datetime(V0_V1_CUTOFF_TIMESTAMP)),  # Created at v0/v1 cut-off time
+            "created": str(
+                datetime.strptime(V0_V1_CUTOFF_TIMESTAMP, "%Y-%m-%d %H:%M:%S")
+            ),  # Created at v0/v1 cut-off time
             "uuid_sample_lims": "1",
         },
         {
@@ -404,7 +402,7 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
             "created": str(
-                to_datetime(V0_V1_CUTOFF_TIMESTAMP) - timedelta(days=1)
+                datetime.strptime(V0_V1_CUTOFF_TIMESTAMP, "%Y-%m-%d %H:%M:%S") - timedelta(days=1)
             ),  # Created before v0/v1 cut-off time
             "uuid_sample_lims": "2",
         },
@@ -418,7 +416,9 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": str(to_datetime(V0_V1_CUTOFF_TIMESTAMP) + timedelta(days=1)),  # Created after v0/v1 cut-off time
+            "created": str(
+                datetime.strptime(V0_V1_CUTOFF_TIMESTAMP, "%Y-%m-%d %H:%M:%S") + timedelta(days=1)
+            ),  # Created after v0/v1 cut-off time
             "uuid_sample_lims": "3",
         },
         {
@@ -431,7 +431,9 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": str(to_datetime(V1_V2_CUTOFF_TIMESTAMP) + timedelta(days=1)),  # Created after v1/v2 cut-off time
+            "created": str(
+                datetime.strptime(V1_V2_CUTOFF_TIMESTAMP, "%Y-%m-%d %H:%M:%S") + timedelta(days=1)
+            ),  # Created after v1/v2 cut-off time
             "uuid_sample_lims": "4",
         },
         {
@@ -445,7 +447,7 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
             "created": str(
-                to_datetime(FILTERED_POSITIVE_FIELDS_SET_DATE) + timedelta(days=1)
+                datetime.strptime(FILTERED_POSITIVE_FIELDS_SET_DATE, "%Y-%m-%d") + timedelta(days=1)
             ),  # Created after filtered positive fields set
             "uuid_sample_lims": "5",
         },
