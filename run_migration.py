@@ -31,6 +31,7 @@ print("* sample_timestamps")
 print("* update_mlwh_with_legacy_samples")
 print("* update_mlwh_and_dart_with_legacy_samples")
 print("* update_filtered_positives")
+print("* update_legacy_filtered_positives")
 
 
 def migration_sample_timestamps():
