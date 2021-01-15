@@ -19,8 +19,6 @@ from crawler.constants import (
     DART_STATE_NO_PLATE,
     DART_STATE_NO_PROP,
     DART_STATE_PENDING,
-    MLWH_MONGODB_ID,
-    FIELD_FILTERED_POSITIVE,
 )
 from crawler.exceptions import DartStateError
 from crawler.sql_queries import (
@@ -290,11 +288,12 @@ def run_mysql_execute_formatted_query(
 
         while formatting_args_index < num_formatting_args:
             logger.debug(
-                f"Executing sql for formatting args between {formatting_args_index} and {formatting_args_index + FORMATTING_ARGS_PER_QUERY}"
+                f"Executing sql for formatting args between {formatting_args_index} and \
+{formatting_args_index + FORMATTING_ARGS_PER_QUERY}"
             )
 
             formatting_args_batch = formatting_args[
-                formatting_args_index : (formatting_args_index + FORMATTING_ARGS_PER_QUERY)
+                formatting_args_index : (formatting_args_index + FORMATTING_ARGS_PER_QUERY)  # noqa: E203
             ]
 
             sql_unwrap_formatted_args = ", ".join(
