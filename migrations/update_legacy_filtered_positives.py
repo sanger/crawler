@@ -118,7 +118,7 @@ def run(settings_module: str = "", s_start_datetime: str = "", s_end_datetime: s
                 V0_V1_CUTOFF_TIMESTAMP,
             )
 
-            logger.debug(f"Found {len(v0_cp_samples_df.index)} v0 cherrypicked samples")
+            logger.debug(f"Found {len(v0_cp_samples_df.index)} v0 cherrypicked samples")  # type: ignore
 
             logger.info("Querying for cherrypicked samples from MLWH")
             # Get v1 cherrypicked samples
@@ -130,7 +130,7 @@ def run(settings_module: str = "", s_start_datetime: str = "", s_end_datetime: s
                 V1_V2_CUTOFF_TIMESTAMP,
             )
 
-            logger.debug(f"Found {len(v1_cp_samples_df.index)} v1 cherrypicked samples")
+            logger.debug(f"Found {len(v1_cp_samples_df.index)} v1 cherrypicked samples")  # type: ignore
 
             logger.info("Splitting samples by version...")
             samples_by_version = split_mongo_samples_by_version(samples, v0_cp_samples_df, v1_cp_samples_df)
