@@ -8,27 +8,27 @@ print("Initialising the test MySQL MLWH database")
 
 sql_engine = create_mysql_connection_engine(config.WAREHOUSES_RW_CONN_STRING)
 
-create_db = f"""
-CREATE DATABASE IF NOT EXISTS `{config.ML_WH_DB}` /*!40100 DEFAULT CHARACTER SET latin1 */;
+create_db = """
+CREATE DATABASE IF NOT EXISTS `unified_warehouse_test` /*!40100 DEFAULT CHARACTER SET latin1 */;
 """
-drop_table_lh_sample = f"""
-DROP TABLE IF EXISTS `{config.ML_WH_DB}`.`lighthouse_sample`;
-"""
-
-drop_table_sample = f"""
-DROP TABLE IF EXISTS `{config.ML_WH_DB}`.`sample`;
+drop_table_lh_sample = """
+DROP TABLE IF EXISTS `unified_warehouse_test`.`lighthouse_sample`;
 """
 
-drop_table_stock_resource = f"""
-DROP TABLE IF EXISTS `{config.ML_WH_DB}`.`stock_resource`;
+drop_table_sample = """
+DROP TABLE IF EXISTS `unified_warehouse_test`.`sample`;
 """
 
-drop_table_study = f"""
-DROP TABLE IF EXISTS `{config.ML_WH_DB}`.`study`;
+drop_table_stock_resource = """
+DROP TABLE IF EXISTS `unified_warehouse_test`.`stock_resource`;
 """
 
-create_table_lh_sample = f"""
-CREATE TABLE `{config.ML_WH_DB}`.`lighthouse_sample` (
+drop_table_study = """
+DROP TABLE IF EXISTS `unified_warehouse_test`.`study`;
+"""
+
+create_table_lh_sample = """
+CREATE TABLE `unified_warehouse_test`.`lighthouse_sample` (
 `id` int NOT NULL AUTO_INCREMENT,
 `mongodb_id` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL COMMENT 'Auto-generated id from MongoDB',
 `root_sample_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Id for this sample provided by the Lighthouse lab',
@@ -68,8 +68,8 @@ KEY `index_lighthouse_sample_on_date_tested` (`date_tested`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 """
 
-create_table_sample = f"""
-CREATE TABLE `{config.ML_WH_DB}`.`sample` (
+create_table_sample = """
+CREATE TABLE `unified_warehouse_test`.`sample` (
   `id_sample_tmp` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Internal to this database id, value can change',
   `id_lims` varchar(10) COLLATE utf8_unicode_ci NOT NULL COMMENT 'LIM system identifier, e.g. CLARITY-GCLP, SEQSCAPE',
   `uuid_sample_lims` varchar(36) COLLATE utf8_unicode_ci DEFAULT NULL COMMENT 'LIMS-specific sample uuid',
@@ -112,8 +112,8 @@ CREATE TABLE `{config.ML_WH_DB}`.`sample` (
 ) ENGINE=InnoDB AUTO_INCREMENT=4925703 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 """
 
-create_table_stock_resource = f"""
-CREATE TABLE `{config.ML_WH_DB}`.`stock_resource` (
+create_table_stock_resource = """
+CREATE TABLE `unified_warehouse_test`.`stock_resource` (
   `id_stock_resource_tmp` int(11) NOT NULL AUTO_INCREMENT,
   `last_updated` datetime NOT NULL COMMENT 'Timestamp of last update',
   `recorded_at` datetime NOT NULL COMMENT 'Timestamp of warehouse update',
@@ -144,8 +144,8 @@ CREATE TABLE `{config.ML_WH_DB}`.`stock_resource` (
 ) ENGINE=InnoDB AUTO_INCREMENT=4656364 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 """
 
-create_table_study = f"""
-CREATE TABLE `{config.ML_WH_DB}`.`study` (
+create_table_study = """
+CREATE TABLE `unified_warehouse_test`.`study` (
   `id_study_tmp` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Internal to this database id, value can change',
   `id_lims` varchar(10) COLLATE utf8_unicode_ci NOT NULL COMMENT 'LIM system identifier, e.g. GCLP-CLARITY, SEQSCAPE',
   `uuid_study_lims` varchar(36) COLLATE utf8_unicode_ci DEFAULT NULL COMMENT 'LIMS-specific study uuid',
@@ -217,35 +217,35 @@ with sql_engine.connect() as connection:
 
 print("Initialising the test MySQL events warehouse database")
 
-create_db = f"""
-CREATE DATABASE IF NOT EXISTS `{config.EVENTS_WH_DB}` /*!40100 DEFAULT CHARACTER SET latin1 */;
+create_db = """
+CREATE DATABASE IF NOT EXISTS `event_warehouse_test` /*!40100 DEFAULT CHARACTER SET latin1 */;
 """
-drop_table_subjects = f"""
-DROP TABLE IF EXISTS `{config.EVENTS_WH_DB}`.`subjects`;
-"""
-
-drop_table_roles = f"""
-DROP TABLE IF EXISTS `{config.EVENTS_WH_DB}`.`roles`;
+drop_table_subjects = """
+DROP TABLE IF EXISTS `event_warehouse_test`.`subjects`;
 """
 
-drop_table_events = f"""
-DROP TABLE IF EXISTS `{config.EVENTS_WH_DB}`.`events`;
+drop_table_roles = """
+DROP TABLE IF EXISTS `event_warehouse_test`.`roles`;
 """
 
-drop_table_event_types = f"""
-DROP TABLE IF EXISTS `{config.EVENTS_WH_DB}`.`event_types`;
+drop_table_events = """
+DROP TABLE IF EXISTS `event_warehouse_test`.`events`;
 """
 
-drop_table_subject_types = f"""
-DROP TABLE IF EXISTS `{config.EVENTS_WH_DB}`.`subject_types`;
+drop_table_event_types = """
+DROP TABLE IF EXISTS `event_warehouse_test`.`event_types`;
 """
 
-drop_table_role_types = f"""
-DROP TABLE IF EXISTS `{config.EVENTS_WH_DB}`.`role_types`;
+drop_table_subject_types = """
+DROP TABLE IF EXISTS `event_warehouse_test`.`subject_types`;
 """
 
-create_table_subjects = f"""
-CREATE TABLE `{config.EVENTS_WH_DB}`.`subjects` (
+drop_table_role_types = """
+DROP TABLE IF EXISTS `event_warehouse_test`.`role_types`;
+"""
+
+create_table_subjects = """
+CREATE TABLE `event_warehouse_test`.`subjects` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `uuid` binary(16) NOT NULL COMMENT 'A binary encoded UUID use HEX(uuid) to retrieve the original (minus dashes)',
   `friendly_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL COMMENT 'A user readable identifier for the subject',
@@ -260,8 +260,8 @@ CREATE TABLE `{config.EVENTS_WH_DB}`.`subjects` (
 ) ENGINE=InnoDB AUTO_INCREMENT=4198465 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 """
 
-create_table_roles = f"""
-CREATE TABLE `{config.EVENTS_WH_DB}`.`roles` (
+create_table_roles = """
+CREATE TABLE `event_warehouse_test`.`roles` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `event_id` int(11) NOT NULL COMMENT 'Associate with the event (what happened)',
   `subject_id` int(11) NOT NULL COMMENT 'Associate with the subject (what it happened to, or what might care)',
@@ -278,8 +278,8 @@ CREATE TABLE `{config.EVENTS_WH_DB}`.`roles` (
 ) ENGINE=InnoDB AUTO_INCREMENT=51090114 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 """
 
-create_table_events = f"""
-CREATE TABLE `{config.EVENTS_WH_DB}`.`events` (
+create_table_events = """
+CREATE TABLE `event_warehouse_test`.`events` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `lims_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Identifier for the originating LIMS. eg. SQSCP for Sequencesacape',
   `uuid` binary(16) NOT NULL COMMENT 'A binary encoded UUID use HEX(uuid) to retrieve the original (minus dashes)',
@@ -295,8 +295,8 @@ CREATE TABLE `{config.EVENTS_WH_DB}`.`events` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1268003 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 """
 
-create_table_event_types = f"""
-CREATE TABLE `{config.EVENTS_WH_DB}`.`event_types` (
+create_table_event_types = """
+CREATE TABLE `event_warehouse_test`.`event_types` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `key` varchar(255) COLLATE utf8_unicode_ci NOT NULL COMMENT 'The identifier for the event',
   `description` text COLLATE utf8_unicode_ci NOT NULL COMMENT 'A description of the meaning of the event',
@@ -307,8 +307,8 @@ CREATE TABLE `{config.EVENTS_WH_DB}`.`event_types` (
 ) ENGINE=InnoDB AUTO_INCREMENT=51468 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 """
 
-create_table_subject_types = f"""
-CREATE TABLE `{config.EVENTS_WH_DB}`.`subject_types` (
+create_table_subject_types = """
+CREATE TABLE `event_warehouse_test`.`subject_types` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `key` varchar(255) COLLATE utf8_unicode_ci NOT NULL COMMENT 'The identifier for the role type',
   `description` text COLLATE utf8_unicode_ci NOT NULL COMMENT 'A description of the subject type',
@@ -319,8 +319,8 @@ CREATE TABLE `{config.EVENTS_WH_DB}`.`subject_types` (
 ) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 """
 
-create_table_role_types = f"""
-CREATE TABLE `{config.EVENTS_WH_DB}`.`role_types` (
+create_table_role_types = """
+CREATE TABLE `event_warehouse_test`.`role_types` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `key` varchar(255) COLLATE utf8_unicode_ci NOT NULL COMMENT 'The identifier for the role type',
   `description` text COLLATE utf8_unicode_ci NOT NULL COMMENT 'A description of the role',

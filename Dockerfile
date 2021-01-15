@@ -35,4 +35,4 @@ RUN pipenv install --dev --ignore-pipfile --system --deploy
 
 ADD . /code/
 
-CMD ["python", "runner.py", "--sftp", "--scheduled"]
+CMD ["python", "runner.py", "--sftp", "--scheduled", "--add-to-dart"]

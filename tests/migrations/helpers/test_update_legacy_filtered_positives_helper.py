@@ -87,11 +87,7 @@ def test_get_cherrypicked_samples_by_date_error_connecting_returns_none(config):
         assert returned_samples is None
 
 
-def test_get_cherrypicked_samples_by_date_v0_returns_expected(
-    config,
-    event_wh_data,
-    mlwh_sample_stock_resource,
-):
+def test_get_cherrypicked_samples_by_date_v0_returns_expected(config, event_wh_data, mlwh_sentinel_cherrypicked):
     root_sample_ids = ["root_1", "root_2", "root_3", "root_4"]
     plate_barcodes = ["pb_1", "pb_2", "pb_3", "pb_4"]
 
@@ -105,11 +101,7 @@ def test_get_cherrypicked_samples_by_date_v0_returns_expected(
     pd.testing.assert_frame_equal(expected, returned_samples)
 
 
-def test_get_cherrypicked_samples_by_date_v1_returns_expected(
-    config,
-    event_wh_data,
-    mlwh_sample_stock_resource,
-):
+def test_get_cherrypicked_samples_by_date_v1_returns_expected(config, event_wh_data, mlwh_sentinel_cherrypicked):
     root_sample_ids = ["root_1", "root_2", "root_3", "root_4"]
     plate_barcodes = ["pb_1", "pb_2", "pb_3", "pb_4"]
 

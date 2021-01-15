@@ -115,7 +115,7 @@ SELECT @return_code
 """
 
 SQL_DART_GET_PLATE_BARCODES = """\
-SELECT DISTINCT [Labware LIMS BARCODE] FROM dbo.LIMS_test_plate_status WHERE [Labware state] = ?
+SELECT DISTINCT [Labware LIMS BARCODE] FROM dbo.view_plate_maps WHERE [Labware state] = ?
 """
 
 SQL_DART_SET_WELL_PROPERTY = "{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}"

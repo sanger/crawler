@@ -29,30 +29,30 @@ CENTRES.append(
 
 # SFTP details
 SFTP_UPLOAD = False
-SFTP_HOST = "127.0.0.1"
+SFTP_HOST = LOCALHOST
 SFTP_PASSWORD = "pass"
 SFTP_PORT = "22"
 SFTP_USER = "foo"
 
 # MongoDB details
-MONGO_HOST = "127.0.0.1"
+MONGO_HOST = LOCALHOST
 MONGO_DB = "crawlerTestDB"
 
 # MLWH database details
 MLWH_DB_DBNAME = "unified_warehouse_test"
-MLWH_DB_HOST = "127.0.0.1"
+MLWH_DB_HOST = LOCALHOST
 MLWH_DB_PORT = 3306
 MLWH_DB_RO_USER = "root"
-MLWH_DB_RO_PASSWORD = "root"
+MLWH_DB_RO_PASSWORD = ROOT_PASSWORD
 MLWH_DB_RW_USER = "root"
-MLWH_DB_RW_PASSWORD = "root"
+MLWH_DB_RW_PASSWORD = ROOT_PASSWORD
 
-WAREHOUSES_RO_CONN_STRING = f"root:root@{LOCALHOST}"
-WAREHOUSES_RW_CONN_STRING = f"root:root@{LOCALHOST}"
+WAREHOUSES_RO_CONN_STRING = f"{MLWH_DB_RO_USER}:{MLWH_DB_RO_PASSWORD}@{MLWH_DB_HOST}"
+WAREHOUSES_RW_CONN_STRING = f"{MLWH_DB_RW_USER}:{MLWH_DB_RW_PASSWORD}@{MLWH_DB_HOST}"
 
 # DART database details
 DART_DB_DBNAME = "dart_test"
-DART_DB_HOST = "127.0.0.1"
+DART_DB_HOST = LOCALHOST
 DART_DB_PORT = 1433
 DART_DB_RW_USER = "root"
 DART_DB_RW_PASSWORD = ""
@@ -67,6 +67,7 @@ ML_WH_DB = "unified_warehouse_test"
 MLWH_SAMPLE_TABLE = "sample"
 MLWH_STOCK_RESOURCES_TABLE = "stock_resource"
 MLWH_STUDY_TABLE = "study"
+MLWH_LIGHTHOUSE_SAMPLE_TABLE = "lighthouse_sample"
 
 # Event warehouse database details
 # Only used for setting up test environment
