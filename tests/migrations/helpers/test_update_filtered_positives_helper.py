@@ -216,10 +216,18 @@ def test_update_filtered_positive_fields_assigns_expected_filtered_positive_fiel
 # ----- test update_mongo_filtered_positive_fields method -----
 
 
-def test_update_mongo_filtered_positive_fields_raises_with_error_updating_mongo(config, mock_mongo_collection):
+def test_update_mongo_filtered_positive_fields_raises_with_error_updating_mongo(
+    config, mock_mongo_collection, testing_samples
+):
     mock_mongo_collection().update_many.side_effect = ValueError("Boom!")
+    updated_samples = testing_samples[:3]
+    updated_samples[0][FIELD_FILTERED_POSITIVE] = True
+    updated_samples[1][FIELD_FILTERED_POSITIVE] = False
+    updated_samples[2][FIELD_FILTERED_POSITIVE] = False
+    timestamp = datetime.now()
+
     with pytest.raises(ValueError):
-        update_mongo_filtered_positive_fields(config, [], "v2.3", None)
+        update_mongo_filtered_positive_fields(config, updated_samples, "v2.3", timestamp)
 
 
 def test_update_mongo_filtered_positive_fields_updates_expected_samples(
