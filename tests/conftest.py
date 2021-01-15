@@ -15,11 +15,13 @@ from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_SAMPLES,
     COLLECTION_SAMPLES_HISTORY,
+    FIELD_MONGODB_ID,
     FIELD_COORDINATE,
     FIELD_PLATE_BARCODE,
     FIELD_RESULT,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
+    FIELD_RNA_ID,
     MLWH_TABLE_NAME,
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
@@ -29,6 +31,15 @@ from crawler.constants import (
     V1_V2_CUTOFF_TIMESTAMP,
     FILTERED_POSITIVE_FIELDS_SET_DATE,
     POSITIVE_RESULT_VALUE,
+    MLWH_MONGODB_ID,
+    MLWH_COORDINATE,
+    MLWH_PLATE_BARCODE,
+    MLWH_ROOT_SAMPLE_ID,
+    MLWH_RNA_ID,
+    MLWH_RESULT,
+    MLWH_FILTERED_POSITIVE,
+    MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_FILTERED_POSITIVE_TIMESTAMP,
 )
 from crawler.db import create_mongo_client, create_mysql_connection, get_mongo_collection, get_mongo_db
 from crawler.helpers.general_helpers import get_config
@@ -238,6 +249,54 @@ UNMIGRATED_MONGO_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
     },
 ]
 
+MIGRATED_MONGO_TESTING_SAMPLES = [
+        {
+            FIELD_MONGODB_ID: "1",
+            FIELD_COORDINATE: "A01",
+            FIELD_PLATE_BARCODE: "123",
+            FIELD_ROOT_SAMPLE_ID: "MCM001",
+            FIELD_RNA_ID: "AAA123",
+            FIELD_FILTERED_POSITIVE: True,
+            FIELD_FILTERED_POSITIVE_VERSION: "v2",
+            FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
+        },
+        {
+            FIELD_MONGODB_ID: "2",
+            FIELD_COORDINATE: "B01",
+            FIELD_PLATE_BARCODE: "123",
+            FIELD_ROOT_SAMPLE_ID: "MCM002",
+            FIELD_RNA_ID: "BBB123",
+            FIELD_FILTERED_POSITIVE: False,
+            FIELD_FILTERED_POSITIVE_VERSION: "v2",
+            FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
+        },
+    ]
+
+
+MLWH_SAMPLES = [
+        {
+            MLWH_MONGODB_ID: "1",
+            MLWH_COORDINATE: "A1",
+            MLWH_PLATE_BARCODE: "123",
+            MLWH_ROOT_SAMPLE_ID: "MCM001",
+            MLWH_RNA_ID: "AAA123",
+            MLWH_RESULT: POSITIVE_RESULT_VALUE,
+            MLWH_FILTERED_POSITIVE: None,
+            MLWH_FILTERED_POSITIVE_VERSION: None,
+            MLWH_FILTERED_POSITIVE_TIMESTAMP: None,
+        },
+        {
+            MLWH_MONGODB_ID: "2",
+            MLWH_COORDINATE: "B1",
+            MLWH_PLATE_BARCODE: "123",
+            MLWH_ROOT_SAMPLE_ID: "MCM002",
+            MLWH_RNA_ID: "BBB123",
+            MLWH_RESULT: POSITIVE_RESULT_VALUE,
+            MLWH_FILTERED_POSITIVE: True,
+            MLWH_FILTERED_POSITIVE_VERSION: "v1.0",
+            MLWH_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 40, 8),
+        },
+    ]
 
 EVENT_WH_DATA: Dict[str, Any] = {
     "subjects": [
@@ -454,6 +513,16 @@ def filtered_positive_testing_samples_no_version_set(samples_collection_accessor
 @pytest.fixture
 def unmigrated_mongo_testing_samples(config, event_wh_sql_engine):
     return UNMIGRATED_MONGO_TESTING_SAMPLES
+
+
+@pytest.fixture
+def migrated_mongo_testing_samples(config, event_wh_sql_engine):
+    return MIGRATED_MONGO_TESTING_SAMPLES
+
+
+@pytest.fixture
+def mlwh_samples(config, event_wh_sql_engine):
+    return MLWH_SAMPLES
 
 
 @pytest.fixture

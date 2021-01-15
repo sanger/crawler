@@ -239,6 +239,8 @@ def update_mlwh_filtered_positive_fields_batched(
         config {ModuleType} -- application config specifying database details
         samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields
         should be updated
+        version {str} -- filtered positive version
+        update_timestamp {datetime} -- time of filtered positive fields update
 
     Returns:
         bool -- whether the updates completed successfully
@@ -291,6 +293,7 @@ def update_mlwh_filtered_positive_fields_batched(
 
                 samples_index += ROWS_PER_QUERY
             completed_successfully = True
+        return completed_successfully
     except Exception:
         logger.error("MLWH filtered positive field batched updates failed")
         raise
@@ -298,4 +301,3 @@ def update_mlwh_filtered_positive_fields_batched(
         # close the connection
         logger.debug("Closing the MLWH database connection.")
         mysql_conn.close()
-        return completed_successfully
