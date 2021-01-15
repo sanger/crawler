@@ -83,9 +83,6 @@ filtered_positive = %(filtered_positive)s,
 filtered_positive_version = %(filtered_positive_version)s,
 filtered_positive_timestamp = %(filtered_positive_timestamp)s
 WHERE mongodb_id = %(mongodb_id)s
-AND root_sample_id = %(root_sample_id)s
-AND rna_id = %(rna_id)s
-AND result = %(result)s
 """
 
 
