@@ -250,53 +250,53 @@ UNMIGRATED_MONGO_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
 ]
 
 MIGRATED_MONGO_TESTING_SAMPLES = [
-        {
-            FIELD_MONGODB_ID: "1",
-            FIELD_COORDINATE: "A01",
-            FIELD_PLATE_BARCODE: "123",
-            FIELD_ROOT_SAMPLE_ID: "MCM001",
-            FIELD_RNA_ID: "AAA123",
-            FIELD_FILTERED_POSITIVE: True,
-            FIELD_FILTERED_POSITIVE_VERSION: "v2",
-            FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
-        },
-        {
-            FIELD_MONGODB_ID: "2",
-            FIELD_COORDINATE: "B01",
-            FIELD_PLATE_BARCODE: "123",
-            FIELD_ROOT_SAMPLE_ID: "MCM002",
-            FIELD_RNA_ID: "BBB123",
-            FIELD_FILTERED_POSITIVE: False,
-            FIELD_FILTERED_POSITIVE_VERSION: "v2",
-            FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
-        },
-    ]
+    {
+        FIELD_MONGODB_ID: "1",
+        FIELD_COORDINATE: "A01",
+        FIELD_PLATE_BARCODE: "123",
+        FIELD_ROOT_SAMPLE_ID: "MCM001",
+        FIELD_RNA_ID: "AAA123",
+        FIELD_FILTERED_POSITIVE: True,
+        FIELD_FILTERED_POSITIVE_VERSION: "v2",
+        FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
+    },
+    {
+        FIELD_MONGODB_ID: "2",
+        FIELD_COORDINATE: "B01",
+        FIELD_PLATE_BARCODE: "123",
+        FIELD_ROOT_SAMPLE_ID: "MCM002",
+        FIELD_RNA_ID: "BBB123",
+        FIELD_FILTERED_POSITIVE: False,
+        FIELD_FILTERED_POSITIVE_VERSION: "v2",
+        FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
+    },
+]
 
 
 MLWH_SAMPLES = [
-        {
-            MLWH_MONGODB_ID: "1",
-            MLWH_COORDINATE: "A1",
-            MLWH_PLATE_BARCODE: "123",
-            MLWH_ROOT_SAMPLE_ID: "MCM001",
-            MLWH_RNA_ID: "AAA123",
-            MLWH_RESULT: POSITIVE_RESULT_VALUE,
-            MLWH_FILTERED_POSITIVE: None,
-            MLWH_FILTERED_POSITIVE_VERSION: None,
-            MLWH_FILTERED_POSITIVE_TIMESTAMP: None,
-        },
-        {
-            MLWH_MONGODB_ID: "2",
-            MLWH_COORDINATE: "B1",
-            MLWH_PLATE_BARCODE: "123",
-            MLWH_ROOT_SAMPLE_ID: "MCM002",
-            MLWH_RNA_ID: "BBB123",
-            MLWH_RESULT: POSITIVE_RESULT_VALUE,
-            MLWH_FILTERED_POSITIVE: True,
-            MLWH_FILTERED_POSITIVE_VERSION: "v1.0",
-            MLWH_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 40, 8),
-        },
-    ]
+    {
+        MLWH_MONGODB_ID: "1",
+        MLWH_COORDINATE: "A1",
+        MLWH_PLATE_BARCODE: "123",
+        MLWH_ROOT_SAMPLE_ID: "MCM001",
+        MLWH_RNA_ID: "AAA123",
+        MLWH_RESULT: POSITIVE_RESULT_VALUE,
+        MLWH_FILTERED_POSITIVE: None,
+        MLWH_FILTERED_POSITIVE_VERSION: None,
+        MLWH_FILTERED_POSITIVE_TIMESTAMP: None,
+    },
+    {
+        MLWH_MONGODB_ID: "2",
+        MLWH_COORDINATE: "B1",
+        MLWH_PLATE_BARCODE: "123",
+        MLWH_ROOT_SAMPLE_ID: "MCM002",
+        MLWH_RNA_ID: "BBB123",
+        MLWH_RESULT: POSITIVE_RESULT_VALUE,
+        MLWH_FILTERED_POSITIVE: True,
+        MLWH_FILTERED_POSITIVE_VERSION: "v1.0",
+        MLWH_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 40, 8),
+    },
+]
 
 EVENT_WH_DATA: Dict[str, Any] = {
     "subjects": [

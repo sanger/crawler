@@ -188,7 +188,9 @@ def update_mlwh_filtered_positive_fields_batched_batched_return_false_with_no_co
         assert result is False
 
 
-def test_update_mlwh_filtered_positive_fields_batched_raises_with_error_updating_mlwh(config, mlwh_connection, migrated_mongo_testing_samples):
+def test_update_mlwh_filtered_positive_fields_batched_raises_with_error_updating_mlwh(
+    config, mlwh_connection, migrated_mongo_testing_samples
+):
     version = "v2"
     update_timestamp = datetime.now()
 
@@ -197,10 +199,14 @@ def test_update_mlwh_filtered_positive_fields_batched_raises_with_error_updating
         side_effect=Exception("Boom!"),
     ):
         with pytest.raises(Exception):
-            update_mlwh_filtered_positive_fields_batched(config, migrated_mongo_testing_samples, version, update_timestamp)
+            update_mlwh_filtered_positive_fields_batched(
+                config, migrated_mongo_testing_samples, version, update_timestamp
+            )
 
 
-def test_update_mlwh_filtered_positive_fields_batched_calls_to_update_samples(config, mlwh_connection, migrated_mongo_testing_samples, mlwh_samples):
+def test_update_mlwh_filtered_positive_fields_batched_calls_to_update_samples(
+    config, mlwh_connection, migrated_mongo_testing_samples, mlwh_samples
+):
     insert_sql = """\
     INSERT INTO lighthouse_sample (mongodb_id, root_sample_id, rna_id, plate_barcode, coordinate,
     result, filtered_positive, filtered_positive_version, filtered_positive_timestamp)
@@ -218,7 +224,9 @@ def test_update_mlwh_filtered_positive_fields_batched_calls_to_update_samples(co
 
     version = "v2"
 
-    result = update_mlwh_filtered_positive_fields_batched(config, migrated_mongo_testing_samples, version, update_timestamp)
+    result = update_mlwh_filtered_positive_fields_batched(
+        config, migrated_mongo_testing_samples, version, update_timestamp
+    )
     assert result is True
 
     cursor = mlwh_connection.cursor()
