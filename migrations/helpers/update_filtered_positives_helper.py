@@ -36,7 +36,6 @@ from crawler.helpers.general_helpers import (
 from crawler.sql_queries import (
     SQL_DART_GET_PLATE_BARCODES,
     SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE,
-    SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH,
 )
 from crawler.types import Sample
 from migrations.helpers.shared_helper import extract_required_cp_info, get_cherrypicked_samples
@@ -173,7 +172,7 @@ def update_mongo_filtered_positive_fields(
         while samples_index < num_samples:
             logger.debug(f"Updating records between {samples_index} and {samples_index + SAMPLES_PER_QUERY}")
 
-            samples_batch = samples[samples_index : (samples_index + SAMPLES_PER_QUERY)]
+            samples_batch = samples[samples_index : (samples_index + SAMPLES_PER_QUERY)]  # noqa: E203
 
             # get ids of those that are filtered positive, and those that aren't
             filtered_positive_ids = []

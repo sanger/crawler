@@ -12,16 +12,10 @@ from crawler.filtered_positive_identifier import (
 )
 from crawler.constants import (
     COLLECTION_SAMPLES,
-    FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_PLATE_BARCODE,
-    FILTERED_POSITIVE_FIELDS_SET_DATE,
     FIELD_CREATED_AT,
-    FIELD_RESULT,
     FIELD_FILTERED_POSITIVE,
-    POSITIVE_RESULT_VALUE,
-    V0_V1_CUTOFF_TIMESTAMP,
-    V1_V2_CUTOFF_TIMESTAMP,
     MLWH_MONGODB_ID,
     MLWH_FILTERED_POSITIVE,
     EVENT_CHERRYPICK_LAYOUT_SET,
@@ -258,7 +252,7 @@ def update_mlwh_filtered_positive_fields_batched(
             samples_index = 0
             logger.debug(f"Attempting to update {num_samples} rows in the MLWH database in batches of {ROWS_PER_QUERY}")
             while samples_index < num_samples:
-                samples_batch = samples[samples_index : (samples_index + ROWS_PER_QUERY)]
+                samples_batch = samples[samples_index : (samples_index + ROWS_PER_QUERY)]  # noqa: E203
                 mlwh_samples_batch = [map_mongo_to_sql_common(sample) for sample in samples_batch]
 
                 filtered_positive_ids = []
