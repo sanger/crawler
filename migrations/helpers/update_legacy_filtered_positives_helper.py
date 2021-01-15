@@ -17,7 +17,6 @@ from crawler.constants import (
     FIELD_PLATE_BARCODE,
     FILTERED_POSITIVE_FIELDS_SET_DATE,
     FIELD_CREATED_AT,
-<<<<<<< HEAD
     FIELD_RESULT,
     FIELD_FILTERED_POSITIVE,
     POSITIVE_RESULT_VALUE,
@@ -25,9 +24,7 @@ from crawler.constants import (
     V1_V2_CUTOFF_TIMESTAMP,
     MLWH_MONGODB_ID,
     MLWH_FILTERED_POSITIVE,
-=======
     EVENT_CHERRYPICK_LAYOUT_SET,
->>>>>>> develop
 )
 from crawler.db import (
     create_mongo_client,

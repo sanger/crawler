@@ -96,8 +96,10 @@ def run(settings_module: str = "", s_start_datetime: str = "", s_end_datetime: s
     try:
         continue_migration = True
 
-        logger.info(f"Checking whether filtered positive version has been set on any samples between \
-{start_datetime} and {end_datetime}...")
+        logger.info(
+            f"Checking whether filtered positive version has been set on any samples between \
+{start_datetime} and {end_datetime}..."
+        )
         if filtered_positive_fields_set(config, start_datetime, end_datetime):
             question = "The filtered positive field has been set on some samples. This migration has likely been \
 run before - do you still wish to proceed? (yes/no):"

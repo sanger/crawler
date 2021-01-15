@@ -207,7 +207,7 @@ def test_get_cherrypicked_samples_by_date_error_raises_exception(
 
     with pytest.raises(Exception):
         update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
-    
+
     mock_update_mongo.assert_not_called()
     mock_update_mlwh.assert_not_called()
 
@@ -247,7 +247,7 @@ def test_extract_required_cp_info_error_raises_exception(
 
     with pytest.raises(Exception):
         update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
-    
+
     mock_update_mongo.assert_not_called()
     mock_update_mlwh.assert_not_called()
 
@@ -271,7 +271,7 @@ def test_split_mongo_samples_by_version_error_raises_exception(
 
     with pytest.raises(Exception):
         update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
-    
+
     mock_update_mongo.assert_not_called()
     mock_update_mlwh.assert_not_called()
 
@@ -343,7 +343,7 @@ def test_update_filtered_positive_fields_error_raises_exception(
 
     with pytest.raises(Exception):
         update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
-    
+
     mock_update_mongo.assert_not_called()
     mock_update_mlwh.assert_not_called()
 
