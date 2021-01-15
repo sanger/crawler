@@ -71,9 +71,7 @@ def test_get_cherrypicked_samples_by_date_raises_with_error_creating_engine(conf
         side_effect=ValueError("Boom!"),
     ):
         with pytest.raises(ValueError):
-            get_cherrypicked_samples_by_date(
-                config, [], [], "1970-01-01 00:00:01", V0_V1_CUTOFF_TIMESTAMP
-            )
+            get_cherrypicked_samples_by_date(config, [], [], "1970-01-01 00:00:01", V0_V1_CUTOFF_TIMESTAMP)
 
 
 def test_get_cherrypicked_samples_by_date_raises_with_error_connecting(config):
@@ -83,9 +81,7 @@ def test_get_cherrypicked_samples_by_date_raises_with_error_connecting(config):
         mock_sql_engine().connect.side_effect = ValueError("Boom!")
 
         with pytest.raises(ValueError):
-            get_cherrypicked_samples_by_date(
-                config, [], [], "1970-01-01 00:00:01", V0_V1_CUTOFF_TIMESTAMP
-            )
+            get_cherrypicked_samples_by_date(config, [], [], "1970-01-01 00:00:01", V0_V1_CUTOFF_TIMESTAMP)
 
 
 def test_get_cherrypicked_samples_by_date_v0_returns_expected(config, event_wh_data, mlwh_sentinel_cherrypicked):
