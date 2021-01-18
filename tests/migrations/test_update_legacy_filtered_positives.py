@@ -228,6 +228,7 @@ def test_get_cherrypicked_samples_by_date_connection_error_raises_exception(
 
     with pytest.raises(Exception):
         update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
+        
     mock_update_mongo.assert_not_called()
     mock_update_mlwh.assert_not_called()
 
