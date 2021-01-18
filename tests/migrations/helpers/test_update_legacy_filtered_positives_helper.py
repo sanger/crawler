@@ -193,6 +193,8 @@ def test_update_mlwh_filtered_positive_fields_batched_raises_with_error_updating
             )
 
 
+# This is deliberately more of an integration test to ensure the methods
+# interlink correctly, and MLWH is updated as expected
 def test_update_mlwh_filtered_positive_fields_batched_calls_to_update_samples(
     config, mlwh_connection, mongo_samples_with_filtered_positive_fields, mlwh_samples_with_filtered_positive_fields
 ):
