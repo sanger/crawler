@@ -220,7 +220,7 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
 ]
 
 
-UNMIGRATED_MONGO_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
+MONGO_SAMPLES_WITHOUT_FILTERED_POSITIVE_FIELDS: List[Dict[str, Union[str, bool]]] = [
     {
         FIELD_COORDINATE: "D01",
         FIELD_SOURCE: "test1",
@@ -251,7 +251,7 @@ UNMIGRATED_MONGO_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
     },
 ]
 
-MIGRATED_MONGO_TESTING_SAMPLES = [
+MONGO_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS = [
     {
         FIELD_MONGODB_ID: "1",
         FIELD_COORDINATE: "A01",
@@ -275,7 +275,7 @@ MIGRATED_MONGO_TESTING_SAMPLES = [
 ]
 
 
-MLWH_SAMPLES = [
+MLWH_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS = [
     {
         MLWH_MONGODB_ID: "1",
         MLWH_COORDINATE: "A1",
@@ -697,18 +697,18 @@ def filtered_positive_testing_samples_no_version_set(samples_collection_accessor
 
 
 @pytest.fixture
-def unmigrated_mongo_testing_samples(config, event_wh_sql_engine):
-    return UNMIGRATED_MONGO_TESTING_SAMPLES
+def mongo_samples_without_filtered_positive_fields():
+    return MONGO_SAMPLES_WITHOUT_FILTERED_POSITIVE_FIELDS
 
 
 @pytest.fixture
-def migrated_mongo_testing_samples(config, event_wh_sql_engine):
-    return MIGRATED_MONGO_TESTING_SAMPLES
+def mongo_samples_with_filtered_positive_fields():
+    return MONGO_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS
 
 
 @pytest.fixture
-def mlwh_samples(config, event_wh_sql_engine):
-    return MLWH_SAMPLES
+def mlwh_samples_with_filtered_positive_fields():
+    return MLWH_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS
 
 
 @pytest.fixture

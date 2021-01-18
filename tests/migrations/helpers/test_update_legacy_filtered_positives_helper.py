@@ -115,7 +115,7 @@ def test_get_cherrypicked_samples_by_date_v1_returns_expected(config, event_wh_d
 # ----- split_mongo_samples_by_version tests -----
 
 
-def test_split_mongo_samples_by_version_empty_dataframes(unmigrated_mongo_testing_samples):
+def test_split_mongo_samples_by_version_empty_dataframes(mongo_samples_without_filtered_positive_fields):
     cp_samples_df_v0 = pd.DataFrame(np.array([]))
     cp_samples_df_v1 = pd.DataFrame(np.array([]))
 
@@ -124,19 +124,19 @@ def test_split_mongo_samples_by_version_empty_dataframes(unmigrated_mongo_testin
     assert cp_samples_df_v1.empty
 
     samples_by_version = split_mongo_samples_by_version(
-        unmigrated_mongo_testing_samples, cp_samples_df_v0, cp_samples_df_v1
+        mongo_samples_without_filtered_positive_fields, cp_samples_df_v0, cp_samples_df_v1
     )
 
     for version, samples in samples_by_version.items():
         if version == FILTERED_POSITIVE_VERSION_0 or version == FILTERED_POSITIVE_VERSION_1:
             assert samples == []
         elif version == FILTERED_POSITIVE_VERSION_2:
-            assert samples == unmigrated_mongo_testing_samples
+            assert samples == mongo_samples_without_filtered_positive_fields
         else:
             raise AssertionError(f"Unexpected version '{version}'")
 
 
-def test_split_mongo_samples_by_version(unmigrated_mongo_testing_samples):
+def test_split_mongo_samples_by_version(mongo_samples_without_filtered_positive_fields):
     rows = [["MCM005", "456"], ["MCM006", "456"]]
     columns = [FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]
     v0_cherrypicked_samples = pd.DataFrame(np.array(rows), columns=columns, index=[0, 1])
@@ -145,12 +145,12 @@ def test_split_mongo_samples_by_version(unmigrated_mongo_testing_samples):
     columns = [FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]
     v1_cherrypicked_samples = pd.DataFrame(np.array(rows), columns=columns, index=[0])
 
-    v0_unmigrated_samples = unmigrated_mongo_testing_samples[1:3]
-    v1_unmigrated_samples = unmigrated_mongo_testing_samples[-1:]
-    v2_unmigrated_samples = unmigrated_mongo_testing_samples[:1]
+    v0_unmigrated_samples = mongo_samples_without_filtered_positive_fields[1:3]
+    v1_unmigrated_samples = mongo_samples_without_filtered_positive_fields[-1:]
+    v2_unmigrated_samples = mongo_samples_without_filtered_positive_fields[:1]
 
     samples_by_version = split_mongo_samples_by_version(
-        unmigrated_mongo_testing_samples, v0_cherrypicked_samples, v1_cherrypicked_samples
+        mongo_samples_without_filtered_positive_fields, v0_cherrypicked_samples, v1_cherrypicked_samples
     )
 
     for version, samples in samples_by_version.items():
@@ -178,7 +178,7 @@ def update_mlwh_filtered_positive_fields_batched_batched_return_false_with_no_co
 
 
 def test_update_mlwh_filtered_positive_fields_batched_raises_with_error_updating_mlwh(
-    config, mlwh_connection, migrated_mongo_testing_samples
+    config, mlwh_connection, mongo_samples_with_filtered_positive_fields
 ):
     version = "v2"
     update_timestamp = datetime.now()
@@ -189,12 +189,12 @@ def test_update_mlwh_filtered_positive_fields_batched_raises_with_error_updating
     ):
         with pytest.raises(Exception):
             update_mlwh_filtered_positive_fields_batched(
-                config, migrated_mongo_testing_samples, version, update_timestamp
+                config, mongo_samples_with_filtered_positive_fields, version, update_timestamp
             )
 
 
 def test_update_mlwh_filtered_positive_fields_batched_calls_to_update_samples(
-    config, mlwh_connection, migrated_mongo_testing_samples, mlwh_samples
+    config, mlwh_connection, mongo_samples_with_filtered_positive_fields, mlwh_samples_with_filtered_positive_fields
 ):
     insert_sql = """\
     INSERT INTO lighthouse_sample (mongodb_id, root_sample_id, rna_id, plate_barcode, coordinate,
@@ -204,7 +204,7 @@ def test_update_mlwh_filtered_positive_fields_batched_calls_to_update_samples(
     %(filtered_positive_timestamp)s)
     """
     cursor = mlwh_connection.cursor()
-    cursor.executemany(insert_sql, mlwh_samples)
+    cursor.executemany(insert_sql, mlwh_samples_with_filtered_positive_fields)
     cursor.close()
     mlwh_connection.commit()
 
@@ -214,7 +214,7 @@ def test_update_mlwh_filtered_positive_fields_batched_calls_to_update_samples(
     version = "v2"
 
     result = update_mlwh_filtered_positive_fields_batched(
-        config, migrated_mongo_testing_samples, version, update_timestamp
+        config, mongo_samples_with_filtered_positive_fields, version, update_timestamp
     )
     assert result is True
 
