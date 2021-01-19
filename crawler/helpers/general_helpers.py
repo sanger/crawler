@@ -261,7 +261,7 @@ def parse_decimal128(value: Decimal128) -> Optional[Decimal]:
         Decimal -- converted number
     """
     try:
-        return Decimal(value.to_decimal())
+        return cast(Decimal, value.to_decimal())
     except Exception:
         return None
 
