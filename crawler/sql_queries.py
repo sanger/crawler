@@ -70,7 +70,6 @@ date_tested_string=VALUES(date_tested_string),
 date_tested=VALUES(date_tested),
 source=VALUES(source),
 lab_id=VALUES(lab_id),
-created_at=VALUES(created_at),
 updated_at=VALUES(updated_at),
 lh_sample_uuid=VALUES(lh_sample_uuid),
 lh_source_plate_uuid=VALUES(lh_source_plate_uuid);
@@ -91,7 +90,8 @@ UPDATE lighthouse_sample
 SET
 filtered_positive = %%s,
 filtered_positive_version = %%s,
-filtered_positive_timestamp = %%s
+filtered_positive_timestamp = %%s,
+updated_at= %%s
 WHERE mongodb_id IN (%s)
 """
 

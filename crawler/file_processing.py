@@ -751,6 +751,7 @@ class CentreFile:
              {set} - the set of header names
         """
         required = set(self.REQUIRED_FIELDS)
+
         if not (self.config.ADD_LAB_ID):
             required.add(FIELD_LAB_ID)
 
