@@ -1,8 +1,7 @@
 import logging
 from contextlib import contextmanager
 from datetime import datetime
-from types import ModuleType
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, cast
 
 import mysql.connector as mysql
 import pyodbc
@@ -330,7 +329,7 @@ def run_mysql_execute_formatted_query(
         cursor.close()
 
 
-def create_dart_sql_server_conn(config: ModuleType) -> Optional[pyodbc.Connection]:
+def create_dart_sql_server_conn(config: Config) -> Optional[pyodbc.Connection]:
     """Create a SQL Server connection to DART with the given config parameters.
 
     Arguments:
