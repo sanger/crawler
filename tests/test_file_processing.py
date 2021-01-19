@@ -73,6 +73,7 @@ from crawler.constants import (
 )
 from crawler.db import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
+from crawler.types import ModifiedRow
 
 # ----- tests helpers -----
 
@@ -414,6 +415,51 @@ def test_filtered_row_with_extra_unrecognised_columns(config):
         assert centre_file.logging_collection.aggregator_types["TYPE 13"].count_errors == 1
         # N.B. Type 13 is a WARNING type and not counted as an error or critical
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+
+
+def test_extract_channel_fields(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("", centre)
+
+    with StringIO() as csv_weird_channels:
+        csv_weird_channels.write(
+            f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},{FIELD_LAB_ID},"
+            "CH 1 - Target,CH 1 - Result,CH 1 - Cq,\n"
+        )
+        csv_weird_channels.write("1,RNA_0043,Positive,today,AP,ORF1ab,Positive,21.433,\n")
+        csv_weird_channels.seek(0)
+
+        csv_to_test_reader = DictReader(csv_weird_channels)
+
+        modified_row: ModifiedRow = {
+            FIELD_ROOT_SAMPLE_ID: "1",
+            FIELD_RNA_ID: "RNA_0043",
+            FIELD_RESULT: "Positive",
+            FIELD_DATE_TESTED: "today",
+            FIELD_LAB_ID: "AP",
+        }
+
+        expected_modified_row = {
+            FIELD_ROOT_SAMPLE_ID: "1",
+            FIELD_RNA_ID: "RNA_0043",
+            FIELD_RESULT: "Positive",
+            FIELD_DATE_TESTED: "today",
+            FIELD_LAB_ID: "AP",
+            FIELD_CH1_TARGET: "ORF1ab",
+            FIELD_CH1_RESULT: "Positive",
+            FIELD_CH1_CQ: "21.433",
+        }
+
+        seen_headers = [FIELD_ROOT_SAMPLE_ID, FIELD_RNA_ID, FIELD_RESULT, FIELD_DATE_TESTED, FIELD_LAB_ID]
+
+        expected_seen_headers = seen_headers + ["CH 1 - Target", "CH 1 - Result", "CH 1 - Cq"]
+
+        seen_headers_to_test, modified_row_to_test = centre_file.extract_channel_fields(
+            seen_headers, next(csv_to_test_reader), modified_row
+        )
+
+        assert seen_headers_to_test == expected_seen_headers
+        assert modified_row_to_test == expected_modified_row
 
 
 def test_filtered_row_with_blank_lab_id(config):
