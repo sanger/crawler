@@ -132,7 +132,7 @@ V0_V1_CUTOFF_TIMESTAMP: Final[str] = "2020-10-15 16:15:00"
 V1_V2_CUTOFF_TIMESTAMP: Final[str] = "2020-12-15 14:19:03"
 
 # Date on which filtered positive fields started being set by Crawler
-FILTERED_POSITIVE_FIELDS_SET_DATE: Final[str] = "2020-12-17 00:00:00"
+FILTERED_POSITIVE_FIELDS_SET_DATE = "2020-12-17"
 
 # Beckman labware
 BIOMEK_LABWARE_CLASS_KINGFISHER: Final[str] = "KingFisher_96_2ml"

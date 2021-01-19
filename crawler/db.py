@@ -1,7 +1,8 @@
 import logging
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, Dict, Iterator, List, Optional, cast
+from types import ModuleType
+from typing import Any, Dict, Iterator, List, Optional
 
 import mysql.connector as mysql
 import pyodbc
@@ -262,7 +263,74 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
         mysql_conn.close()
 
 
-def create_dart_sql_server_conn(config: Config) -> Optional[pyodbc.Connection]:
+def run_mysql_execute_formatted_query(
+    mysql_conn: CMySQLConnection, formatted_sql_query: str, formatting_args: List[str], query_args: List[Any]
+) -> None:
+    """Executes formatted sql query, unwrapping and batching based on number of input arguments
+
+    Arguments:
+        mysql_conn {CMySQLConnection} -- a client used to interact with the database server
+        formatted_sql_query {str} -- the formatted SQL query to run (unwrapped using % workflow)
+        formatting_args {List[str]} -- arguments to batch and unwrap the formatted sql query
+        query_args {List[Any]} -- additional sql query arguments
+    """
+    # fetch the cursor from the DB connection
+    cursor = mysql_conn.cursor()
+
+    try:
+        # executing the query with values
+        num_formatting_args = len(formatting_args)
+
+        # BN. If FORMATTING_ARGS_PER_QUERY value is too high, you may get '2006 (HY000): MySQL server has
+        # gone away' error indicating you've exceeded the max_allowed_packet size for MySQL
+        FORMATTING_ARGS_PER_QUERY = 15000
+        formatting_args_index = 0
+        total_rows_affected = 0
+        logger.debug(
+            f"Attempting to execute formatted sql on the MLWH database in batches of {FORMATTING_ARGS_PER_QUERY}"
+        )
+
+        while formatting_args_index < num_formatting_args:
+            logger.debug(
+                f"Executing sql for formatting args between {formatting_args_index} and \
+{formatting_args_index + FORMATTING_ARGS_PER_QUERY}"
+            )
+
+            formatting_args_batch = formatting_args[
+                formatting_args_index : (formatting_args_index + FORMATTING_ARGS_PER_QUERY)  # noqa: E203
+            ]
+
+            sql_unwrap_formatted_args = ", ".join(
+                list(map(lambda x: "%s", formatting_args_batch))
+            )  # e.g. for 3 ids, this would look like "%s,%s,%s"
+
+            if len(formatting_args_batch) > 0:
+                sql_query = (
+                    formatted_sql_query % sql_unwrap_formatted_args
+                )  # formats the query to have the correct number of formatting arguments for the ids
+                string_args = (
+                    query_args + formatting_args_batch
+                )  # adds the filtered positive arguments to the id arguments
+                cursor.execute(sql_query, tuple(string_args))
+
+            total_rows_affected += cursor.rowcount
+            logger.debug(f"{cursor.rowcount} rows affected in MLWH.")
+
+            formatting_args_index += FORMATTING_ARGS_PER_QUERY
+            logger.debug("Committing changes to MLWH database.")
+            mysql_conn.commit()
+
+        logger.debug(f"Successfully affected a total of {total_rows_affected} rows in MLWH.")
+    except Exception:
+        logger.error("MLWH database execute transaction failed")
+        raise
+    finally:
+        # close the cursor
+        logger.debug("Closing the cursor.")
+        cursor.close()
+
+
+def create_dart_sql_server_conn(config: ModuleType) -> Optional[pyodbc.Connection]:
     """Create a SQL Server connection to DART with the given config parameters.
 
     Arguments:
