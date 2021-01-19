@@ -1,7 +1,7 @@
 from logging import Handler
 
-from slack import WebClient  # type: ignore
-from slack.errors import SlackApiError  # type: ignore
+from slack import WebClient
+from slack.errors import SlackApiError
 
 
 class SlackHandler(Handler):

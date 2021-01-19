@@ -1,29 +1,30 @@
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-import mysql
+import mysql.connector as mysql
 import pyodbc
 import pytest
-from crawler.constants import (
-    DART_STATE,
-    DART_STATE_NO_PLATE,
-    DART_STATE_NO_PROP,
-    DART_STATE_PENDING,
-)
+from mysql.connector.connection_cext import CMySQLConnection
+from pymongo import MongoClient
+from pymongo.collection import Collection
+from pymongo.database import Database
+from sqlalchemy.engine.base import Engine
+
+from crawler.constants import DART_STATE, DART_STATE_NO_PLATE, DART_STATE_NO_PROP, DART_STATE_PENDING
 from crawler.db import (
     add_dart_plate_if_doesnt_exist,
     create_dart_sql_server_conn,
     create_import_record,
     create_mongo_client,
     create_mysql_connection,
+    create_mysql_connection_engine,
     get_dart_plate_state,
     get_mongo_collection,
     get_mongo_db,
+    run_mysql_execute_formatted_query,
     run_mysql_executemany_query,
     set_dart_plate_state_pending,
     set_dart_well_properties,
-    create_mysql_connection_engine,
-    run_mysql_execute_formatted_query,
 )
 from crawler.exceptions import DartStateError
 from crawler.helpers.logging_helpers import LoggingCollection
@@ -32,14 +33,9 @@ from crawler.sql_queries import (
     SQL_DART_GET_PLATE_PROPERTY,
     SQL_DART_SET_PLATE_PROPERTY,
     SQL_DART_SET_WELL_PROPERTY,
-    SQL_MLWH_MULTIPLE_INSERT,
     SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH,
+    SQL_MLWH_MULTIPLE_INSERT,
 )
-from mysql.connector.connection_cext import CMySQLConnection
-from pymongo import MongoClient
-from pymongo.collection import Collection
-from pymongo.database import Database
-from sqlalchemy.engine.base import Engine  # type: ignore
 
 
 def test_create_mongo_client(config):
@@ -89,7 +85,7 @@ def test_create_mysql_connection_none(config):
 
 def test_create_mysql_connection_exception(config):
     # For example, if the credentials in the config are wrong
-    with patch("mysql.connector.connect", side_effect=mysql.connector.Error()):
+    with patch("mysql.connector.connect", side_effect=mysql.Error()):
         assert create_mysql_connection(config) is None
 
 
@@ -214,15 +210,13 @@ def test_create_dart_sql_server_conn_expection(config):
 
 def test_get_dart_plate_state(config):
     with patch("pyodbc.connect") as mock_conn:
-
         test_plate_barcode = "AB123"
-        assert get_dart_plate_state(mock_conn.cursor(), test_plate_barcode) == mock_conn.cursor().fetchval()
+        assert get_dart_plate_state(mock_conn.cursor(), test_plate_barcode) == str(mock_conn.cursor().fetchval())
         mock_conn.cursor().execute.assert_called_with(SQL_DART_GET_PLATE_PROPERTY, (test_plate_barcode, DART_STATE))
 
 
 def test_set_dart_plate_state_pending(config):
     with patch("pyodbc.connect") as mock_conn:
-
         test_plate_barcode = "AB123"
         set_dart_plate_state_pending(mock_conn.cursor(), test_plate_barcode)
         mock_conn.cursor().execute.assert_called_with(

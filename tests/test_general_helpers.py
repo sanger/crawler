@@ -1,10 +1,12 @@
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
 from bson.decimal128 import Decimal128  # type: ignore
 from bson.objectid import ObjectId
+
 from crawler.constants import (
     DART_EMPTY_VALUE,
     DART_LAB_ID,
@@ -13,6 +15,7 @@ from crawler.constants import (
     DART_ROOT_SAMPLE_ID,
     DART_STATE,
     DART_STATE_PICKABLE,
+    FIELD_BARCODE,
     FIELD_COORDINATE,
     FIELD_CREATED_AT,
     FIELD_DATE_TESTED,
@@ -48,6 +51,7 @@ from crawler.constants import (
     MLWH_UPDATED_AT,
 )
 from crawler.helpers.general_helpers import (
+    create_source_plate_doc,
     get_config,
     get_dart_well_index,
     map_lh_doc_to_sql_columns,
@@ -264,3 +268,20 @@ def test_map_mongo_doc_to_dart_well_props(config):
     result = map_mongo_doc_to_dart_well_props(doc_to_transform)
 
     assert result[DART_STATE] == DART_EMPTY_VALUE
+
+
+def test_create_source_plate_doc(freezer):
+    """Tests for updating docs with source plate UUIDs."""
+    now = datetime.now()
+    test_uuid = uuid.uuid4()
+    plate_barcode = "abc123"
+    lab_id = "AP"
+
+    with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
+        source_plate = create_source_plate_doc(plate_barcode, lab_id)
+
+        assert source_plate[FIELD_LH_SOURCE_PLATE_UUID] == str(test_uuid)
+        assert source_plate[FIELD_BARCODE] == plate_barcode
+        assert source_plate[FIELD_LAB_ID] == lab_id
+        assert source_plate[FIELD_UPDATED_AT] == now
+        assert source_plate[FIELD_CREATED_AT] == now

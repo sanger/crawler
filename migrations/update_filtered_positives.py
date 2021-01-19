@@ -4,7 +4,6 @@ from datetime import datetime
 
 from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.general_helpers import get_config
-
 from migrations.helpers.update_filtered_positives_helper import (
     pending_plate_barcodes_from_dart,
     positive_result_samples_from_mongo,
@@ -26,7 +25,7 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
         omit_dart {bool} -- whether to omit DART queries/updates from the process
     """
     config, settings_module = get_config(settings_module)
-    logging.config.dictConfig(config.LOGGING)  # type: ignore
+    logging.config.dictConfig(config.LOGGING)
 
     logger.info("-" * 80)
     logger.info("STARTING FILTERED POSITIVES UPDATE")

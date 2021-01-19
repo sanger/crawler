@@ -1,44 +1,45 @@
-from types import ModuleType
-from typing import List, Optional, Dict, Any
-from pandas import DataFrame  # type: ignore
-import pandas as pd
+import logging
 from datetime import datetime
-import sqlalchemy  # type: ignore
-from crawler.types import Sample
+from typing import Any, Dict, List, Optional, cast
+
+import pandas as pd
+import sqlalchemy
+from pandas import DataFrame
+
+from crawler.constants import (
+    COLLECTION_SAMPLES,
+    EVENT_CHERRYPICK_LAYOUT_SET,
+    FIELD_CREATED_AT,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_PLATE_BARCODE,
+    FIELD_ROOT_SAMPLE_ID,
+    MLWH_FILTERED_POSITIVE,
+    MLWH_MONGODB_ID,
+)
+from crawler.db import (
+    create_mongo_client,
+    create_mysql_connection,
+    get_mongo_collection,
+    get_mongo_db,
+    run_mysql_execute_formatted_query,
+)
 from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_0,
     FILTERED_POSITIVE_VERSION_1,
     FILTERED_POSITIVE_VERSION_2,
 )
-from crawler.constants import (
-    COLLECTION_SAMPLES,
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_PLATE_BARCODE,
-    FIELD_CREATED_AT,
-    FIELD_FILTERED_POSITIVE,
-    MLWH_MONGODB_ID,
-    MLWH_FILTERED_POSITIVE,
-    EVENT_CHERRYPICK_LAYOUT_SET,
-)
-from crawler.db import (
-    create_mongo_client,
-    get_mongo_collection,
-    get_mongo_db,
-    run_mysql_execute_formatted_query,
-    create_mysql_connection,
-)
 from crawler.helpers.general_helpers import map_mongo_to_sql_common
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH
-import logging
+from crawler.types import Config, Sample
 
 logger = logging.getLogger(__name__)
 
 
-def mongo_samples_by_date(config: ModuleType, start_datetime: datetime, end_datetime: datetime) -> List[Sample]:
+def mongo_samples_by_date(config: Config, start_datetime: datetime, end_datetime: datetime) -> List[Sample]:
     """Gets all samples from Mongo created before Crawler started setting filtered positive fields
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        config {Config} -- application config specifying database details
         start_datetime {datetime} -- lower limit of sample creation date
         end_datetime {datetime} -- upper limit of sample creation date
     Returns:
@@ -57,7 +58,7 @@ def mongo_samples_by_date(config: ModuleType, start_datetime: datetime, end_date
 
 
 def get_cherrypicked_samples_by_date(
-    config: ModuleType,
+    config: Config,
     root_sample_ids: List[str],
     plate_barcodes: List[str],
     start_date: str,
@@ -70,7 +71,7 @@ def get_cherrypicked_samples_by_date(
     for the relevant event type in the event warehouse)
 
     Args:
-        config (ModuleType): application config specifying database details
+        config (Config): application config specifying database details
         root_sample_ids (List[str]): [description]
         plate_barcodes (List[str]): [description]
         start_date (str): lower limit on creation date
@@ -89,20 +90,20 @@ def get_cherrypicked_samples_by_date(
         concat_frame = pd.DataFrame()
 
         chunk_root_sample_ids = [
-            root_sample_ids[x : (x + chunk_size)] for x in range(0, len(root_sample_ids), chunk_size)  # noqa:E203 E501
+            root_sample_ids[x : (x + chunk_size)] for x in range(0, len(root_sample_ids), chunk_size)  # noqa: E203
         ]
 
         sql_engine = sqlalchemy.create_engine(
             (
-                f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}"  # type: ignore # noqa: E501
-                f"@{config.MLWH_DB_HOST}:{config.MLWH_DB_PORT}"  # type: ignore
+                f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}"
+                f"@{config.MLWH_DB_HOST}:{config.MLWH_DB_PORT}"
             ),
             pool_recycle=3600,
         )
         db_connection = sql_engine.connect()
 
-        ml_wh_db = config.MLWH_DB_DBNAME  # type: ignore
-        events_wh_db = config.EVENTS_WH_DB  # type: ignore
+        ml_wh_db = config.MLWH_DB_DBNAME
+        events_wh_db = config.EVENTS_WH_DB
 
         values_index = 0
         for chunk_root_sample_id in chunk_root_sample_ids:
@@ -153,12 +154,12 @@ def get_cherrypicked_samples_by_date(
             db_connection.close()
 
 
-def filtered_positive_fields_set(config: ModuleType, start_datetime: datetime, end_datetime: datetime) -> bool:
+def filtered_positive_fields_set(config: Config, start_datetime: datetime, end_datetime: datetime) -> bool:
     """Find if the filtered positive version field has been set on any of samples in date range.
        This would indicate that the migration has already been run on those samples.
 
     Args:
-        config {ModuleType} -- application config specifying database details
+        config {Config} -- application config specifying database details
         start_datetime {datetime} -- lower limit of sample creation date
         end_datetime {datetime} -- upper limit of sample creation date
 
@@ -176,7 +177,7 @@ def filtered_positive_fields_set(config: ModuleType, start_datetime: datetime, e
             }
         )
 
-        return num_versioned_samples > 0
+        return cast(bool, num_versioned_samples > 0)
 
 
 def split_mongo_samples_by_version(
@@ -229,12 +230,12 @@ def split_mongo_samples_by_version(
 
 
 def update_mlwh_filtered_positive_fields_batched(
-    config: ModuleType, samples: List[Sample], version: str, update_timestamp: datetime
+    config: Config, samples: List[Sample], version: str, update_timestamp: datetime
 ) -> bool:
     """Bulk updates sample filtered positive fields in the MLWH database
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        config {Config} -- application config specifying database details
         samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields
         should be updated
         version {str} -- filtered positive version

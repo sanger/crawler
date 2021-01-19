@@ -7,17 +7,20 @@ import shutil
 import uuid
 from csv import DictReader
 from datetime import datetime
-from enum import Enum
+from decimal import Decimal
 from hashlib import md5
+from logging import INFO, WARN
 from pathlib import Path
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
-import pyodbc  # type: ignore
-from bson.decimal128 import Decimal128  # type: ignore
+import pyodbc
+from bson.decimal128 import Decimal128
 from more_itertools import groupby_transform
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
+import crawler.types
+from crawler.centre_file_state import CentreFileState
 from crawler.constants import (
     ALLOWED_CH_RESULT_VALUES,
     ALLOWED_CH_TARGET_VALUES,
@@ -78,6 +81,7 @@ from crawler.db import (
 )
 from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.general_helpers import (
+    create_source_plate_doc,
     current_time,
     get_dart_well_index,
     get_sftp_connection,
@@ -86,7 +90,7 @@ from crawler.helpers.general_helpers import (
 )
 from crawler.helpers.logging_helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
-from crawler.types import Sample, SourcePlate
+from crawler.types import CentreConf, Config, CSVRow, ModifiedRow, ModifiedRowValue, RowSignature, Sample, SourcePlate
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +102,7 @@ SUCCESSES_DIR = "successes"
 
 
 class Centre:
-    def __init__(self, config, centre_config):
+    def __init__(self, config: Config, centre_config: CentreConf):
         self.config = config
         self.centre_config = centre_config
 
@@ -185,7 +189,7 @@ class Centre:
         Returns:
             str -- the download directory
         """
-        return f"{self.config.DIR_DOWNLOADED_DATA}{self.centre_config['prefix']}/"  # type: ignore
+        return f"{self.config.DIR_DOWNLOADED_DATA}{self.centre_config['prefix']}/"
 
     def download_csv_files(self) -> None:
         """Downloads the centre's file from the SFTP server"""
@@ -209,23 +213,9 @@ class Centre:
         return None
 
 
-"""Class to hold enum states for the files
-"""
-
-
-class CentreFileState(Enum):
-    FILE_UNCHECKED = 1
-    FILE_IN_BLACKLIST = 2
-    FILE_NOT_PROCESSED_YET = 3
-    FILE_PROCESSED_WITH_ERROR = 4
-    FILE_PROCESSED_WITH_SUCCESS = 5
-
-
-"""Class to process an individual file
-"""
-
-
 class CentreFile:
+    """Class to process an individual file"""
+
     # These headers are required in ALL files from ALL lighthouses
     REQUIRED_FIELDS = {
         FIELD_ROOT_SAMPLE_ID,
@@ -271,11 +261,11 @@ class CentreFile:
 
         self.docs_inserted = 0
 
-    def filepath(self) -> Any:
+    def filepath(self) -> Path:
         """Returns the filepath for the file
 
         Returns:
-            str -- the filepath for the file
+            Path -- the filepath for the file
         """
         return PROJECT_ROOT.joinpath(f"{self.centre.get_download_dir()}{self.file_name}")
 
@@ -285,9 +275,9 @@ class CentreFile:
         Returns:
             str -- the checksum for the file
         """
-        with open(self.filepath(), "rb") as f:
+        with open(self.filepath(), "rb") as file:
             file_hash = md5()
-            while chunk := f.read(8192):
+            while chunk := file.read(8192):
                 file_hash.update(chunk)
 
         return file_hash.hexdigest()
@@ -308,9 +298,9 @@ class CentreFile:
 
         backup_folder = f"{self.centre_config['backups_folder']}/{dir_path}"
         files_from_backup_folder = os.listdir(backup_folder)
+
         for backup_copy_file in files_from_backup_folder:
-            matches = regexp.match(backup_copy_file)
-            if matches:
+            if matches := regexp.match(backup_copy_file):
                 # backup_timestamp = matches.group(1)
                 backup_filename = matches.group(2)
                 backup_checksum = matches.group(3)
@@ -318,16 +308,27 @@ class CentreFile:
                 if checksum_for_file == backup_checksum:
                     if backup_filename != self.file_name:
                         logger.warning(
-                            f"Found identical file {backup_filename} in path {dir_path} which has "
-                            "same checksum but different filename"
+                            f"Found an identical file {backup_filename} in path {dir_path} which has the same checksum "
+                            "but a different filename"
                         )
                     return True
         return False
 
-    def get_centre_from_db(self):
+    def get_centre_from_db(self) -> Dict[str, Any]:
+        """Gets a document from the mongo centre collection which describes a lighthouse centre.
 
+        Raises:
+            Exception: if no centre is found, raise an exception
+
+        Returns:
+            Dict[str, Any]: mongo document describing a centre
+        """
         centre_collection = get_mongo_collection(self.get_db(), COLLECTION_CENTRES)
-        return centre_collection.find({"name": self.centre_config["name"]})[0]
+
+        if centre := centre_collection.find_one({"name": self.centre_config["name"]}):
+            return cast(crawler.types.Centre, centre)
+
+        raise Exception("Unable to find the centre in the centre collection.")
 
     def set_state_for_file(self) -> CentreFileState:
         """Determines what state the file is in and whether it needs to be processed.
@@ -335,29 +336,25 @@ class CentreFile:
         Returns:
             CentreFileState - enum representation of file state
         """
-        # check whether file is on the blacklist and should be ignored
         centre = self.get_centre_from_db()
-        if "file_names_to_ignore" in centre:
-            filenames_to_ignore = centre["file_names_to_ignore"]
 
-            if self.file_name in filenames_to_ignore:
-                self.file_state = CentreFileState.FILE_IN_BLACKLIST
-                return self.file_state
+        # check whether file is on the blacklist and should be ignored
+        if "file_names_to_ignore" in centre and self.file_name in centre["file_names_to_ignore"]:
+            self.file_state = CentreFileState.FILE_IN_BLACKLIST
 
         # check whether file has already been processed to error directory
-        if self.checksum_match(ERRORS_DIR):
+        elif self.checksum_match(ERRORS_DIR):
             self.file_state = CentreFileState.FILE_PROCESSED_WITH_ERROR
-            return self.file_state
 
-        # if checksum differs or file is not present in errors we check whether file has
-        # already been processed successfully
-        if self.checksum_match(SUCCESSES_DIR):
+        # if checksum differs or file is not present in errors we check whether file has already been processed
+        # successfully
+        elif self.checksum_match(SUCCESSES_DIR):
             self.file_state = CentreFileState.FILE_PROCESSED_WITH_SUCCESS
-            return self.file_state
 
-        # if checksum differs or if the file was not present in success directory
-        # we process it
-        self.file_state = CentreFileState.FILE_NOT_PROCESSED_YET
+        # if checksum(s) differs or if the file was not present in success directory, process it
+        else:
+            self.file_state = CentreFileState.FILE_NOT_PROCESSED_YET
+
         return self.file_state
 
     def process_samples(self, add_to_dart: bool) -> None:
@@ -369,7 +366,6 @@ class CentreFile:
         logger.info("Processing samples")
 
         # Internally traps TYPE 2: missing headers and TYPE 10 malformed files and returns
-        # docs_to_insert = []
         docs_to_insert = self.parse_csv()
 
         if self.logging_collection.get_count_of_all_errors_and_criticals() > 0:
@@ -380,19 +376,25 @@ class CentreFile:
         # Internally traps TYPE 26 failed assigning source plate UUIDs error and returns []
         docs_to_insert = self.docs_to_insert_updated_with_source_plate_uuids(docs_to_insert)
 
-        mongo_ids_of_inserted = []
-        if len(docs_to_insert) > 0:
+        if (num_docs_to_insert := len(docs_to_insert)) > 0:
+            logger.debug(f"{num_docs_to_insert} docs to insert")
             mongo_ids_of_inserted = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
 
-        if len(mongo_ids_of_inserted) > 0:
-            # filter out docs which failed to insert into mongo - we don't want to create mlwh
-            # records for these
-            docs_to_insert_mlwh = list(filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert))
+            if len(mongo_ids_of_inserted) > 0:
+                # filter out docs which failed to insert into mongo - we don't want to create mlwh
+                # records for these
+                docs_to_insert_mlwh = list(
+                    filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert)
+                )
 
-            mlwh_success = self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
+                mlwh_success = self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
-            if add_to_dart and mlwh_success:
-                self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
+                if add_to_dart and mlwh_success:
+                    logger.info("MLWH insert successful and adding to DART")
+
+                    self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
+        else:
+            logger.info("No new docs to insert")
 
         self.backup_file()
         self.create_import_record_for_file()
@@ -532,7 +534,7 @@ class CentreFile:
                     continue
 
                 # then add a new plate
-                new_plate = self.new_mongo_source_plate(plate_barcode, doc[FIELD_LAB_ID])
+                new_plate = create_source_plate_doc(plate_barcode, doc[FIELD_LAB_ID])
                 new_plates.append(new_plate)
                 update_doc_from_source_plate(doc, new_plate, True)
 
@@ -551,23 +553,23 @@ class CentreFile:
 
         return updated_docs
 
-    def insert_samples_from_docs_into_mongo_db(self, docs_to_insert: List[Dict[str, str]]) -> List[Any]:
-        """Insert sample records into the mongo database from the parsed file information.
+    def insert_samples_from_docs_into_mongo_db(self, docs_to_insert: List[ModifiedRow]) -> List[Any]:
+        """Insert sample records into the mongo database from the parsed CSV file information.
 
         Arguments:
-            docs_to_insert {List[Dict[str, str]]} -- list of filtered sample information extracted from CSV files
+            docs_to_insert {List[ModifiedRow]} -- list of filtered sample information extracted from CSV files
         """
         logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
-        samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
 
+        samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
         try:
             # Inserts new version for samples
             result = samples_collection.insert_many(docs_to_insert, ordered=False)
+
             self.docs_inserted = len(result.inserted_ids)
 
-            # inserted_ids is in the same order as docs_to_insert, even if the query has
-            # ordered=False parameter
-            return result.inserted_ids
+            # inserted_ids is in the same order as docs_to_insert, even if the query has ordered=False parameter
+            return list(result.inserted_ids)
 
         # TODO could trap DuplicateKeyError specifically
         except BulkWriteError as e:
@@ -588,7 +590,18 @@ class CentreFile:
             self.docs_inserted = e.details["nInserted"]
             self.add_duplication_errors(e)
 
-            errored_ids = list(map(lambda x: x["op"][FIELD_MONGODB_ID], e.details["writeErrors"]))
+            def get_errored_ids(error: Dict[str, Dict[str, str]]) -> str:
+                """Get the object IDs from mongo of documents that failed to write.
+
+                Arguments:
+                    error (Dict[str, Dict[str, str]]): mongo error details
+
+                Returns:
+                    str: mongo object ID
+                """
+                return error["op"][FIELD_MONGODB_ID]
+
+            errored_ids = list(map(get_errored_ids, e.details["writeErrors"]))
             inserted_ids = [doc[FIELD_MONGODB_ID] for doc in docs_to_insert if doc[FIELD_MONGODB_ID] not in errored_ids]
 
             return inserted_ids
@@ -597,7 +610,7 @@ class CentreFile:
             logger.exception(e)
             return []
 
-    def insert_samples_from_docs_into_mlwh(self, docs_to_insert) -> bool:
+    def insert_samples_from_docs_into_mlwh(self, docs_to_insert):
         """Insert sample records into the MLWH database from the parsed file information, including the corresponding
         mongodb _id
 
@@ -691,7 +704,7 @@ class CentreFile:
         """Adds well properties to DART for the specified sample if that sample is positive.
 
         Arguments:
-            cursor {pyodbc.Cursor} -- The cursor with with to execute queries.
+            cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
             sample {Sample} -- The sample for which to add well properties.
             plate_barcode {str} -- The barcode of the plate to which this sample belongs.
         """
@@ -744,7 +757,7 @@ class CentreFile:
         return required
 
     def get_channel_headers(self) -> Set[str]:
-        """Returns the list of optional headers.
+        """Returns the list (a set) of optional headers.
 
         Returns:
             {set} - the set of header names
@@ -811,12 +824,23 @@ class CentreFile:
 
         return match.group(1), match.group(2)
 
-    def get_row_signature(self, row):
-        memo = []
-        for key in [FIELD_ROOT_SAMPLE_ID, FIELD_RNA_ID, FIELD_RESULT, FIELD_LAB_ID]:
-            if key in row:
-                memo.append(row[key])
-        return tuple(memo)
+    @staticmethod
+    def create_row_signature(row: ModifiedRow) -> RowSignature:
+        """Creates a "signature" for a row by returning a tuple of some fields in the row of data.
+
+        Arguments:
+            row (ModifiedRow): row object from the CSV DictReader
+
+        Returns:
+            RowSignature: "signature" of row
+        """
+        signature: List[str] = []
+
+        for field in (FIELD_ROOT_SAMPLE_ID, FIELD_RNA_ID, FIELD_RESULT, FIELD_LAB_ID):
+            if field in row:
+                signature.append(str(row[field]))
+
+        return tuple(signature)
 
     def log_adding_default_lab_id(self, row, line_number):
         logger.debug(f"Adding in missing Lab ID for row {line_number}")
@@ -825,16 +849,17 @@ class CentreFile:
             f"No Lab ID, line: {line_number}, root_sample_id: {row.get(FIELD_ROOT_SAMPLE_ID)}",
         )
 
-    def filtered_row(self, row, line_number) -> Dict[str, Any]:
+    def filtered_row(self, row: CSVRow, line_number: int) -> ModifiedRow:
         """Filter unneeded columns and add lab id if not present and config flag set.
 
         Arguments:
-            row {Dict[str][str]} - sample row read from file
+            row {CSVRow} - sample row read from file
 
         Returns:
-            Dict[str][str] - returns a modified version of the row
+            ModifiedRow - returns a modified version of the row
         """
-        modified_row: Dict[str, Any] = {}
+        modified_row: ModifiedRow = {}
+
         if self.config.ADD_LAB_ID:
             # when we need to add the lab id if not present
             if FIELD_LAB_ID in row:
@@ -870,8 +895,9 @@ class CentreFile:
                 if row[key]:
                     modified_row[key] = row[key]
 
-        # now check if we still have any columns left in the file row that we don't recognise
+        # now check if we still have any columns left in the file row that we do not recognise
         unexpected_headers = list(row.keys() - seen_headers)
+
         if len(unexpected_headers) > 0:
             self.logging_collection.add_error(
                 "TYPE 13",
@@ -882,7 +908,7 @@ class CentreFile:
 
         return modified_row
 
-    def parse_and_format_file_rows(self, csvreader: DictReader) -> Any:
+    def parse_and_format_file_rows(self, csvreader: DictReader) -> List[ModifiedRow]:
         """Attempts to parse and format the file rows
            Adds additional derived and calculated fields to the imported rows that will aid querying
            later. Filters out blank rows, duplicated rows, and rows with values failing various
@@ -893,14 +919,14 @@ class CentreFile:
             csvreader {DictReader} -- CSV file reader to iterate over
 
         Returns:
-            Tuple[List[str], List[Dict[str, str]]] -- list of errors and the augmented data
+            List[ModifiedRow] -- list of errors and the augmented data
         """
         logger.debug("Adding extra fields")
 
-        verified_rows = []
+        verified_rows: List[ModifiedRow] = []
 
         # Detect duplications and filters them out
-        seen_rows: Set[tuple] = set()
+        seen_rows: Set[RowSignature] = set()
         failed_validation_count = 0
         invalid_rows_count = 0
         line_number = 2
@@ -908,9 +934,8 @@ class CentreFile:
         for row in csvreader:
             # only process rows that have at least a minimum level of data
             if self.row_required_fields_present(row, line_number):
-                row = self.parse_and_format_row(row, line_number, seen_rows)
-                if row is not None:
-                    verified_rows.append(row)
+                if parsed_row := self.parse_and_format_row(row, line_number, seen_rows):
+                    verified_rows.append(parsed_row)
                 else:
                     # this counter catches rows where field validation failed
                     failed_validation_count += 1
@@ -920,27 +945,35 @@ class CentreFile:
 
             line_number += 1
 
-        logger.info(f"Rows with invalid structure in this file = {invalid_rows_count}")
-        logger.info(f"Rows that failed validation in this file = {failed_validation_count}")
+        logger.log(
+            INFO if invalid_rows_count == 0 else WARN,
+            f"Rows with invalid structure in this file = {invalid_rows_count}",
+        )
+        logger.log(
+            INFO if failed_validation_count == 0 else WARN,
+            f"Rows that failed validation in this file = {failed_validation_count}",
+        )
 
         return verified_rows
 
-    def parse_and_format_row(self, row, line_number, seen_rows) -> Any:
+    def parse_and_format_row(
+        self, row: CSVRow, line_number: int, seen_rows: Set[RowSignature]
+    ) -> Optional[ModifiedRow]:
         """Parses a single row and runs validations on content.
 
         Arguments:
-            row {Row} - row object from the csvreader
-            line_number {integer} - line number within the file
+            row {CSVRow} - row object from the CSV DictReader
+            line_number {int} - line number within the file
             seen_rows {tuple} - row signature of key values, used to exclude duplicates
 
         Returns:
-            modified_row {Dict[str, str]} - modified filtered and formatted version of the row
+            modified_row {Optional[ModifiedRow]} - modified filtered and formatted version of the row
         """
         # ---- create new row dict with just the recognised columns ----
         modified_row = self.filtered_row(row, line_number)
 
         # ---- check if this row has already been seen in this file, based on key fields ----
-        row_signature = self.get_row_signature(modified_row)
+        row_signature = self.create_row_signature(modified_row)
 
         if row_signature in seen_rows:
             logger.debug(f"Skipping {row_signature}: duplicate")
@@ -977,7 +1010,7 @@ class CentreFile:
         # extract the barcode and well coordinate
         barcode_field = self.centre_config["barcode_field"]
 
-        modified_row[FIELD_PLATE_BARCODE] = None  # type: ignore
+        modified_row[FIELD_PLATE_BARCODE] = None
         if modified_row.get(barcode_field) and (barcode_regex := self.centre_config["barcode_regex"]):
             (
                 modified_row[FIELD_PLATE_BARCODE],
@@ -987,7 +1020,7 @@ class CentreFile:
         if not modified_row.get(FIELD_PLATE_BARCODE):
             return None
 
-        modified_row[FIELD_LINE_NUMBER] = line_number  # type: ignore
+        modified_row[FIELD_LINE_NUMBER] = line_number
         modified_row[FIELD_FILE_NAME] = self.file_name
         modified_row[FIELD_FILE_NAME_DATE] = self.file_name_date()
         modified_row[FIELD_CREATED_AT] = datetime.now()
@@ -1006,14 +1039,14 @@ class CentreFile:
 
         return modified_row
 
-    def convert_and_validate_cq_values(self, row, line_number) -> bool:
+    def convert_and_validate_cq_values(self, row, line_number):
         for fieldname in [FIELD_CH1_CQ, FIELD_CH2_CQ, FIELD_CH3_CQ, FIELD_CH4_CQ]:
             if not self.convert_and_validate_cq_value(row, fieldname, line_number):
                 return False
 
         return True
 
-    def convert_and_validate_cq_value(self, row, fieldname, line_number) -> bool:
+    def convert_and_validate_cq_value(self, row, fieldname, line_number):
         if not row.get(fieldname):
             return True
 
@@ -1029,7 +1062,7 @@ class CentreFile:
 
         return True
 
-    def row_result_value_valid(self, row, line_number) -> bool:
+    def row_result_value_valid(self, row, line_number):
         """Validation to check if the row Result value is one of the expected values.
 
         Arguments:
@@ -1048,28 +1081,27 @@ class CentreFile:
 
         return True
 
-    def is_row_channel_target_valid(self, row, line_number, fieldname) -> bool:
+    def is_row_channel_target_valid(self, row: CSVRow, line_number: int, fieldname: str) -> bool:
         """Is the channel target valid.
 
         Arguments:
-            row {Row} - row object from the csvreader
-            line_number {integer} - line number within the file
+            row {CSVRow} - row object from the CSV DictReader
+            line_number {int} - line number within the file
             fieldname {str} - the name of the target column
 
         Returns:
             bool - whether the value is valid
         """
-        if row.get(fieldname):
-            if not row[fieldname] in ALLOWED_CH_TARGET_VALUES:
-                self.logging_collection.add_error(
-                    "TYPE 17",
-                    f"{fieldname} invalid, line: {line_number}, result: {row[fieldname]}",
-                )
-                return False
+        if (ch_target_value := row.get(fieldname)) is not None and ch_target_value not in ALLOWED_CH_TARGET_VALUES:
+            self.logging_collection.add_error(
+                "TYPE 17",
+                f"{fieldname} invalid, line: {line_number}, result: {ch_target_value}",
+            )
+            return False
 
         return True
 
-    def row_channel_target_values_valid(self, row, line_number) -> bool:
+    def row_channel_target_values_valid(self, row, line_number):
         """Validation to check if the row channel target value is one of the expected values.
 
         Arguments:
@@ -1114,12 +1146,12 @@ class CentreFile:
 
         return True
 
-    def row_channel_result_values_valid(self, row, line_number) -> bool:
+    def row_channel_result_values_valid(self, row: ModifiedRow, line_number: int) -> bool:
         """Validation to check if the row channel result values match one of the expected values.
 
         Arguments:
-            row {Row} - row object from the csvreader
-            line_number {integer} - line number within the file
+            row {ModifiedRow} - row object from the CSV DictReader
+            line_number {int} - line number within the file
 
         Returns:
             bool - whether the values are valid
@@ -1138,48 +1170,48 @@ class CentreFile:
 
         return True
 
-    def is_within_cq_range(self, range_min, range_max, num) -> bool:
+    @staticmethod
+    def is_within_cq_range(range_min: Decimal, range_max: Decimal, num: ModifiedRowValue) -> bool:
         """Validation to check if a number lies within the expected range.
 
         Arguments:
             range_min {Decimal} - minimum range number
             range_max {Decimal} - maximum range number
-            num {Decimal128} - the number to be tested
+            num {ModifiedRowValue} - the number to be tested
 
         Returns:
             bool - whether the value lies within range
         """
-        # cannot compare Decimal128 to Decimal or to other Decimal128s
-        return range_min <= num.to_decimal() <= range_max
+        # TODO: this casting is dangerous and needs to be re-thought...
+        return range_min <= Decimal(cast(Decimal128, num).to_decimal()) <= range_max
 
-    def is_row_channel_cq_in_range(self, row, line_number, fieldname) -> bool:
+    def is_row_channel_cq_in_range(self, row: ModifiedRow, line_number: int, fieldname: str) -> bool:
         """Is the channel cq within the specified range.
 
         Arguments:
-            row {Row} - row object from the csvreader
-            line_number {integer} - line number within the file
+            row {ModifiedRow} - row object from the CSV DictReader
+            line_number {int} - line number within the file
             fieldname {str} - the name of the cq column
 
         Returns:
             bool - whether the cq value is valid
         """
-        if row.get(fieldname):
-            if not self.is_within_cq_range(MIN_CQ_VALUE, MAX_CQ_VALUE, row.get(fieldname)):
-                self.logging_collection.add_error(
-                    "TYPE 20",
-                    f"{fieldname} not in range ({MIN_CQ_VALUE}, {MAX_CQ_VALUE}), "
-                    f"line: {line_number}, result: {row.get(fieldname)}",
-                )
-                return False
+        if fieldname in row and not self.is_within_cq_range(MIN_CQ_VALUE, MAX_CQ_VALUE, row[fieldname]):
+            self.logging_collection.add_error(
+                "TYPE 20",
+                f"{fieldname} not in range ({MIN_CQ_VALUE}, {MAX_CQ_VALUE}), "
+                f"line: {line_number}, result: {row[fieldname]}",
+            )
+            return False
 
         return True
 
-    def row_channel_cq_values_within_range(self, row, line_number) -> bool:
+    def row_channel_cq_values_within_range(self, row: ModifiedRow, line_number: int) -> bool:
         """Validation to check if the row channel cq values are within range.
 
         Arguments:
-            row {Row} - row object from the csvreader
-            line_number {integer} - line number within the file
+            row {ModifiedRow} - row object from the CSV DictReader
+            line_number {int} - line number within the file
 
         Returns:
             bool - whether the cq values are within range
@@ -1198,13 +1230,12 @@ class CentreFile:
 
         return True
 
-    def row_positive_result_matches_channel_results(self, row, line_number) -> bool:
-        """Validation to check that when the result is positive, and channel results are present,
-           then at least one of the channel results is also positive.
+    def row_positive_result_matches_channel_results(self, row: ModifiedRow, line_number: int) -> bool:
+        """Validation to check that when the result is positive, and channel results are present, then at least one of
+        the channel results is also positive.
 
         Arguments:
-            row {Row} - row object from the csvreader
-            line_number {integer} - line number within the file
+            row {ModifiedRow} - row object from the CSV DictReader
 
         Returns:
             bool - whether the channel results complement the main results
@@ -1245,19 +1276,19 @@ class CentreFile:
         if ch_results_positive == 0:
             self.logging_collection.add_error(
                 "TYPE 21",
-                "Positive Result does not match to CT Channel Results (none are positive), line: {line_number}",
+                f"Positive Result does not match to CT Channel Results (none are positive), line: {line_number}",
             )
             return False
 
         return True
 
-    def row_required_fields_present(self, row, line_number) -> bool:
+    def row_required_fields_present(self, row: CSVRow, line_number: int) -> bool:
         """Checks whether the row has the expected structure.
             Checks for blank rows and if we have the sample id and plate barcode.boolean
 
         Arguments:
-            row {Row} - row object from the csvreader
-            line_number - line number within the file
+            row {CSVRow} - row object from the csvreader
+            line_number {int} - line number within the file
 
         Returns:
             bool -- whether the row has valid structure or not
@@ -1305,21 +1336,3 @@ class CentreFile:
         file_timestamp = m.group(1)
 
         return datetime.strptime(file_timestamp, "%y%m%d_%H%M")
-
-    def new_mongo_source_plate(self, plate_barcode: str, lab_id: str) -> SourcePlate:
-        """Creates a new mongo source plate document.
-
-        Arguments:
-            plate_barcode {str} -- The plate barcode to assign to the new source plate.
-            lab_id {str} -- The lab id to assign to the new source plate.
-
-        Returns:
-            SourcePlate -- The new mongo source plate doc.
-        """
-        return {
-            FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4()),
-            FIELD_BARCODE: plate_barcode,
-            FIELD_LAB_ID: lab_id,
-            FIELD_UPDATED_AT: datetime.now(),
-            FIELD_CREATED_AT: datetime.now(),
-        }

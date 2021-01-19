@@ -2,11 +2,12 @@ import logging
 import sys
 import traceback
 from datetime import datetime
-from types import ModuleType
 from typing import List, Optional, Set, Tuple
 
-import pandas as pd  # type: ignore
-import sqlalchemy  # type: ignore
+import pandas as pd
+import sqlalchemy
+from pandas import DataFrame
+
 from crawler.constants import (
     EVENT_CHERRYPICK_LAYOUT_SET,
     FIELD_COORDINATE,
@@ -15,8 +16,7 @@ from crawler.constants import (
     MONGO_DATETIME_FORMAT,
     PLATE_EVENT_DESTINATION_CREATED,
 )
-from crawler.types import Sample
-from pandas import DataFrame
+from crawler.types import Config, Sample
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +31,16 @@ def print_exception() -> None:
 
 
 def valid_datetime_string(s_datetime: str) -> bool:
+    """Validates a string against the mongo datetime format.
+
+    Arguments:
+        s_datetime (str): string of date to validate
+
+    Returns:
+        bool: True if the date is valid, False otherwise
+    """
     try:
-        dt = datetime.strptime(s_datetime, MONGO_DATETIME_FORMAT)
-        if dt is None:
-            return False
+        datetime.strptime(s_datetime, MONGO_DATETIME_FORMAT)
         return True
     except Exception:
         print_exception()
@@ -53,7 +59,7 @@ def extract_required_cp_info(samples: List[Sample]) -> Tuple[Set[str], Set[str]]
 
 
 def get_cherrypicked_samples(
-    config: ModuleType,
+    config: Config,
     root_sample_ids: List[str],
     plate_barcodes: List[str],
     chunk_size: int = 50000,
@@ -85,15 +91,15 @@ def get_cherrypicked_samples(
 
         sql_engine = sqlalchemy.create_engine(
             (
-                f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}"  # type: ignore
-                f"@{config.MLWH_DB_HOST}:{config.MLWH_DB_PORT}"  # type: ignore
+                f"mysql+pymysql://{config.MLWH_DB_RO_USER}:{config.MLWH_DB_RO_PASSWORD}"
+                f"@{config.MLWH_DB_HOST}:{config.MLWH_DB_PORT}"
             ),
             pool_recycle=3600,
         )
         db_connection = sql_engine.connect()
 
-        ml_wh_db = config.MLWH_DB_DBNAME  # type: ignore
-        events_wh_db = config.EVENTS_WH_DB  # type: ignore
+        ml_wh_db = config.MLWH_DB_DBNAME
+        events_wh_db = config.EVENTS_WH_DB
 
         for chunk_root_sample_id in chunk_root_sample_ids:
             params = {"root_sample_ids": tuple(chunk_root_sample_id), "plate_barcodes": tuple(plate_barcodes)}

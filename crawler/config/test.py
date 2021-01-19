@@ -30,7 +30,6 @@ CENTRES.append(
 # SFTP details
 SFTP_UPLOAD = False
 SFTP_HOST = LOCALHOST
-SFTP_PASSWORD = "pass"
 SFTP_PORT = "22"
 SFTP_USER = "foo"
 

@@ -2,23 +2,12 @@ import logging
 import logging.config
 import time
 from datetime import datetime
-from crawler.helpers.general_helpers import get_config
-from migrations.helpers.update_filtered_positives_helper import (
-    update_filtered_positive_fields,
-    update_mongo_filtered_positive_fields,
-)
-from migrations.helpers.update_legacy_filtered_positives_helper import (
-    mongo_samples_by_date,
-    get_cherrypicked_samples_by_date,
-    filtered_positive_fields_set,
-    split_mongo_samples_by_version,
-    update_mlwh_filtered_positive_fields_batched,
-)
+
 from crawler.constants import (
+    FILTERED_POSITIVE_FIELDS_SET_DATE,
+    MONGO_DATETIME_FORMAT,
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
-    MONGO_DATETIME_FORMAT,
-    FILTERED_POSITIVE_FIELDS_SET_DATE,
 )
 from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_0,
@@ -26,9 +15,18 @@ from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_2,
     filtered_positive_identifier_by_version,
 )
-from migrations.helpers.shared_helper import (
-    extract_required_cp_info,
-    valid_datetime_string,
+from crawler.helpers.general_helpers import get_config
+from migrations.helpers.shared_helper import extract_required_cp_info, valid_datetime_string
+from migrations.helpers.update_filtered_positives_helper import (
+    update_filtered_positive_fields,
+    update_mongo_filtered_positive_fields,
+)
+from migrations.helpers.update_legacy_filtered_positives_helper import (
+    filtered_positive_fields_set,
+    get_cherrypicked_samples_by_date,
+    mongo_samples_by_date,
+    split_mongo_samples_by_version,
+    update_mlwh_filtered_positive_fields_batched,
 )
 
 logger = logging.getLogger(__name__)
@@ -70,7 +68,8 @@ def run(settings_module: str = "", s_start_datetime: str = "", s_end_datetime: s
         return
 
     config, settings_module = get_config(settings_module)
-    logging.config.dictConfig(config.LOGGING)  # type: ignore
+
+    logging.config.dictConfig(config.LOGGING)
 
     logger.info("-" * 80)
     logger.info("STARTING FILTERED POSITIVES LEGACY UPDATE")

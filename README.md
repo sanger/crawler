@@ -20,7 +20,7 @@ querying.
     + [Version 0 `v0`](#version-0-v0)
     + [Version 1 `v1`](#version-1-v1)
     + [Version 2 `v2` - **Current Version**](#version-2-v2---current-version)
-    + [Propagating Filtered Positive version changes to MongoDB, MLWH and DART](#propagating-filtered-positive-version-changes-to-mongodb-mlwh-and-dart)
+    + [Propagating Filtered Positive version changes to MongoDB, MLWH and (optional) DART](#propagating-filtered-positive-version-changes-to-mongodb-mlwh-and-optional-dart)
   * [Migrating legacy data to DART](#migrating-legacy-data-to-dart)
 - [Testing](#testing)
   * [Testing requirements](#testing-requirements)
@@ -34,19 +34,19 @@ querying.
 
 ## Requirements
 
-* python - install the required version specified in `Pipfile`:
+- python - install the required version specified in `Pipfile`:
 
         [requires]
         python_version = "<version>"
 
-* install the required packages using [pipenv](https://github.com/pypa/pipenv):
+- install the required packages using [pipenv](https://github.com/pypa/pipenv):
 
         brew install pipenv
         pipenv install --dev
 
-* Optionally, to test SFTP, [this](https://hub.docker.com/r/atmoz/sftp/) Docker image is helpful.
+- Optionally, to test SFTP, [this](https://hub.docker.com/r/atmoz/sftp/) Docker image is helpful.
 
-* mongodb
+- mongodb
 
         brew tap mongodb/brew
         brew install mongodb-community@4.2
@@ -110,7 +110,7 @@ with the implementation of previous versions (if any) in the git history.
 
 A sample is filtered positive if:
 
-* it has a positive RESULT
+- it has a positive RESULT
 
 This is the pre-"fit-to-pick" implementation, without any extra filtering on top of the RESULT=Positive requirement.
 
@@ -118,9 +118,9 @@ This is the pre-"fit-to-pick" implementation, without any extra filtering on top
 
 A sample is filtered positive if:
 
-* it has a positive RESULT
-* it is not a control (ROOT_SAMPLE_ID does not start with 'CBIQA_')
-* all of CH1_CQ, CH2_CQ and CH3_CQ are `None`, or one of these is less than or equal to 30
+- it has a positive RESULT
+- it is not a control (ROOT_SAMPLE_ID does not start with 'CBIQA_')
+- all of CH1_CQ, CH2_CQ and CH3_CQ are `None`, or one of these is less than or equal to 30
 
 More information on this version can be found on [this](https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/UAT+6th+October+2020)
 Confluence page.
@@ -129,14 +129,14 @@ Confluence page.
 
 A sample is filtered positive if:
 
-* it has a 'Positive' RESULT
-* it is not a control (ROOT_SAMPLE_ID does not start with 'CBIQA_', 'QC0', or 'ZZA000')
-* all of CH1_CQ, CH2_CQ and CH3_CQ are `None`, or one of these is less than or equal to 30
+- it has a 'Positive' RESULT
+- it is not a control (ROOT_SAMPLE_ID does not start with 'CBIQA_', 'QC0', or 'ZZA000')
+- all of CH1_CQ, CH2_CQ and CH3_CQ are `None`, or one of these is less than or equal to 30
 
 More information on this version can be found on [this](https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/Fit+to+pick+-+v2)
 Confluence page.
 
-#### Propagating Filtered Positive version changes to MongoDB, MLWH and (optional) DART 
+#### Propagating Filtered Positive version changes to MongoDB, MLWH and (optional) DART
 
 On changing the positive filtering version/definition, all unpicked samples stored in MongoDB, MLWH and DART need
 updating to determine whether they are still filtered positive under the new rules, and can therefore be cherrypicked.
@@ -147,7 +147,9 @@ the databases.
 Usage (inside pipenv shell):
 
     python run_migration.py update_filtered_positives
-    OR
+
+OR
+
     python run_migration.py update_filtered_positives omit_dart
 
 By default, the migration will attempt to use DART, as it will safely fail if DART cannot be accessed, hence warning
@@ -234,10 +236,17 @@ There is now a volume for the runner so there is hot reloading i.e. changes in t
 
 ## Miscellaneous
 
-### Naming conventions
+### Mongo naming conventions
 
 [This](https://stackoverflow.com/a/45335909) post was used for the naming conventions within mongo.
 
+### MonkeyType
+
+[MonkeyType](https://github.com/Instagram/MonkeyType) is useful to automatically create type annotations. View it's
+README for updated instructions on how to use it.
+
 ### Updating the table of contents
+
+Node is required to run npx:
 
     npx markdown-toc -i README.md

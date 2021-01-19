@@ -3,6 +3,10 @@ import uuid
 from datetime import datetime
 from typing import List
 
+from pymongo.collection import Collection
+from pymongo.database import Database
+from pymongo.operations import UpdateOne
+
 from crawler.constants import (
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
@@ -26,7 +30,7 @@ from crawler.db import (
 )
 from crawler.helpers.general_helpers import map_mongo_doc_to_sql_columns
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
-from crawler.types import Sample, SourcePlate
+from crawler.types import Config, Sample, SourcePlate
 from migrations.helpers.shared_helper import (
     extract_required_cp_info,
     get_cherrypicked_samples,
@@ -34,8 +38,6 @@ from migrations.helpers.shared_helper import (
     valid_datetime_string,
 )
 from migrations.helpers.update_filtered_positives_helper import update_dart_fields
-from pymongo.collection import Collection
-from pymongo.operations import UpdateOne
 
 ##
 # Requirements:
@@ -55,7 +57,7 @@ from pymongo.operations import UpdateOne
 logger = logging.getLogger(__name__)
 
 
-def migrate_all_dbs(config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
+def migrate_all_dbs(config: Config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
     if not config:
         logger.error("Aborting run: Config required")
         return
@@ -172,7 +174,7 @@ def add_sample_uuid_field(samples: List[Sample]) -> List[Sample]:
     return samples
 
 
-def update_mongo_fields(mongo_db, samples: List[Sample]) -> bool:
+def update_mongo_fields(mongo_db: Database, samples: List[Sample]) -> bool:
     """Bulk updates sample uuid fields in the Mongo database
 
     Arguments:
@@ -200,7 +202,7 @@ def update_mongo_fields(mongo_db, samples: List[Sample]) -> bool:
     return True
 
 
-def samples_updated_with_source_plate_uuids(mongo_db, samples: List[Sample]) -> List[Sample]:
+def samples_updated_with_source_plate_uuids(mongo_db: Database, samples: List[Sample]) -> List[Sample]:
     logger.debug("Attempting to update docs with source plate UUIDs")
 
     updated_samples: List[Sample] = []
