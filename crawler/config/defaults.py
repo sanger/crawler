@@ -15,7 +15,7 @@ ADD_LAB_ID = False
 # we want host.docker.internal, you can specify this in the
 # .env file you use for docker. eg
 # LOCALHOST=host.docker.internal
-LOCALHOST = os.environ.get("LOCALHOST", "localhost")
+LOCALHOST = os.environ.get("LOCALHOST", "127.0.0.1")
 ROOT_PASSWORD = os.environ.get("ROOT_PASSWORD", "")
 
 # mongo details
