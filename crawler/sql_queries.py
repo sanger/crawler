@@ -85,6 +85,17 @@ filtered_positive_timestamp = %(filtered_positive_timestamp)s
 WHERE mongodb_id = %(mongodb_id)s
 """
 
+
+SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH = """\
+UPDATE lighthouse_sample
+SET
+filtered_positive = %%s,
+filtered_positive_version = %%s,
+filtered_positive_timestamp = %%s
+WHERE mongodb_id IN (%s)
+"""
+
+
 # DART SQL queries
 SQL_DART_GET_PLATE_PROPERTY = """\
 SET NOCOUNT ON

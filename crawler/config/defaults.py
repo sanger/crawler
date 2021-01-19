@@ -98,7 +98,7 @@ MONGO_PORT = 27017
 MONGO_USERNAME = ""
 
 # MLWH database details
-MLWH_DB_DBNAME = "unified_warehouse_test"
+MLWH_DB_DBNAME = "unified_warehouse_development"
 MLWH_DB_HOST = LOCALHOST
 MLWH_DB_PORT = 3306
 MLWH_DB_RO_USER = "root"

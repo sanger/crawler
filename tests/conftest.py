@@ -15,11 +15,13 @@ from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_SAMPLES,
     COLLECTION_SAMPLES_HISTORY,
+    FIELD_MONGODB_ID,
     FIELD_COORDINATE,
     FIELD_PLATE_BARCODE,
     FIELD_RESULT,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
+    FIELD_RNA_ID,
     MLWH_TABLE_NAME,
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
@@ -28,6 +30,16 @@ from crawler.constants import (
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
     FILTERED_POSITIVE_FIELDS_SET_DATE,
+    POSITIVE_RESULT_VALUE,
+    MLWH_MONGODB_ID,
+    MLWH_COORDINATE,
+    MLWH_PLATE_BARCODE,
+    MLWH_ROOT_SAMPLE_ID,
+    MLWH_RNA_ID,
+    MLWH_RESULT,
+    MLWH_FILTERED_POSITIVE,
+    MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_FILTERED_POSITIVE_TIMESTAMP,
     EVENT_CHERRYPICK_LAYOUT_SET,
     PLATE_EVENT_DESTINATION_CREATED,
 )
@@ -153,7 +165,7 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_FILTERED_POSITIVE: True,
         FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
         FIELD_FILTERED_POSITIVE_VERSION: "v2",
-        FIELD_CREATED_AT: str(dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) + timedelta(days=1)),
+        FIELD_CREATED_AT: dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) + timedelta(days=1),
     },
     {
         FIELD_COORDINATE: "B01",
@@ -165,50 +177,50 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_FILTERED_POSITIVE: True,
         FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
         FIELD_FILTERED_POSITIVE_VERSION: "v2",
-        FIELD_CREATED_AT: str(dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) + timedelta(days=1)),
+        FIELD_CREATED_AT: dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) + timedelta(days=1),
     },
     {
         FIELD_COORDINATE: "C01",
         FIELD_SOURCE: "test1",
-        FIELD_RESULT: "Void",
+        FIELD_RESULT: "Negative",
         FIELD_PLATE_BARCODE: "123",
         FIELD_ROOT_SAMPLE_ID: "MCM003",
         FIELD_FILTERED_POSITIVE: False,
         FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
         FIELD_FILTERED_POSITIVE_VERSION: "v2",
-        FIELD_CREATED_AT: str(dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) + timedelta(days=1)),
+        FIELD_CREATED_AT: dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) + timedelta(days=1),
     },
     {
         FIELD_COORDINATE: "C01",
         FIELD_SOURCE: "test1",
-        FIELD_RESULT: "Void",
+        FIELD_RESULT: "Negative",
         FIELD_PLATE_BARCODE: "123",
         FIELD_ROOT_SAMPLE_ID: "MCM003",
         FIELD_FILTERED_POSITIVE: False,
         FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
         FIELD_FILTERED_POSITIVE_VERSION: "v0",
-        FIELD_CREATED_AT: str(dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) - timedelta(days=1)),
+        FIELD_CREATED_AT: dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) - timedelta(days=1),
     },
     {
         FIELD_COORDINATE: "D01",
         FIELD_SOURCE: "test1",
-        FIELD_RESULT: "Void",
+        FIELD_RESULT: POSITIVE_RESULT_VALUE,
         FIELD_PLATE_BARCODE: "123",
         FIELD_ROOT_SAMPLE_ID: "MCM003",
-        FIELD_CREATED_AT: str(dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) - timedelta(days=1)),
+        FIELD_CREATED_AT: dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) - timedelta(days=1),
     },
     {
         FIELD_COORDINATE: "D01",
         FIELD_SOURCE: "test2",
-        FIELD_RESULT: "Positive",
+        FIELD_RESULT: POSITIVE_RESULT_VALUE,
         FIELD_PLATE_BARCODE: "456",
         FIELD_ROOT_SAMPLE_ID: "MCM004",
-        FIELD_CREATED_AT: str(dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) - timedelta(days=1)),
+        FIELD_CREATED_AT: dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) - timedelta(days=2),
     },
 ]
 
 
-UNMIGRATED_MONGO_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
+MONGO_SAMPLES_WITHOUT_FILTERED_POSITIVE_FIELDS: List[Dict[str, Union[str, bool]]] = [
     {
         FIELD_COORDINATE: "D01",
         FIELD_SOURCE: "test1",
@@ -239,6 +251,54 @@ UNMIGRATED_MONGO_TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
     },
 ]
 
+MONGO_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS = [
+    {
+        FIELD_MONGODB_ID: "1",
+        FIELD_COORDINATE: "A01",
+        FIELD_PLATE_BARCODE: "123",
+        FIELD_ROOT_SAMPLE_ID: "MCM001",
+        FIELD_RNA_ID: "AAA123",
+        FIELD_FILTERED_POSITIVE: True,
+        FIELD_FILTERED_POSITIVE_VERSION: "v2",
+        FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
+    },
+    {
+        FIELD_MONGODB_ID: "2",
+        FIELD_COORDINATE: "B01",
+        FIELD_PLATE_BARCODE: "123",
+        FIELD_ROOT_SAMPLE_ID: "MCM002",
+        FIELD_RNA_ID: "BBB123",
+        FIELD_FILTERED_POSITIVE: False,
+        FIELD_FILTERED_POSITIVE_VERSION: "v2",
+        FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
+    },
+]
+
+
+MLWH_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS = [
+    {
+        MLWH_MONGODB_ID: "1",
+        MLWH_COORDINATE: "A1",
+        MLWH_PLATE_BARCODE: "123",
+        MLWH_ROOT_SAMPLE_ID: "MCM001",
+        MLWH_RNA_ID: "AAA123",
+        MLWH_RESULT: POSITIVE_RESULT_VALUE,
+        MLWH_FILTERED_POSITIVE: None,
+        MLWH_FILTERED_POSITIVE_VERSION: None,
+        MLWH_FILTERED_POSITIVE_TIMESTAMP: None,
+    },
+    {
+        MLWH_MONGODB_ID: "2",
+        MLWH_COORDINATE: "B1",
+        MLWH_PLATE_BARCODE: "123",
+        MLWH_ROOT_SAMPLE_ID: "MCM002",
+        MLWH_RNA_ID: "BBB123",
+        MLWH_RESULT: POSITIVE_RESULT_VALUE,
+        MLWH_FILTERED_POSITIVE: True,
+        MLWH_FILTERED_POSITIVE_VERSION: "v1.0",
+        MLWH_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 40, 8),
+    },
+]
 
 EVENT_WH_DATA: Dict[str, Any] = {
     "subjects": [
@@ -314,10 +374,6 @@ EVENT_WH_DATA: Dict[str, Any] = {
 }
 
 
-def to_datetime(date_string):
-    return datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S")
-
-
 MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
     "sample": [
         {
@@ -330,7 +386,9 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": str(to_datetime(V0_V1_CUTOFF_TIMESTAMP)),  # Created at v0/v1 cut-off time
+            "created": str(
+                datetime.strptime(V0_V1_CUTOFF_TIMESTAMP, "%Y-%m-%d %H:%M:%S")
+            ),  # Created at v0/v1 cut-off time
             "uuid_sample_lims": "1",
         },
         {
@@ -344,7 +402,7 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
             "created": str(
-                to_datetime(V0_V1_CUTOFF_TIMESTAMP) - timedelta(days=1)
+                datetime.strptime(V0_V1_CUTOFF_TIMESTAMP, "%Y-%m-%d %H:%M:%S") - timedelta(days=1)
             ),  # Created before v0/v1 cut-off time
             "uuid_sample_lims": "2",
         },
@@ -358,7 +416,9 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": str(to_datetime(V0_V1_CUTOFF_TIMESTAMP) + timedelta(days=1)),  # Created after v0/v1 cut-off time
+            "created": str(
+                datetime.strptime(V0_V1_CUTOFF_TIMESTAMP, "%Y-%m-%d %H:%M:%S") + timedelta(days=1)
+            ),  # Created after v0/v1 cut-off time
             "uuid_sample_lims": "3",
         },
         {
@@ -371,7 +431,9 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
-            "created": str(to_datetime(V1_V2_CUTOFF_TIMESTAMP) + timedelta(days=1)),  # Created after v1/v2 cut-off time
+            "created": str(
+                datetime.strptime(V1_V2_CUTOFF_TIMESTAMP, "%Y-%m-%d %H:%M:%S") + timedelta(days=1)
+            ),  # Created after v1/v2 cut-off time
             "uuid_sample_lims": "4",
         },
         {
@@ -385,7 +447,7 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
             "created": str(
-                to_datetime(FILTERED_POSITIVE_FIELDS_SET_DATE) + timedelta(days=1)
+                datetime.strptime(FILTERED_POSITIVE_FIELDS_SET_DATE, "%Y-%m-%d") + timedelta(days=1)
             ),  # Created after filtered positive fields set
             "uuid_sample_lims": "5",
         },
@@ -622,11 +684,11 @@ def filtered_positive_testing_samples(samples_collection_accessor):
 
 
 @pytest.fixture
-def filtered_positive_testing_samples_no_v0(samples_collection_accessor):
-    v0_samples = copy.deepcopy(FILTERED_POSITIVE_TESTING_SAMPLES)
-    v0_samples[3][FIELD_FILTERED_POSITIVE_VERSION] = "v2"
+def filtered_positive_testing_samples_no_version_set(samples_collection_accessor):
+    samples = copy.deepcopy(FILTERED_POSITIVE_TESTING_SAMPLES)
+    del samples[3][FIELD_FILTERED_POSITIVE]
 
-    result = samples_collection_accessor.insert_many(v0_samples)
+    result = samples_collection_accessor.insert_many(samples)
     samples = list(samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
     try:
         yield samples
@@ -635,8 +697,18 @@ def filtered_positive_testing_samples_no_v0(samples_collection_accessor):
 
 
 @pytest.fixture
-def unmigrated_mongo_testing_samples(config, event_wh_sql_engine):
-    return UNMIGRATED_MONGO_TESTING_SAMPLES
+def mongo_samples_without_filtered_positive_fields():
+    return MONGO_SAMPLES_WITHOUT_FILTERED_POSITIVE_FIELDS
+
+
+@pytest.fixture
+def mongo_samples_with_filtered_positive_fields():
+    return MONGO_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS
+
+
+@pytest.fixture
+def mlwh_samples_with_filtered_positive_fields():
+    return MLWH_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS
 
 
 @pytest.fixture

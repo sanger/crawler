@@ -33,7 +33,10 @@ from crawler.helpers.general_helpers import (
     map_mongo_doc_to_dart_well_props,
     map_mongo_to_sql_common,
 )
-from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE
+from crawler.sql_queries import (
+    SQL_DART_GET_PLATE_BARCODES,
+    SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE,
+)
 from crawler.types import Sample
 from migrations.helpers.shared_helper import extract_required_cp_info, get_cherrypicked_samples
 from migrations.helpers.shared_helper import remove_cherrypicked_samples as remove_cp_samples
@@ -138,7 +141,6 @@ def update_filtered_positive_fields(
 
     version = filtered_positive_identifier.version
 
-    # Expect all samples to be passed into here to have a positive result
     for sample in samples:
         sample[FIELD_FILTERED_POSITIVE] = filtered_positive_identifier.is_positive(sample)
         sample[FIELD_FILTERED_POSITIVE_VERSION] = version
@@ -148,7 +150,7 @@ def update_filtered_positive_fields(
 def update_mongo_filtered_positive_fields(
     config: ModuleType, samples: List[Sample], version: str, update_timestamp: datetime
 ) -> bool:
-    """Bulk updates sample filtered positive fields in the Mongo database
+    """Batch updates sample filtered positive fields in the Mongo database
 
     Arguments:
         config {ModuleType} -- application config specifying database details
@@ -161,36 +163,50 @@ def update_mongo_filtered_positive_fields(
     """
     with create_mongo_client(config) as client:
         mongo_db = get_mongo_db(config, client)
-
-        # get ids of those that are filtered positive, and those that aren't
-        all_ids: List[str] = [sample[FIELD_MONGODB_ID] for sample in samples]
-        filtered_positive_ids: List[str] = [
-            sample[FIELD_MONGODB_ID] for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] is True, samples))
-        ]
-        filtered_negative_ids = [mongo_id for mongo_id in all_ids if mongo_id not in filtered_positive_ids]
-
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
-        samples_collection.update_many(
-            {FIELD_MONGODB_ID: {"$in": filtered_positive_ids}},
-            {
-                "$set": {
-                    FIELD_FILTERED_POSITIVE: True,
-                    FIELD_FILTERED_POSITIVE_VERSION: version,
-                    FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
-                }
-            },
-        )
-        samples_collection.update_many(
-            {FIELD_MONGODB_ID: {"$in": filtered_negative_ids}},
-            {
-                "$set": {
-                    FIELD_FILTERED_POSITIVE: False,
-                    FIELD_FILTERED_POSITIVE_VERSION: version,
-                    FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
-                }
-            },
-        )
-    return True
+
+        num_samples = len(samples)
+        SAMPLES_PER_QUERY = 15000
+        samples_index = 0
+        logger.debug(f"Attempting to update {num_samples} rows in Mongo in batches of {SAMPLES_PER_QUERY}")
+        while samples_index < num_samples:
+            logger.debug(f"Updating records between {samples_index} and {samples_index + SAMPLES_PER_QUERY}")
+
+            samples_batch = samples[samples_index : (samples_index + SAMPLES_PER_QUERY)]  # noqa: E203
+
+            # get ids of those that are filtered positive, and those that aren't
+            filtered_positive_ids = []
+            filtered_negative_ids = []
+            for sample in samples_batch:
+                if sample[FIELD_FILTERED_POSITIVE] is True:
+                    filtered_positive_ids.append(sample[FIELD_MONGODB_ID])
+                else:
+                    filtered_negative_ids.append(sample[FIELD_MONGODB_ID])
+
+            samples_collection.update_many(
+                {FIELD_MONGODB_ID: {"$in": filtered_positive_ids}},
+                {
+                    "$set": {
+                        FIELD_FILTERED_POSITIVE: True,
+                        FIELD_FILTERED_POSITIVE_VERSION: version,
+                        FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
+                    }
+                },
+            )
+
+            samples_collection.update_many(
+                {FIELD_MONGODB_ID: {"$in": filtered_negative_ids}},
+                {
+                    "$set": {
+                        FIELD_FILTERED_POSITIVE: False,
+                        FIELD_FILTERED_POSITIVE_VERSION: version,
+                        FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
+                    }
+                },
+            )
+
+            samples_index += SAMPLES_PER_QUERY
+        return True
 
 
 def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Sample]) -> bool:
