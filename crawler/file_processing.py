@@ -640,7 +640,7 @@ class CentreFile:
                     "TYPE 14",
                     f"MLWH database inserts failed for file {self.file_name}",
                 )
-                logger.critical(f"Critical error in file {self.file_name}: {e}")
+                logger.critical(f"Critical error while processing file {self.file_name}: {e}")
                 logger.exception(e)
         else:
             self.logging_collection.add_error(
