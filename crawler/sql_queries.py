@@ -60,7 +60,6 @@ VALUES (
 %(filtered_positive_timestamp)s,
 %(lh_sample_uuid)s,
 %(lh_source_plate_uuid)s,
-%(created_at)s,
 %(updated_at)s
 )
 ON DUPLICATE KEY UPDATE
