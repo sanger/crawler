@@ -47,11 +47,13 @@ if __name__ == "__main__":
     if args.once:
         main.run(args.sftp, args.keep_files, args.add_to_dart)
     else:
-        time_to_run = "01:00"
-        print(f"Scheduled to run at {time_to_run}")
-        schedule.every().day.at(time_to_run).do(
-            main.run, sftp=args.sftp, keep_files=args.keep_files, add_to_dart=args.add_to_dart
-        )
+        times_to_run = ["01:00", "07:30"]
+        print(f"Scheduled to run at {times_to_run}")
+
+        for time_to_run in times_to_run:
+            schedule.every().day.at(time_to_run).do(
+                main.run, sftp=args.sftp, keep_files=args.keep_files, add_to_dart=args.add_to_dart
+            )
 
         while True:
             try:
