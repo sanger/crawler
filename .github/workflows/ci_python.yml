@@ -30,7 +30,8 @@ jobs:
         ports:
           - 3306:3306
         env:
-          MYSQL_ROOT_PASSWORD: root
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_ROOT_PASSWORD: null
           MYSQL_DATABASE: unified_warehouse_test
     steps:
       - uses: actions/checkout@v2
@@ -58,9 +59,7 @@ jobs:
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings
-          flake8 . --count --exit-zero --max-complexity=12 --max-line-length=100 --statistics
+          flake8
       - name: Run mypy
         run: |
           python -m mypy .

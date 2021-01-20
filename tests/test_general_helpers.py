@@ -1,11 +1,21 @@
+import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
-import uuid
+from unittest.mock import patch
 
 import pytest
 from bson.decimal128 import Decimal128  # type: ignore
 from bson.objectid import ObjectId
+
 from crawler.constants import (
+    DART_EMPTY_VALUE,
+    DART_LAB_ID,
+    DART_LH_SAMPLE_UUID,
+    DART_RNA_ID,
+    DART_ROOT_SAMPLE_ID,
+    DART_STATE,
+    DART_STATE_PICKABLE,
+    FIELD_BARCODE,
     FIELD_COORDINATE,
     FIELD_CREATED_AT,
     FIELD_DATE_TESTED,
@@ -13,13 +23,13 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_LAB_ID,
+    FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_MONGODB_ID,
     FIELD_PLATE_BARCODE,
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
-    FIELD_LH_SAMPLE_UUID,
-    FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     MLWH_COORDINATE,
@@ -30,6 +40,8 @@ from crawler.constants import (
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
     MLWH_FILTERED_POSITIVE_VERSION,
     MLWH_LAB_ID,
+    MLWH_LH_SAMPLE_UUID,
+    MLWH_LH_SOURCE_PLATE_UUID,
     MLWH_MONGODB_ID,
     MLWH_PLATE_BARCODE,
     MLWH_RESULT,
@@ -37,18 +49,9 @@ from crawler.constants import (
     MLWH_ROOT_SAMPLE_ID,
     MLWH_SOURCE,
     MLWH_UPDATED_AT,
-    MLWH_LH_SAMPLE_UUID,
-    MLWH_LH_SOURCE_PLATE_UUID,
-    DART_STATE,
-    DART_ROOT_SAMPLE_ID,
-    DART_RNA_ID,
-    DART_LAB_ID,
-    DART_LH_SAMPLE_UUID,
-    DART_STATE_PICKABLE,
-    DART_EMPTY_VALUE,
 )
-from crawler.helpers import (
-    LoggingCollection,
+from crawler.helpers.general_helpers import (
+    create_source_plate_doc,
     get_config,
     get_dart_well_index,
     map_lh_doc_to_sql_columns,
@@ -63,76 +66,6 @@ from crawler.helpers import (
 def test_get_config():
     with pytest.raises(ModuleNotFoundError):
         get_config("x.y.z")
-
-
-def test_logging_collection_with_a_single_error():
-    logging = LoggingCollection()
-    logging.add_error("TYPE 3", "This is a testing message")
-    aggregator = logging.aggregator_types["TYPE 3"]
-    assert aggregator.count_errors == 1
-    assert aggregator.max_errors == 5
-    assert (
-        aggregator.get_report_message() == "Total number of Only root sample id errors (TYPE 3): 1"
-    )
-    exptd_msgs = (
-        "WARNING: Sample rows that have Root Sample ID value but no other information. (TYPE 3) "
-        "(e.g. This is a testing message)"
-    )
-    assert aggregator.get_message() == exptd_msgs
-    assert logging.get_aggregate_messages() == [exptd_msgs]
-    assert logging.get_count_of_all_errors_and_criticals() == 0
-    assert logging.get_aggregate_total_messages() == [
-        "Total number of Only root sample id errors (TYPE 3): 1"
-    ]
-
-
-def test_logging_collection_with_multiple_errors():
-    logging = LoggingCollection()
-    logging.add_error("TYPE 3", "This is the first type 3 message")
-    logging.add_error("TYPE 1", "This is the first type 1 message")
-    logging.add_error("TYPE 2", "This is the first type 2 message")
-    logging.add_error("TYPE 3", "This is the second type 3 message")
-    logging.add_error("TYPE 2", "This is the second type 2 message")
-    logging.add_error("TYPE 4", "This is the first type 4 message")
-    logging.add_error("TYPE 1", "This is the first type 1 message")
-    logging.add_error("TYPE 3", "This is the third type 3 message")
-
-    aggregator_type_1 = logging.aggregator_types["TYPE 1"]
-    aggregator_type_2 = logging.aggregator_types["TYPE 2"]
-    aggregator_type_3 = logging.aggregator_types["TYPE 3"]
-    aggregator_type_4 = logging.aggregator_types["TYPE 4"]
-
-    assert aggregator_type_1.count_errors == 2
-    assert aggregator_type_2.count_errors == 2
-    assert aggregator_type_3.count_errors == 3
-    assert aggregator_type_4.count_errors == 1
-
-    exptd_msgs = [
-        "DEBUG: Blank rows in files. (TYPE 1)",
-        (
-            "CRITICAL: Files where we do not have the expected main column headers of Root Sample "
-            "ID, RNA ID and Result. (TYPE 2)"
-        ),
-        (
-            "WARNING: Sample rows that have Root Sample ID value but no other information. "
-            "(TYPE 3) (e.g. This is the first type 3 message) (e.g. This is the second type 3 "
-            "message) (e.g. This is the third type 3 message)"
-        ),
-        (
-            "ERROR: Sample rows that have Root Sample ID and Result values but no RNA ID (no plate "
-            "barcode). (TYPE 4) (e.g. This is the first type 4 message)"
-        ),
-    ]
-    assert logging.get_aggregate_messages() == exptd_msgs
-    assert logging.get_count_of_all_errors_and_criticals() == 3
-
-    exptd_report_msgs = [
-        "Total number of Blank row errors (TYPE 1): 2",
-        "Total number of Missing header column errors (TYPE 2): 2",
-        "Total number of Only root sample id errors (TYPE 3): 3",
-        "Total number of No plate barcode errors (TYPE 4): 1",
-    ]
-    assert logging.get_aggregate_total_messages() == exptd_report_msgs
 
 
 # tests for parsing date tested
@@ -259,9 +192,7 @@ def test_map_mongo_doc_to_sql_columns(config):
 
 def test_get_dart_well_index(config):
     coordinate = None
-    assert (
-        get_dart_well_index(coordinate) is None
-    ), "Expected to be unable to determine a well index for no sample"
+    assert get_dart_well_index(coordinate) is None, "Expected to be unable to determine a well index for no sample"
 
     coordinate = "01A"
     assert (
@@ -337,3 +268,20 @@ def test_map_mongo_doc_to_dart_well_props(config):
     result = map_mongo_doc_to_dart_well_props(doc_to_transform)
 
     assert result[DART_STATE] == DART_EMPTY_VALUE
+
+
+def test_create_source_plate_doc(freezer):
+    """Tests for updating docs with source plate UUIDs."""
+    now = datetime.now()
+    test_uuid = uuid.uuid4()
+    plate_barcode = "abc123"
+    lab_id = "AP"
+
+    with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
+        source_plate = create_source_plate_doc(plate_barcode, lab_id)
+
+        assert source_plate[FIELD_LH_SOURCE_PLATE_UUID] == str(test_uuid)
+        assert source_plate[FIELD_BARCODE] == plate_barcode
+        assert source_plate[FIELD_LAB_ID] == lab_id
+        assert source_plate[FIELD_UPDATED_AT] == now
+        assert source_plate[FIELD_CREATED_AT] == now

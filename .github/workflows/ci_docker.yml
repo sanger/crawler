@@ -1,21 +1,16 @@
 name: CI docker
 
 on:
-  # Trigger the workflow on push or pull request,
   push:
     branches:
       - develop
       - master
+    paths-ignore:
+      - "README.md"
     tags:
       - uat-*
-    paths-ignore:
-      - "README.md"
-  pull_request:
-    branches:
-      - develop
-      - master
-    paths-ignore:
-      - "README.md"
+      - release-*
+      - v*
 
 env:
   IMAGE_NAME: ${{ github.repository }}/${{ github.event.repository.name }}
@@ -33,7 +28,8 @@ jobs:
         ports:
           - 3306:3306
         env:
-          MYSQL_ROOT_PASSWORD: root
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_ROOT_PASSWORD: null
           MYSQL_DATABASE: unified_warehouse_test
     steps:
       - uses: actions/checkout@v2
@@ -42,33 +38,6 @@ jobs:
           docker build .
           --file Dockerfile
           --tag docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
-      - name: Check format with black
-        run: >-
-          # stop the build if there are black formatting errors
-          docker run
-          --network host
-          docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
-          python -m black --check .
-      - name: Lint with flake8 (1)
-        run: >-
-          # stop the build if there are Python syntax errors or undefined names
-          docker run
-          --network host
-          docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-      - name: Lint with flake8 (2)
-        run: >-
-          # exit-zero treats all errors as warnings
-          docker run
-          --network host
-          docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
-          flake8 . --count --exit-zero --max-complexity=12 --max-line-length=100 --statistics
-      - name: Run mypy against the image
-        run: >-
-          docker run
-          --network host
-          docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
-          python -m mypy .
       - name: Create mysql test warehouse database and table
         run: >-
           docker run
@@ -81,7 +50,7 @@ jobs:
           --network host
           docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
           python -m pytest -x
-      - name: Login to regitry
+      - name: Login to registry
         run: >-
           docker login
           -u ${{ github.actor }}

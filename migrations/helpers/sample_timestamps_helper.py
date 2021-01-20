@@ -18,15 +18,7 @@ def add_timestamps_to_samples(db):
         # For updates, '$set' syntax is important, otherwise it overwrites the whole document!
         update_result_1 = db.samples.update_many(
             {},
-            [
-                {
-                    "$set": {
-                        "concat_id": {
-                            "$concat": ["$Root Sample ID", " - ", "$RNA ID", " - ", "$Result"]
-                        }
-                    }
-                }
-            ],
+            [{"$set": {"concat_id": {"$concat": ["$Root Sample ID", " - ", "$RNA ID", " - ", "$Result"]}}}],
         )
         print(f"Time after adding field to samples collection: {datetime.datetime.now()}")
         print("Number samples modified: ", update_result_1.modified_count)
@@ -45,39 +37,24 @@ def add_timestamps_to_samples(db):
         print(f"Collections in chronological order: {collection_names_chrono_order}")
 
         for collection_name in collection_names_chrono_order:
-            print(
-                f"\n-- Starting processing collection: {collection_name} at "
-                f"{datetime.datetime.now()} --"
-            )
+            print(f"\n-- Starting processing collection: {collection_name} at {datetime.datetime.now()} --")
 
             print(f"\n-- Update collection {collection_name} with new concatenated id column --")
             update_result_2 = db[collection_name].update_many(
                 {},
-                [
-                    {
-                        "$set": {
-                            "concat_id": {
-                                "$concat": ["$Root Sample ID", " - ", "$RNA ID", " - ", "$Result"]
-                            }
-                        }
-                    }
-                ],
+                [{"$set": {"concat_id": {"$concat": ["$Root Sample ID", " - ", "$RNA ID", " - ", "$Result"]}}}],
             )
             print(f"Time after adding field to collection: {datetime.datetime.now()}")
             print("Number samples modified: ", update_result_2.modified_count)
 
             print("\n-- Retrieve all concatenated ids --")
             concat_ids = []
-            concat_ids_result = db[collection_name].find(
-                {"concat_id": {"$ne": None}}, {"concat_id": True}
-            )
+            concat_ids_result = db[collection_name].find({"concat_id": {"$ne": None}}, {"concat_id": True})
             for sample in concat_ids_result:
                 concat_ids.append(sample["concat_id"])
 
             print(f"Time after querying field and building list: {datetime.datetime.now()}")
-            print(
-                f"Total number of samples in collection: {db[collection_name].count_documents({})}"
-            )
+            print(f"Total number of samples in collection: {db[collection_name].count_documents({})}")
             print(f"Of which, number to process: {len(concat_ids)}")
 
             print(
@@ -93,9 +70,7 @@ def add_timestamps_to_samples(db):
 
             for batch in range(num_batches):
                 # Each batch takes ~30 secs for batch size of 250,000
-                print(
-                    f"\n-- Starting batch {batch + 1} of {num_batches}: {datetime.datetime.now()} -"
-                )
+                print(f"\n-- Starting batch {batch + 1} of {num_batches}: {datetime.datetime.now()} -")
 
                 start = batch * BATCH_SIZE
                 end = start + BATCH_SIZE
@@ -118,10 +93,7 @@ def add_timestamps_to_samples(db):
                 #   { 'concat_id': { '$in': concat_ids_subset } },
                 #   { '$set': { CREATED_DATE_FIELD_NAME: '2020-08-06 14:06 test' } }
                 # )
-                print(
-                    "Time after querying based on new field and updating with timestamp: "
-                    f"{datetime.datetime.now()}"
-                )
+                print(f"Time after querying based on new field and updating with timestamp: {datetime.datetime.now()}")
                 print("Number samples modified: ", update_result_3.modified_count)
     except Exception:
         print_exception()

@@ -8,24 +8,24 @@ from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
+    FIELD_BARCODE,
     FIELD_CENTRE_NAME,
     FIELD_LAB_ID,
+    FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_PLATE_BARCODE,
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
-    FIELD_LH_SOURCE_PLATE_UUID,
-    FIELD_BARCODE,
 )
 from crawler.db import (
     create_mongo_client,
     get_mongo_collection,
     get_mongo_db,
-    populate_centres_collection,
+    populate_collection,
     samples_collection_accessor,
 )
 from crawler.file_processing import Centre
-from crawler.helpers import get_config
+from crawler.helpers.general_helpers import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -35,45 +35,36 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
         start = time.time()
         config, settings_module = get_config(settings_module)
 
-        logging.config.dictConfig(config.LOGGING)  # type: ignore
+        logging.config.dictConfig(config.LOGGING)
 
         logger.info("-" * 80)
         logger.info("START")
         logger.info(f"Using settings from {settings_module}")
 
-        centres = config.CENTRES  # type: ignore
+        centres = config.CENTRES
 
         with create_mongo_client(config) as client:
             db = get_mongo_db(config, client)
 
-            # centres collection
+            # get or create the centres collection
             centres_collection = get_mongo_collection(db, COLLECTION_CENTRES)
 
-            logger.debug(
-                f"Creating index '{FIELD_CENTRE_NAME}' on '{centres_collection.full_name}'"
-            )
+            logger.debug(f"Creating index '{FIELD_CENTRE_NAME}' on '{centres_collection.full_name}'")
             centres_collection.create_index(FIELD_CENTRE_NAME, unique=True)
-            populate_centres_collection(centres_collection, centres, FIELD_CENTRE_NAME)
+            populate_collection(centres_collection, centres, FIELD_CENTRE_NAME)
 
-            # source plates collection
+            # get or create the source plates collection
             source_plates_collection = get_mongo_collection(db, COLLECTION_SOURCE_PLATES)
 
-            logger.debug(
-                f"Creating index '{FIELD_BARCODE}' on '{source_plates_collection.full_name}'"
-            )
+            logger.debug(f"Creating index '{FIELD_BARCODE}' on '{source_plates_collection.full_name}'")
             source_plates_collection.create_index(FIELD_BARCODE, unique=True)
 
-            logger.debug(
-                f"Creating index '{FIELD_LH_SOURCE_PLATE_UUID}' on "
-                f"'{source_plates_collection.full_name}'"
-            )
+            logger.debug(f"Creating index '{FIELD_LH_SOURCE_PLATE_UUID}' on '{source_plates_collection.full_name}'")
             source_plates_collection.create_index(FIELD_LH_SOURCE_PLATE_UUID, unique=True)
 
             with samples_collection_accessor(db, COLLECTION_SAMPLES) as samples_collection:
                 # Index on plate barcode to make it easier to select based on plate barcode
-                logger.debug(
-                    f"Creating index '{FIELD_PLATE_BARCODE}' on '{samples_collection.full_name}'"
-                )
+                logger.debug(f"Creating index '{FIELD_PLATE_BARCODE}' on '{samples_collection.full_name}'")
                 samples_collection.create_index(FIELD_PLATE_BARCODE)
 
                 # Index on result column to make it easier to select the positives
