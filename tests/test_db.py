@@ -150,7 +150,7 @@ def test_run_mysql_execute_formatted_query_success(config):
         mysql_conn=conn,
         formatted_sql_query=SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH,
         formatting_args=["1", "2"],
-        query_args=[True, "v2", "2020-01-01"],
+        query_args=[True, "v2", "2020-01-01", "2020-01-01"],
     )
 
     # check transaction is committed
@@ -177,7 +177,7 @@ def test_run_mysql_execute_formatted_query_execute_error(config):
             mysql_conn=conn,
             formatted_sql_query=SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH,
             formatting_args=["1", "2"],
-            query_args=[True, "v2", "2020-01-01"],
+            query_args=[True, "v2", "2020-01-01", "2020-01-01"],
         )
 
         # check transaction is not committed
