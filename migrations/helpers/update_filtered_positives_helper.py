@@ -211,8 +211,7 @@ def update_mlwh_filtered_positive_fields(config: Config, samples: List[Sample]) 
 
     Arguments:
         config {Config} -- application config specifying database details
-        samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields
-        should be updated
+        samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields should be updated
 
     Returns:
         bool -- whether the updates completed successfully

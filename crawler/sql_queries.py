@@ -80,7 +80,7 @@ UPDATE lighthouse_sample
 SET
 filtered_positive = %(filtered_positive)s,
 filtered_positive_version = %(filtered_positive_version)s,
-filtered_positive_timestamp = %(filtered_positive_timestamp)s
+filtered_positive_timestamp = %(filtered_positive_timestamp)s,
 updated_at = %(filtered_positive_timestamp)s
 WHERE mongodb_id = %(mongodb_id)s
 """
