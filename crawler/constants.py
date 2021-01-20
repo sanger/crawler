@@ -99,7 +99,7 @@ ALLOWED_RESULT_VALUES: Final[Tuple[str, str, str, str]] = (
 )
 
 # allowed CT channel CHn-Target field values (or can be null)
-ALLOWED_CH_TARGET_VALUES: Final[Tuple[str, str, str, str]] = ("ORF1ab", "N gene", "S gene", "MS2")
+ALLOWED_CH_TARGET_VALUES: Final[Tuple[str, str, str, str]] = ("ORF1ab", "N gene", "S gene", "MS2", "E gene")
 
 # allowed CT channel CHn-Result field values (or can be null)
 ALLOWED_CH_RESULT_VALUES: Final[Tuple[str, str, str, str]] = (POSITIVE_RESULT_VALUE, "Negative", "Inconclusive", "Void")
