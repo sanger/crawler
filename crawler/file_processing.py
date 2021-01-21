@@ -21,46 +21,76 @@ from pymongo.errors import BulkWriteError
 
 import crawler.types
 from crawler.centre_file_state import CentreFileState
-from crawler.constants import (ALLOWED_CH_RESULT_VALUES,
-                               ALLOWED_CH_TARGET_VALUES, ALLOWED_RESULT_VALUES,
-                               COLLECTION_CENTRES, COLLECTION_IMPORTS,
-                               COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES,
-                               DART_STATE_PENDING, FIELD_BARCODE, FIELD_CH1_CQ,
-                               FIELD_CH1_RESULT, FIELD_CH1_TARGET,
-                               FIELD_CH2_CQ, FIELD_CH2_RESULT,
-                               FIELD_CH2_TARGET, FIELD_CH3_CQ,
-                               FIELD_CH3_RESULT, FIELD_CH3_TARGET,
-                               FIELD_CH4_CQ, FIELD_CH4_RESULT,
-                               FIELD_CH4_TARGET, FIELD_COORDINATE,
-                               FIELD_CREATED_AT, FIELD_DATE_TESTED,
-                               FIELD_FILE_NAME, FIELD_FILE_NAME_DATE,
-                               FIELD_FILTERED_POSITIVE,
-                               FIELD_FILTERED_POSITIVE_TIMESTAMP,
-                               FIELD_FILTERED_POSITIVE_VERSION, FIELD_LAB_ID,
-                               FIELD_LH_SAMPLE_UUID,
-                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_LINE_NUMBER,
-                               FIELD_MONGODB_ID, FIELD_PLATE_BARCODE,
-                               FIELD_RESULT, FIELD_RNA_ID, FIELD_RNA_PCR_ID,
-                               FIELD_ROOT_SAMPLE_ID, FIELD_SOURCE,
-                               FIELD_UPDATED_AT, FIELD_VIRAL_PREP_ID,
-                               MAX_CQ_VALUE, MIN_CQ_VALUE,
-                               POSITIVE_RESULT_VALUE)
-from crawler.db import (add_dart_plate_if_doesnt_exist,
-                        create_dart_sql_server_conn, create_import_record,
-                        create_mongo_client, create_mysql_connection,
-                        get_mongo_collection, get_mongo_db,
-                        run_mysql_executemany_query, set_dart_well_properties)
-from crawler.filtered_positive_identifier import \
-    current_filtered_positive_identifier
-from crawler.helpers.general_helpers import (create_source_plate_doc,
-                                             current_time, get_dart_well_index,
-                                             get_sftp_connection,
-                                             map_lh_doc_to_sql_columns,
-                                             map_mongo_doc_to_dart_well_props)
+from crawler.constants import (
+    ALLOWED_CH_RESULT_VALUES,
+    ALLOWED_CH_TARGET_VALUES,
+    ALLOWED_RESULT_VALUES,
+    COLLECTION_CENTRES,
+    COLLECTION_IMPORTS,
+    COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
+    DART_STATE_PENDING,
+    FIELD_BARCODE,
+    FIELD_CH1_CQ,
+    FIELD_CH1_RESULT,
+    FIELD_CH1_TARGET,
+    FIELD_CH2_CQ,
+    FIELD_CH2_RESULT,
+    FIELD_CH2_TARGET,
+    FIELD_CH3_CQ,
+    FIELD_CH3_RESULT,
+    FIELD_CH3_TARGET,
+    FIELD_CH4_CQ,
+    FIELD_CH4_RESULT,
+    FIELD_CH4_TARGET,
+    FIELD_COORDINATE,
+    FIELD_CREATED_AT,
+    FIELD_DATE_TESTED,
+    FIELD_FILE_NAME,
+    FIELD_FILE_NAME_DATE,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_LAB_ID,
+    FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_LINE_NUMBER,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_RNA_PCR_ID,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_SOURCE,
+    FIELD_UPDATED_AT,
+    FIELD_VIRAL_PREP_ID,
+    MAX_CQ_VALUE,
+    MIN_CQ_VALUE,
+    POSITIVE_RESULT_VALUE,
+)
+from crawler.db import (
+    add_dart_plate_if_doesnt_exist,
+    create_dart_sql_server_conn,
+    create_import_record,
+    create_mongo_client,
+    create_mysql_connection,
+    get_mongo_collection,
+    get_mongo_db,
+    run_mysql_executemany_query,
+    set_dart_well_properties,
+)
+from crawler.filtered_positive_identifier import current_filtered_positive_identifier
+from crawler.helpers.general_helpers import (
+    create_source_plate_doc,
+    current_time,
+    get_dart_well_index,
+    get_sftp_connection,
+    map_lh_doc_to_sql_columns,
+    map_mongo_doc_to_dart_well_props,
+)
 from crawler.helpers.logging_helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
-from crawler.types import (CentreConf, Config, CSVRow, ModifiedRow,
-                           ModifiedRowValue, RowSignature, Sample, SourcePlate)
+from crawler.types import CentreConf, Config, CSVRow, ModifiedRow, ModifiedRowValue, RowSignature, Sample, SourcePlate
 
 logger = logging.getLogger(__name__)
 
