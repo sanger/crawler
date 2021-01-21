@@ -11,7 +11,7 @@ from decimal import Decimal
 from hashlib import md5
 from logging import INFO, WARN
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, Final, List, Optional, Set, Tuple, cast
 
 import pyodbc
 from bson.decimal128 import Decimal128
@@ -216,30 +216,23 @@ class Centre:
 class CentreFile:
     """Class to process an individual file"""
 
-    # These headers are required in ALL files from ALL lighthouses
-    REQUIRED_FIELDS = {
-        FIELD_ROOT_SAMPLE_ID,
-        FIELD_VIRAL_PREP_ID,
-        FIELD_RNA_ID,
-        FIELD_RNA_PCR_ID,
-        FIELD_RESULT,
-        FIELD_DATE_TESTED,
-    }
+    # we will be using re.IGNORECASE when making the match
+    CHANNEL_REGEX_TEMPLATE: Final[str] = "^CH[ ]*{channel_number}[ ]*[-_][ ]*{word}$"
 
     # These headers are optional, and may not be present in all files from all lighthouses
-    CHANNEL_FIELDS = {
-        FIELD_CH1_TARGET,
-        FIELD_CH1_RESULT,
-        FIELD_CH1_CQ,
-        FIELD_CH2_TARGET,
-        FIELD_CH2_RESULT,
-        FIELD_CH2_CQ,
-        FIELD_CH3_TARGET,
-        FIELD_CH3_RESULT,
-        FIELD_CH3_CQ,
-        FIELD_CH4_TARGET,
-        FIELD_CH4_RESULT,
-        FIELD_CH4_CQ,
+    CHANNEL_FIELDS_MAPPING: Final[Dict[str, str]] = {
+        FIELD_CH1_TARGET: CHANNEL_REGEX_TEMPLATE.format(channel_number=1, word="target"),
+        FIELD_CH1_RESULT: CHANNEL_REGEX_TEMPLATE.format(channel_number=1, word="result"),
+        FIELD_CH1_CQ: CHANNEL_REGEX_TEMPLATE.format(channel_number=1, word="cq"),
+        FIELD_CH2_TARGET: CHANNEL_REGEX_TEMPLATE.format(channel_number=2, word="target"),
+        FIELD_CH2_RESULT: CHANNEL_REGEX_TEMPLATE.format(channel_number=2, word="result"),
+        FIELD_CH2_CQ: CHANNEL_REGEX_TEMPLATE.format(channel_number=2, word="cq"),
+        FIELD_CH3_TARGET: CHANNEL_REGEX_TEMPLATE.format(channel_number=3, word="target"),
+        FIELD_CH3_RESULT: CHANNEL_REGEX_TEMPLATE.format(channel_number=3, word="result"),
+        FIELD_CH3_CQ: CHANNEL_REGEX_TEMPLATE.format(channel_number=3, word="cq"),
+        FIELD_CH4_TARGET: CHANNEL_REGEX_TEMPLATE.format(channel_number=4, word="target"),
+        FIELD_CH4_RESULT: CHANNEL_REGEX_TEMPLATE.format(channel_number=4, word="result"),
+        FIELD_CH4_CQ: CHANNEL_REGEX_TEMPLATE.format(channel_number=4, word="cq"),
     }
 
     filtered_positive_identifier = current_filtered_positive_identifier()
@@ -260,6 +253,16 @@ class CentreFile:
         self.file_state = CentreFileState.FILE_UNCHECKED
 
         self.docs_inserted = 0
+
+        # These headers are required in ALL files from ALL lighthouses
+        self.required_fields = {
+            FIELD_ROOT_SAMPLE_ID,
+            FIELD_VIRAL_PREP_ID,
+            FIELD_RNA_ID,
+            FIELD_RNA_PCR_ID,
+            FIELD_RESULT,
+            FIELD_DATE_TESTED,
+        }
 
     def filepath(self) -> Path:
         """Returns the filepath for the file
@@ -573,12 +576,12 @@ class CentreFile:
 
         # TODO could trap DuplicateKeyError specifically
         except BulkWriteError as e:
-            # This is happening when there are duplicates in the data and the index prevents
-            # the records from being written
-            logger.warning(f"{e} - usually happens when duplicates are trying to be inserted")
+            # This is happening when there are duplicates in the data and the index prevents the records from being
+            # written
+            logger.warning("BulkWriteError: Usually happens when duplicates are trying to be inserted")
+            logger.debug(e)
 
-            # filter out any errors that are duplicates by checking the code in
-            # e.details["writeErrors"]
+            # filter out any errors that are duplicates by checking the code in e.details["writeErrors"]
             filtered_errors = list(filter(lambda x: x["code"] != 11000, e.details["writeErrors"]))
 
             if (num_filtered_errors := len(filtered_errors)) > 0:
@@ -750,20 +753,18 @@ class CentreFile:
          Returns:
              {set} - the set of header names
         """
-        required = set(self.REQUIRED_FIELDS)
+        if not self.config.ADD_LAB_ID:
+            self.required_fields.add(FIELD_LAB_ID)
 
-        if not (self.config.ADD_LAB_ID):
-            required.add(FIELD_LAB_ID)
+        return self.required_fields
 
-        return required
-
-    def get_channel_headers(self) -> Set[str]:
-        """Returns the list (a set) of optional headers.
+    def get_channel_headers_mapping(self) -> Dict[str, str]:
+        """Returns a dict of the channel fields and regex to match them.
 
         Returns:
-            {set} - the set of header names
+            {Dict[str, str]} - mapping of channel field to regex
         """
-        return set(self.CHANNEL_FIELDS)
+        return self.CHANNEL_FIELDS_MAPPING
 
     def check_for_required_headers(self, csvreader: DictReader) -> bool:
         """Checks that the CSV file has the required headers.
@@ -777,7 +778,7 @@ class CentreFile:
             fieldnames = set(csvreader.fieldnames)
             required = self.get_required_headers()
 
-            if not required <= fieldnames:
+            if not required.issubset(fieldnames):
                 # LOG_HANDLER TYPE 2: Fail file
                 self.logging_collection.add_error(
                     "TYPE 2",
@@ -880,7 +881,7 @@ class CentreFile:
                 modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
                 self.log_adding_default_lab_id(row, line_number)
 
-        seen_headers = []
+        seen_headers: List[str] = []
 
         # next check the row for values for each of the required headers and copy them across
         for key in self.get_required_headers():
@@ -889,12 +890,7 @@ class CentreFile:
                 modified_row[key] = row[key]
 
         # and check the row for values for any of the optional CT channel headers and copy them across
-        for key in self.get_channel_headers():
-            if key in row:
-                seen_headers.append(key)
-
-                if row[key]:
-                    modified_row[key] = row[key]
+        seen_headers, modified_row = self.extract_channel_fields(seen_headers, row, modified_row)
 
         # now check if we still have any columns left in the file row that we do not recognise
         unexpected_headers = list(row.keys() - seen_headers)
@@ -908,6 +904,35 @@ class CentreFile:
             )
 
         return modified_row
+
+    def extract_channel_fields(
+        self, seen_headers: List[str], csv_row: CSVRow, modified_row: ModifiedRow
+    ) -> Tuple[List[str], ModifiedRow]:
+        """Extract the channel fields by trying to match the header fields using regex.
+
+        Arguments:
+            seen_headers (List[str]): headers already seen in the file
+            csv_row (CSVRow): row from the CSV DictReader
+            modified_row (ModifiedRow): row with updated fields
+
+        Returns:
+            Tuple[List[str], ModifiedRow]: updated seen_headers and modified_row
+        """
+
+        for channel_field, regex in self.get_channel_headers_mapping().items():
+            pattern = re.compile(regex, re.IGNORECASE)
+
+            for csv_field in csv_row:
+                if csv_field in seen_headers:
+                    continue
+
+                if pattern.match(csv_field):
+                    seen_headers.append(csv_field)
+
+                    if csv_row[csv_field]:
+                        modified_row[channel_field] = csv_row[csv_field]
+
+        return seen_headers, modified_row
 
     def parse_and_format_file_rows(self, csvreader: DictReader) -> List[ModifiedRow]:
         """Attempts to parse and format the file rows

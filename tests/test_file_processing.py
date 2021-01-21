@@ -73,6 +73,7 @@ from crawler.constants import (
 )
 from crawler.db import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
+from crawler.types import ModifiedRow
 
 # ----- tests helpers -----
 
@@ -414,6 +415,66 @@ def test_filtered_row_with_extra_unrecognised_columns(config):
         assert centre_file.logging_collection.aggregator_types["TYPE 13"].count_errors == 1
         # N.B. Type 13 is a WARNING type and not counted as an error or critical
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+
+
+def test_extract_channel_fields(centre_file: CentreFile):
+    with StringIO() as csv_weird_channels:
+        csv_weird_channels.write(
+            f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},{FIELD_LAB_ID},"
+            "CH 1 - Target,CH 1 - Result,CH 1 - Cq,CH2_Target,CH2_Result,CH2_Cq,CH3-Target,CH3-Result,CH3-Cq,\n"
+        )
+        csv_weird_channels.write(
+            "1,RNA_0043,Positive,today,AP,ORF1ab,Positive,21.433,ORF2ab,Negative,22.433,ORF3ab,Positive,23.433,\n"
+        )
+        csv_weird_channels.seek(0)
+
+        csv_to_test_reader = DictReader(csv_weird_channels)
+
+        modified_row: ModifiedRow = {
+            FIELD_ROOT_SAMPLE_ID: "1",
+            FIELD_RNA_ID: "RNA_0043",
+            FIELD_RESULT: "Positive",
+            FIELD_DATE_TESTED: "today",
+            FIELD_LAB_ID: "AP",
+        }
+
+        expected_modified_row = {
+            FIELD_ROOT_SAMPLE_ID: "1",
+            FIELD_RNA_ID: "RNA_0043",
+            FIELD_RESULT: "Positive",
+            FIELD_DATE_TESTED: "today",
+            FIELD_LAB_ID: "AP",
+            FIELD_CH1_TARGET: "ORF1ab",
+            FIELD_CH1_RESULT: "Positive",
+            FIELD_CH1_CQ: "21.433",
+            FIELD_CH2_TARGET: "ORF2ab",
+            FIELD_CH2_RESULT: "Negative",
+            FIELD_CH2_CQ: "22.433",
+            FIELD_CH3_TARGET: "ORF3ab",
+            FIELD_CH3_RESULT: "Positive",
+            FIELD_CH3_CQ: "23.433",
+        }
+
+        seen_headers = [FIELD_ROOT_SAMPLE_ID, FIELD_RNA_ID, FIELD_RESULT, FIELD_DATE_TESTED, FIELD_LAB_ID]
+
+        expected_seen_headers = seen_headers + [
+            "CH 1 - Target",
+            "CH 1 - Result",
+            "CH 1 - Cq",
+            "CH2_Target",
+            "CH2_Result",
+            "CH2_Cq",
+            "CH3-Target",
+            "CH3-Result",
+            "CH3-Cq",
+        ]
+
+        seen_headers_to_test, modified_row_to_test = centre_file.extract_channel_fields(
+            seen_headers, next(csv_to_test_reader), modified_row
+        )
+
+        assert seen_headers_to_test == expected_seen_headers
+        assert modified_row_to_test == expected_modified_row
 
 
 def test_filtered_row_with_blank_lab_id(config):
@@ -852,10 +913,7 @@ def test_where_positive_result_does_not_align_with_ct_channel_results(config):
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
 
-def test_check_for_required_headers(config):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
-
+def test_check_for_required_headers_empty_file(centre_file):
     # empty file
     with StringIO() as fake_csv:
         csv_to_test_reader = DictReader(fake_csv)
@@ -863,10 +921,9 @@ def test_check_for_required_headers(config):
         assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 1
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
 
-    # file with incorrect headers
+def test_check_for_required_headers_with_incorrect_headers(centre_file):
+    # incorrect_headers
     with StringIO() as fake_csv:
         fake_csv.write("id,RNA ID\n")
         fake_csv.write("1,RNA_0043_\n")
@@ -878,9 +935,8 @@ def test_check_for_required_headers(config):
         assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 1
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
 
+def test_check_for_required_headers_with_valid_headers(centre_file):
     # file with valid headers
     with StringIO() as fake_csv:
         fake_csv.write(
@@ -896,10 +952,9 @@ def test_check_for_required_headers(config):
         assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 0
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
-    # file with missing Lab ID header and add lab id false (default)
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some_file.csv", centre)
 
+def test_check_for_required_headers_with_missing_lab_id_and_lab_id_false(centre_file: CentreFile):
+    # file with missing Lab ID header and add lab id false (default)
     with StringIO() as fake_csv_without_lab_id:
         fake_csv_without_lab_id.write(
             f"{FIELD_ROOT_SAMPLE_ID},{FIELD_VIRAL_PREP_ID},{FIELD_RNA_ID},{FIELD_RNA_PCR_ID},"
@@ -914,7 +969,12 @@ def test_check_for_required_headers(config):
         assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 1
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
+
+def test_check_for_required_headers_with_missing_lab_id_and_lab_id_true(config):
     # file with missing Lab ID header and add lab id true
+    # we need to use a try, finally block here since the config fixture returns the real config object, not a copy
+    # so we need to reset any config we change
+    # TODO: find a way to improve this
     try:
         config.ADD_LAB_ID = True
         centre = Centre(config, config.CENTRES[0])
