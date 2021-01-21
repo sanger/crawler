@@ -216,6 +216,7 @@ class Centre:
 class CentreFile:
     """Class to process an individual file"""
 
+    # we will be using re.IGNORECASE when making the match
     CHANNEL_REGEX_TEMPLATE: Final[str] = "^CH[ ]*{channel_number}[ ]*[-_][ ]*{word}$"
 
     # These headers are optional, and may not be present in all files from all lighthouses
@@ -243,7 +244,6 @@ class CentreFile:
             file_name {str} - the file name of the file
             centre {Dict[str][str]} -- the lighthouse centre
         """
-        logger.debug("getting a new centre file")
         self.logging_collection = LoggingCollection()
 
         self.centre = centre
