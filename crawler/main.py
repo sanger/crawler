@@ -17,7 +17,7 @@ from crawler.constants import (
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
 )
-from crawler.db import (
+from crawler.db.mongo import (
     create_mongo_client,
     get_mongo_collection,
     get_mongo_db,
@@ -101,7 +101,7 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                         logger.error(f"Error in centre {centre_instance.centre_config['name']}")
                         logger.exception(e)
                     finally:
-                        if not (keep_files):
+                        if not keep_files and centre_instance.is_download_dir_walkable:
                             centre_instance.clean_up()
 
         logger.info(f"Import complete in {round(time.time() - start, 2)}s")

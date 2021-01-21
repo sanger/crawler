@@ -16,13 +16,8 @@ from crawler.constants import (
     MLWH_FILTERED_POSITIVE,
     MLWH_MONGODB_ID,
 )
-from crawler.db import (
-    create_mongo_client,
-    create_mysql_connection,
-    get_mongo_collection,
-    get_mongo_db,
-    run_mysql_execute_formatted_query,
-)
+from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.db.mysql import create_mysql_connection, run_mysql_execute_formatted_query
 from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_0,
     FILTERED_POSITIVE_VERSION_1,

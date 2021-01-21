@@ -1,8 +1,4 @@
-from crawler.exceptions import (
-    Error,
-    CentreFileError,
-    DartStateError,
-)
+from crawler.exceptions import CentreFileError, DartStateError, Error
 
 
 def test_error_is_type_of_exception():
