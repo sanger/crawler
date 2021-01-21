@@ -898,10 +898,7 @@ def test_where_positive_result_does_not_align_with_ct_channel_results(config):
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
 
-def test_check_for_required_headers(config):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
-
+def test_check_for_required_headers_empty_file(centre_file):
     # empty file
     with StringIO() as fake_csv:
         csv_to_test_reader = DictReader(fake_csv)
@@ -909,10 +906,9 @@ def test_check_for_required_headers(config):
         assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 1
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
 
-    # file with incorrect headers
+def test_check_for_required_headers_with_incorrect_headers(centre_file):
+    # incorrect_headers
     with StringIO() as fake_csv:
         fake_csv.write("id,RNA ID\n")
         fake_csv.write("1,RNA_0043_\n")
@@ -924,9 +920,8 @@ def test_check_for_required_headers(config):
         assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 1
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
 
+def test_check_for_required_headers_with_valid_headers(centre_file):
     # file with valid headers
     with StringIO() as fake_csv:
         fake_csv.write(
@@ -942,10 +937,9 @@ def test_check_for_required_headers(config):
         assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 0
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
-    # file with missing Lab ID header and add lab id false (default)
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some_file.csv", centre)
 
+def test_check_for_required_headers_with_missing_lab_id_and_lab_id_false(centre_file: CentreFile):
+    # file with missing Lab ID header and add lab id false (default)
     with StringIO() as fake_csv_without_lab_id:
         fake_csv_without_lab_id.write(
             f"{FIELD_ROOT_SAMPLE_ID},{FIELD_VIRAL_PREP_ID},{FIELD_RNA_ID},{FIELD_RNA_PCR_ID},"
@@ -960,7 +954,12 @@ def test_check_for_required_headers(config):
         assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 1
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
+
+def test_check_for_required_headers_with_missing_lab_id_and_lab_id_true(config):
     # file with missing Lab ID header and add lab id true
+    # we need to use a try, finally block here since the config fixture returns the real config object, not a copy
+    # so we need to reset any config we change
+    # TODO: find a way to improve this
     try:
         config.ADD_LAB_ID = True
         centre = Centre(config, config.CENTRES[0])
