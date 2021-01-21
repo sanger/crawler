@@ -417,16 +417,15 @@ def test_filtered_row_with_extra_unrecognised_columns(config):
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
-def test_extract_channel_fields(config):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("", centre)
-
+def test_extract_channel_fields(centre_file: CentreFile):
     with StringIO() as csv_weird_channels:
         csv_weird_channels.write(
             f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},{FIELD_LAB_ID},"
-            "CH 1 - Target,CH 1 - Result,CH 1 - Cq,\n"
+            "CH 1 - Target,CH 1 - Result,CH 1 - Cq,CH2_Target,CH2_Result,CH2_Cq,CH3-Target,CH3-Result,CH3-Cq,\n"
         )
-        csv_weird_channels.write("1,RNA_0043,Positive,today,AP,ORF1ab,Positive,21.433,\n")
+        csv_weird_channels.write(
+            "1,RNA_0043,Positive,today,AP,ORF1ab,Positive,21.433,ORF2ab,Negative,22.433,ORF3ab,Positive,23.433,\n"
+        )
         csv_weird_channels.seek(0)
 
         csv_to_test_reader = DictReader(csv_weird_channels)
@@ -448,11 +447,27 @@ def test_extract_channel_fields(config):
             FIELD_CH1_TARGET: "ORF1ab",
             FIELD_CH1_RESULT: "Positive",
             FIELD_CH1_CQ: "21.433",
+            FIELD_CH2_TARGET: "ORF2ab",
+            FIELD_CH2_RESULT: "Negative",
+            FIELD_CH2_CQ: "22.433",
+            FIELD_CH3_TARGET: "ORF3ab",
+            FIELD_CH3_RESULT: "Positive",
+            FIELD_CH3_CQ: "23.433",
         }
 
         seen_headers = [FIELD_ROOT_SAMPLE_ID, FIELD_RNA_ID, FIELD_RESULT, FIELD_DATE_TESTED, FIELD_LAB_ID]
 
-        expected_seen_headers = seen_headers + ["CH 1 - Target", "CH 1 - Result", "CH 1 - Cq"]
+        expected_seen_headers = seen_headers + [
+            "CH 1 - Target",
+            "CH 1 - Result",
+            "CH 1 - Cq",
+            "CH2_Target",
+            "CH2_Result",
+            "CH2_Cq",
+            "CH3-Target",
+            "CH3-Result",
+            "CH3-Cq",
+        ]
 
         seen_headers_to_test, modified_row_to_test = centre_file.extract_channel_fields(
             seen_headers, next(csv_to_test_reader), modified_row
