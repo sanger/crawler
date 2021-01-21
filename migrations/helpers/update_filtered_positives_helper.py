@@ -18,16 +18,9 @@ from crawler.constants import (
     FIELD_SOURCE,
     POSITIVE_RESULT_VALUE,
 )
-from crawler.db import (
-    add_dart_plate_if_doesnt_exist,
-    create_dart_sql_server_conn,
-    create_mongo_client,
-    create_mysql_connection,
-    get_mongo_collection,
-    get_mongo_db,
-    run_mysql_executemany_query,
-    set_dart_well_properties,
-)
+from crawler.db.dart import add_dart_plate_if_doesnt_exist, create_dart_sql_server_conn, set_dart_well_properties
+from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 from crawler.helpers.general_helpers import (
     get_dart_well_index,

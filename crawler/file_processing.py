@@ -68,17 +68,9 @@ from crawler.constants import (
     MIN_CQ_VALUE,
     POSITIVE_RESULT_VALUE,
 )
-from crawler.db import (
-    add_dart_plate_if_doesnt_exist,
-    create_dart_sql_server_conn,
-    create_import_record,
-    create_mongo_client,
-    create_mysql_connection,
-    get_mongo_collection,
-    get_mongo_db,
-    run_mysql_executemany_query,
-    set_dart_well_properties,
-)
+from crawler.db.dart import add_dart_plate_if_doesnt_exist, create_dart_sql_server_conn, set_dart_well_properties
+from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
 from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.general_helpers import (
     create_source_plate_doc,
@@ -105,6 +97,7 @@ class Centre:
     def __init__(self, config: Config, centre_config: CentreConf):
         self.config = config
         self.centre_config = centre_config
+        self.is_download_dir_walkable = False
 
         # create backup directories for files
         os.makedirs(f"{self.centre_config['backups_folder']}/{ERRORS_DIR}", exist_ok=True)
@@ -130,23 +123,27 @@ class Centre:
             # filter the list of files to only those which match the pattern
             centre_files = list(filter(pattern.match, files))
 
+            self.is_download_dir_walkable = True
+
             return centre_files
         except Exception:
+            self.is_download_dir_walkable = False
+
             logger.error(f"Failed when reading files from {path_to_walk}")
             return []
 
     def clean_up(self) -> None:
         """Remove the files downloaded from the SFTP for the given centre."""
-        logger.debug("Remove files")
+        logger.debug(f"Remove files in {self.get_download_dir()}")
         try:
             shutil.rmtree(self.get_download_dir())
 
-        except Exception:
-            logger.exception("Failed clean up")
+        except Exception as e:
+            logger.error(f"Failed clean up: {e}")
 
     def process_files(self, add_to_dart: bool) -> None:
         """Iterate through all the files for the centre, parsing any new ones into the mongo database and then into the
-        unified warehouse.
+        unified warehouse and optionally, DART.
 
         Arguments:
             add_to_dart {bool} -- whether to add the samples to DART
@@ -381,6 +378,7 @@ class CentreFile:
 
         if (num_docs_to_insert := len(docs_to_insert)) > 0:
             logger.debug(f"{num_docs_to_insert} docs to insert")
+
             mongo_ids_of_inserted = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
 
             if len(mongo_ids_of_inserted) > 0:
@@ -449,10 +447,10 @@ class CentreFile:
         return db
 
     def add_duplication_errors(self, exception: BulkWriteError) -> None:
-        """Database clash
+        """Add errors to the logging collection when we have the BulkWriteError exception.
 
         Args:
-            exception (BulkWriteError): [description]
+            exception (BulkWriteError): Exception with all the failed writes.
         """
         try:
             wrong_instances = [write_error["op"] for write_error in exception.details["writeErrors"]]
@@ -579,7 +577,7 @@ class CentreFile:
             # This is happening when there are duplicates in the data and the index prevents the records from being
             # written
             logger.warning("BulkWriteError: Usually happens when duplicates are trying to be inserted")
-            logger.debug(e)
+            # logger.debug(e) # this can kill the crawler as the amount of duplicates logged can be huge
 
             # filter out any errors that are duplicates by checking the code in e.details["writeErrors"]
             filtered_errors = list(filter(lambda x: x["code"] != 11000, e.details["writeErrors"]))
@@ -591,6 +589,7 @@ class CentreFile:
                 logger.info(filtered_errors[0])
 
             self.docs_inserted = e.details["nInserted"]
+
             self.add_duplication_errors(e)
 
             def get_errored_ids(error: Dict[str, Dict[str, str]]) -> str:
@@ -605,6 +604,9 @@ class CentreFile:
                 return error["op"][FIELD_MONGODB_ID]
 
             errored_ids = list(map(get_errored_ids, e.details["writeErrors"]))
+
+            logger.warning(f"{len(errored_ids)} records were not able to be inserted")
+
             inserted_ids = [doc[FIELD_MONGODB_ID] for doc in docs_to_insert if doc[FIELD_MONGODB_ID] not in errored_ids]
 
             return inserted_ids
@@ -655,7 +657,7 @@ class CentreFile:
         return False
 
     def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[Dict[str, str]]) -> None:
-        """Insert plates and wells into the DART database from the parsed file information
+        """Insert plates and wells into the DART database from the parsed file information.
 
         Arguments:
             docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from CSV files.

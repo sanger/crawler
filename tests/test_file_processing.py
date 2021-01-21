@@ -71,7 +71,7 @@ from crawler.constants import (
     MLWH_UPDATED_AT,
     POSITIVE_RESULT_VALUE,
 )
-from crawler.db import get_mongo_collection
+from crawler.db.mongo import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
 from crawler.types import ModifiedRow
 
@@ -1068,7 +1068,7 @@ def test_file_name_date_parses_right(config):
 
 # tests for inserting docs into mlwh using rows with and without ct columns
 def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
-    with patch("crawler.db.create_mysql_connection", return_value="not none"):
+    with patch("crawler.db.mysql.create_mysql_connection", return_value="not none"):
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
 
@@ -1184,7 +1184,7 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
 
 
 def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_connection):
-    with patch("crawler.db.create_mysql_connection", return_value="not none"):
+    with patch("crawler.db.mysql.create_mysql_connection", return_value="not none"):
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
 
@@ -1219,7 +1219,7 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_con
 
 
 def test_insert_samples_from_docs_into_mlwh_date_tested_blank(config, mlwh_connection):
-    with patch("crawler.db.create_mysql_connection", return_value="not none"):
+    with patch("crawler.db.mysql.create_mysql_connection", return_value="not none"):
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
 
