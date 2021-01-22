@@ -98,7 +98,9 @@ def set_dart_plate_state_pending(cursor: pyodbc.Cursor, plate_barcode: str) -> b
     """
     params = (plate_barcode, DART_STATE, DART_STATE_PENDING)
     cursor.execute(SQL_DART_SET_PLATE_PROPERTY, params)
-    response = str(cursor.fetchval())
+
+    # assuming that the stored procedure method returns an error code, convert it to an int to make sure
+    response = int(cursor.fetchval())
 
     return response == DART_SET_PROP_STATUS_SUCCESS
 
@@ -131,6 +133,7 @@ def add_dart_plate_if_doesnt_exist(cursor: pyodbc.Cursor, plate_barcode: str, bi
         str -- The state of the plate in DART.
     """
     state = get_dart_plate_state(cursor, plate_barcode)
+
     if state == DART_STATE_NO_PLATE:
         cursor.execute(SQL_DART_ADD_PLATE, (plate_barcode, biomek_labclass, 96))
         if set_dart_plate_state_pending(cursor, plate_barcode):
@@ -158,6 +161,5 @@ def add_dart_well_properties_if_positive(cursor: pyodbc.Cursor, sample: Sample, 
             set_dart_well_properties(cursor, plate_barcode, dart_well_props, well_index)
         else:
             raise ValueError(
-                "Unable to determine DART well index for sample "
-                f"{sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
+                f"Unable to determine DART well index for {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
             )
