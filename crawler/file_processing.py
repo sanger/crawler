@@ -13,7 +13,6 @@ from logging import INFO, WARN
 from pathlib import Path
 from typing import Any, Dict, Final, List, Optional, Set, Tuple, cast
 
-import pyodbc
 from bson.decimal128 import Decimal128
 from more_itertools import groupby_transform
 from pymongo.database import Database
@@ -68,17 +67,19 @@ from crawler.constants import (
     MIN_CQ_VALUE,
     POSITIVE_RESULT_VALUE,
 )
-from crawler.db.dart import add_dart_plate_if_doesnt_exist, create_dart_sql_server_conn, set_dart_well_properties
+from crawler.db.dart import (
+    add_dart_plate_if_doesnt_exist,
+    add_dart_well_properties_if_positive,
+    create_dart_sql_server_conn,
+)
 from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
 from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.general_helpers import (
     create_source_plate_doc,
     current_time,
-    get_dart_well_index,
     get_sftp_connection,
     map_lh_doc_to_sql_columns,
-    map_mongo_doc_to_dart_well_props,
 )
 from crawler.helpers.logging_helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
@@ -677,7 +678,7 @@ class CentreFile:
                         )
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
-                                self.add_dart_well_properties_if_positive(cursor, sample, plate_barcode)  # type: ignore
+                                add_dart_well_properties_if_positive(cursor, sample, plate_barcode)  # type: ignore
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(
@@ -704,25 +705,6 @@ class CentreFile:
                 f"DART database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
-
-    def add_dart_well_properties_if_positive(self, cursor: pyodbc.Cursor, sample: Sample, plate_barcode: str) -> None:
-        """Adds well properties to DART for the specified sample if that sample is positive.
-
-        Arguments:
-            cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
-            sample {Sample} -- The sample for which to add well properties.
-            plate_barcode {str} -- The barcode of the plate to which this sample belongs.
-        """
-        if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
-            well_index = get_dart_well_index(sample.get(FIELD_COORDINATE, None))
-            if well_index is not None:
-                dart_well_props = map_mongo_doc_to_dart_well_props(sample)
-                set_dart_well_properties(cursor, plate_barcode, dart_well_props, well_index)
-            else:
-                raise ValueError(
-                    "Unable to determine DART well index for sample "
-                    f"{sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
-                )
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.

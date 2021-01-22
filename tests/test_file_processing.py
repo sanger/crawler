@@ -1426,7 +1426,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_none_well_index(config):
             "crawler.file_processing.add_dart_plate_if_doesnt_exist",
             return_value=DART_STATE_PENDING,
         ):
-            with patch("crawler.file_processing.get_dart_well_index", return_value=None):
+            with patch("crawler.db.dart.get_dart_well_index", return_value=None):
                 centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
                 # logs error and rolls back on exception determining well index
@@ -1473,13 +1473,13 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
     with patch("crawler.file_processing.create_dart_sql_server_conn") as mock_conn:
         with patch("crawler.file_processing.add_dart_plate_if_doesnt_exist") as mock_add_plate:
             mock_add_plate.return_value = DART_STATE_PENDING
-            with patch("crawler.file_processing.get_dart_well_index") as mock_get_well_index:
+            with patch("crawler.db.dart.get_dart_well_index") as mock_get_well_index:
                 test_well_index = 15
                 mock_get_well_index.return_value = test_well_index
-                with patch("crawler.file_processing.map_mongo_doc_to_dart_well_props") as mock_map:
+                with patch("crawler.db.dart.map_mongo_doc_to_dart_well_props") as mock_map:
                     test_well_props = {"prop1": "value1", "test prop": "test value"}
                     mock_map.return_value = test_well_props
-                    with patch("crawler.file_processing.set_dart_well_properties") as mock_set_well_props:
+                    with patch("crawler.db.dart.set_dart_well_properties") as mock_set_well_props:
                         centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
                         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
@@ -1550,13 +1550,13 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
     with patch("crawler.file_processing.create_dart_sql_server_conn") as mock_conn:
         with patch("crawler.file_processing.add_dart_plate_if_doesnt_exist") as mock_add_plate:
             mock_add_plate.return_value = DART_STATE_PENDING
-            with patch("crawler.file_processing.get_dart_well_index") as mock_get_well_index:
+            with patch("crawler.db.dart.get_dart_well_index") as mock_get_well_index:
                 test_well_index = 15
                 mock_get_well_index.return_value = test_well_index
-                with patch("crawler.file_processing.map_mongo_doc_to_dart_well_props") as mock_map:
+                with patch("crawler.db.dart.map_mongo_doc_to_dart_well_props") as mock_map:
                     test_well_props = {"prop1": "value1", "test prop": "test value"}
                     mock_map.return_value = test_well_props
-                    with patch("crawler.file_processing.set_dart_well_properties") as mock_set_well_props:
+                    with patch("crawler.db.dart.set_dart_well_properties") as mock_set_well_props:
                         centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
                         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
