@@ -1,7 +1,8 @@
 import logging
 from datetime import datetime
-from types import ModuleType
 from typing import Dict, List, Optional
+
+from more_itertools import groupby_transform
 
 from crawler.constants import (
     COLLECTION_SAMPLES,
@@ -17,16 +18,9 @@ from crawler.constants import (
     FIELD_SOURCE,
     POSITIVE_RESULT_VALUE,
 )
-from crawler.db import (
-    add_dart_plate_if_doesnt_exist,
-    create_dart_sql_server_conn,
-    create_mongo_client,
-    create_mysql_connection,
-    get_mongo_collection,
-    get_mongo_db,
-    run_mysql_executemany_query,
-    set_dart_well_properties,
-)
+from crawler.db.dart import add_dart_plate_if_doesnt_exist, create_dart_sql_server_conn, set_dart_well_properties
+from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
 from crawler.helpers.general_helpers import (
     get_dart_well_index,
@@ -34,19 +28,18 @@ from crawler.helpers.general_helpers import (
     map_mongo_to_sql_common,
 )
 from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE
-from crawler.types import Sample
+from crawler.types import Config, Sample
 from migrations.helpers.shared_helper import extract_required_cp_info, get_cherrypicked_samples
 from migrations.helpers.shared_helper import remove_cherrypicked_samples as remove_cp_samples
-from more_itertools import groupby_transform
 
 logger = logging.getLogger(__name__)
 
 
-def pending_plate_barcodes_from_dart(config: ModuleType) -> List[str]:
+def pending_plate_barcodes_from_dart(config: Config) -> List[str]:
     """Fetch the barcodes of all plates from DART that are in the 'pending' state
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        config {Config} -- application config specifying database details
 
     Returns:
         List[str] -- barcodes of pending plates
@@ -71,11 +64,11 @@ def pending_plate_barcodes_from_dart(config: ModuleType) -> List[str]:
     return plate_barcodes
 
 
-def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: Optional[List[str]] = None) -> List[Sample]:
+def positive_result_samples_from_mongo(config: Config, plate_barcodes: Optional[List[str]] = None) -> List[Sample]:
     """Fetch positive samples from Mongo contained within specified plates.
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        config {Config} -- application config specifying database details
         plate_barcodes {Optional[List[str]]} -- barcodes of plates whose samples we are concerned with
 
     Returns:
@@ -96,11 +89,11 @@ def positive_result_samples_from_mongo(config: ModuleType, plate_barcodes: Optio
         return list(samples_collection.aggregate(pipeline))
 
 
-def remove_cherrypicked_samples(config: ModuleType, samples: List[Sample]) -> List[Sample]:
+def remove_cherrypicked_samples(config: Config, samples: List[Sample]) -> List[Sample]:
     """Filters an input list of samples for those that have not been cherrypicked.
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        config {Config} -- application config specifying database details
         samples {List[Sample]} -- the list of samples to filter
 
     Returns:
@@ -138,7 +131,6 @@ def update_filtered_positive_fields(
 
     version = filtered_positive_identifier.version
 
-    # Expect all samples to be passed into here to have a positive result
     for sample in samples:
         sample[FIELD_FILTERED_POSITIVE] = filtered_positive_identifier.is_positive(sample)
         sample[FIELD_FILTERED_POSITIVE_VERSION] = version
@@ -146,12 +138,12 @@ def update_filtered_positive_fields(
 
 
 def update_mongo_filtered_positive_fields(
-    config: ModuleType, samples: List[Sample], version: str, update_timestamp: datetime
+    config: Config, samples: List[Sample], version: str, update_timestamp: datetime
 ) -> bool:
-    """Bulk updates sample filtered positive fields in the Mongo database
+    """Batch updates sample filtered positive fields in the Mongo database
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        config {Config} -- application config specifying database details
         samples {List[Sample]} -- the list of samples whose filtered positive fields should be updated
         version {str} -- the filtered positive identifier version used
         update_timestamp {datetime} -- the timestamp at which the update was performed
@@ -161,45 +153,58 @@ def update_mongo_filtered_positive_fields(
     """
     with create_mongo_client(config) as client:
         mongo_db = get_mongo_db(config, client)
-
-        # get ids of those that are filtered positive, and those that aren't
-        all_ids: List[str] = [sample[FIELD_MONGODB_ID] for sample in samples]
-        filtered_positive_ids: List[str] = [
-            sample[FIELD_MONGODB_ID] for sample in list(filter(lambda x: x[FIELD_FILTERED_POSITIVE] is True, samples))
-        ]
-        filtered_negative_ids = [mongo_id for mongo_id in all_ids if mongo_id not in filtered_positive_ids]
-
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
-        samples_collection.update_many(
-            {FIELD_MONGODB_ID: {"$in": filtered_positive_ids}},
-            {
-                "$set": {
-                    FIELD_FILTERED_POSITIVE: True,
-                    FIELD_FILTERED_POSITIVE_VERSION: version,
-                    FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
-                }
-            },
-        )
-        samples_collection.update_many(
-            {FIELD_MONGODB_ID: {"$in": filtered_negative_ids}},
-            {
-                "$set": {
-                    FIELD_FILTERED_POSITIVE: False,
-                    FIELD_FILTERED_POSITIVE_VERSION: version,
-                    FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
-                }
-            },
-        )
-    return True
+
+        num_samples = len(samples)
+        SAMPLES_PER_QUERY = 15000
+        samples_index = 0
+        logger.debug(f"Attempting to update {num_samples} rows in Mongo in batches of {SAMPLES_PER_QUERY}")
+        while samples_index < num_samples:
+            logger.debug(f"Updating records between {samples_index} and {samples_index + SAMPLES_PER_QUERY}")
+
+            samples_batch = samples[samples_index : (samples_index + SAMPLES_PER_QUERY)]  # noqa: E203
+
+            # get ids of those that are filtered positive, and those that aren't
+            filtered_positive_ids = []
+            filtered_negative_ids = []
+            for sample in samples_batch:
+                if sample[FIELD_FILTERED_POSITIVE] is True:
+                    filtered_positive_ids.append(sample[FIELD_MONGODB_ID])
+                else:
+                    filtered_negative_ids.append(sample[FIELD_MONGODB_ID])
+
+            samples_collection.update_many(
+                {FIELD_MONGODB_ID: {"$in": filtered_positive_ids}},
+                {
+                    "$set": {
+                        FIELD_FILTERED_POSITIVE: True,
+                        FIELD_FILTERED_POSITIVE_VERSION: version,
+                        FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
+                    }
+                },
+            )
+
+            samples_collection.update_many(
+                {FIELD_MONGODB_ID: {"$in": filtered_negative_ids}},
+                {
+                    "$set": {
+                        FIELD_FILTERED_POSITIVE: False,
+                        FIELD_FILTERED_POSITIVE_VERSION: version,
+                        FIELD_FILTERED_POSITIVE_TIMESTAMP: update_timestamp,
+                    }
+                },
+            )
+
+            samples_index += SAMPLES_PER_QUERY
+        return True
 
 
-def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Sample]) -> bool:
+def update_mlwh_filtered_positive_fields(config: Config, samples: List[Sample]) -> bool:
     """Bulk updates sample filtered positive fields in the MLWH database
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
-        samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields
-        should be updated
+        config {Config} -- application config specifying database details
+        samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields should be updated
 
     Returns:
         bool -- whether the updates completed successfully
@@ -214,11 +219,11 @@ def update_mlwh_filtered_positive_fields(config: ModuleType, samples: List[Sampl
         return False
 
 
-def update_dart_fields(config: ModuleType, samples: List[Sample]) -> bool:
+def update_dart_fields(config: Config, samples: List[Sample]) -> bool:
     """Updates DART plates and wells following updates to the filtered positive fields
 
     Arguments:
-        config {ModuleType} -- application config specifying database details
+        config {Config} -- application config specifying database details
         samples {List[Dict[str, str]]} -- the list of samples to update in DART
 
     Returns:
@@ -229,14 +234,14 @@ def update_dart_fields(config: ModuleType, samples: List[Sample]) -> bool:
         raise ValueError("Unable to establish DART SQL Server connection")
 
     dart_updated_successfully = True
-    labclass_by_centre_name = biomek_labclass_by_centre_name(config.CENTRES)  # type:ignore
+    labclass_by_centre_name = biomek_labclass_by_centre_name(config.CENTRES)
     try:
         logger.info("Writing to DART")
 
         cursor = sql_server_connection.cursor()
 
         for plate_barcode, samples_in_plate in groupby_transform(
-            samples, lambda x: x[FIELD_PLATE_BARCODE], reducefunc=lambda x: list(x)
+            samples, lambda x: x[FIELD_PLATE_BARCODE], reducefunc=lambda x: list(x)  # type: ignore
         ):
             try:
                 labware_class = labclass_by_centre_name[samples_in_plate[0][FIELD_SOURCE]]

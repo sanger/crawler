@@ -1,19 +1,15 @@
 from datetime import datetime
 
 from crawler.constants import COLLECTION_SAMPLES, FIELD_CREATED_AT, MONGO_DATETIME_FORMAT
-from crawler.db import (
-    create_mongo_client,
-    create_mysql_connection,
-    get_mongo_collection,
-    get_mongo_db,
-    run_mysql_executemany_query,
-)
+from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
 from crawler.helpers.general_helpers import map_mongo_doc_to_sql_columns
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
+from crawler.types import Config
 from migrations.helpers.shared_helper import print_exception, valid_datetime_string
 
 
-def update_mlwh_with_legacy_samples(config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
+def update_mlwh_with_legacy_samples(config: Config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
     if not valid_datetime_string(s_start_datetime):
         print("Aborting run: Expected format of Start datetime is YYMMDD_HHmm")
         return

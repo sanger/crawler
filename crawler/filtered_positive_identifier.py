@@ -1,8 +1,9 @@
-from abc import ABC
 import decimal
 import re
+from abc import ABC
+from typing import Optional, Pattern
 
-from bson.decimal128 import create_decimal128_context  # type: ignore
+from bson.decimal128 import create_decimal128_context
 
 from crawler.constants import (
     FIELD_CH1_CQ,
@@ -14,7 +15,6 @@ from crawler.constants import (
 )
 from crawler.types import Sample
 
-
 # record/reference all versions and definitions here
 FILTERED_POSITIVE_VERSION_0 = "v0"  # pre-filtered_positive definitions
 FILTERED_POSITIVE_VERSION_1 = "v1"  # initial implementation, as per GPL-669
@@ -23,11 +23,11 @@ FILTERED_POSITIVE_VERSION_2 = "v2"  # updated as per GPL-699 and GPL-740
 
 class FilteredPositiveIdentifier(ABC):
     def __init__(self):
-        self.version = None
+        self.version: str = ""
         self.ct_value_limit = decimal.Decimal(30)
         self.d128_context = create_decimal128_context()
         self.result_regex = re.compile(f"^{POSITIVE_RESULT_VALUE}", re.IGNORECASE)
-        self.root_sample_id_control_regex = None
+        self.root_sample_id_control_regex: Optional[Pattern[str]] = None
         self.evaluate_ct_values = False
 
     def is_positive(self, sample: Sample) -> bool:
@@ -42,10 +42,7 @@ class FilteredPositiveIdentifier(ABC):
         if self.result_regex.match(sample[FIELD_RESULT]) is None:
             return False
 
-        if (
-            self.root_sample_id_control_regex
-            and self.root_sample_id_control_regex.match(sample[FIELD_ROOT_SAMPLE_ID]) is not None
-        ):
+        if self.root_sample_id_control_regex and self.root_sample_id_control_regex.match(sample[FIELD_ROOT_SAMPLE_ID]):
             return False
 
         if self.evaluate_ct_values:
@@ -58,11 +55,11 @@ class FilteredPositiveIdentifier(ABC):
 
             with decimal.localcontext(self.d128_context):
                 # type check before attempting to convert to decimal
-                if ch1_cq is not None and ch1_cq.to_decimal() <= self.ct_value_limit:
+                if ch1_cq and ch1_cq.to_decimal() <= self.ct_value_limit:
                     return True
-                elif ch2_cq is not None and ch2_cq.to_decimal() <= self.ct_value_limit:
+                elif ch2_cq and ch2_cq.to_decimal() <= self.ct_value_limit:
                     return True
-                elif ch3_cq is not None and ch3_cq.to_decimal() <= self.ct_value_limit:
+                elif ch3_cq and ch3_cq.to_decimal() <= self.ct_value_limit:
                     return True
                 else:
                     return False

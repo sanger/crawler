@@ -7,16 +7,20 @@ from migrations import (
     sample_timestamps,
     update_dart,
     update_filtered_positives,
-    update_mlwh_with_legacy_samples,
     update_legacy_filtered_positives,
+    update_mlwh_with_legacy_samples,
 )
 
 config, settings_module = get_config("")
 
 logger = logging.getLogger(__name__)
-config.LOGGING["loggers"]["crawler"]["level"] = "DEBUG"  # type: ignore
-config.LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]  # type: ignore
-logging.config.dictConfig(config.LOGGING)  # type: ignore
+config.LOGGING["loggers"]["crawler"]["level"] = "DEBUG"
+config.LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]
+config.LOGGING["formatters"]["colored"][
+    "format"
+] = "%(asctime)-15s %(name)-60s:%(lineno)-3s %(log_color)s%(levelname)-7s %(message)s"
+
+logging.config.dictConfig(config.LOGGING)
 
 ##
 # Examples of how to run from command line:
@@ -31,6 +35,7 @@ print("* sample_timestamps")
 print("* update_mlwh_with_legacy_samples")
 print("* update_mlwh_and_dart_with_legacy_samples")
 print("* update_filtered_positives")
+print("* update_legacy_filtered_positives")
 
 
 def migration_sample_timestamps():
@@ -73,8 +78,17 @@ def migration_update_filtered_positives():
 
 
 def migration_update_legacy_filtered_positives():
+    if not len(sys.argv) == 4:
+        print(
+            "Please add both start and end datetime range arguments for this migration "
+            "(format YYMMDD_HHmm e.g. 200115_1200, inclusive), aborting"
+        )
+        return
+
+    s_start_datetime = sys.argv[2]
+    s_end_datetime = sys.argv[3]
     print("Running update_legacy_filtered_positives migration")
-    update_legacy_filtered_positives.run()
+    update_legacy_filtered_positives.run(s_start_datetime=s_start_datetime, s_end_datetime=s_end_datetime)
 
 
 def migration_by_name(migration_name):
