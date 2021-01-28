@@ -77,13 +77,13 @@ CENTRES = [
     },
     {
         "barcode_field": FIELD_RNA_ID,
-        "barcode_regex": r"^(.*)_([A-Z]\d\d)$",
+        "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Randox",
         "prefix": "RAND",
-        "lab_id_default": "RX", # made up
-        "backups_folder": "data/backups/RAND",
-        "sftp_file_regex": r"^RX_sanger_report_(\d{6}_\d{4}).*\.csv$",
-        "sftp_root_read": "project-heron_randox", # made up
-        "biomek_labware_class": "KingFisher_96_2ml", # find out
+        "lab_id_default": "Randox",
+        "backups_folder": f"{CENTRE_DIR_BACKUPS}/RAND",
+        "sftp_file_regex": r"^lw-randox-biocentre-box-.*\.csv$",
+        "sftp_root_read": "project-heron_randox",
+        "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
     },
 ]
