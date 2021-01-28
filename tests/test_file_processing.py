@@ -71,8 +71,9 @@ from crawler.constants import (
     MLWH_UPDATED_AT,
     POSITIVE_RESULT_VALUE,
 )
-from crawler.db import get_mongo_collection
+from crawler.db.mongo import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
+from crawler.types import ModifiedRow
 
 # ----- tests helpers -----
 
@@ -414,6 +415,66 @@ def test_filtered_row_with_extra_unrecognised_columns(config):
         assert centre_file.logging_collection.aggregator_types["TYPE 13"].count_errors == 1
         # N.B. Type 13 is a WARNING type and not counted as an error or critical
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+
+
+def test_extract_channel_fields(centre_file: CentreFile):
+    with StringIO() as csv_weird_channels:
+        csv_weird_channels.write(
+            f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},{FIELD_LAB_ID},"
+            "CH 1 - Target,CH 1 - Result,CH 1 - Cq,CH2_Target,CH2_Result,CH2_Cq,CH3-Target,CH3-Result,CH3-Cq,\n"
+        )
+        csv_weird_channels.write(
+            "1,RNA_0043,Positive,today,AP,ORF1ab,Positive,21.433,ORF2ab,Negative,22.433,ORF3ab,Positive,23.433,\n"
+        )
+        csv_weird_channels.seek(0)
+
+        csv_to_test_reader = DictReader(csv_weird_channels)
+
+        modified_row: ModifiedRow = {
+            FIELD_ROOT_SAMPLE_ID: "1",
+            FIELD_RNA_ID: "RNA_0043",
+            FIELD_RESULT: "Positive",
+            FIELD_DATE_TESTED: "today",
+            FIELD_LAB_ID: "AP",
+        }
+
+        expected_modified_row = {
+            FIELD_ROOT_SAMPLE_ID: "1",
+            FIELD_RNA_ID: "RNA_0043",
+            FIELD_RESULT: "Positive",
+            FIELD_DATE_TESTED: "today",
+            FIELD_LAB_ID: "AP",
+            FIELD_CH1_TARGET: "ORF1ab",
+            FIELD_CH1_RESULT: "Positive",
+            FIELD_CH1_CQ: "21.433",
+            FIELD_CH2_TARGET: "ORF2ab",
+            FIELD_CH2_RESULT: "Negative",
+            FIELD_CH2_CQ: "22.433",
+            FIELD_CH3_TARGET: "ORF3ab",
+            FIELD_CH3_RESULT: "Positive",
+            FIELD_CH3_CQ: "23.433",
+        }
+
+        seen_headers = [FIELD_ROOT_SAMPLE_ID, FIELD_RNA_ID, FIELD_RESULT, FIELD_DATE_TESTED, FIELD_LAB_ID]
+
+        expected_seen_headers = seen_headers + [
+            "CH 1 - Target",
+            "CH 1 - Result",
+            "CH 1 - Cq",
+            "CH2_Target",
+            "CH2_Result",
+            "CH2_Cq",
+            "CH3-Target",
+            "CH3-Result",
+            "CH3-Cq",
+        ]
+
+        seen_headers_to_test, modified_row_to_test = centre_file.extract_channel_fields(
+            seen_headers, next(csv_to_test_reader), modified_row
+        )
+
+        assert seen_headers_to_test == expected_seen_headers
+        assert modified_row_to_test == expected_modified_row
 
 
 def test_filtered_row_with_blank_lab_id(config):
@@ -852,10 +913,7 @@ def test_where_positive_result_does_not_align_with_ct_channel_results(config):
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
 
-def test_check_for_required_headers(config):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
-
+def test_check_for_required_headers_empty_file(centre_file):
     # empty file
     with StringIO() as fake_csv:
         csv_to_test_reader = DictReader(fake_csv)
@@ -863,10 +921,9 @@ def test_check_for_required_headers(config):
         assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 1
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
 
-    # file with incorrect headers
+def test_check_for_required_headers_with_incorrect_headers(centre_file):
+    # incorrect_headers
     with StringIO() as fake_csv:
         fake_csv.write("id,RNA ID\n")
         fake_csv.write("1,RNA_0043_\n")
@@ -878,9 +935,8 @@ def test_check_for_required_headers(config):
         assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 1
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
 
+def test_check_for_required_headers_with_valid_headers(centre_file):
     # file with valid headers
     with StringIO() as fake_csv:
         fake_csv.write(
@@ -896,10 +952,9 @@ def test_check_for_required_headers(config):
         assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 0
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
-    # file with missing Lab ID header and add lab id false (default)
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some_file.csv", centre)
 
+def test_check_for_required_headers_with_missing_lab_id_and_lab_id_false(centre_file: CentreFile):
+    # file with missing Lab ID header and add lab id false (default)
     with StringIO() as fake_csv_without_lab_id:
         fake_csv_without_lab_id.write(
             f"{FIELD_ROOT_SAMPLE_ID},{FIELD_VIRAL_PREP_ID},{FIELD_RNA_ID},{FIELD_RNA_PCR_ID},"
@@ -914,7 +969,12 @@ def test_check_for_required_headers(config):
         assert centre_file.logging_collection.aggregator_types["TYPE 2"].count_errors == 1
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
+
+def test_check_for_required_headers_with_missing_lab_id_and_lab_id_true(config):
     # file with missing Lab ID header and add lab id true
+    # we need to use a try, finally block here since the config fixture returns the real config object, not a copy
+    # so we need to reset any config we change
+    # TODO: find a way to improve this
     try:
         config.ADD_LAB_ID = True
         centre = Centre(config, config.CENTRES[0])
@@ -1008,7 +1068,7 @@ def test_file_name_date_parses_right(config):
 
 # tests for inserting docs into mlwh using rows with and without ct columns
 def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
-    with patch("crawler.db.create_mysql_connection", return_value="not none"):
+    with patch("crawler.db.mysql.create_mysql_connection", return_value="not none"):
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
 
@@ -1124,7 +1184,7 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
 
 
 def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_connection):
-    with patch("crawler.db.create_mysql_connection", return_value="not none"):
+    with patch("crawler.db.mysql.create_mysql_connection", return_value="not none"):
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
 
@@ -1159,7 +1219,7 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_con
 
 
 def test_insert_samples_from_docs_into_mlwh_date_tested_blank(config, mlwh_connection):
-    with patch("crawler.db.create_mysql_connection", return_value="not none"):
+    with patch("crawler.db.mysql.create_mysql_connection", return_value="not none"):
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
 
@@ -1366,7 +1426,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_none_well_index(config):
             "crawler.file_processing.add_dart_plate_if_doesnt_exist",
             return_value=DART_STATE_PENDING,
         ):
-            with patch("crawler.file_processing.get_dart_well_index", return_value=None):
+            with patch("crawler.db.dart.get_dart_well_index", return_value=None):
                 centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
                 # logs error and rolls back on exception determining well index
@@ -1413,13 +1473,13 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
     with patch("crawler.file_processing.create_dart_sql_server_conn") as mock_conn:
         with patch("crawler.file_processing.add_dart_plate_if_doesnt_exist") as mock_add_plate:
             mock_add_plate.return_value = DART_STATE_PENDING
-            with patch("crawler.file_processing.get_dart_well_index") as mock_get_well_index:
+            with patch("crawler.db.dart.get_dart_well_index") as mock_get_well_index:
                 test_well_index = 15
                 mock_get_well_index.return_value = test_well_index
-                with patch("crawler.file_processing.map_mongo_doc_to_dart_well_props") as mock_map:
+                with patch("crawler.db.dart.map_mongo_doc_to_dart_well_props") as mock_map:
                     test_well_props = {"prop1": "value1", "test prop": "test value"}
                     mock_map.return_value = test_well_props
-                    with patch("crawler.file_processing.set_dart_well_properties") as mock_set_well_props:
+                    with patch("crawler.db.dart.set_dart_well_properties") as mock_set_well_props:
                         centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
                         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
@@ -1490,13 +1550,13 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
     with patch("crawler.file_processing.create_dart_sql_server_conn") as mock_conn:
         with patch("crawler.file_processing.add_dart_plate_if_doesnt_exist") as mock_add_plate:
             mock_add_plate.return_value = DART_STATE_PENDING
-            with patch("crawler.file_processing.get_dart_well_index") as mock_get_well_index:
+            with patch("crawler.db.dart.get_dart_well_index") as mock_get_well_index:
                 test_well_index = 15
                 mock_get_well_index.return_value = test_well_index
-                with patch("crawler.file_processing.map_mongo_doc_to_dart_well_props") as mock_map:
+                with patch("crawler.db.dart.map_mongo_doc_to_dart_well_props") as mock_map:
                     test_well_props = {"prop1": "value1", "test prop": "test value"}
                     mock_map.return_value = test_well_props
-                    with patch("crawler.file_processing.set_dart_well_properties") as mock_set_well_props:
+                    with patch("crawler.db.dart.set_dart_well_properties") as mock_set_well_props:
                         centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
                         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0

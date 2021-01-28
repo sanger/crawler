@@ -149,7 +149,7 @@ def get_config(settings_module: str = "") -> Tuple[Config, str]:
 
 
 def map_mongo_to_sql_common(sample: Sample) -> Dict[str, Any]:
-    """Transform common document fields into MySQL fields for MLWH.
+    """Transform common mongo document fields into MySQL fields for MLWH.
 
     Arguments:
         doc {Sample} -- Filtered information about one sample, extracted from mongodb.
@@ -169,6 +169,7 @@ def map_mongo_to_sql_common(sample: Sample) -> Dict[str, Any]:
         MLWH_DATE_TESTED: parse_date_tested(sample.get(FIELD_DATE_TESTED, None)),
         MLWH_SOURCE: sample.get(FIELD_SOURCE, None),
         MLWH_LAB_ID: sample.get(FIELD_LAB_ID, None),
+        # channel fields
         MLWH_CH1_TARGET: sample.get(FIELD_CH1_TARGET, None),
         MLWH_CH1_RESULT: sample.get(FIELD_CH1_RESULT, None),
         MLWH_CH1_CQ: parse_decimal128(sample.get(FIELD_CH1_CQ, None)),
@@ -181,9 +182,11 @@ def map_mongo_to_sql_common(sample: Sample) -> Dict[str, Any]:
         MLWH_CH4_TARGET: sample.get(FIELD_CH4_TARGET, None),
         MLWH_CH4_RESULT: sample.get(FIELD_CH4_RESULT, None),
         MLWH_CH4_CQ: parse_decimal128(sample.get(FIELD_CH4_CQ, None)),
+        # filtered positive fields
         MLWH_FILTERED_POSITIVE: sample.get(FIELD_FILTERED_POSITIVE, None),
         MLWH_FILTERED_POSITIVE_VERSION: sample.get(FIELD_FILTERED_POSITIVE_VERSION, None),
         MLWH_FILTERED_POSITIVE_TIMESTAMP: sample.get(FIELD_FILTERED_POSITIVE_TIMESTAMP, None),
+        # UUID fields
         MLWH_LH_SAMPLE_UUID: sample.get(FIELD_LH_SAMPLE_UUID, None),
         MLWH_LH_SOURCE_PLATE_UUID: sample.get(FIELD_LH_SOURCE_PLATE_UUID, None),
     }

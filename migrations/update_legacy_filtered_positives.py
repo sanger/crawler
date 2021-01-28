@@ -92,10 +92,6 @@ def run(settings_module: str = "", s_start_datetime: str = "", s_end_datetime: s
     }
 
     try:
-        logger.info(
-            f"Checking whether filtered positive version has been set on any samples between \
-{start_datetime} and {end_datetime}..."
-        )
         continue_migration = pre_migration_filtered_positive_check(config, start_datetime, end_datetime)
 
         if continue_migration:

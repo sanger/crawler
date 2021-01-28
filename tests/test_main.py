@@ -3,7 +3,7 @@ import shutil
 from unittest.mock import patch
 
 from crawler.constants import COLLECTION_CENTRES, COLLECTION_IMPORTS, COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES
-from crawler.db import get_mongo_collection
+from crawler.db.mongo import get_mongo_collection
 from crawler.main import run
 
 NUMBER_CENTRES = 5

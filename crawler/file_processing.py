@@ -11,9 +11,8 @@ from decimal import Decimal
 from hashlib import md5
 from logging import INFO, WARN
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, Final, List, Optional, Set, Tuple, cast
 
-import pyodbc
 from bson.decimal128 import Decimal128
 from more_itertools import groupby_transform
 from pymongo.database import Database
@@ -68,25 +67,19 @@ from crawler.constants import (
     MIN_CQ_VALUE,
     POSITIVE_RESULT_VALUE,
 )
-from crawler.db import (
+from crawler.db.dart import (
     add_dart_plate_if_doesnt_exist,
+    add_dart_well_properties_if_positive,
     create_dart_sql_server_conn,
-    create_import_record,
-    create_mongo_client,
-    create_mysql_connection,
-    get_mongo_collection,
-    get_mongo_db,
-    run_mysql_executemany_query,
-    set_dart_well_properties,
 )
+from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
 from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.general_helpers import (
     create_source_plate_doc,
     current_time,
-    get_dart_well_index,
     get_sftp_connection,
     map_lh_doc_to_sql_columns,
-    map_mongo_doc_to_dart_well_props,
 )
 from crawler.helpers.logging_helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
@@ -105,6 +98,7 @@ class Centre:
     def __init__(self, config: Config, centre_config: CentreConf):
         self.config = config
         self.centre_config = centre_config
+        self.is_download_dir_walkable = False
 
         # create backup directories for files
         os.makedirs(f"{self.centre_config['backups_folder']}/{ERRORS_DIR}", exist_ok=True)
@@ -130,23 +124,27 @@ class Centre:
             # filter the list of files to only those which match the pattern
             centre_files = list(filter(pattern.match, files))
 
+            self.is_download_dir_walkable = True
+
             return centre_files
         except Exception:
+            self.is_download_dir_walkable = False
+
             logger.error(f"Failed when reading files from {path_to_walk}")
             return []
 
     def clean_up(self) -> None:
         """Remove the files downloaded from the SFTP for the given centre."""
-        logger.debug("Remove files")
+        logger.debug(f"Remove files in {self.get_download_dir()}")
         try:
             shutil.rmtree(self.get_download_dir())
 
-        except Exception:
-            logger.exception("Failed clean up")
+        except Exception as e:
+            logger.error(f"Failed clean up: {e}")
 
     def process_files(self, add_to_dart: bool) -> None:
         """Iterate through all the files for the centre, parsing any new ones into the mongo database and then into the
-        unified warehouse.
+        unified warehouse and optionally, DART.
 
         Arguments:
             add_to_dart {bool} -- whether to add the samples to DART
@@ -216,30 +214,23 @@ class Centre:
 class CentreFile:
     """Class to process an individual file"""
 
-    # These headers are required in ALL files from ALL lighthouses
-    REQUIRED_FIELDS = {
-        FIELD_ROOT_SAMPLE_ID,
-        FIELD_VIRAL_PREP_ID,
-        FIELD_RNA_ID,
-        FIELD_RNA_PCR_ID,
-        FIELD_RESULT,
-        FIELD_DATE_TESTED,
-    }
+    # we will be using re.IGNORECASE when making the match
+    CHANNEL_REGEX_TEMPLATE: Final[str] = "^CH[ ]*{channel_number}[ ]*[-_][ ]*{word}$"
 
     # These headers are optional, and may not be present in all files from all lighthouses
-    CHANNEL_FIELDS = {
-        FIELD_CH1_TARGET,
-        FIELD_CH1_RESULT,
-        FIELD_CH1_CQ,
-        FIELD_CH2_TARGET,
-        FIELD_CH2_RESULT,
-        FIELD_CH2_CQ,
-        FIELD_CH3_TARGET,
-        FIELD_CH3_RESULT,
-        FIELD_CH3_CQ,
-        FIELD_CH4_TARGET,
-        FIELD_CH4_RESULT,
-        FIELD_CH4_CQ,
+    CHANNEL_FIELDS_MAPPING: Final[Dict[str, str]] = {
+        FIELD_CH1_TARGET: CHANNEL_REGEX_TEMPLATE.format(channel_number=1, word="target"),
+        FIELD_CH1_RESULT: CHANNEL_REGEX_TEMPLATE.format(channel_number=1, word="result"),
+        FIELD_CH1_CQ: CHANNEL_REGEX_TEMPLATE.format(channel_number=1, word="cq"),
+        FIELD_CH2_TARGET: CHANNEL_REGEX_TEMPLATE.format(channel_number=2, word="target"),
+        FIELD_CH2_RESULT: CHANNEL_REGEX_TEMPLATE.format(channel_number=2, word="result"),
+        FIELD_CH2_CQ: CHANNEL_REGEX_TEMPLATE.format(channel_number=2, word="cq"),
+        FIELD_CH3_TARGET: CHANNEL_REGEX_TEMPLATE.format(channel_number=3, word="target"),
+        FIELD_CH3_RESULT: CHANNEL_REGEX_TEMPLATE.format(channel_number=3, word="result"),
+        FIELD_CH3_CQ: CHANNEL_REGEX_TEMPLATE.format(channel_number=3, word="cq"),
+        FIELD_CH4_TARGET: CHANNEL_REGEX_TEMPLATE.format(channel_number=4, word="target"),
+        FIELD_CH4_RESULT: CHANNEL_REGEX_TEMPLATE.format(channel_number=4, word="result"),
+        FIELD_CH4_CQ: CHANNEL_REGEX_TEMPLATE.format(channel_number=4, word="cq"),
     }
 
     filtered_positive_identifier = current_filtered_positive_identifier()
@@ -260,6 +251,16 @@ class CentreFile:
         self.file_state = CentreFileState.FILE_UNCHECKED
 
         self.docs_inserted = 0
+
+        # These headers are required in ALL files from ALL lighthouses
+        self.required_fields = {
+            FIELD_ROOT_SAMPLE_ID,
+            FIELD_VIRAL_PREP_ID,
+            FIELD_RNA_ID,
+            FIELD_RNA_PCR_ID,
+            FIELD_RESULT,
+            FIELD_DATE_TESTED,
+        }
 
     def filepath(self) -> Path:
         """Returns the filepath for the file
@@ -378,6 +379,7 @@ class CentreFile:
 
         if (num_docs_to_insert := len(docs_to_insert)) > 0:
             logger.debug(f"{num_docs_to_insert} docs to insert")
+
             mongo_ids_of_inserted = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
 
             if len(mongo_ids_of_inserted) > 0:
@@ -446,10 +448,10 @@ class CentreFile:
         return db
 
     def add_duplication_errors(self, exception: BulkWriteError) -> None:
-        """Database clash
+        """Add errors to the logging collection when we have the BulkWriteError exception.
 
         Args:
-            exception (BulkWriteError): [description]
+            exception (BulkWriteError): Exception with all the failed writes.
         """
         try:
             wrong_instances = [write_error["op"] for write_error in exception.details["writeErrors"]]
@@ -573,12 +575,12 @@ class CentreFile:
 
         # TODO could trap DuplicateKeyError specifically
         except BulkWriteError as e:
-            # This is happening when there are duplicates in the data and the index prevents
-            # the records from being written
-            logger.warning(f"{e} - usually happens when duplicates are trying to be inserted")
+            # This is happening when there are duplicates in the data and the index prevents the records from being
+            # written
+            logger.warning("BulkWriteError: Usually happens when duplicates are trying to be inserted")
+            # logger.debug(e) # this can kill the crawler as the amount of duplicates logged can be huge
 
-            # filter out any errors that are duplicates by checking the code in
-            # e.details["writeErrors"]
+            # filter out any errors that are duplicates by checking the code in e.details["writeErrors"]
             filtered_errors = list(filter(lambda x: x["code"] != 11000, e.details["writeErrors"]))
 
             if (num_filtered_errors := len(filtered_errors)) > 0:
@@ -588,6 +590,7 @@ class CentreFile:
                 logger.info(filtered_errors[0])
 
             self.docs_inserted = e.details["nInserted"]
+
             self.add_duplication_errors(e)
 
             def get_errored_ids(error: Dict[str, Dict[str, str]]) -> str:
@@ -602,6 +605,9 @@ class CentreFile:
                 return error["op"][FIELD_MONGODB_ID]
 
             errored_ids = list(map(get_errored_ids, e.details["writeErrors"]))
+
+            logger.warning(f"{len(errored_ids)} records were not able to be inserted")
+
             inserted_ids = [doc[FIELD_MONGODB_ID] for doc in docs_to_insert if doc[FIELD_MONGODB_ID] not in errored_ids]
 
             return inserted_ids
@@ -640,7 +646,7 @@ class CentreFile:
                     "TYPE 14",
                     f"MLWH database inserts failed for file {self.file_name}",
                 )
-                logger.critical(f"Critical error in file {self.file_name}: {e}")
+                logger.critical(f"Critical error while processing file {self.file_name}: {e}")
                 logger.exception(e)
         else:
             self.logging_collection.add_error(
@@ -652,7 +658,7 @@ class CentreFile:
         return False
 
     def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[Dict[str, str]]) -> None:
-        """Insert plates and wells into the DART database from the parsed file information
+        """Insert plates and wells into the DART database from the parsed file information.
 
         Arguments:
             docs_to_insert {List[Dict[str, str]]} -- List of filtered sample information extracted from CSV files.
@@ -672,7 +678,7 @@ class CentreFile:
                         )
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
-                                self.add_dart_well_properties_if_positive(cursor, sample, plate_barcode)  # type: ignore
+                                add_dart_well_properties_if_positive(cursor, sample, plate_barcode)  # type: ignore
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(
@@ -699,25 +705,6 @@ class CentreFile:
                 f"DART database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
-
-    def add_dart_well_properties_if_positive(self, cursor: pyodbc.Cursor, sample: Sample, plate_barcode: str) -> None:
-        """Adds well properties to DART for the specified sample if that sample is positive.
-
-        Arguments:
-            cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
-            sample {Sample} -- The sample for which to add well properties.
-            plate_barcode {str} -- The barcode of the plate to which this sample belongs.
-        """
-        if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
-            well_index = get_dart_well_index(sample.get(FIELD_COORDINATE, None))
-            if well_index is not None:
-                dart_well_props = map_mongo_doc_to_dart_well_props(sample)
-                set_dart_well_properties(cursor, plate_barcode, dart_well_props, well_index)
-            else:
-                raise ValueError(
-                    "Unable to determine DART well index for sample "
-                    f"{sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
-                )
 
     def parse_csv(self) -> List[Dict[str, Any]]:
         """Parses the CSV file of the centre.
@@ -750,19 +737,18 @@ class CentreFile:
          Returns:
              {set} - the set of header names
         """
-        required = set(self.REQUIRED_FIELDS)
-        if not (self.config.ADD_LAB_ID):
-            required.add(FIELD_LAB_ID)
+        if not self.config.ADD_LAB_ID:
+            self.required_fields.add(FIELD_LAB_ID)
 
-        return required
+        return self.required_fields
 
-    def get_channel_headers(self) -> Set[str]:
-        """Returns the list (a set) of optional headers.
+    def get_channel_headers_mapping(self) -> Dict[str, str]:
+        """Returns a dict of the channel fields and regex to match them.
 
         Returns:
-            {set} - the set of header names
+            {Dict[str, str]} - mapping of channel field to regex
         """
-        return set(self.CHANNEL_FIELDS)
+        return self.CHANNEL_FIELDS_MAPPING
 
     def check_for_required_headers(self, csvreader: DictReader) -> bool:
         """Checks that the CSV file has the required headers.
@@ -776,7 +762,7 @@ class CentreFile:
             fieldnames = set(csvreader.fieldnames)
             required = self.get_required_headers()
 
-            if not required <= fieldnames:
+            if not required.issubset(fieldnames):
                 # LOG_HANDLER TYPE 2: Fail file
                 self.logging_collection.add_error(
                     "TYPE 2",
@@ -879,7 +865,7 @@ class CentreFile:
                 modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
                 self.log_adding_default_lab_id(row, line_number)
 
-        seen_headers = []
+        seen_headers: List[str] = []
 
         # next check the row for values for each of the required headers and copy them across
         for key in self.get_required_headers():
@@ -888,12 +874,7 @@ class CentreFile:
                 modified_row[key] = row[key]
 
         # and check the row for values for any of the optional CT channel headers and copy them across
-        for key in self.get_channel_headers():
-            if key in row:
-                seen_headers.append(key)
-
-                if row[key]:
-                    modified_row[key] = row[key]
+        seen_headers, modified_row = self.extract_channel_fields(seen_headers, row, modified_row)
 
         # now check if we still have any columns left in the file row that we do not recognise
         unexpected_headers = list(row.keys() - seen_headers)
@@ -907,6 +888,35 @@ class CentreFile:
             )
 
         return modified_row
+
+    def extract_channel_fields(
+        self, seen_headers: List[str], csv_row: CSVRow, modified_row: ModifiedRow
+    ) -> Tuple[List[str], ModifiedRow]:
+        """Extract the channel fields by trying to match the header fields using regex.
+
+        Arguments:
+            seen_headers (List[str]): headers already seen in the file
+            csv_row (CSVRow): row from the CSV DictReader
+            modified_row (ModifiedRow): row with updated fields
+
+        Returns:
+            Tuple[List[str], ModifiedRow]: updated seen_headers and modified_row
+        """
+
+        for channel_field, regex in self.get_channel_headers_mapping().items():
+            pattern = re.compile(regex, re.IGNORECASE)
+
+            for csv_field in csv_row:
+                if csv_field in seen_headers:
+                    continue
+
+                if pattern.match(csv_field):
+                    seen_headers.append(csv_field)
+
+                    if csv_row[csv_field]:
+                        modified_row[channel_field] = csv_row[csv_field]
+
+        return seen_headers, modified_row
 
     def parse_and_format_file_rows(self, csvreader: DictReader) -> List[ModifiedRow]:
         """Attempts to parse and format the file rows

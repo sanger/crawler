@@ -1,6 +1,6 @@
 # flake8: noqa
 import crawler.config.test as config  # type: ignore
-from crawler.db import create_mysql_connection_engine
+from crawler.db.mysql import create_mysql_connection_engine
 
 # Set up a basic MLWH db for testing
 """Drop and recreate required tables."""

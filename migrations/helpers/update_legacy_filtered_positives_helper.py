@@ -16,13 +16,8 @@ from crawler.constants import (
     MLWH_FILTERED_POSITIVE,
     MLWH_MONGODB_ID,
 )
-from crawler.db import (
-    create_mongo_client,
-    create_mysql_connection,
-    get_mongo_collection,
-    get_mongo_db,
-    run_mysql_execute_formatted_query,
-)
+from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.db.mysql import create_mysql_connection, run_mysql_execute_formatted_query
 from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_0,
     FILTERED_POSITIVE_VERSION_1,
@@ -268,7 +263,7 @@ def update_mlwh_filtered_positive_fields_batched(
                 logger.info(f"Attempting to update {filtered_positive_num} {version} filtered positive samples in MLWH")
 
                 if filtered_positive_num > 0:
-                    positive_args: List[Any] = [True, version, update_timestamp]
+                    positive_args: List[Any] = [True, version, update_timestamp, update_timestamp]
                     run_mysql_execute_formatted_query(
                         mysql_conn,
                         SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH,
@@ -282,7 +277,7 @@ def update_mlwh_filtered_positive_fields_batched(
                 )
 
                 if filtered_negative_num > 0:
-                    negative_args: List[Any] = [False, version, update_timestamp]
+                    negative_args: List[Any] = [False, version, update_timestamp, update_timestamp]
                     run_mysql_execute_formatted_query(
                         mysql_conn,
                         SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH,

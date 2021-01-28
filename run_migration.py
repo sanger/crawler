@@ -16,6 +16,10 @@ config, settings_module = get_config("")
 logger = logging.getLogger(__name__)
 config.LOGGING["loggers"]["crawler"]["level"] = "DEBUG"
 config.LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]
+config.LOGGING["formatters"]["colored"][
+    "format"
+] = "%(asctime)-15s %(name)-60s:%(lineno)-3s %(log_color)s%(levelname)-7s %(message)s"
+
 logging.config.dictConfig(config.LOGGING)
 
 ##
