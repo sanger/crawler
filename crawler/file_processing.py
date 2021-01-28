@@ -255,9 +255,9 @@ class CentreFile:
         # These headers are required in ALL files from ALL lighthouses
         self.required_fields = {
             FIELD_ROOT_SAMPLE_ID,
-            FIELD_VIRAL_PREP_ID,
+            # FIELD_VIRAL_PREP_ID, # this needs to go for Randox
             FIELD_RNA_ID,
-            FIELD_RNA_PCR_ID,
+            # FIELD_RNA_PCR_ID, # this needs to go for Randox
             FIELD_RESULT,
             FIELD_DATE_TESTED,
         }
@@ -718,6 +718,18 @@ class CentreFile:
 
         with open(csvfile_path, newline="") as csvfile:
             csvreader = DictReader(csvfile)
+
+            # check if there's a BOM and remove it if so
+            first_fieldname = csvreader.fieldnames[0]
+            encoded_decoded = str(first_fieldname.encode())
+
+            bom = encoded_decoded[:14]
+            has_bom = bom == "b'\\xef\\xbb\\xbf"
+
+            if(has_bom):
+                without_bom = encoded_decoded[14:len(encoded_decoded) - 1]
+                csvreader.fieldnames[0] = without_bom
+
             try:
                 # first check the required file headers are present
                 if self.check_for_required_headers(csvreader):
