@@ -272,9 +272,7 @@ class CentreFile:
 
         # These are to allow some variability in headers,
         # due to receiving inconsistent file formats
-        self.header_regex_correction_dict = {
-            'Root Sample' : FIELD_ROOT_SAMPLE_ID
-        }
+        self.header_regex_correction_dict = {"Root Sample": FIELD_ROOT_SAMPLE_ID}
 
     def filepath(self) -> Path:
         """Returns the filepath for the file
@@ -754,11 +752,11 @@ class CentreFile:
         """
         first_fieldname = csvreader.fieldnames[0]
 
-        as_bytes_from_utf8 = first_fieldname.encode('utf-8')
-        has_bom = as_bytes_from_utf8[:3] == b'\xef\xbb\xbf'
+        as_bytes_from_utf8 = first_fieldname.encode("utf-8")
+        has_bom = as_bytes_from_utf8[:3] == b"\xef\xbb\xbf"
 
-        if(has_bom):
-            without_bom = as_bytes_from_utf8[3:].decode('utf-8')
+        if has_bom:
+            without_bom = as_bytes_from_utf8[3:].decode("utf-8")
             csvreader.fieldnames[0] = without_bom
 
     def get_required_headers(self) -> Set[str]:
@@ -792,9 +790,10 @@ class CentreFile:
                 for reg in self.header_regex_correction_dict.keys():
                     match = re.match(reg, csvreader.fieldnames[i])
                     if match:
-                        logger.warning(f"Found '{reg}' in field name '{csvreader.fieldnames[i]}', correcting to '{self.header_regex_correction_dict[reg]}'")
+                        logger.warning(
+                            f"Found '{reg}' in field name '{csvreader.fieldnames[i]}', correcting to '{self.header_regex_correction_dict[reg]}'"
+                        )
                         csvreader.fieldnames[i] = self.header_regex_correction_dict[reg]
-
 
     def check_for_required_headers(self, csvreader: DictReader) -> bool:
         """Checks that the CSV file has the required headers.

@@ -916,18 +916,18 @@ def test_where_positive_result_does_not_align_with_ct_channel_results(config):
 def test_remove_bom(centre_file):
     with StringIO() as fake_csv:
         # construct a bytes object containing a byte order mark (BOM)
-        header_with_bom = b'\xef\xbb\xbfRoot Sample ID'
-        bom_as_utf8_string = header_with_bom.decode('utf-8')
+        header_with_bom = b"\xef\xbb\xbfRoot Sample ID"
+        bom_as_utf8_string = header_with_bom.decode("utf-8")
 
         fake_csv.write(f"{bom_as_utf8_string},RNA ID\n")
         fake_csv.write("1,RNA_0043_\n")
         fake_csv.seek(0)
 
         csv_to_test_reader = DictReader(fake_csv)
-        assert csv_to_test_reader.fieldnames != ['Root Sample ID', 'RNA ID']
+        assert csv_to_test_reader.fieldnames != ["Root Sample ID", "RNA ID"]
 
         centre_file.remove_bom(csv_to_test_reader)
-        assert csv_to_test_reader.fieldnames == ['Root Sample ID', 'RNA ID']
+        assert csv_to_test_reader.fieldnames == ["Root Sample ID", "RNA ID"]
 
 
 def test_correct_headers(centre_file):
