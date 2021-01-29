@@ -262,6 +262,12 @@ class CentreFile:
             FIELD_DATE_TESTED,
         }
 
+        # These are to allow some variability in headers,
+        # due to receiving inconsistent file formats
+        self.header_regex_correction_dict = {
+            'Root Sample' : FIELD_ROOT_SAMPLE_ID
+        }
+
     def filepath(self) -> Path:
         """Returns the filepath for the file
 
@@ -731,6 +737,9 @@ class CentreFile:
                 csvreader.fieldnames[0] = without_bom
 
             try:
+                # we allow some variation in header names - this makes them standard
+                self.correct_headers(csvreader)
+
                 # first check the required file headers are present
                 if self.check_for_required_headers(csvreader):
                     # then parse the rows in the file
@@ -761,6 +770,20 @@ class CentreFile:
             {Dict[str, str]} - mapping of channel field to regex
         """
         return self.CHANNEL_FIELDS_MAPPING
+
+    def correct_headers(self, csvreader: DictReader):
+        """Corrects any header names in the CSV file.
+        """
+        logger.debug("Checking CSV for nearly-correct header names and fixing them")
+
+        if csvreader.fieldnames:
+            for i in range(0, len(csvreader.fieldnames)):
+                for reg in self.header_regex_correction_dict.keys():
+                    match = re.match(reg, csvreader.fieldnames[i])
+                    if match:
+                        logger.warn(f"Found '{reg}' in field name '{csvreader.fieldnames[i]}', correcting to '{self.header_regex_correction_dict[reg]}'")
+                        csvreader.fieldnames[i] = self.header_regex_correction_dict[reg]
+
 
     def check_for_required_headers(self, csvreader: DictReader) -> bool:
         """Checks that the CSV file has the required headers.
