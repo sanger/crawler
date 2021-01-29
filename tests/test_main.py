@@ -7,10 +7,10 @@ from crawler.db.mongo import get_mongo_collection
 from crawler.main import run
 
 NUMBER_CENTRES = 6
-NUMBER_VALID_SAMPLES = 18
+NUMBER_VALID_SAMPLES = 19
 NUMBER_SAMPLES_ON_PARTIAL_IMPORT = 10
-NUMBER_OF_FILES_PROCESSED = 10
-NUMBER_SOURCE_PLATES = 7
+NUMBER_OF_FILES_PROCESSED = 11
+NUMBER_SOURCE_PLATES = 8
 
 
 # The run method encompasses the main actions of the crawler
