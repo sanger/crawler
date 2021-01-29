@@ -749,15 +749,16 @@ class CentreFile:
         return []
 
     def remove_bom(self, csvreader: DictReader):
-        # check if there's a byte order mark (BOM) and remove it if so
+        """Checks if there's a byte order mark (BOM) and removes it if so.
+        We can't assume that the incoming file will or will not have one, have to cope with both.
+        """
         first_fieldname = csvreader.fieldnames[0]
-        encoded_decoded = str(first_fieldname.encode())
 
-        bom = encoded_decoded[:14]
-        has_bom = bom == "b'\\xef\\xbb\\xbf"
+        as_bytes_from_utf8 = first_fieldname.encode('utf-8')
+        has_bom = as_bytes_from_utf8[:3] == b'\xef\xbb\xbf'
 
         if(has_bom):
-            without_bom = encoded_decoded[14:len(encoded_decoded) - 1]
+            without_bom = as_bytes_from_utf8[3:].decode('utf-8')
             csvreader.fieldnames[0] = without_bom
 
     def get_required_headers(self) -> Set[str]:
