@@ -792,7 +792,8 @@ class CentreFile:
                     match = re.match(reg, csvreader.fieldnames[i])
                     if match:
                         logger.warning(
-                            f"Found '{reg}' in field name '{csvreader.fieldnames[i]}', correcting to '{self.header_regex_correction_dict[reg]}'"
+                            f"Found '{reg}' in field name '{csvreader.fieldnames[i]}', "
+                            f"correcting to '{self.header_regex_correction_dict[reg]}'"
                         )
                         csvreader.fieldnames[i] = self.header_regex_correction_dict[reg]
 
