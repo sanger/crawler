@@ -723,9 +723,8 @@ class CentreFile:
         with open(csvfile_path, newline="") as csvfile:
             csvreader = DictReader(csvfile)
 
-            self.remove_bom(csvreader)
-
             try:
+                self.remove_bom(csvreader)
                 self.correct_headers(csvreader)
 
                 # first check the required file headers are present
@@ -782,7 +781,7 @@ class CentreFile:
                 for reg in self.header_regex_correction_dict.keys():
                     match = re.match(reg, csvreader.fieldnames[i])
                     if match:
-                        logger.warn(f"Found '{reg}' in field name '{csvreader.fieldnames[i]}', correcting to '{self.header_regex_correction_dict[reg]}'")
+                        logger.warning(f"Found '{reg}' in field name '{csvreader.fieldnames[i]}', correcting to '{self.header_regex_correction_dict[reg]}'")
                         csvreader.fieldnames[i] = self.header_regex_correction_dict[reg]
 
 
