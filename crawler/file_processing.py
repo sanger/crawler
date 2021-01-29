@@ -233,6 +233,16 @@ class CentreFile:
         FIELD_CH4_CQ: CHANNEL_REGEX_TEMPLATE.format(channel_number=4, word="cq"),
     }
 
+    ACCEPTED_FIELDS = {
+        FIELD_ROOT_SAMPLE_ID,
+        FIELD_VIRAL_PREP_ID,
+        FIELD_RNA_ID,
+        FIELD_RNA_PCR_ID,
+        FIELD_RESULT,
+        FIELD_DATE_TESTED,
+        FIELD_LAB_ID,
+    }
+
     filtered_positive_identifier = current_filtered_positive_identifier()
 
     def __init__(self, file_name: str, centre: Centre):
@@ -902,8 +912,8 @@ class CentreFile:
 
         seen_headers: List[str] = []
 
-        # next check the row for values for each of the required headers and copy them across
-        for key in self.get_required_headers():
+        # next check the row for values for each of the accepted fields (except for the CT fields) and copy them across
+        for key in self.ACCEPTED_FIELDS:
             if key in row:
                 seen_headers.append(key)
                 modified_row[key] = row[key]
