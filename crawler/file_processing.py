@@ -746,18 +746,19 @@ class CentreFile:
 
         return []
 
-    def remove_bom(self, csvreader: DictReader):
+    def remove_bom(self, csvreader: DictReader) -> None:
         """Checks if there's a byte order mark (BOM) and removes it if so.
         We can't assume that the incoming file will or will not have one, have to cope with both.
         """
-        first_fieldname = csvreader.fieldnames[0]
+        if csvreader.fieldnames:
+            first_fieldname = csvreader.fieldnames[0]
 
-        as_bytes_from_utf8 = first_fieldname.encode("utf-8")
-        has_bom = as_bytes_from_utf8[:3] == b"\xef\xbb\xbf"
+            as_bytes_from_utf8 = first_fieldname.encode("utf-8")
+            has_bom = as_bytes_from_utf8[:3] == b"\xef\xbb\xbf"
 
-        if has_bom:
-            without_bom = as_bytes_from_utf8[3:].decode("utf-8")
-            csvreader.fieldnames[0] = without_bom
+            if has_bom:
+                without_bom = as_bytes_from_utf8[3:].decode("utf-8")
+                csvreader.fieldnames[0] = without_bom
 
     def get_required_headers(self) -> Set[str]:
         """Returns the list of required headers.
@@ -779,7 +780,7 @@ class CentreFile:
         """
         return self.CHANNEL_FIELDS_MAPPING
 
-    def correct_headers(self, csvreader: DictReader):
+    def correct_headers(self, csvreader: DictReader) -> None:
         """Checks for any headers in the CSV file that are wrong but recognisable, and fixes them.
         Necessary due to variability in the file format we receive.
         """
