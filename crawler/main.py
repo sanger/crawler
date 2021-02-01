@@ -86,6 +86,11 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                     unique=True,
                 )
 
+                # Index on lh_source_plate_uuid column
+                # Added to make lighthouse API source completion event call query more efficient
+                logger.debug(f"Creating index '{FIELD_LH_SOURCE_PLATE_UUID}' on '{samples_collection.full_name}'")
+                samples_collection.create_index(FIELD_LH_SOURCE_PLATE_UUID)
+
                 centres_instances = [Centre(config, centre_config) for centre_config in centres]
                 for centre_instance in centres_instances:
                     logger.info("*" * 80)
