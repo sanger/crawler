@@ -16,7 +16,7 @@ from crawler.constants import (
     MONGO_DATETIME_FORMAT,
     PLATE_EVENT_DESTINATION_CREATED,
 )
-from crawler.types import Config, Sample
+from crawler.types import Config, SampleDoc
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ def print_exception() -> None:
         traceback.print_tb(e[2], limit=10)
 
 
-def valid_datetime_string(s_datetime: str) -> bool:
+def valid_datetime_string(s_datetime: Optional[str]) -> bool:
     """Validates a string against the mongo datetime format.
 
     Arguments:
@@ -39,6 +39,9 @@ def valid_datetime_string(s_datetime: str) -> bool:
     Returns:
         bool: True if the date is valid, False otherwise
     """
+    if not s_datetime:
+        return False
+
     try:
         datetime.strptime(s_datetime, MONGO_DATETIME_FORMAT)
         return True
@@ -47,13 +50,13 @@ def valid_datetime_string(s_datetime: str) -> bool:
         return False
 
 
-def extract_required_cp_info(samples: List[Sample]) -> Tuple[Set[str], Set[str]]:
+def extract_required_cp_info(samples: List[SampleDoc]) -> Tuple[Set[str], Set[str]]:
     root_sample_ids = set()
     plate_barcodes = set()
 
     for sample in samples:
-        root_sample_ids.add(sample[FIELD_ROOT_SAMPLE_ID])
-        plate_barcodes.add(sample[FIELD_PLATE_BARCODE])
+        root_sample_ids.add(str(sample[FIELD_ROOT_SAMPLE_ID]))
+        plate_barcodes.add(str(sample[FIELD_PLATE_BARCODE]))
 
     return root_sample_ids, plate_barcodes
 
@@ -128,7 +131,7 @@ def get_cherrypicked_samples(
             db_connection.close()
 
 
-def remove_cherrypicked_samples(samples: List[Sample], cherry_picked_samples: List[List[str]]) -> List[Sample]:
+def remove_cherrypicked_samples(samples: List[SampleDoc], cherry_picked_samples: List[List[str]]) -> List[SampleDoc]:
     """Remove samples that have been cherry-picked. We need to check on (root sample id, plate barcode) combo rather
     than just root sample id. As multiple samples can exist with the same root sample id, with the potential for one
     being cherry-picked, and one not.

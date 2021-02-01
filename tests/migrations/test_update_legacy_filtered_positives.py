@@ -1,7 +1,9 @@
+from datetime import datetime
 from unittest.mock import patch
+
 import pandas as pd
 import pytest
-from datetime import datetime
+
 from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_0,
     FILTERED_POSITIVE_VERSION_1,
@@ -127,7 +129,7 @@ def test_update_legacy_filtered_positives_returns_early_invalid_start_datetime(c
     start_datetime = "not a real datetime"
     end_datetime = "201017_1200"
 
-    mock_valid_datetime_string.return_value = False
+    mock_valid_datetime_string.return_value = False  # type: ignore
     update_legacy_filtered_positives.run("crawler.config.integration", start_datetime, end_datetime)
 
     # ensure no database connections/updates are made
@@ -140,7 +142,7 @@ def test_update_legacy_filtered_positives_returns_early_invalid_end_datetime(con
     start_datetime = "201016_1600"
     end_datetime = "not a real datetime"
 
-    mock_valid_datetime_string.side_effect = [True, False]
+    mock_valid_datetime_string.side_effect = [True, False]  # type: ignore
     update_legacy_filtered_positives.run("crawler.config.integration", start_datetime, end_datetime)
 
     # ensure no database connections/updates are made
@@ -155,7 +157,7 @@ def test_update_legacy_filtered_positives_returns_early_datetime_post_fields_set
     start_datetime = "201016_1600"
     end_datetime = "201217_1600"
 
-    mock_valid_datetime_string.return_value = True
+    mock_valid_datetime_string.return_value = True  # type: ignore
     update_legacy_filtered_positives.run("crawler.config.integration", start_datetime, end_datetime)
 
     # ensure no database connections/updates are made

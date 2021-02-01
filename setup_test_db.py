@@ -1,5 +1,5 @@
 # flake8: noqa
-import crawler.config.test as config  # type: ignore
+import crawler.config.test as config
 from crawler.db.mysql import create_mysql_connection_engine
 
 # Set up a basic MLWH db for testing

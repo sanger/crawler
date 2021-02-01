@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
-from crawler.centre_file_state import CentreFileState
 from crawler.file_processing import ERRORS_DIR, Centre, CentreFile
+from crawler.helpers.enums import CentreFileState
 
 
 def test_set_state_for_file_when_file_in_black_list(config, blacklist_for_centre, testing_centres):

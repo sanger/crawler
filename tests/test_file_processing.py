@@ -4,9 +4,10 @@ from csv import DictReader
 from datetime import datetime
 from decimal import Decimal
 from io import StringIO
+from typing import List
 from unittest.mock import MagicMock, patch
 
-from bson.decimal128 import Decimal128  # type: ignore
+from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
 
 from crawler.constants import (
@@ -73,7 +74,7 @@ from crawler.constants import (
 )
 from crawler.db.mongo import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
-from crawler.types import ModifiedRow
+from crawler.types import Config, ModifiedRow
 
 # ----- tests helpers -----
 
@@ -82,7 +83,7 @@ def centre_file_with_mocked_filtered_postitive_identifier(config, file_name):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile(file_name, centre)
     centre_file.filtered_positive_identifier.version = "v2.3"
-    centre_file.filtered_positive_identifier.is_positive = MagicMock(return_value=True)
+    centre_file.filtered_positive_identifier.is_positive = MagicMock(return_value=True)  # type: ignore
     return centre_file
 
 
@@ -221,10 +222,7 @@ def test_checksum_match(config, tmpdir):
 
 
 # tests for validating row structure
-def test_row_required_fields_present_fail(config):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
-
+def test_row_required_fields_present_fail(config: Config, centre_file: CentreFile) -> None:
     # Not maching regexp
     assert not centre_file.row_required_fields_present(
         {"Root Sample ID": "asdf", "Result": "Positive", "RNA ID": "", "Date tested": "adsf"}, 6
@@ -417,7 +415,7 @@ def test_filtered_row_with_extra_unrecognised_columns(config):
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
-def test_extract_channel_fields(centre_file: CentreFile):
+def test_extract_channel_fields(centre_file: CentreFile) -> None:
     with StringIO() as csv_weird_channels:
         csv_weird_channels.write(
             f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},{FIELD_LAB_ID},"
@@ -513,14 +511,14 @@ def test_filtered_row_with_lab_id_present(config):
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some_file.csv", centre)
 
-        with StringIO() as fake_csv_without_lab_id:
-            fake_csv_without_lab_id.write(
+        with StringIO() as fake_csv_with_lab_id:
+            fake_csv_with_lab_id.write(
                 f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED},{FIELD_LAB_ID}\n"
             )
-            fake_csv_without_lab_id.write("1,RNA_0043,Positive,today,RealLabID\n")
-            fake_csv_without_lab_id.seek(0)
+            fake_csv_with_lab_id.write("1,RNA_0043,Positive,today,RealLabID\n")
+            fake_csv_with_lab_id.seek(0)
 
-            csv_to_test_reader = DictReader(fake_csv_without_lab_id)
+            csv_to_test_reader = DictReader(fake_csv_with_lab_id)
 
             expected_row = {
                 "Root Sample ID": "1",
@@ -804,10 +802,7 @@ def test_where_ct_channel_result_has_unexpected_value(config):
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
 
-def test_changes_ct_channel_cq_value_data_type(config):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some_file.csv", centre)
-
+def test_changes_ct_channel_cq_value_data_type(config: Config, centre_file: CentreFile) -> None:
     with StringIO() as fake_csv:
         fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Cq,CH2-Cq,CH3-Cq,CH4-Cq\n")
 
@@ -1012,7 +1007,7 @@ def test_check_for_required_headers_with_valid_headers(centre_file):
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
-def test_check_for_required_headers_with_missing_lab_id_and_lab_id_false(centre_file: CentreFile):
+def test_check_for_required_headers_with_missing_lab_id_and_lab_id_false(centre_file: CentreFile) -> None:
     # file with missing Lab ID header and add lab id false (default)
     with StringIO() as fake_csv_without_lab_id:
         fake_csv_without_lab_id.write(
@@ -1660,7 +1655,7 @@ def test_docs_to_insert_updated_with_source_plate_uuids_handles_mongo_collection
 
 def test_docs_to_insert_updated_with_source_plate_uuids_adds_new_plates(config, mongo_database):
     _, mongo_database = mongo_database
-    docs_to_insert = [
+    docs_to_insert: List[ModifiedRow] = [
         {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "AP"},
         {FIELD_PLATE_BARCODE: "456", FIELD_LAB_ID: "MK"},
         {FIELD_PLATE_BARCODE: "456", FIELD_LAB_ID: "MK"},
@@ -1694,7 +1689,7 @@ def test_docs_to_insert_updated_with_source_plate_uuids_uses_existing_plates(con
     source_plates_collection.insert_many(source_plates)
     assert source_plates_collection.count_documents({}) == 3  # sanity check
 
-    docs_to_insert = [
+    docs_to_insert: List[ModifiedRow] = [
         {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "AP"},
         {FIELD_PLATE_BARCODE: "456", FIELD_LAB_ID: "MK"},
         {FIELD_PLATE_BARCODE: "456", FIELD_LAB_ID: "MK"},
@@ -1722,7 +1717,7 @@ def test_docs_to_insert_updated_with_source_plate_handles_duplicate_new_barcodes
 ):
     # set up input sample docs to have duplicate plate barcodes from different labs
     _, mongo_database = mongo_database
-    docs = [
+    docs: List[ModifiedRow] = [
         {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "AP"},
         {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "MK"},  # we expect this one to be rejected
         {FIELD_PLATE_BARCODE: "456", FIELD_LAB_ID: "MK"},
@@ -1761,7 +1756,7 @@ def test_docs_to_insert_updated_with_source_plate_handles_duplicate_existing_bar
     source_plates_collection.insert_many(source_plates)
     assert source_plates_collection.count_documents({}) == 1  # sanity check
 
-    docs = [
+    docs: List[ModifiedRow] = [
         {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "AP"},  # we expect this one to be rejected
         {FIELD_PLATE_BARCODE: "456", FIELD_LAB_ID: "MK"},
         {FIELD_PLATE_BARCODE: "789", FIELD_LAB_ID: "CB"},

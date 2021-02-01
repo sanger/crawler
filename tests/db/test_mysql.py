@@ -37,7 +37,7 @@ def test_run_mysql_executemany_query_success(config):
     cursor.executemany = MagicMock()
     cursor.close = MagicMock()
 
-    run_mysql_executemany_query(mysql_conn=conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=["test"])
+    run_mysql_executemany_query(mysql_conn=conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=[{}])
 
     # check transaction is committed
     assert conn.commit.called is True
@@ -60,7 +60,9 @@ def test_run_mysql_executemany_query_execute_error(config):
     cursor.close = MagicMock()
 
     with pytest.raises(Exception):
-        run_mysql_executemany_query(mysql_conn=conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=["test"])
+        run_mysql_executemany_query(
+            mysql_conn=conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=["test"]  # type: ignore
+        )
 
         # check transaction is not committed
         assert conn.commit.called is False

@@ -25,12 +25,12 @@ from crawler.filtered_positive_identifier import (
 )
 from crawler.helpers.general_helpers import map_mongo_to_sql_common
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH
-from crawler.types import Config, Sample
+from crawler.types import Config, SampleDoc
 
 logger = logging.getLogger(__name__)
 
 
-def mongo_samples_by_date(config: Config, start_datetime: datetime, end_datetime: datetime) -> List[Sample]:
+def mongo_samples_by_date(config: Config, start_datetime: datetime, end_datetime: datetime) -> List[SampleDoc]:
     """Gets all samples from Mongo created before Crawler started setting filtered positive fields
 
     Arguments:
@@ -176,8 +176,8 @@ def filtered_positive_fields_set(config: Config, start_datetime: datetime, end_d
 
 
 def split_mongo_samples_by_version(
-    samples: List[Sample], cp_samples_df_v0: DataFrame, cp_samples_df_v1: DataFrame
-) -> Dict[str, List[Sample]]:
+    samples: List[SampleDoc], cp_samples_df_v0: DataFrame, cp_samples_df_v1: DataFrame
+) -> Dict[str, List[SampleDoc]]:
     """Split the Mongo samples dataframe based on the v0 cherrypicked samples. Samples
        which have been v0 cherrypicked need to have the v0 filtered positive rules
        applied. The remaining samples need the v1 rule applied.
@@ -225,7 +225,7 @@ def split_mongo_samples_by_version(
 
 
 def update_mlwh_filtered_positive_fields_batched(
-    config: Config, samples: List[Sample], version: str, update_timestamp: datetime
+    config: Config, samples: List[SampleDoc], version: str, update_timestamp: datetime
 ) -> bool:
     """Bulk updates sample filtered positive fields in the MLWH database
 
