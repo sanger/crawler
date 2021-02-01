@@ -787,12 +787,11 @@ class CentreFile:
         logger.debug("Checking CSV for nearly-correct header names and fixing them")
 
         if csvreader.fieldnames:
-            for i in range(0, len(csvreader.fieldnames)):
+            for i, fieldname in enumerate(csvreader.fieldnames):
                 for reg in self.header_regex_correction_dict.keys():
-                    match = re.match(reg, csvreader.fieldnames[i])
-                    if match:
+                    if re.match(reg, fieldname):
                         logger.warning(
-                            f"Found '{reg}' in field name '{csvreader.fieldnames[i]}', "
+                            f"Found '{reg}' in field name '{fieldname}', "
                             f"correcting to '{self.header_regex_correction_dict[reg]}'"
                         )
                         csvreader.fieldnames[i] = self.header_regex_correction_dict[reg]
