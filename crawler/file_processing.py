@@ -758,7 +758,7 @@ class CentreFile:
 
             if has_bom:
                 without_bom = as_bytes_from_utf8[3:].decode("utf-8")
-                csvreader.fieldnames[0] = without_bom
+                csvreader.fieldnames[0] = without_bom # type: ignore
 
     def get_required_headers(self) -> Set[str]:
         """Returns the list of required headers.
@@ -794,7 +794,7 @@ class CentreFile:
                             f"Found '{reg}' in field name '{fieldname}', "
                             f"correcting to '{self.header_regex_correction_dict[reg]}'"
                         )
-                        csvreader.fieldnames[i] = self.header_regex_correction_dict[reg]
+                        csvreader.fieldnames[i] = self.header_regex_correction_dict[reg] # type: ignore
 
     def check_for_required_headers(self, csvreader: DictReader) -> bool:
         """Checks that the CSV file has the required headers.
