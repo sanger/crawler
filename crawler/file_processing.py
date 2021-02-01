@@ -272,7 +272,7 @@ class CentreFile:
 
         # These are to allow some variability in headers,
         # due to receiving inconsistent file formats
-        self.header_regex_correction_dict = {"Root Sample": FIELD_ROOT_SAMPLE_ID}
+        self.header_regex_correction_dict = {r"^\s*Root Sample\s*$": FIELD_ROOT_SAMPLE_ID}
 
     def filepath(self) -> Path:
         """Returns the filepath for the file

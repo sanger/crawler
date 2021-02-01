@@ -930,7 +930,21 @@ def test_remove_bom(centre_file):
         assert csv_to_test_reader.fieldnames == ["Root Sample ID", "RNA ID"]
 
 
-def test_correct_headers(centre_file):
+def test_correct_headers_match(centre_file):
+    with StringIO() as fake_csv:
+        fake_csv.write(" Root Sample  ,RNA ID\n")
+        fake_csv.write("1,RNA_0043_\n")
+        fake_csv.seek(0)
+
+        csv_to_test_reader = DictReader(fake_csv)
+        assert csv_to_test_reader.fieldnames == [" Root Sample  ", "RNA ID"]
+
+        centre_file.correct_headers(csv_to_test_reader)
+        # matched regex so was corrected
+        assert csv_to_test_reader.fieldnames == ["Root Sample ID", "RNA ID"]
+
+
+def test_correct_headers_no_match(centre_file):
     with StringIO() as fake_csv:
         fake_csv.write("Root Sample Wrong Name,RNA ID\n")
         fake_csv.write("1,RNA_0043_\n")
@@ -940,6 +954,21 @@ def test_correct_headers(centre_file):
         assert csv_to_test_reader.fieldnames == ["Root Sample Wrong Name", "RNA ID"]
 
         centre_file.correct_headers(csv_to_test_reader)
+        # didn't match regex so wasn't corrected
+        assert csv_to_test_reader.fieldnames == ["Root Sample Wrong Name", "RNA ID"]
+
+
+def test_correct_headers_already_correct(centre_file):
+    with StringIO() as fake_csv:
+        fake_csv.write("Root Sample ID,RNA ID\n")
+        fake_csv.write("1,RNA_0043_\n")
+        fake_csv.seek(0)
+
+        csv_to_test_reader = DictReader(fake_csv)
+        assert csv_to_test_reader.fieldnames == ["Root Sample ID", "RNA ID"]
+
+        centre_file.correct_headers(csv_to_test_reader)
+        # was already correct, unaffected
         assert csv_to_test_reader.fieldnames == ["Root Sample ID", "RNA ID"]
 
 
