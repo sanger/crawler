@@ -233,6 +233,16 @@ class CentreFile:
         FIELD_CH4_CQ: CHANNEL_REGEX_TEMPLATE.format(channel_number=4, word="cq"),
     }
 
+    ACCEPTED_FIELDS = {
+        FIELD_ROOT_SAMPLE_ID,
+        FIELD_VIRAL_PREP_ID,
+        FIELD_RNA_ID,
+        FIELD_RNA_PCR_ID,
+        FIELD_RESULT,
+        FIELD_DATE_TESTED,
+        FIELD_LAB_ID,
+    }
+
     filtered_positive_identifier = current_filtered_positive_identifier()
 
     def __init__(self, file_name: str, centre: Centre):
@@ -255,12 +265,14 @@ class CentreFile:
         # These headers are required in ALL files from ALL lighthouses
         self.required_fields = {
             FIELD_ROOT_SAMPLE_ID,
-            FIELD_VIRAL_PREP_ID,
             FIELD_RNA_ID,
-            FIELD_RNA_PCR_ID,
             FIELD_RESULT,
             FIELD_DATE_TESTED,
         }
+
+        # These are to allow some variability in headers,
+        # due to receiving inconsistent file formats
+        self.header_regex_correction_dict = {r"^Root Sample$": FIELD_ROOT_SAMPLE_ID}
 
     def filepath(self) -> Path:
         """Returns the filepath for the file
@@ -718,7 +730,11 @@ class CentreFile:
 
         with open(csvfile_path, newline="") as csvfile:
             csvreader = DictReader(csvfile)
+
             try:
+                self.remove_bom(csvreader)
+                self.correct_headers(csvreader)
+
                 # first check the required file headers are present
                 if self.check_for_required_headers(csvreader):
                     # then parse the rows in the file
@@ -729,6 +745,20 @@ class CentreFile:
                 self.logging_collection.add_error("TYPE 10", "Wrong read from file")
 
         return []
+
+    def remove_bom(self, csvreader: DictReader) -> None:
+        """Checks if there's a byte order mark (BOM) and removes it if so.
+        We can't assume that the incoming file will or will not have one, have to cope with both.
+        """
+        if csvreader.fieldnames:
+            first_fieldname = csvreader.fieldnames[0]
+
+            as_bytes_from_utf8 = first_fieldname.encode("utf-8")
+            has_bom = as_bytes_from_utf8[:3] == b"\xef\xbb\xbf"
+
+            if has_bom:
+                without_bom = as_bytes_from_utf8[3:].decode("utf-8")
+                csvreader.fieldnames[0] = without_bom  # type: ignore
 
     def get_required_headers(self) -> Set[str]:
         """Returns the list of required headers.
@@ -749,6 +779,22 @@ class CentreFile:
             {Dict[str, str]} - mapping of channel field to regex
         """
         return self.CHANNEL_FIELDS_MAPPING
+
+    def correct_headers(self, csvreader: DictReader) -> None:
+        """Checks for any headers in the CSV file that are wrong but recognisable, and fixes them.
+        Necessary due to variability in the file format we receive.
+        """
+        logger.debug("Checking CSV for nearly-correct header names and fixing them")
+
+        if csvreader.fieldnames:
+            for i, fieldname in enumerate(csvreader.fieldnames):
+                for reg in self.header_regex_correction_dict.keys():
+                    if re.match(reg, fieldname.strip()):
+                        logger.warning(
+                            f"Found '{reg}' in field name '{fieldname}', "
+                            f"correcting to '{self.header_regex_correction_dict[reg]}'"
+                        )
+                        csvreader.fieldnames[i] = self.header_regex_correction_dict[reg]  # type: ignore
 
     def check_for_required_headers(self, csvreader: DictReader) -> bool:
         """Checks that the CSV file has the required headers.
@@ -867,8 +913,8 @@ class CentreFile:
 
         seen_headers: List[str] = []
 
-        # next check the row for values for each of the required headers and copy them across
-        for key in self.get_required_headers():
+        # next check the row for values for each of the accepted fields (except for the CT fields) and copy them across
+        for key in self.ACCEPTED_FIELDS:
             if key in row:
                 seen_headers.append(key)
                 modified_row[key] = row[key]

@@ -75,4 +75,15 @@ CENTRES = [
         "file_names_to_ignore": ["CB_sanger_report_200714_0001_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_BIO,
     },
+    {
+        "barcode_field": FIELD_RNA_ID,
+        "barcode_regex": CENTRE_REGEX_BARCODE,
+        "name": "Randox",
+        "prefix": "RAND",
+        "lab_id_default": "Randox",
+        "backups_folder": f"{CENTRE_DIR_BACKUPS}/RAND",
+        "sftp_file_regex": r"^lw-randox-biocentre-box-.*\.csv$",
+        "sftp_root_read": "project-heron_randox",
+        "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+    },
 ]

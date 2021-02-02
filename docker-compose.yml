@@ -40,6 +40,7 @@ services:
     environment:
       - LOCALHOST=host.docker.internal
       - ROOT_PASSWORD=
+      - SETTINGS_MODULE=crawler.config.development
 
     volumes:
       - ".:/code"
