@@ -272,7 +272,7 @@ class CentreFile:
 
         # These are to allow some variability in headers,
         # due to receiving inconsistent file formats
-        self.header_regex_correction_dict = {r"^\s*Root Sample\s*$": FIELD_ROOT_SAMPLE_ID}
+        self.header_regex_correction_dict = {r"^Root Sample$": FIELD_ROOT_SAMPLE_ID}
 
     def filepath(self) -> Path:
         """Returns the filepath for the file
@@ -789,7 +789,7 @@ class CentreFile:
         if csvreader.fieldnames:
             for i, fieldname in enumerate(csvreader.fieldnames):
                 for reg in self.header_regex_correction_dict.keys():
-                    if re.match(reg, fieldname):
+                    if re.match(reg, fieldname.strip()):
                         logger.warning(
                             f"Found '{reg}' in field name '{fieldname}', "
                             f"correcting to '{self.header_regex_correction_dict[reg]}'"
