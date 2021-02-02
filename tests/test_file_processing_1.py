@@ -8,7 +8,7 @@ from crawler.file_processing import CentreFile
 from crawler.types import ModifiedRow
 
 
-def test_is_valid_date_format(centre_file: CentreFile):
+def test_is_valid_date_format(centre_file: CentreFile) -> None:
     assert centre_file.is_valid_date_format({}, 1, FIELD_DATE_TESTED) == (True, {})
 
     date_time = datetime(year=2020, month=11, day=22, hour=4, minute=36, second=38, tzinfo=timezone.utc)
@@ -27,7 +27,7 @@ def test_is_valid_date_format(centre_file: CentreFile):
     )
 
     # "Normal" datetime, seen most of the time, without timezone
-    row: ModifiedRow = {FIELD_DATE_TESTED: date_time.strftime("%Y-%m-%d %H:%M:%S")}
+    row = {FIELD_DATE_TESTED: date_time.strftime("%Y-%m-%d %H:%M:%S")}
     assert centre_file.is_valid_date_format(row, 1, FIELD_DATE_TESTED) == (
         True,
         {
@@ -39,7 +39,7 @@ def test_is_valid_date_format(centre_file: CentreFile):
         },
     )
 
-    row: ModifiedRow = {FIELD_DATE_TESTED: date_time.strftime("%d/%m/%Y %H:%M")}
+    row = {FIELD_DATE_TESTED: date_time.strftime("%d/%m/%Y %H:%M")}
     assert centre_file.is_valid_date_format(row, 1, FIELD_DATE_TESTED) == (
         True,
         {
@@ -62,8 +62,8 @@ def test_convert_datetime_string_to_datetime():
     time_without_seconds = f"{int(time_dict['hour']):02}:{time_dict['minute']}"
 
     date_time = datetime(
-        **{key: int(value) for key, value in date_dict.items()},
-        **{key: int(value) for key, value in time_dict.items()},
+        **{key: int(value) for key, value in date_dict.items()},  # type: ignore
+        **{key: int(value) for key, value in time_dict.items()},  # type: ignore
     )
     #  date and time with seconds with UTC timezone
     assert CentreFile.convert_datetime_string_to_datetime(

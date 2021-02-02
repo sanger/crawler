@@ -1,7 +1,7 @@
 import os
 import uuid
 from csv import DictReader
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 from io import StringIO
 from typing import List
