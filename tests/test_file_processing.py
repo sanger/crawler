@@ -1,7 +1,7 @@
 import os
 import uuid
 from csv import DictReader
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from io import StringIO
 from typing import List
@@ -79,7 +79,7 @@ from crawler.types import Config, ModifiedRow
 # ----- tests helpers -----
 
 
-def centre_file_with_mocked_filtered_postitive_identifier(config, file_name):
+def centre_file_with_mocked_filtered_positive_identifier(config, file_name):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile(file_name, centre)
     centre_file.filtered_positive_identifier.version = "v2.3"
@@ -110,8 +110,12 @@ def test_process_files(mongo_database, config, testing_files_for_process, testin
 
     pyodbc_conn.assert_called()
 
-    # # We record *all* our samples
-    assert samples_collection.count_documents({"RNA ID": "AP123_B09", "source": "Alderley"}) == 1
+    # We record *all* our samples
+    date_time = datetime(year=2020, month=4, day=16, hour=14, minute=30, second=40)
+    assert (
+        samples_collection.count_documents({"RNA ID": "AP123_B09", "source": "Alderley", FIELD_DATE_TESTED: date_time})
+        == 1
+    )
     assert source_plates_collection.count_documents({"barcode": "AP123"}) == 1
 
 
@@ -329,7 +333,7 @@ def test_extract_plate_barcode_and_coordinate(config):
 def test_parse_and_format_file_rows(config, freezer):
     now = datetime.now()
     test_uuid = uuid.uuid4()
-    centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "some file")
+    centre_file = centre_file_with_mocked_filtered_positive_identifier(config, "some file")
     with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
         extra_fields_added = [
             {
@@ -365,7 +369,7 @@ def test_parse_and_format_file_rows(config, freezer):
 
 
 def test_parse_and_format_file_rows_with_invalid_rna_id(config):
-    centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "some file")
+    centre_file = centre_file_with_mocked_filtered_positive_identifier(config, "some file")
     with StringIO() as fake_csv:
         fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
         fake_csv.write("1,RNA_0043_,Positive\n")
@@ -624,7 +628,7 @@ def test_filtered_row_with_ct_channel_columns(config):
 def test_parse_and_format_file_rows_to_add_file_details(config, freezer):
     now = datetime.now()
     test_uuid = uuid.uuid4()
-    centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "ASDF_200507_1340.csv")
+    centre_file = centre_file_with_mocked_filtered_positive_identifier(config, "ASDF_200507_1340.csv")
     with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
 
         extra_fields_added = [
@@ -683,7 +687,7 @@ def test_parse_and_format_file_rows_to_add_file_details(config, freezer):
 def test_parse_and_format_file_rows_detects_duplicates(config, freezer):
     now = datetime.now()
     test_uuid = uuid.uuid4()
-    centre_file = centre_file_with_mocked_filtered_postitive_identifier(config, "ASDF_200507_1340.csv")
+    centre_file = centre_file_with_mocked_filtered_positive_identifier(config, "ASDF_200507_1340.csv")
     with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
 
         extra_fields_added = [

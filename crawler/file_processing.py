@@ -6,7 +6,7 @@ import re
 import shutil
 import uuid
 from csv import DictReader
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from hashlib import md5
 from logging import INFO, WARN
@@ -1049,6 +1049,8 @@ class CentreFile:
         date_format_valid, date_string_dict = self.is_valid_date_format(modified_row, line_number, FIELD_DATE_TESTED)
         if date_format_valid:
             if date_string_dict:
+                # > By default all datetime.datetime objects returned by PyMongo will be naive but reflect UTC
+                # https://pymongo.readthedocs.io/en/stable/examples/datetimes.html
                 modified_row[FIELD_DATE_TESTED] = self.convert_datetime_string_to_datetime(**date_string_dict)
         else:
             return None
@@ -1149,7 +1151,7 @@ class CentreFile:
 
     @staticmethod
     def convert_datetime_string_to_datetime(
-        day: str, month: str, year: str, time: str, timezone: Optional[str] = None
+        day: str, month: str, year: str, time: str, timezone_name: Optional[str] = None
     ) -> datetime:
         """Converts a datetime string (split in its components) into a python datetime
 
@@ -1158,17 +1160,24 @@ class CentreFile:
             month (str): Month as a zero-padded string
             year (str): Year with century
             time (str): hour, minute, and optionally seconds
-            timezone (Optional[str], optional): Time zone name. Defaults to None.
+            timezone_name (Optional[str], optional): Time zone name. Defaults to None.
 
         Returns:
             datetime: [description]
         """
-        if len(time) == 4:
+        if len(time) == 5:
             time = f"{time}:00"
 
-        datetime_string = f"{day} {month} {year} {time} {timezone}"
+        datetime_string = f"{day} {month} {year} {time}"
 
-        return datetime.strptime(datetime_string, "%d %m %Y %H:%M:%S %Z")
+        date_time = datetime.strptime(datetime_string, "%d %m %Y %H:%M:%S")
+
+        # We are only checking for UTC at the moment, more time (excuse the pun) is needed to suppport timezones
+        #   more robustly
+        if timezone_name and timezone_name == "UTC":
+            date_time = date_time.replace(tzinfo=timezone.utc)
+
+        return date_time
 
     def is_valid_date_format(self, row: ModifiedRow, line_number: int, date_field: str) -> Tuple[bool, Dict[str, str]]:
         """The possible values for the date are:
@@ -1181,14 +1190,14 @@ class CentreFile:
             line_number (int): line number within the file
 
         Returns:
-            bool: whether the date format is valid
+            Tuple[bool, Dict[str, str]: whether the date format is valid and a dictionary of the date time components
         """
         # the date could be None
         if (date_field_val := row.get(date_field)) is None:
             return True, {}
         else:
             for pattern in (
-                r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})[ ]+(?P<time>[0-2]\d:[0-5]\d:[0-5]\d)([ ]+(?P<timezone>UTC)?)?$",  # noqa: E501
+                r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})[ ]+(?P<time>[0-2]\d:[0-5]\d:[0-5]\d)([ ]+(?P<timezone_name>UTC)?)?$",  # noqa: E501
                 r"^(?P<day>\d{2})/(?P<month>\d{2})/(?P<year>\d{4})[ ]+(?P<time>[0-2]\d:[0-5]\d)$",
             ):
                 if match := re.match(pattern, str(date_field_val)):
