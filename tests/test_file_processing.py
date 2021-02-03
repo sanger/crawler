@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 
 from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
+from mysql.connector.connection_cext import CMySQLConnection
 
 from crawler.constants import (
     COLLECTION_IMPORTS,
@@ -29,18 +30,24 @@ from crawler.constants import (
     FIELD_CH4_RESULT,
     FIELD_CH4_TARGET,
     FIELD_COORDINATE,
+    FIELD_CREATED_AT,
     FIELD_DATE_TESTED,
+    FIELD_FILE_NAME,
+    FIELD_FILE_NAME_DATE,
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_LAB_ID,
+    FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_LINE_NUMBER,
     FIELD_PLATE_BARCODE,
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_RNA_PCR_ID,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
+    FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
     MLWH_CH1_CQ,
     MLWH_CH1_RESULT,
@@ -57,7 +64,6 @@ from crawler.constants import (
     MLWH_COORDINATE,
     MLWH_CREATED_AT,
     MLWH_DATE_TESTED,
-    MLWH_DATE_TESTED_STRING,
     MLWH_FILTERED_POSITIVE,
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
     MLWH_FILTERED_POSITIVE_VERSION,
@@ -329,36 +335,37 @@ def test_extract_plate_barcode_and_coordinate(config):
     )
 
 
-# tests for parsing and formatting the csv file rows
 def test_parse_and_format_file_rows(config, freezer):
+    """Tests for parsing and formatting the csv file rows"""
     now = datetime.now()
     test_uuid = uuid.uuid4()
     centre_file = centre_file_with_mocked_filtered_positive_identifier(config, "some file")
     with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
         extra_fields_added = [
             {
-                "Root Sample ID": "1",
-                "RNA ID": "RNA_0043_H09",
-                "plate_barcode": "RNA_0043",
-                "source": "Alderley",
-                "coordinate": "H09",
-                "line_number": 2,
-                "Result": "Positive",
-                "file_name": "some file",
-                "file_name_date": None,
-                "created_at": now,
-                "updated_at": now,
-                "Lab ID": None,
-                "filtered_positive": True,
-                "filtered_positive_version": "v2.3",
-                "filtered_positive_timestamp": now,
-                "lh_sample_uuid": str(test_uuid),
+                FIELD_ROOT_SAMPLE_ID: "1",
+                FIELD_RNA_ID: "RNA_0043_H09",
+                FIELD_PLATE_BARCODE: "RNA_0043",
+                FIELD_SOURCE: "Alderley",
+                FIELD_COORDINATE: "H09",
+                FIELD_LINE_NUMBER: 2,
+                FIELD_RESULT: "Positive",
+                FIELD_FILE_NAME: "some file",
+                FIELD_FILE_NAME_DATE: None,
+                FIELD_CREATED_AT: now,
+                FIELD_UPDATED_AT: now,
+                FIELD_LAB_ID: "",
+                FIELD_FILTERED_POSITIVE: True,
+                FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
+                FIELD_FILTERED_POSITIVE_TIMESTAMP: now,
+                FIELD_LH_SAMPLE_UUID: str(test_uuid),
+                FIELD_DATE_TESTED: None,
             }
         ]
 
         with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-            fake_csv.write("1,RNA_0043_H09,Positive\n")
+            fake_csv.write(f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_LAB_ID},{FIELD_DATE_TESTED}\n")
+            fake_csv.write("1,RNA_0043_H09,Positive,,\n")
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
@@ -628,7 +635,8 @@ def test_filtered_row_with_ct_channel_columns(config):
 def test_parse_and_format_file_rows_to_add_file_details(config, freezer):
     now = datetime.now()
     test_uuid = uuid.uuid4()
-    centre_file = centre_file_with_mocked_filtered_positive_identifier(config, "ASDF_200507_1340.csv")
+    fake_file_name = "fake_200507_1340.csv"
+    centre_file = centre_file_with_mocked_filtered_positive_identifier(config, fake_file_name)
     with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
 
         extra_fields_added = [
@@ -639,16 +647,17 @@ def test_parse_and_format_file_rows_to_add_file_details(config, freezer):
                 "source": "Alderley",
                 "coordinate": "H09",
                 "line_number": 2,
-                "file_name": "ASDF_200507_1340.csv",
+                "file_name": fake_file_name,
                 "file_name_date": datetime(2020, 5, 7, 13, 40),
                 "created_at": now,
                 "updated_at": now,
                 "Result": "Positive",
-                "Lab ID": None,
+                FIELD_LAB_ID: "",
                 "filtered_positive": True,
                 "filtered_positive_version": "v2.3",
                 "filtered_positive_timestamp": now,
                 "lh_sample_uuid": str(test_uuid),
+                FIELD_DATE_TESTED: None,
             },
             {
                 "Root Sample ID": "2",
@@ -657,23 +666,24 @@ def test_parse_and_format_file_rows_to_add_file_details(config, freezer):
                 "source": "Alderley",
                 "coordinate": "B08",
                 "line_number": 3,
-                "file_name": "ASDF_200507_1340.csv",
+                "file_name": fake_file_name,
                 "file_name_date": datetime(2020, 5, 7, 13, 40),
                 "created_at": now,
                 "updated_at": now,
                 "Result": "Negative",
-                "Lab ID": None,
+                FIELD_LAB_ID: "",
                 "filtered_positive": True,
                 "filtered_positive_version": "v2.3",
                 "filtered_positive_timestamp": now,
                 "lh_sample_uuid": str(test_uuid),
+                FIELD_DATE_TESTED: None,
             },
         ]
 
         with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-            fake_csv.write("1,RNA_0043_H09,Positive\n")
-            fake_csv.write("2,RNA_0043_B08,Negative\n")
+            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,Date Tested\n")
+            fake_csv.write("1,RNA_0043_H09,Positive,\n")
+            fake_csv.write("2,RNA_0043_B08,Negative,\n")
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
@@ -687,7 +697,8 @@ def test_parse_and_format_file_rows_to_add_file_details(config, freezer):
 def test_parse_and_format_file_rows_detects_duplicates(config, freezer):
     now = datetime.now()
     test_uuid = uuid.uuid4()
-    centre_file = centre_file_with_mocked_filtered_positive_identifier(config, "ASDF_200507_1340.csv")
+    fake_file_name = "fake_200507_1340.csv"
+    centre_file = centre_file_with_mocked_filtered_positive_identifier(config, fake_file_name)
     with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
 
         extra_fields_added = [
@@ -698,7 +709,7 @@ def test_parse_and_format_file_rows_detects_duplicates(config, freezer):
                 "source": "Alderley",
                 "coordinate": "H09",
                 "line_number": 2,
-                "file_name": "ASDF_200507_1340.csv",
+                "file_name": fake_file_name,
                 "file_name_date": datetime(2020, 5, 7, 13, 40),
                 "created_at": now,
                 "updated_at": now,
@@ -708,13 +719,14 @@ def test_parse_and_format_file_rows_detects_duplicates(config, freezer):
                 "filtered_positive_version": "v2.3",
                 "filtered_positive_timestamp": now,
                 "lh_sample_uuid": str(test_uuid),
+                FIELD_DATE_TESTED: None,
             },
         ]
 
         with StringIO() as fake_csv:
-            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
-            fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
-            fake_csv.write("1,RNA_0043_H09,Positive,Val\n")
+            fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,Date Tested\n")
+            fake_csv.write("1,RNA_0043_H09,Positive,Val,\n")
+            fake_csv.write("1,RNA_0043_H09,Positive,Val,\n")
             fake_csv.seek(0)
 
             csv_to_test_reader = DictReader(fake_csv)
@@ -1124,12 +1136,14 @@ def test_file_name_date_parses_right(config):
     assert centre_file.file_name_date() is None
 
 
-# tests for inserting docs into mlwh using rows with and without ct columns
-def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
+def test_insert_samples_from_docs_into_mlwh(
+    config: Config, mlwh_connection: CMySQLConnection, centre_file: CentreFile
+) -> None:
+    """Tests for inserting docs into mlwh using rows with and without ct columns"""
+    date_tested_1 = datetime(2020, 4, 23, 14, 40, 0)
+    date_tested_2 = datetime(2020, 4, 23, 14, 41, 0)
+    filtered_positive_timestamp = datetime(2020, 4, 23, 14, 41, 0)
     with patch("crawler.db.mysql.create_mysql_connection", return_value="not none"):
-        centre = Centre(config, config.CENTRES[0])
-        centre_file = CentreFile("some file", centre)
-
         docs = [
             {
                 "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1138,7 +1152,7 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
                 FIELD_PLATE_BARCODE: "TC-rna-00000029",
                 FIELD_COORDINATE: "H11",
                 FIELD_RESULT: "Negative",
-                FIELD_DATE_TESTED: "2020-04-23 14:40:00 UTC",
+                FIELD_DATE_TESTED: datetime(2020, 4, 23, 14, 40, 0),
                 FIELD_SOURCE: "Test Centre",
                 FIELD_LAB_ID: "TC",
             },
@@ -1149,7 +1163,7 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
                 FIELD_PLATE_BARCODE: "TC-rna-00000029",
                 FIELD_COORDINATE: "H12",
                 FIELD_RESULT: POSITIVE_RESULT_VALUE,
-                FIELD_DATE_TESTED: "2020-04-23 14:41:00 UTC",
+                FIELD_DATE_TESTED: date_tested_2,
                 FIELD_SOURCE: "Test Centre",
                 FIELD_LAB_ID: "TC",
                 FIELD_CH1_TARGET: "ORF1ab",
@@ -1166,7 +1180,7 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
                 FIELD_CH4_CQ: Decimal128("26.25125612"),
                 FIELD_FILTERED_POSITIVE: True,
                 FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
-                FIELD_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 41, 0),
+                FIELD_FILTERED_POSITIVE_TIMESTAMP: filtered_positive_timestamp,
             },
         ]
 
@@ -1190,8 +1204,7 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
         assert rows[0][MLWH_PLATE_BARCODE] == "TC-rna-00000029"
         assert rows[0][MLWH_COORDINATE] == "H11"
         assert rows[0][MLWH_RESULT] == "Negative"
-        assert rows[0][MLWH_DATE_TESTED_STRING] == "2020-04-23 14:40:00 UTC"
-        assert rows[0][MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 40, 0)
+        assert rows[0][MLWH_DATE_TESTED] == date_tested_1
         assert rows[0][MLWH_SOURCE] == "Test Centre"
         assert rows[0][MLWH_LAB_ID] == "TC"
         assert rows[0][MLWH_CH1_TARGET] is None
@@ -1218,8 +1231,7 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
         assert rows[1][MLWH_PLATE_BARCODE] == "TC-rna-00000029"
         assert rows[1][MLWH_COORDINATE] == "H12"
         assert rows[1][MLWH_RESULT] == POSITIVE_RESULT_VALUE
-        assert rows[1][MLWH_DATE_TESTED_STRING] == "2020-04-23 14:41:00 UTC"
-        assert rows[1][MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 41, 0)
+        assert rows[1][MLWH_DATE_TESTED] == date_tested_2
         assert rows[1][MLWH_SOURCE] == "Test Centre"
         assert rows[1][MLWH_LAB_ID] == "TC"
         assert rows[1][MLWH_CH1_TARGET] == "ORF1ab"
@@ -1236,7 +1248,7 @@ def test_insert_samples_from_docs_into_mlwh(config, mlwh_connection):
         assert rows[1][MLWH_CH4_CQ] == Decimal("26.25125612")
         assert rows[1][MLWH_FILTERED_POSITIVE] == 1
         assert rows[1][MLWH_FILTERED_POSITIVE_VERSION] == "v2.3"
-        assert rows[1][MLWH_FILTERED_POSITIVE_TIMESTAMP] == datetime(2020, 4, 23, 14, 41, 0)
+        assert rows[1][MLWH_FILTERED_POSITIVE_TIMESTAMP] == filtered_positive_timestamp
         assert rows[1][MLWH_CREATED_AT] is not None
         assert rows[1][MLWH_UPDATED_AT] is not None
 
@@ -1276,11 +1288,10 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_con
         assert rows[0][MLWH_DATE_TESTED] is None
 
 
-def test_insert_samples_from_docs_into_mlwh_date_tested_blank(config, mlwh_connection):
+def test_insert_samples_from_docs_into_mlwh_date_tested_none(
+    config: Config, mlwh_connection: CMySQLConnection, centre_file: CentreFile
+) -> None:
     with patch("crawler.db.mysql.create_mysql_connection", return_value="not none"):
-        centre = Centre(config, config.CENTRES[0])
-        centre_file = CentreFile("some file", centre)
-
         docs = [
             {
                 "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1289,7 +1300,7 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_blank(config, mlwh_conne
                 FIELD_PLATE_BARCODE: "TC-rna-00000029",
                 FIELD_COORDINATE: "H11",
                 FIELD_RESULT: "Negative",
-                FIELD_DATE_TESTED: "",
+                FIELD_DATE_TESTED: None,
                 FIELD_SOURCE: "Test Centre",
                 FIELD_LAB_ID: "TC",
             }

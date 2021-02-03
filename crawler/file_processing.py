@@ -622,7 +622,7 @@ class CentreFile:
 
             errored_ids = list(map(get_errored_ids, e.details["writeErrors"]))
 
-            logger.warning(f"{len(errored_ids)} records were not able to be inserted")
+            logger.warning(f"{len(errored_ids)} records were not inserted")
 
             inserted_ids = [doc[FIELD_MONGODB_ID] for doc in docs_to_insert if doc[FIELD_MONGODB_ID] not in errored_ids]
 
@@ -660,7 +660,7 @@ class CentreFile:
                     "TYPE 14",
                     f"MLWH database inserts failed for file {self.file_name}",
                 )
-                logger.critical(f"Critical error while processing file {self.file_name}: {e}")
+                logger.critical(f"Critical error while processing file '{self.file_name}': {e}")
                 logger.exception(e)
         else:
             self.logging_collection.add_error(
@@ -1052,6 +1052,8 @@ class CentreFile:
                 # > By default all datetime.datetime objects returned by PyMongo will be naive but reflect UTC
                 # https://pymongo.readthedocs.io/en/stable/examples/datetimes.html
                 modified_row[FIELD_DATE_TESTED] = self.convert_datetime_string_to_datetime(**date_string_dict)
+            else:
+                modified_row[FIELD_DATE_TESTED] = None
         else:
             return None
 
@@ -1181,7 +1183,7 @@ class CentreFile:
 
     def is_valid_date_format(self, row: ModifiedRow, line_number: int, date_field: str) -> Tuple[bool, Dict[str, str]]:
         """The possible values for the date are:
-        - None
+        - '' (empty string)
         - YYYY-MM-DD HH:MM:SS Z e.g. 2020-11-22 04:36:38 UTC
         - DD/MM/YYYY HH:MM e.g. 19/07/2020 21:41
 
@@ -1192,8 +1194,8 @@ class CentreFile:
         Returns:
             Tuple[bool, Dict[str, str]: whether the date format is valid and a dictionary of the date time components
         """
-        # the date could be None
-        if (date_field_val := row.get(date_field)) is None:
+        # the date could be an empty string
+        if not (date_field_val := row.get(date_field)):
             return True, {}
         else:
             for pattern in (

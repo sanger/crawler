@@ -64,7 +64,6 @@ from crawler.constants import (
     MLWH_COORDINATE,
     MLWH_CREATED_AT,
     MLWH_DATE_TESTED,
-    MLWH_DATE_TESTED_STRING,
     MLWH_FILTERED_POSITIVE,
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
     MLWH_FILTERED_POSITIVE_VERSION,
@@ -78,7 +77,6 @@ from crawler.constants import (
     MLWH_ROOT_SAMPLE_ID,
     MLWH_SOURCE,
     MLWH_UPDATED_AT,
-    MYSQL_DATETIME_FORMAT,
 )
 from crawler.types import Config, DartWellProp, ModifiedRowValue, SampleDoc, SourcePlateDoc
 
@@ -165,8 +163,7 @@ def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:
         MLWH_PLATE_BARCODE: sample.get(FIELD_PLATE_BARCODE),
         MLWH_COORDINATE: unpad_coordinate(sample.get(FIELD_COORDINATE)),
         MLWH_RESULT: sample.get(FIELD_RESULT),
-        MLWH_DATE_TESTED_STRING: sample.get(FIELD_DATE_TESTED),
-        MLWH_DATE_TESTED: parse_date_tested(sample.get(FIELD_DATE_TESTED)),
+        MLWH_DATE_TESTED: sample.get(FIELD_DATE_TESTED),
         MLWH_SOURCE: sample.get(FIELD_SOURCE),
         MLWH_LAB_ID: sample.get(FIELD_LAB_ID),
         # channel fields
@@ -231,24 +228,6 @@ def map_mongo_sample_to_mysql(doc: SampleDoc, copy_date: bool = False) -> Dict[s
         value[MLWH_UPDATED_AT] = dt
 
     return value
-
-
-def parse_date_tested(date_string: ModifiedRowValue) -> Optional[datetime]:
-    """Converts date tested to MySQL format datetime
-
-    Arguments:
-        date_string {str} -- The date string from the document
-
-    Returns:
-        datetime -- The MySQL formatted datetime
-    """
-    if not isinstance(date_string, str):
-        return None
-
-    try:
-        return datetime.strptime(date_string, f"{MYSQL_DATETIME_FORMAT} %Z")
-    except Exception:
-        return None
 
 
 def parse_decimal128(value: ModifiedRowValue) -> Optional[Decimal]:

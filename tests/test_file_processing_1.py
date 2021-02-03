@@ -39,6 +39,7 @@ def test_is_valid_date_format(centre_file: CentreFile) -> None:
         },
     )
 
+    # other format
     row = {FIELD_DATE_TESTED: date_time.strftime("%d/%m/%Y %H:%M")}
     assert centre_file.is_valid_date_format(row, 1, FIELD_DATE_TESTED) == (
         True,
@@ -49,6 +50,14 @@ def test_is_valid_date_format(centre_file: CentreFile) -> None:
             "time": date_time.strftime("%H:%M"),
         },
     )
+
+    # wrong format
+    row = {FIELD_DATE_TESTED: date_time.strftime("%d %m %Y %H:%M")}
+    assert centre_file.is_valid_date_format(row, 1, FIELD_DATE_TESTED) == (False, {})
+
+    # empty date
+    row = {FIELD_DATE_TESTED: ""}
+    assert centre_file.is_valid_date_format(row, 1, FIELD_DATE_TESTED) == (True, {})
 
 
 def test_convert_datetime_string_to_datetime():
