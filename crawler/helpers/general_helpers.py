@@ -4,7 +4,7 @@ import re
 import string
 import sys
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 from importlib import import_module
 from typing import Any, Dict, Optional, Tuple, cast
