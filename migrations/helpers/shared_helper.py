@@ -59,7 +59,10 @@ def extract_required_cp_info(samples: List[Sample]) -> Tuple[Set[str], Set[str]]
 
 
 def get_cherrypicked_samples(
-    config: Config, root_sample_ids: List[str], plate_barcodes: List[str], chunk_size: int = 50000,
+    config: Config,
+    root_sample_ids: List[str],
+    plate_barcodes: List[str],
+    chunk_size: int = 50000,
 ) -> Optional[DataFrame]:
     """Find which samples have been cherrypicked using MLWH & Events warehouse.
     Returns dataframe with 4 columns: those needed to uniquely identify the sample resulting
