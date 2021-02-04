@@ -253,7 +253,7 @@ def new_mongo_source_plate(plate_barcode: str, lab_id: str) -> SourcePlateDoc:
     Returns:
         SourcePlate -- The new mongo source plate doc.
     """
-    timestamp = datetime.now()
+    timestamp = datetime.utcnow()
     return {
         FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4()),
         FIELD_BARCODE: plate_barcode,

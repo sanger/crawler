@@ -90,7 +90,7 @@ def current_time() -> str:
     Returns:
         str -- A string with the current timestamp
     """
-    return datetime.now().strftime("%y%m%d_%H%M")
+    return datetime.utcnow().strftime("%y%m%d_%H%M")
 
 
 def get_sftp_connection(config: Config, username: str = "", password: str = "") -> pysftp.Connection:
@@ -222,7 +222,7 @@ def map_mongo_sample_to_mysql(doc: SampleDoc, copy_date: bool = False) -> Dict[s
         value[MLWH_CREATED_AT] = doc[FIELD_CREATED_AT]
         value[MLWH_UPDATED_AT] = doc[FIELD_UPDATED_AT]
     else:
-        dt = datetime.now(timezone.utc)
+        dt = datetime.utcnow()
 
         value[MLWH_CREATED_AT] = dt
         value[MLWH_UPDATED_AT] = dt
@@ -305,6 +305,6 @@ def create_source_plate_doc(plate_barcode: str, lab_id: str) -> SourcePlateDoc:
         FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4()),
         FIELD_BARCODE: plate_barcode,
         FIELD_LAB_ID: lab_id,
-        FIELD_UPDATED_AT: datetime.now(),
-        FIELD_CREATED_AT: datetime.now(),
+        FIELD_UPDATED_AT: datetime.utcnow(),
+        FIELD_CREATED_AT: datetime.utcnow(),
     }

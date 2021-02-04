@@ -1092,13 +1092,13 @@ class CentreFile:
         modified_row[FIELD_LINE_NUMBER] = line_number
         modified_row[FIELD_FILE_NAME] = self.file_name
         modified_row[FIELD_FILE_NAME_DATE] = self.file_name_date()
-        modified_row[FIELD_CREATED_AT] = datetime.now()
-        modified_row[FIELD_UPDATED_AT] = datetime.now()
+        modified_row[FIELD_CREATED_AT] = datetime.utcnow()
+        modified_row[FIELD_UPDATED_AT] = datetime.utcnow()
 
         # filtered-positive calculations
         modified_row[FIELD_FILTERED_POSITIVE] = self.filtered_positive_identifier.is_positive(modified_row)
         modified_row[FIELD_FILTERED_POSITIVE_VERSION] = self.filtered_positive_identifier.version
-        modified_row[FIELD_FILTERED_POSITIVE_TIMESTAMP] = datetime.now()
+        modified_row[FIELD_FILTERED_POSITIVE_TIMESTAMP] = datetime.utcnow()
 
         # add lh sample uuid
         modified_row[FIELD_LH_SAMPLE_UUID] = str(uuid.uuid4())
