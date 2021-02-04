@@ -459,7 +459,7 @@ MLWH_SAMPLE_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
             "created": "2015-11-25 11:35:30",
-            "uuid_sample_lims": "36000000000000000000000000000000",
+            "uuid_sample_lims": "36",
         },
         {
             "id_sample_tmp": "7",
@@ -472,7 +472,7 @@ MLWH_SAMPLE_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
             "created": "2015-11-25 11:35:30",
-            "uuid_sample_lims": "37000000000000000000000000000000",
+            "uuid_sample_lims": "37",
         },
         {
             "id_sample_tmp": "8",
@@ -485,7 +485,7 @@ MLWH_SAMPLE_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
             "created": "2015-11-25 11:35:30",
-            "uuid_sample_lims": "38000000000000000000000000000000",
+            "uuid_sample_lims": "38",
         },
         {
             "id_sample_tmp": "9",
@@ -498,7 +498,7 @@ MLWH_SAMPLE_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
             "last_updated": "2015-11-25 11:35:30",
             "recorded_at": "2015-11-25 11:35:30",
             "created": "2015-11-25 11:35:30",
-            "uuid_sample_lims": "39000000000000000000000000000000",
+            "uuid_sample_lims": "39",
         },
     ],
     "lighthouse_sample": [
@@ -513,7 +513,7 @@ MLWH_SAMPLE_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
             "date_tested": datetime(2020, 10, 24, 22, 30, 22),
             "source": "test centre",
             "lab_id": "TC",
-            "lh_sample_uuid": "36000000000000000000000000000000",
+            "lh_sample_uuid": "36",
         },
         {
             "mongodb_id": "2",
@@ -526,7 +526,7 @@ MLWH_SAMPLE_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
             "date_tested": datetime(2020, 10, 24, 22, 30, 22),
             "source": "test centre",
             "lab_id": "TC",
-            "lh_sample_uuid": "37000000000000000000000000000000",
+            "lh_sample_uuid": "37",
         },
         {
             "mongodb_id": "3",
@@ -539,7 +539,7 @@ MLWH_SAMPLE_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
             "date_tested": datetime(2020, 10, 24, 22, 30, 22),
             "source": "test centre",
             "lab_id": "TC",
-            "lh_sample_uuid": "38000000000000000000000000000000",
+            "lh_sample_uuid": "38",
         },
         {
             "mongodb_id": "4",
@@ -552,7 +552,7 @@ MLWH_SAMPLE_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
             "date_tested": datetime(2020, 10, 24, 22, 30, 22),
             "source": "test centre",
             "lab_id": "TC",
-            "lh_sample_uuid": "39000000000000000000000000000000",
+            "lh_sample_uuid": "39",
         },
     ],
 }
