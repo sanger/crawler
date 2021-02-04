@@ -1,9 +1,10 @@
 import uuid
 from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
+
 from crawler.constants import (
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
@@ -145,8 +146,8 @@ def test_samples_updated_with_source_plate_uuids(mongo_database):
 
     updated_samples = samples_updated_with_source_plate_uuids(mongo_db, test_samples)
 
-    assert uuid.UUID(updated_samples[0][FIELD_LH_SOURCE_PLATE_UUID])
-    # TODO more rigourously test this:
+    assert uuid.UUID(str(updated_samples[0][FIELD_LH_SOURCE_PLATE_UUID]))
+    # TODO more rigorously test this:
     # - test samples all have a UUID
     # - test source plates added
     # - test samples refer to source plates
@@ -225,7 +226,7 @@ def test_migrate_all_dbs_return_early_no_samples(config, mock_mysql_connection, 
     end_datetime = start_datetime + timedelta(days=1)
 
     mock_samples_collection = MagicMock()
-    mock_samples_collection.aggregate.retutn_value = []  # mock samples collection call
+    mock_samples_collection.aggregate.return_value = []  # mock samples collection call
     mock_source_plates_collection = MagicMock()
 
     def side_effect(_, collection_name):
@@ -234,7 +235,7 @@ def test_migrate_all_dbs_return_early_no_samples(config, mock_mysql_connection, 
         elif collection_name == COLLECTION_SOURCE_PLATES:
             return mock_source_plates_collection
         else:
-            raise ValueError(f"{collection_name} is not recognised/expected")
+            raise ValueError(f"{collection_name} is not recognized/expected")
 
     with patch("migrations.helpers.dart_samples_update_helper.get_mongo_collection", side_effect=side_effect):
         migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))
@@ -259,7 +260,7 @@ def test_migrate_all_dbs_returns_early_failed_mongo_samples_update(config, mock_
         elif collection_name == COLLECTION_SOURCE_PLATES:
             mock_collection.find_one.return_value = None
         else:
-            raise ValueError(f"{collection_name} is not recognised/expected")
+            raise ValueError(f"{collection_name} is not recognized/expected")
         return mock_collection
 
     with patch("migrations.helpers.dart_samples_update_helper.get_mongo_collection", side_effect=side_effect):
@@ -284,7 +285,7 @@ def test_migrate_all_dbs_returns_early_failed_mongo_source_plates_update(
             mock_collection.find_one.return_value = None
             mock_collection.insert_many.side_effect = Exception("Boom!")
         else:
-            raise ValueError(f"{collection_name} is not recognised/expected")
+            raise ValueError(f"{collection_name} is not recognized/expected")
         return mock_collection
 
     with patch("migrations.helpers.dart_samples_update_helper.get_mongo_collection", side_effect=side_effect):
@@ -306,7 +307,7 @@ def test_migrate_all_dbs_returns_early_failed_mlwh_update(config, mock_mysql_con
         elif collection_name == COLLECTION_SOURCE_PLATES:
             mock_collection.find_one.return_value = None
         else:
-            raise ValueError(f"{collection_name} is not recognised/expected")
+            raise ValueError(f"{collection_name} is not recognized/expected")
         return mock_collection
 
     with patch("migrations.helpers.dart_samples_update_helper.get_mongo_collection", side_effect=side_effect):

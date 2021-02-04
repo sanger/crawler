@@ -1,13 +1,4 @@
-from enum import Enum
-
-
-class ErrorLevel(Enum):
-    DEBUG = 1
-    INFO = 2
-    WARNING = 3
-    ERROR = 4
-    CRITICAL = 5
-    FATAL = 6
+from crawler.helpers.enums import ErrorLevel
 
 
 class AggregateTypeBase:
@@ -322,6 +313,15 @@ class AggregateType26(AggregateTypeBase):
         self.short_display_description = "Failed assigning source plate UUIDs"
 
 
+class AggregateType27(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 27"
+        self.error_level = ErrorLevel.ERROR
+        self.message = f"{self.error_level.name}: Date field has an unknown date format." f"({self.type_str})"
+        self.short_display_description = "Unknown date format"
+
+
 # Class to handle logging of errors of the various types per file
 class LoggingCollection:
     def __init__(self):
@@ -350,6 +350,7 @@ class LoggingCollection:
             "TYPE 24": AggregateType24(),
             "TYPE 25": AggregateType25(),
             "TYPE 26": AggregateType26(),
+            "TYPE 27": AggregateType27(),
         }
 
     def add_error(self, aggregate_error_type, message):

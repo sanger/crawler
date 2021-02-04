@@ -4,7 +4,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
-from bson.decimal128 import Decimal128  # type: ignore
+from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
 
 from crawler.constants import (
@@ -35,7 +35,6 @@ from crawler.constants import (
     MLWH_COORDINATE,
     MLWH_CREATED_AT,
     MLWH_DATE_TESTED,
-    MLWH_DATE_TESTED_STRING,
     MLWH_FILTERED_POSITIVE,
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
     MLWH_FILTERED_POSITIVE_VERSION,
@@ -54,34 +53,17 @@ from crawler.helpers.general_helpers import (
     create_source_plate_doc,
     get_config,
     get_dart_well_index,
-    map_lh_doc_to_sql_columns,
     map_mongo_doc_to_dart_well_props,
-    map_mongo_doc_to_sql_columns,
-    parse_date_tested,
+    map_mongo_sample_to_mysql,
     parse_decimal128,
     unpad_coordinate,
 )
+from crawler.types import SampleDoc
 
 
 def test_get_config():
     with pytest.raises(ModuleNotFoundError):
         get_config("x.y.z")
-
-
-# tests for parsing date tested
-def test_parse_date_tested(config):
-    result = parse_date_tested(date_string="2020-11-02 13:04:23 UTC")
-    assert result == datetime(2020, 11, 2, 13, 4, 23)
-
-
-def test_parse_date_tested_none(config):
-    result = parse_date_tested(date_string=None)
-    assert result is None
-
-
-def test_parse_date_tested_wrong_format(config):
-    result = parse_date_tested(date_string="2nd November 2020")
-    assert result is None
 
 
 # tests for parsing Decimal128
@@ -117,8 +99,10 @@ def test_unpad_coordinate_B01010():
     assert unpad_coordinate("B01010") == "B1010"
 
 
-# tests for lighthouse doc to MLWH mapping
-def test_map_lh_doc_to_sql_columns(config):
+def test_map_mongo_sample_to_mysql(config):
+    """Tests for lighthouse doc to MLWH mapping"""
+    date_tested = datetime(2020, 4, 23, 14, 40, 8)
+    filtered_positive_timestamp = datetime(2020, 4, 24, 14, 0, 8)
     doc_to_transform = {
         FIELD_MONGODB_ID: ObjectId("5f562d9931d9959b92544728"),
         FIELD_ROOT_SAMPLE_ID: "ABC00000004",
@@ -126,17 +110,17 @@ def test_map_lh_doc_to_sql_columns(config):
         FIELD_PLATE_BARCODE: "TC-rna-00000029",
         FIELD_COORDINATE: "H01",
         FIELD_RESULT: "Negative",
-        FIELD_DATE_TESTED: "2020-04-23 14:40:08 UTC",
+        FIELD_DATE_TESTED: date_tested,
         FIELD_SOURCE: "Test Centre",
         FIELD_LAB_ID: "TC",
         FIELD_FILTERED_POSITIVE: True,
         FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
-        FIELD_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 40, 8),
+        FIELD_FILTERED_POSITIVE_TIMESTAMP: filtered_positive_timestamp,
         FIELD_LH_SAMPLE_UUID: "7512638d-f25e-4ef0-85f0-d921d5263449",
         FIELD_LH_SOURCE_PLATE_UUID: "88ed5139-9e0c-4118-8cc8-20413b9ffa01",
     }
 
-    result = map_lh_doc_to_sql_columns(doc_to_transform)
+    result = map_mongo_sample_to_mysql(doc_to_transform)
 
     assert result[MLWH_MONGODB_ID] == "5f562d9931d9959b92544728"
     assert result[MLWH_ROOT_SAMPLE_ID] == "ABC00000004"
@@ -144,20 +128,23 @@ def test_map_lh_doc_to_sql_columns(config):
     assert result[MLWH_PLATE_BARCODE] == "TC-rna-00000029"
     assert result[MLWH_COORDINATE] == "H1"
     assert result[MLWH_RESULT] == "Negative"
-    assert result[MLWH_DATE_TESTED_STRING] == "2020-04-23 14:40:08 UTC"
-    assert result[MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 40, 8)
+    assert result[MLWH_DATE_TESTED] == date_tested
     assert result[MLWH_SOURCE] == "Test Centre"
     assert result[MLWH_LAB_ID] == "TC"
     assert result[MLWH_FILTERED_POSITIVE] is True
     assert result[MLWH_FILTERED_POSITIVE_VERSION] == "v2.3"
-    assert result[MLWH_FILTERED_POSITIVE_TIMESTAMP] == datetime(2020, 4, 23, 14, 40, 8)
+    assert result[MLWH_FILTERED_POSITIVE_TIMESTAMP] == filtered_positive_timestamp
     assert result[MLWH_LH_SAMPLE_UUID] == "7512638d-f25e-4ef0-85f0-d921d5263449"
     assert result[MLWH_LH_SOURCE_PLATE_UUID] == "88ed5139-9e0c-4118-8cc8-20413b9ffa01"
     assert result.get(MLWH_CREATED_AT) is not None
     assert result.get(MLWH_UPDATED_AT) is not None
 
 
-def test_map_mongo_doc_to_sql_columns(config):
+def test_map_mongo_sample_to_mysql_with_copy(config):
+    date_tested = datetime(2020, 4, 23, 14, 40, 8)
+    created_at = datetime(2020, 4, 27, 5, 20, 0, tzinfo=timezone.utc)
+    updated_at = datetime(2020, 5, 13, 12, 50, 0, tzinfo=timezone.utc)
+
     doc_to_transform = {
         FIELD_MONGODB_ID: ObjectId("5f562d9931d9959b92544728"),
         FIELD_ROOT_SAMPLE_ID: "ABC00000004",
@@ -165,14 +152,14 @@ def test_map_mongo_doc_to_sql_columns(config):
         FIELD_PLATE_BARCODE: "TC-rna-00000029",
         FIELD_COORDINATE: "H01",
         FIELD_RESULT: "Negative",
-        FIELD_DATE_TESTED: "2020-04-23 14:40:08 UTC",
+        FIELD_DATE_TESTED: date_tested,
         FIELD_SOURCE: "Test Centre",
         FIELD_LAB_ID: "TC",
-        FIELD_CREATED_AT: datetime(2020, 4, 27, 5, 20, 0, tzinfo=timezone.utc),
-        FIELD_UPDATED_AT: datetime(2020, 5, 13, 12, 50, 0, tzinfo=timezone.utc),
+        FIELD_CREATED_AT: created_at,
+        FIELD_UPDATED_AT: updated_at,
     }
 
-    result = map_mongo_doc_to_sql_columns(doc_to_transform)
+    result = map_mongo_sample_to_mysql(doc_to_transform, copy_date=True)
 
     assert result[MLWH_MONGODB_ID] == "5f562d9931d9959b92544728"
     assert result[MLWH_ROOT_SAMPLE_ID] == "ABC00000004"
@@ -180,14 +167,13 @@ def test_map_mongo_doc_to_sql_columns(config):
     assert result[MLWH_PLATE_BARCODE] == "TC-rna-00000029"
     assert result[MLWH_COORDINATE] == "H1"
     assert result[MLWH_RESULT] == "Negative"
-    assert result[MLWH_DATE_TESTED_STRING] == "2020-04-23 14:40:08 UTC"
-    assert result[MLWH_DATE_TESTED] == datetime(2020, 4, 23, 14, 40, 8)
+    assert result[MLWH_DATE_TESTED] == date_tested
     assert result[MLWH_SOURCE] == "Test Centre"
     assert result[MLWH_LAB_ID] == "TC"
     assert result[MLWH_LH_SAMPLE_UUID] is None
     assert result[MLWH_LH_SOURCE_PLATE_UUID] is None
-    assert result[MLWH_CREATED_AT] == datetime(2020, 4, 27, 5, 20, 0, tzinfo=timezone.utc)
-    assert result[MLWH_UPDATED_AT] == datetime(2020, 5, 13, 12, 50, 0, tzinfo=timezone.utc)
+    assert result[MLWH_CREATED_AT] == created_at
+    assert result[MLWH_UPDATED_AT] == updated_at
 
 
 def test_get_dart_well_index(config):
@@ -230,7 +216,7 @@ def test_map_mongo_doc_to_dart_well_props(config):
     test_uuid = str(uuid.uuid4())
 
     # all fields present, filtered positive
-    doc_to_transform = {
+    doc_to_transform: SampleDoc = {
         FIELD_FILTERED_POSITIVE: True,
         FIELD_ROOT_SAMPLE_ID: "ABC00000004",
         FIELD_RNA_ID: "TC-rna-00000029_H01",

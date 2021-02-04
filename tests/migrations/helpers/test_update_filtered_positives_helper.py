@@ -1,7 +1,9 @@
 from datetime import datetime
-from unittest.mock import MagicMock, patch, PropertyMock
+from typing import List
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
+
 from crawler.constants import (
     DART_STATE_PENDING,
     FIELD_COORDINATE,
@@ -10,10 +12,10 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_MONGODB_ID,
     FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
-    FIELD_RESULT,
     MLWH_COORDINATE,
     MLWH_FILTERED_POSITIVE,
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
@@ -26,11 +28,12 @@ from crawler.constants import (
     POSITIVE_RESULT_VALUE,
 )
 from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES
+from crawler.types import SampleDoc
 from migrations.helpers.update_filtered_positives_helper import (
     biomek_labclass_by_centre_name,
-    remove_cherrypicked_samples,
     pending_plate_barcodes_from_dart,
     positive_result_samples_from_mongo,
+    remove_cherrypicked_samples,
     update_dart_fields,
     update_filtered_positive_fields,
     update_mlwh_filtered_positive_fields,
@@ -199,7 +202,7 @@ def test_remove_cherrypicked_samples_returns_non_cp_samples(config, testing_samp
 
 
 def test_update_filtered_positive_fields_assigns_expected_filtered_positive_fields():
-    samples = [{}, {}]
+    samples: List[SampleDoc] = [{}, {}]
     timestamp = datetime.now()
     version = "v2.3"
     mock_positive_identifier = MagicMock()

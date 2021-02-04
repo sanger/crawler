@@ -1,10 +1,12 @@
+import uuid
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
-import uuid
+
 import numpy as np
 import pandas as pd
 
 from crawler.constants import (
+    FIELD_COORDINATE,
     FIELD_CREATED_AT,
     FIELD_LAB_ID,
     FIELD_MONGODB_ID,
@@ -13,14 +15,12 @@ from crawler.constants import (
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_UPDATED_AT,
-    FIELD_COORDINATE,
 )
 from migrations.helpers.shared_helper import (
     extract_required_cp_info,
-    remove_cherrypicked_samples,
     get_cherrypicked_samples,
+    remove_cherrypicked_samples,
 )
-
 
 # ----- test helpers -----
 
@@ -123,9 +123,9 @@ def test_get_cherrypicked_samples_no_beckman(config):
     with patch("sqlalchemy.create_engine", return_value=Mock()):
         with patch("pandas.read_sql", side_effect=expected):
             returned_samples = get_cherrypicked_samples(config, samples, plate_barcodes)
-            assert returned_samples.at[0, FIELD_ROOT_SAMPLE_ID] == "MCM001"
-            assert returned_samples.at[1, FIELD_ROOT_SAMPLE_ID] == "MCM003"
-            assert returned_samples.at[2, FIELD_ROOT_SAMPLE_ID] == "MCM005"
+            assert returned_samples.at[0, FIELD_ROOT_SAMPLE_ID] == "MCM001"  # type: ignore
+            assert returned_samples.at[1, FIELD_ROOT_SAMPLE_ID] == "MCM003"  # type: ignore
+            assert returned_samples.at[2, FIELD_ROOT_SAMPLE_ID] == "MCM005"  # type: ignore
 
 
 # Test Scenario
@@ -201,9 +201,9 @@ def test_get_cherrypicked_samples_no_sentinel(config):
     with patch("sqlalchemy.create_engine", return_value=Mock()):
         with patch("pandas.read_sql", side_effect=expected):
             returned_samples = get_cherrypicked_samples(config, samples, plate_barcodes)
-            assert returned_samples.at[0, FIELD_ROOT_SAMPLE_ID] == "MCM001"
-            assert returned_samples.at[1, FIELD_ROOT_SAMPLE_ID] == "MCM003"
-            assert returned_samples.at[2, FIELD_ROOT_SAMPLE_ID] == "MCM005"
+            assert returned_samples.at[0, FIELD_ROOT_SAMPLE_ID] == "MCM001"  # type: ignore
+            assert returned_samples.at[1, FIELD_ROOT_SAMPLE_ID] == "MCM003"  # type: ignore
+            assert returned_samples.at[2, FIELD_ROOT_SAMPLE_ID] == "MCM005"  # type: ignore
 
 
 # Test Scenario
@@ -275,10 +275,10 @@ def test_get_cherrypicked_samples_sentinel_and_beckman(config):
     with patch("sqlalchemy.create_engine", return_value=Mock()):
         with patch("pandas.read_sql", side_effect=expected):
             returned_samples = get_cherrypicked_samples(config, samples, plate_barcodes)
-            assert returned_samples.at[0, FIELD_ROOT_SAMPLE_ID] == "MCM001"
-            assert returned_samples.at[1, FIELD_ROOT_SAMPLE_ID] == "MCM006"
-            assert returned_samples.at[2, FIELD_ROOT_SAMPLE_ID] == "MCM003"
-            assert returned_samples.at[3, FIELD_ROOT_SAMPLE_ID] == "MCM005"
+            assert returned_samples.at[0, FIELD_ROOT_SAMPLE_ID] == "MCM001"  # type: ignore
+            assert returned_samples.at[1, FIELD_ROOT_SAMPLE_ID] == "MCM006"  # type: ignore
+            assert returned_samples.at[2, FIELD_ROOT_SAMPLE_ID] == "MCM003"  # type: ignore
+            assert returned_samples.at[3, FIELD_ROOT_SAMPLE_ID] == "MCM005"  # type: ignore
 
 
 # Test Scenario

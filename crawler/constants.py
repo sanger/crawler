@@ -58,7 +58,6 @@ MLWH_RNA_ID: Final[str] = "rna_id"
 MLWH_PLATE_BARCODE: Final[str] = "plate_barcode"
 MLWH_COORDINATE: Final[str] = "coordinate"
 MLWH_RESULT: Final[str] = "result"
-MLWH_DATE_TESTED_STRING: Final[str] = "date_tested_string"
 MLWH_DATE_TESTED: Final[str] = "date_tested"
 MLWH_SOURCE: Final[str] = "source"
 MLWH_LAB_ID: Final[str] = "lab_id"
@@ -84,7 +83,6 @@ MLWH_UPDATED_AT: Final[str] = "updated_at"
 
 # datetime formats
 MONGO_DATETIME_FORMAT: Final[str] = "%y%m%d_%H%M"
-MYSQL_DATETIME_FORMAT: Final[str] = "%Y-%m-%d %H:%M:%S"
 
 # positive Result value
 POSITIVE_RESULT_VALUE: Final[str] = "Positive"

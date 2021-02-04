@@ -1,9 +1,9 @@
 import decimal
 import re
 from abc import ABC
-from typing import Optional, Pattern
+from typing import Optional, Pattern, cast
 
-from bson.decimal128 import create_decimal128_context
+from bson.decimal128 import Decimal128, create_decimal128_context
 
 from crawler.constants import (
     FIELD_CH1_CQ,
@@ -13,7 +13,7 @@ from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
     POSITIVE_RESULT_VALUE,
 )
-from crawler.types import Sample
+from crawler.types import SampleDoc
 
 # record/reference all versions and definitions here
 FILTERED_POSITIVE_VERSION_0 = "v0"  # pre-filtered_positive definitions
@@ -30,7 +30,7 @@ class FilteredPositiveIdentifier(ABC):
         self.root_sample_id_control_regex: Optional[Pattern[str]] = None
         self.evaluate_ct_values = False
 
-    def is_positive(self, sample: Sample) -> bool:
+    def is_positive(self, sample: SampleDoc) -> bool:
         """Determines whether a sample is a filtered positive.
 
         Arguments:
@@ -39,10 +39,12 @@ class FilteredPositiveIdentifier(ABC):
         Returns:
             {bool} -- whether the sample is a filtered positive
         """
-        if self.result_regex.match(sample[FIELD_RESULT]) is None:
+        if not self.result_regex.match(str(sample[FIELD_RESULT])):
             return False
 
-        if self.root_sample_id_control_regex and self.root_sample_id_control_regex.match(sample[FIELD_ROOT_SAMPLE_ID]):
+        if self.root_sample_id_control_regex and self.root_sample_id_control_regex.match(
+            str(sample[FIELD_ROOT_SAMPLE_ID])
+        ):
             return False
 
         if self.evaluate_ct_values:
@@ -53,13 +55,19 @@ class FilteredPositiveIdentifier(ABC):
             if ch1_cq is None and ch2_cq is None and ch3_cq is None:
                 return True
 
+            #  Since we are dealing with dictionary objects whose values could be of any type, we need to cast here to
+            #   keep typing happy before we do a refactor to proper objects for samples
+            ch1_cq = cast(Decimal128, ch1_cq)
+            ch2_cq = cast(Decimal128, ch2_cq)
+            ch3_cq = cast(Decimal128, ch3_cq)
+
             with decimal.localcontext(self.d128_context):
                 # type check before attempting to convert to decimal
-                if ch1_cq and ch1_cq.to_decimal() <= self.ct_value_limit:
+                if ch1_cq is not None and ch1_cq and ch1_cq.to_decimal() <= self.ct_value_limit:
                     return True
-                elif ch2_cq and ch2_cq.to_decimal() <= self.ct_value_limit:
+                elif ch2_cq is not None and ch2_cq and ch2_cq.to_decimal() <= self.ct_value_limit:
                     return True
-                elif ch3_cq and ch3_cq.to_decimal() <= self.ct_value_limit:
+                elif ch3_cq is not None and ch3_cq and ch3_cq.to_decimal() <= self.ct_value_limit:
                     return True
                 else:
                     return False
