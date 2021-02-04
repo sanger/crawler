@@ -113,7 +113,7 @@ def create_import_record(
     logger.debug(f"CSV file used: {file_name}")
 
     import_doc = {
-        "date": datetime.now().isoformat(timespec="seconds"),
+        "date": datetime.utcnow(),  # https://pymongo.readthedocs.io/en/stable/examples/datetimes.html
         "centre_name": centre["name"],
         "csv_file_used": file_name,
         "number_of_records": docs_inserted,
