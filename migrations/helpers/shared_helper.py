@@ -108,20 +108,6 @@ def get_cherrypicked_samples(
             # do reset_index after dropping duplicates to make sure the rows are numbered in a way that makes sense
             concat_frame = concat_frame.append(cp_frame).drop_duplicates().reset_index(drop=True)
 
-            # sentinel_sql = __sentinel_cherrypicked_samples_query(ml_wh_db, events_wh_db)
-            # sentinel_frame = pd.read_sql(sentinel_sql, db_connection, params=params)
-
-            # # drop_duplicates is needed because the same 'root sample id' could pop up in two different batches,
-            # # and then it would retrieve the same rows for that root sample id twice
-            # # do reset_index after dropping duplicates to make sure the rows are numbered in a way that makes sense
-            # concat_frame = concat_frame.append(sentinel_frame).drop_duplicates().reset_index(drop=True)
-
-            # beckman_sql = __beckman_cherrypicked_samples_query(ml_wh_db, events_wh_db)
-            # beckman_frame = pd.read_sql(beckman_sql, db_connection, params=params)
-
-            # # again we concatenate dropping duplicates here (same reason as outlined above)
-            # concat_frame = concat_frame.append(beckman_frame).drop_duplicates().reset_index(drop=True)
-
         return concat_frame
     except Exception as e:
         logger.error("Error while connecting to MySQL")
