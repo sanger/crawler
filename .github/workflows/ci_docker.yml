@@ -31,6 +31,24 @@ jobs:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
           MYSQL_ROOT_PASSWORD: null
           MYSQL_DATABASE: unified_warehouse_test
+      ewh:
+        image: docker.pkg.github.com/sanger/event_warehouse/event_warehouse:gpl769_test_cp_view
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          DBHOST: mysql
+          INTEGRATION_TEST_SETUP: true
+          RAILS_ENV: test
+      uwh:
+        image: docker.pkg.github.com/sanger/unified_warehouse/unified_warehouse:GPL-769-cherrypicked-samples-view-revisited
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          DBHOST: mysql
+          INTEGRATION_TEST_SETUP: true
+          RAILS_ENV: test
     steps:
       - uses: actions/checkout@v2
       - name: Build the Docker image
@@ -38,12 +56,6 @@ jobs:
           docker build .
           --file Dockerfile
           --tag docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
-      - name: Create mysql test warehouse database and table
-        run: >-
-          docker run
-          --network host
-          docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
-          python setup_test_db.py
       - name: Run tests against the image
         run: >-
           docker run
