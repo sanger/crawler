@@ -4,7 +4,7 @@ import re
 import string
 import sys
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 from importlib import import_module
 from typing import Any, Dict, Optional, Tuple, cast
@@ -64,7 +64,6 @@ from crawler.constants import (
     MLWH_COORDINATE,
     MLWH_CREATED_AT,
     MLWH_DATE_TESTED,
-    MLWH_DATE_TESTED_STRING,
     MLWH_FILTERED_POSITIVE,
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
     MLWH_FILTERED_POSITIVE_VERSION,
@@ -78,9 +77,8 @@ from crawler.constants import (
     MLWH_ROOT_SAMPLE_ID,
     MLWH_SOURCE,
     MLWH_UPDATED_AT,
-    MYSQL_DATETIME_FORMAT,
 )
-from crawler.types import Config, DartWellProp, Sample, SourcePlate
+from crawler.types import Config, DartWellProp, ModifiedRowValue, SampleDoc, SourcePlateDoc
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +90,7 @@ def current_time() -> str:
     Returns:
         str -- A string with the current timestamp
     """
-    return datetime.now().strftime("%y%m%d_%H%M")
+    return datetime.utcnow().strftime("%y%m%d_%H%M")
 
 
 def get_sftp_connection(config: Config, username: str = "", password: str = "") -> pysftp.Connection:
@@ -148,51 +146,50 @@ def get_config(settings_module: str = "") -> Tuple[Config, str]:
         sys.exit(f"{e} required in environmental variables for config")
 
 
-def map_mongo_to_sql_common(sample: Sample) -> Dict[str, Any]:
+def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:
     """Transform common mongo document fields into MySQL fields for MLWH.
 
     Arguments:
-        doc {Sample} -- Filtered information about one sample, extracted from mongodb.
+        doc {Sample} -- Filtered information about one sample
 
     Returns:
         Dict[str, Any] -- Dictionary of MySQL versions of fields
     """
     return {
         # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
-        MLWH_MONGODB_ID: str(sample[FIELD_MONGODB_ID]),
-        MLWH_ROOT_SAMPLE_ID: sample[FIELD_ROOT_SAMPLE_ID],
-        MLWH_RNA_ID: sample[FIELD_RNA_ID],
-        MLWH_PLATE_BARCODE: sample[FIELD_PLATE_BARCODE],
-        MLWH_COORDINATE: unpad_coordinate(sample.get(FIELD_COORDINATE, None)),
-        MLWH_RESULT: sample.get(FIELD_RESULT, None),
-        MLWH_DATE_TESTED_STRING: sample.get(FIELD_DATE_TESTED, None),
-        MLWH_DATE_TESTED: parse_date_tested(sample.get(FIELD_DATE_TESTED, None)),
-        MLWH_SOURCE: sample.get(FIELD_SOURCE, None),
-        MLWH_LAB_ID: sample.get(FIELD_LAB_ID, None),
+        MLWH_MONGODB_ID: str(sample.get(FIELD_MONGODB_ID)),
+        MLWH_ROOT_SAMPLE_ID: sample.get(FIELD_ROOT_SAMPLE_ID),
+        MLWH_RNA_ID: sample.get(FIELD_RNA_ID),
+        MLWH_PLATE_BARCODE: sample.get(FIELD_PLATE_BARCODE),
+        MLWH_COORDINATE: unpad_coordinate(sample.get(FIELD_COORDINATE)),
+        MLWH_RESULT: sample.get(FIELD_RESULT),
+        MLWH_DATE_TESTED: sample.get(FIELD_DATE_TESTED),
+        MLWH_SOURCE: sample.get(FIELD_SOURCE),
+        MLWH_LAB_ID: sample.get(FIELD_LAB_ID),
         # channel fields
-        MLWH_CH1_TARGET: sample.get(FIELD_CH1_TARGET, None),
-        MLWH_CH1_RESULT: sample.get(FIELD_CH1_RESULT, None),
-        MLWH_CH1_CQ: parse_decimal128(sample.get(FIELD_CH1_CQ, None)),
-        MLWH_CH2_TARGET: sample.get(FIELD_CH2_TARGET, None),
-        MLWH_CH2_RESULT: sample.get(FIELD_CH2_RESULT, None),
-        MLWH_CH2_CQ: parse_decimal128(sample.get(FIELD_CH2_CQ, None)),
-        MLWH_CH3_TARGET: sample.get(FIELD_CH3_TARGET, None),
-        MLWH_CH3_RESULT: sample.get(FIELD_CH3_RESULT, None),
-        MLWH_CH3_CQ: parse_decimal128(sample.get(FIELD_CH3_CQ, None)),
-        MLWH_CH4_TARGET: sample.get(FIELD_CH4_TARGET, None),
-        MLWH_CH4_RESULT: sample.get(FIELD_CH4_RESULT, None),
-        MLWH_CH4_CQ: parse_decimal128(sample.get(FIELD_CH4_CQ, None)),
+        MLWH_CH1_TARGET: sample.get(FIELD_CH1_TARGET),
+        MLWH_CH1_RESULT: sample.get(FIELD_CH1_RESULT),
+        MLWH_CH1_CQ: parse_decimal128(sample.get(FIELD_CH1_CQ)),
+        MLWH_CH2_TARGET: sample.get(FIELD_CH2_TARGET),
+        MLWH_CH2_RESULT: sample.get(FIELD_CH2_RESULT),
+        MLWH_CH2_CQ: parse_decimal128(sample.get(FIELD_CH2_CQ)),
+        MLWH_CH3_TARGET: sample.get(FIELD_CH3_TARGET),
+        MLWH_CH3_RESULT: sample.get(FIELD_CH3_RESULT),
+        MLWH_CH3_CQ: parse_decimal128(sample.get(FIELD_CH3_CQ)),
+        MLWH_CH4_TARGET: sample.get(FIELD_CH4_TARGET),
+        MLWH_CH4_RESULT: sample.get(FIELD_CH4_RESULT),
+        MLWH_CH4_CQ: parse_decimal128(sample.get(FIELD_CH4_CQ)),
         # filtered positive fields
-        MLWH_FILTERED_POSITIVE: sample.get(FIELD_FILTERED_POSITIVE, None),
-        MLWH_FILTERED_POSITIVE_VERSION: sample.get(FIELD_FILTERED_POSITIVE_VERSION, None),
-        MLWH_FILTERED_POSITIVE_TIMESTAMP: sample.get(FIELD_FILTERED_POSITIVE_TIMESTAMP, None),
+        MLWH_FILTERED_POSITIVE: sample.get(FIELD_FILTERED_POSITIVE),
+        MLWH_FILTERED_POSITIVE_VERSION: sample.get(FIELD_FILTERED_POSITIVE_VERSION),
+        MLWH_FILTERED_POSITIVE_TIMESTAMP: sample.get(FIELD_FILTERED_POSITIVE_TIMESTAMP),
         # UUID fields
-        MLWH_LH_SAMPLE_UUID: sample.get(FIELD_LH_SAMPLE_UUID, None),
-        MLWH_LH_SOURCE_PLATE_UUID: sample.get(FIELD_LH_SOURCE_PLATE_UUID, None),
+        MLWH_LH_SAMPLE_UUID: sample.get(FIELD_LH_SAMPLE_UUID),
+        MLWH_LH_SOURCE_PLATE_UUID: sample.get(FIELD_LH_SOURCE_PLATE_UUID),
     }
 
 
-def unpad_coordinate(coordinate: str) -> str:
+def unpad_coordinate(coordinate: ModifiedRowValue) -> Optional[str]:
     """Strip any leading zeros from the coordinate, eg. A01 => A1.
 
     Arguments:
@@ -201,60 +198,39 @@ def unpad_coordinate(coordinate: str) -> str:
     Returns:
         str: stripped coordinate
     """
-    return re.sub(r"0(\d+)$", r"\1", coordinate) if (coordinate and isinstance(coordinate, str)) else coordinate
+    if not coordinate or not isinstance(coordinate, str):
+        raise Exception("Cannot unpad coordinate")
+
+    return re.sub(r"0(\d+)$", r"\1", coordinate)
 
 
-def map_lh_doc_to_sql_columns(doc: Dict[str, str]) -> Dict[str, Any]:
-    """Transform the document fields from the parsed lighthouse file into a form suitable for the MLWH.
-    We are setting created_at and updated_at fields to current timestamp for inserts here,
-    because it would be too slow to retrieve them from MongoDB and they would be virtually the same
-    as we have only just written the mongo record.
-    We also have the mongodb id, as this is after the mongo inserts and was retrieved.
+def map_mongo_sample_to_mysql(doc: SampleDoc, copy_date: bool = False) -> Dict[str, Any]:
+    """Transform the sample document fields into a form suitable for the MLWH. We are setting created_at and updated_at
+    fields to current timestamp for inserts here, because it would be too slow to retrieve them from mongo and they
+    would be virtually the same as we have only just written the mongo record. We also have the mongodb '_id', as this
+    is after the mongo inserts.
 
      Arguments:
-         doc {Dict[str, str]} -- Filtered information about one sample, extracted from csv files.
+         doc {Sample} -- Filtered information about one sample
 
      Returns:
          Dict[str, Any] -- Dictionary of MySQL versions of fields
     """
     value = map_mongo_to_sql_common(doc)
-    dt = datetime.now(timezone.utc)
-    value[MLWH_CREATED_AT] = dt
-    value[MLWH_UPDATED_AT] = dt
+
+    if copy_date:
+        value[MLWH_CREATED_AT] = doc[FIELD_CREATED_AT]
+        value[MLWH_UPDATED_AT] = doc[FIELD_UPDATED_AT]
+    else:
+        dt = datetime.utcnow()
+
+        value[MLWH_CREATED_AT] = dt
+        value[MLWH_UPDATED_AT] = dt
+
     return value
 
 
-def map_mongo_doc_to_sql_columns(doc: Sample) -> Dict[str, Any]:
-    """Transform the document fields from the parsed mongodb samples collection.
-
-    Arguments:
-        doc {Dict[str, str]} -- Filtered information about one sample, extracted from mongodb.
-
-    Returns:
-        Dict[str, str] -- Dictionary of MySQL versions of fields
-    """
-    value = map_mongo_to_sql_common(doc)
-    value[MLWH_CREATED_AT] = doc[FIELD_CREATED_AT]
-    value[MLWH_UPDATED_AT] = doc[FIELD_UPDATED_AT]
-    return value
-
-
-def parse_date_tested(date_string: str) -> Optional[datetime]:
-    """Converts date tested to MySQL format datetime
-
-    Arguments:
-        date_string {str} -- The date string from the document
-
-    Returns:
-        datetime -- The MySQL formatted datetime
-    """
-    try:
-        return datetime.strptime(date_string, f"{MYSQL_DATETIME_FORMAT} %Z")
-    except Exception:
-        return None
-
-
-def parse_decimal128(value: Decimal128) -> Optional[Decimal]:
+def parse_decimal128(value: ModifiedRowValue) -> Optional[Decimal]:
     """Converts mongo Decimal128 to MySQL compatible Decimal format.
 
     Arguments:
@@ -263,10 +239,10 @@ def parse_decimal128(value: Decimal128) -> Optional[Decimal]:
     Returns:
         Decimal -- converted number
     """
-    try:
-        return cast(Decimal, value.to_decimal())
-    except Exception:
+    if not isinstance(value, Decimal128):
         return None
+
+    return cast(Decimal, value.to_decimal())
 
 
 def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
@@ -297,7 +273,7 @@ def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
     return None
 
 
-def map_mongo_doc_to_dart_well_props(sample: Sample) -> DartWellProp:
+def map_mongo_doc_to_dart_well_props(sample: SampleDoc) -> DartWellProp:
     """Transform a mongo sample doc into DART well properties.
 
     Arguments:
@@ -308,14 +284,14 @@ def map_mongo_doc_to_dart_well_props(sample: Sample) -> DartWellProp:
     """
     return {
         DART_STATE: DART_STATE_PICKABLE if sample.get(FIELD_FILTERED_POSITIVE, False) else DART_EMPTY_VALUE,
-        DART_ROOT_SAMPLE_ID: sample[FIELD_ROOT_SAMPLE_ID],
-        DART_RNA_ID: sample[FIELD_RNA_ID],
-        DART_LAB_ID: sample.get(FIELD_LAB_ID, DART_EMPTY_VALUE),
-        DART_LH_SAMPLE_UUID: sample.get(FIELD_LH_SAMPLE_UUID, DART_EMPTY_VALUE),
+        DART_ROOT_SAMPLE_ID: str(sample[FIELD_ROOT_SAMPLE_ID]),
+        DART_RNA_ID: str(sample[FIELD_RNA_ID]),
+        DART_LAB_ID: str(sample.get(FIELD_LAB_ID, DART_EMPTY_VALUE)),
+        DART_LH_SAMPLE_UUID: str(sample.get(FIELD_LH_SAMPLE_UUID, DART_EMPTY_VALUE)),
     }
 
 
-def create_source_plate_doc(plate_barcode: str, lab_id: str) -> SourcePlate:
+def create_source_plate_doc(plate_barcode: str, lab_id: str) -> SourcePlateDoc:
     """Creates a new source plate document to be inserted into mongo.
 
     Arguments:
@@ -329,6 +305,6 @@ def create_source_plate_doc(plate_barcode: str, lab_id: str) -> SourcePlate:
         FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4()),
         FIELD_BARCODE: plate_barcode,
         FIELD_LAB_ID: lab_id,
-        FIELD_UPDATED_AT: datetime.now(),
-        FIELD_CREATED_AT: datetime.now(),
+        FIELD_UPDATED_AT: datetime.utcnow(),
+        FIELD_CREATED_AT: datetime.utcnow(),
     }

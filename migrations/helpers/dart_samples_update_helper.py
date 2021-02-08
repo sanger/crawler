@@ -23,9 +23,9 @@ from crawler.constants import (
 )
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
-from crawler.helpers.general_helpers import map_mongo_doc_to_sql_columns
+from crawler.helpers.general_helpers import map_mongo_sample_to_mysql
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
-from crawler.types import Config, Sample, SourcePlate
+from crawler.types import Config, SampleDoc, SourcePlateDoc
 from migrations.helpers.shared_helper import (
     extract_required_cp_info,
     get_cherrypicked_samples,
@@ -129,7 +129,7 @@ def migrate_all_dbs(config: Config, s_start_datetime: str = "", s_end_datetime: 
 
         # convert mongo field values into MySQL format
         for sample in samples:
-            mongo_docs_for_sql.append(map_mongo_doc_to_sql_columns(sample))
+            mongo_docs_for_sql.append(map_mongo_sample_to_mysql(sample, copy_date=True))
 
         if (num_sql_docs := len(mongo_docs_for_sql)) > 0:
             logger.info(f"Updating MLWH database for {num_sql_docs} sample documents")
@@ -148,7 +148,7 @@ def migrate_all_dbs(config: Config, s_start_datetime: str = "", s_end_datetime: 
         logger.exception(e)
 
 
-def get_samples(samples_collection: Collection, start_datetime: datetime, end_datetime: datetime) -> List[Sample]:
+def get_samples(samples_collection: Collection, start_datetime: datetime, end_datetime: datetime) -> List[SampleDoc]:
     logger.debug(f"Selecting samples between {start_datetime} and {end_datetime}")
 
     match = {
@@ -161,7 +161,7 @@ def get_samples(samples_collection: Collection, start_datetime: datetime, end_da
     return list(samples_collection.aggregate([match]))
 
 
-def add_sample_uuid_field(samples: List[Sample]) -> List[Sample]:
+def add_sample_uuid_field(samples: List[SampleDoc]) -> List[SampleDoc]:
     for sample in samples:
         if FIELD_LH_SAMPLE_UUID not in [*sample]:
             sample[FIELD_LH_SAMPLE_UUID] = str(uuid.uuid4())
@@ -169,7 +169,7 @@ def add_sample_uuid_field(samples: List[Sample]) -> List[Sample]:
     return samples
 
 
-def update_mongo_fields(mongo_db: Database, samples: List[Sample]) -> bool:
+def update_mongo_fields(mongo_db: Database, samples: List[SampleDoc]) -> bool:
     """Bulk updates sample uuid fields in the Mongo database
 
     Arguments:
@@ -197,12 +197,14 @@ def update_mongo_fields(mongo_db: Database, samples: List[Sample]) -> bool:
     return True
 
 
-def samples_updated_with_source_plate_uuids(mongo_db: Database, samples: List[Sample]) -> List[Sample]:
+def samples_updated_with_source_plate_uuids(mongo_db: Database, samples: List[SampleDoc]) -> List[SampleDoc]:
     logger.debug("Attempting to update docs with source plate UUIDs")
 
-    updated_samples: List[Sample] = []
+    updated_samples: List[SampleDoc] = []
 
-    def update_doc_from_source_plate(sample: Sample, existing_plate: SourcePlate, skip_lab_check: bool = False) -> None:
+    def update_doc_from_source_plate(
+        sample: SampleDoc, existing_plate: SourcePlateDoc, skip_lab_check: bool = False
+    ) -> None:
         if skip_lab_check or sample[FIELD_LAB_ID] == existing_plate[FIELD_LAB_ID]:
             sample[FIELD_LH_SOURCE_PLATE_UUID] = existing_plate[FIELD_LH_SOURCE_PLATE_UUID]
             updated_samples.append(sample)
@@ -213,7 +215,7 @@ def samples_updated_with_source_plate_uuids(mongo_db: Database, samples: List[Sa
             )
 
     try:
-        new_plates: List[SourcePlate] = []
+        new_plates: List[SourcePlateDoc] = []
         source_plates_collection = get_mongo_collection(mongo_db, COLLECTION_SOURCE_PLATES)
 
         for sample in samples:
@@ -226,7 +228,7 @@ def samples_updated_with_source_plate_uuids(mongo_db: Database, samples: List[Sa
                 continue
 
             # then add a new plate
-            new_plate = new_mongo_source_plate(plate_barcode, sample[FIELD_LAB_ID])
+            new_plate = new_mongo_source_plate(str(plate_barcode), str(sample[FIELD_LAB_ID]))
             new_plates.append(new_plate)
             update_doc_from_source_plate(sample, new_plate, True)
 
@@ -241,7 +243,7 @@ def samples_updated_with_source_plate_uuids(mongo_db: Database, samples: List[Sa
     return updated_samples
 
 
-def new_mongo_source_plate(plate_barcode: str, lab_id: str) -> SourcePlate:
+def new_mongo_source_plate(plate_barcode: str, lab_id: str) -> SourcePlateDoc:
     """Creates a new mongo source plate document.
 
     Arguments:
@@ -251,7 +253,7 @@ def new_mongo_source_plate(plate_barcode: str, lab_id: str) -> SourcePlate:
     Returns:
         SourcePlate -- The new mongo source plate doc.
     """
-    timestamp = datetime.now()
+    timestamp = datetime.utcnow()
     return {
         FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4()),
         FIELD_BARCODE: plate_barcode,

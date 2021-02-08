@@ -5,14 +5,14 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from bson.decimal128 import Decimal128
 
 # Type aliases
-Sample = Dict[str, Any]  # mongo document that represents a sample
-Centre = Dict[str, Any]  #  mongo document that represents a centre
+CentreDoc = Dict[str, Any]  #  mongo document that represents a centre
 CSVRow = Dict[str, str]  # row of data from the CSV DictReader
 ModifiedRowValue = Optional[Union[str, datetime, bool, int, Decimal128]]
 ModifiedRow = Dict[str, ModifiedRowValue]
+SampleDoc = Dict[str, ModifiedRowValue]  # mongo document that represents a sample
 RowSignature = Tuple[str, ...]
 CentreConf = Dict[str, str]  # config for a centre
-SourcePlate = Dict[str, Union[str, datetime]]  # mongo document that represents a source plate
+SourcePlateDoc = Dict[str, Union[str, datetime]]  # mongo document that represents a source plate
 DartWellProp = Dict[str, str]  # well properties of a DART well 'object'
 
 

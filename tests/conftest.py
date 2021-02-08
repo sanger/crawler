@@ -7,7 +7,6 @@ from unittest.mock import patch
 import pytest
 import sqlalchemy
 from sqlalchemy import MetaData
-from sqlalchemy.engine.base import Engine
 
 from crawler.constants import (
     COLLECTION_CENTRES,
@@ -315,7 +314,7 @@ def delete_from_mlwh(mlwh_sql_engine, table_name):
         connection.execute(table.delete())
 
 
-def get_table(sql_engine: Engine, table_name: str):
+def get_table(sql_engine, table_name):
     metadata = MetaData(sql_engine)
     metadata.reflect()
     return metadata.tables[table_name]

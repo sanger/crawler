@@ -68,7 +68,7 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
                 logger.info(f"{num_non_cp_pos_samples} non-cherrypicked matching positive samples found")
                 filtered_positive_identifier = current_filtered_positive_identifier()
                 version = filtered_positive_identifier.version
-                update_timestamp = datetime.now()
+                update_timestamp = datetime.utcnow()
                 logger.info("Updating filtered positives...")
                 update_filtered_positive_fields(
                     filtered_positive_identifier,

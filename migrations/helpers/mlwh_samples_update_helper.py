@@ -3,7 +3,7 @@ from datetime import datetime
 from crawler.constants import COLLECTION_SAMPLES, FIELD_CREATED_AT, MONGO_DATETIME_FORMAT
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
-from crawler.helpers.general_helpers import map_mongo_doc_to_sql_columns
+from crawler.helpers.general_helpers import map_mongo_sample_to_mysql
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from crawler.types import Config
 from migrations.helpers.shared_helper import print_exception, valid_datetime_string
@@ -49,7 +49,7 @@ def update_mlwh_with_legacy_samples(config: Config, s_start_datetime: str = "", 
 
             # convert mongo field values into MySQL format
             for doc in mongo_docs:
-                mongo_docs_for_sql.append(map_mongo_doc_to_sql_columns(doc))
+                mongo_docs_for_sql.append(map_mongo_sample_to_mysql(doc, copy_date=True))
 
         if number_docs_found > 0:
             print(f"Updating MLWH database for {len(mongo_docs_for_sql)} sample documents")

@@ -1,6 +1,15 @@
 from enum import Enum, auto
 
 
+class ErrorLevel(Enum):
+    DEBUG = 1
+    INFO = 2
+    WARNING = 3
+    ERROR = 4
+    CRITICAL = 5
+    FATAL = 6
+
+
 class CentreFileState(Enum):
     """An enum for file states."""
 

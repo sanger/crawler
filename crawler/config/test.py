@@ -9,7 +9,7 @@ DIR_DOWNLOADED_DATA = "tests/files/"
 
 # change all the backup folder entries for the centres during testing
 for centre in CENTRES:
-    centre["backups_folder"] = centre["backups_folder"].replace(CENTRE_DIR_BACKUPS, "tmp/backups")
+    centre["backups_folder"] = centre["backups_folder"].replace(CENTRE_DIR_BACKUPS, "tmp/backups")  # type: ignore
 
 # add a test centre to those defined in defaults.py
 CENTRES.append(
@@ -29,9 +29,6 @@ CENTRES.append(
 
 # SFTP details
 SFTP_UPLOAD = False
-SFTP_HOST = LOCALHOST
-SFTP_PORT = "22"
-SFTP_USER = "foo"
 
 # MongoDB details
 MONGO_HOST = LOCALHOST
@@ -58,8 +55,8 @@ DART_DB_RW_PASSWORD = "MyS3cr3tPassw0rd"
 DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
 
 # logging config
-LOGGING["loggers"]["crawler"]["level"] = "DEBUG"  # noqa: F405
-LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]  # noqa: F405
+LOGGING["loggers"]["crawler"]["level"] = "DEBUG"  # type: ignore
+LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]  # type: ignore
 
 # MLWH database details
 ML_WH_DB = "unified_warehouse_test"

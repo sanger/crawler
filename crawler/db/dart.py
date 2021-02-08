@@ -22,7 +22,7 @@ from crawler.sql_queries import (
     SQL_DART_SET_PLATE_PROPERTY,
     SQL_DART_SET_WELL_PROPERTY,
 )
-from crawler.types import Config, Sample
+from crawler.types import Config, SampleDoc
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +146,7 @@ def add_dart_plate_if_doesnt_exist(cursor: pyodbc.Cursor, plate_barcode: str, bi
     return state
 
 
-def add_dart_well_properties_if_positive(cursor: pyodbc.Cursor, sample: Sample, plate_barcode: str) -> None:
+def add_dart_well_properties_if_positive(cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str) -> None:
     """Adds well properties to DART for the specified sample if that sample is positive.
 
     Arguments:
@@ -155,7 +155,7 @@ def add_dart_well_properties_if_positive(cursor: pyodbc.Cursor, sample: Sample, 
         plate_barcode {str} -- The barcode of the plate to which this sample belongs.
     """
     if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
-        well_index = get_dart_well_index(sample.get(FIELD_COORDINATE, None))
+        well_index = get_dart_well_index(str(sample.get(FIELD_COORDINATE)))
         if well_index is not None:
             dart_well_props = map_mongo_doc_to_dart_well_props(sample)
             set_dart_well_properties(cursor, plate_barcode, dart_well_props, well_index)
