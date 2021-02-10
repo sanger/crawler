@@ -208,7 +208,7 @@ def pad_coordinate(coordinate: ModifiedRowValue) -> str:
     """Add leading zeros to the coordinate, eg. A1 => A01.
 
     Arguments:
-        coordinate (str): coordinate to strip
+        coordinate (str): coordinate to pad
 
     Returns:
         str: padded coordinate with 2 characters adding 0's
