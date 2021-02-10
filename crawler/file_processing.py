@@ -79,6 +79,7 @@ from crawler.helpers.general_helpers import (
     current_time,
     get_sftp_connection,
     map_mongo_sample_to_mysql,
+    pad_coordinate,
 )
 from crawler.helpers.logging_helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
@@ -854,7 +855,7 @@ class CentreFile:
             )
             return "", ""
 
-        return match.group(1), match.group(2)
+        return match.group(1), pad_coordinate(match.group(2))
 
     @staticmethod
     def create_row_signature(row: ModifiedRow) -> RowSignature:
