@@ -57,6 +57,7 @@ from crawler.helpers.general_helpers import (
     map_mongo_sample_to_mysql,
     parse_decimal128,
     unpad_coordinate,
+    pad_coordinate,
 )
 from crawler.types import SampleDoc
 
@@ -97,6 +98,23 @@ def test_unpad_coordinate_A10():
 
 def test_unpad_coordinate_B01010():
     assert unpad_coordinate("B01010") == "B1010"
+
+
+# tests for pad coordinate
+def test_pad_coordinate_A1():
+    assert pad_coordinate("A1") == "A01"
+
+
+def test_pad_coordinate_A01():
+    assert pad_coordinate("A01") == "A01"
+
+
+def test_pad_coordinate_A10():
+    assert pad_coordinate("A10") == "A10"
+
+
+def test_pad_coordinate_B01010():
+    assert pad_coordinate("B01010") == "B1010"
 
 
 def test_map_mongo_sample_to_mysql(config):

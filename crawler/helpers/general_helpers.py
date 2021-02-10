@@ -116,11 +116,7 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
     sftp_password = config.SFTP_READ_PASSWORD if not username else password
 
     return pysftp.Connection(
-        host=sftp_host,
-        port=sftp_port,
-        username=sftp_username,
-        password=sftp_password,
-        cnopts=cnopts,
+        host=sftp_host, port=sftp_port, username=sftp_username, password=sftp_password, cnopts=cnopts,
     )
 
 
@@ -202,6 +198,21 @@ def unpad_coordinate(coordinate: ModifiedRowValue) -> Optional[str]:
         raise Exception("Cannot unpad coordinate")
 
     return re.sub(r"0(\d+)$", r"\1", coordinate)
+
+
+def pad_coordinate(coordinate: ModifiedRowValue) -> Optional[str]:
+    """Add leading zeros to the coordinate, eg. A1 => A01.
+
+    Arguments:
+        coordinate (str): coordinate to strip
+
+    Returns:
+        str: padded coordinate with 2 characters adding 0's
+    """
+    if not coordinate or not isinstance(coordinate, str):
+        raise Exception("Cannot pad coordinate")
+
+    return f"{coordinate[0]}{coordinate[1:].zfill(2)}"
 
 
 def map_mongo_sample_to_mysql(doc: SampleDoc, copy_date: bool = False) -> Dict[str, Any]:
