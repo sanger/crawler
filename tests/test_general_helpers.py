@@ -84,36 +84,18 @@ def test_parse_decimal128_two(config):
 
 
 # tests for unpad coordinate
-def test_unpad_coordinate_A01():
+def test_unpad_coordinate():
     assert unpad_coordinate("A01") == "A1"
-
-
-def test_unpad_coordinate_A1():
     assert unpad_coordinate("A1") == "A1"
-
-
-def test_unpad_coordinate_A10():
     assert unpad_coordinate("A10") == "A10"
-
-
-def test_unpad_coordinate_B01010():
     assert unpad_coordinate("B01010") == "B1010"
 
 
 # tests for pad coordinate
-def test_pad_coordinate_A1():
+def test_pad_coordinate():
     assert pad_coordinate("A1") == "A01"
-
-
-def test_pad_coordinate_A01():
     assert pad_coordinate("A01") == "A01"
-
-
-def test_pad_coordinate_A10():
     assert pad_coordinate("A10") == "A10"
-
-
-def test_pad_coordinate_B01010():
     assert pad_coordinate("B01010") == "B01010"
 
 
