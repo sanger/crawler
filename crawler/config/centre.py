@@ -24,7 +24,7 @@ from crawler.constants import BIOMEK_LABWARE_CLASS_BIO, BIOMEK_LABWARE_CLASS_KIN
 # sftp_root_write: directory on sftp in which to upload master files
 # file_names_to_ignore: array of files to exclude from processing, such as those
 #                       containing invalid headers
-CENTRE_REGEX_BARCODE = r"^[\W_]*([\w-]*)_([A-Z]\d{2})[\W_]*$"
+CENTRE_REGEX_BARCODE = r"^[\W_]*([\w-]*)_([A-Z]\d{0,1}\d)[\W_]*$"
 CENTRE_DIR_BACKUPS = "data/backups"
 CENTRE_REGEX_SFTP_FILE = r"sanger_report_(\d{6}_\d{4}).*\.csv$"
 CENTRES = [
