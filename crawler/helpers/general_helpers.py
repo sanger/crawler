@@ -116,11 +116,7 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
     sftp_password = config.SFTP_READ_PASSWORD if not username else password
 
     return pysftp.Connection(
-        host=sftp_host,
-        port=sftp_port,
-        username=sftp_username,
-        password=sftp_password,
-        cnopts=cnopts,
+        host=sftp_host, port=sftp_port, username=sftp_username, password=sftp_password, cnopts=cnopts,
     )
 
 
@@ -204,7 +200,7 @@ def unpad_coordinate(coordinate: ModifiedRowValue) -> Optional[str]:
     return re.sub(r"0(\d+)$", r"\1", coordinate)
 
 
-def pad_coordinate(coordinate: ModifiedRowValue) -> Optional[str]:
+def pad_coordinate(coordinate: ModifiedRowValue) -> str:
     """Add leading zeros to the coordinate, eg. A1 => A01.
 
     Arguments:
