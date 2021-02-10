@@ -208,13 +208,13 @@ def pad_coordinate(coordinate: ModifiedRowValue) -> str:
     """Add leading zeros to the coordinate, eg. A1 => A01.
 
     Arguments:
-        coordinate (str): coordinate to strip
+        coordinate (str): coordinate to pad
 
     Returns:
         str: padded coordinate with 2 characters adding 0's
     """
     if not coordinate or not isinstance(coordinate, str):
-        raise Exception("Cannot pad coordinate")
+        raise Exception("Expecting string coordinate to pad")
 
     return f"{coordinate[0]}{coordinate[1:].zfill(2)}"
 
