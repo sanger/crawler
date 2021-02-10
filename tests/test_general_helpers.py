@@ -114,7 +114,7 @@ def test_pad_coordinate_A10():
 
 
 def test_pad_coordinate_B01010():
-    assert pad_coordinate("B01010") == "B1010"
+    assert pad_coordinate("B01010") == "B01010"
 
 
 def test_map_mongo_sample_to_mysql(config):

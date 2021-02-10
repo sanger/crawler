@@ -293,7 +293,7 @@ def test_extract_plate_barcode_and_coordinate(config):
     )
 
     # invalid coordinate format
-    invalid_coord = {"RNA ID": "AP-abc-12345678_H0"}
+    invalid_coord = {"RNA ID": "AP-abc-12345678_HH0"}
     assert centre_file.extract_plate_barcode_and_coordinate(invalid_coord, 0, barcode_field, barcode_regex) == ("", "",)
 
     # missing underscore between plate barcode and coordinate
@@ -325,7 +325,7 @@ def test_extract_plate_barcode_and_coordinate(config):
     lower_coord = {"RNA ID": "AP-abc-12345678_h01"}
     assert centre_file.extract_plate_barcode_and_coordinate(lower_coord, 0, barcode_field, barcode_regex) == ("", "",)
 
-    # no-padded coordinates
+    # unpadded coordinates
     lower_coord = {"RNA ID": "AP-abc-12345678_A2"}
     assert centre_file.extract_plate_barcode_and_coordinate(lower_coord, 0, barcode_field, barcode_regex) == (
         "AP-abc-12345678",
