@@ -49,6 +49,8 @@ from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
+    FIELD_MUST_SEQUENCE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
     MLWH_CH1_CQ,
     MLWH_CH1_RESULT,
     MLWH_CH1_TARGET,
@@ -77,6 +79,8 @@ from crawler.constants import (
     MLWH_ROOT_SAMPLE_ID,
     MLWH_SOURCE,
     MLWH_UPDATED_AT,
+    MLWH_MUST_SEQUENCE,
+    MLWH_PREFERENTIALLY_SEQUENCE,
 )
 from crawler.types import Config, DartWellProp, ModifiedRowValue, SampleDoc, SourcePlateDoc
 
@@ -186,6 +190,9 @@ def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:
         # UUID fields
         MLWH_LH_SAMPLE_UUID: sample.get(FIELD_LH_SAMPLE_UUID),
         MLWH_LH_SOURCE_PLATE_UUID: sample.get(FIELD_LH_SOURCE_PLATE_UUID),
+        # samples of importance fields
+        MLWH_MUST_SEQUENCE: sample.get(FIELD_MUST_SEQUENCE),
+        MLWH_PREFERENTIALLY_SEQUENCE: sample.get(FIELD_PREFERENTIALLY_SEQUENCE),
     }
 
 
@@ -282,6 +289,7 @@ def map_mongo_doc_to_dart_well_props(sample: SampleDoc) -> DartWellProp:
     Returns:
         DartWellProp -- Dictionary of DART property names and values.
     """
+    # DART_STATE_PICKABLE if sample is filtered_positive OR must_sequence OR preferentially_sequence
     return {
         DART_STATE: DART_STATE_PICKABLE if sample.get(FIELD_FILTERED_POSITIVE, False) else DART_EMPTY_VALUE,
         DART_ROOT_SAMPLE_ID: str(sample[FIELD_ROOT_SAMPLE_ID]),

@@ -14,6 +14,7 @@ from mysql.connector.connection_cext import CMySQLConnection
 from crawler.constants import (
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
+    COLLECTION_PRIORITY_SAMPLES,
     COLLECTION_SOURCE_PLATES,
     DART_STATE_PENDING,
     FIELD_BARCODE,
@@ -49,6 +50,8 @@ from crawler.constants import (
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
+    FIELD_MUST_SEQUENCE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
     MLWH_CH1_CQ,
     MLWH_CH1_RESULT,
     MLWH_CH1_TARGET,
@@ -76,6 +79,8 @@ from crawler.constants import (
     MLWH_SOURCE,
     MLWH_TABLE_NAME,
     MLWH_UPDATED_AT,
+    MLWH_MUST_SEQUENCE,
+    MLWH_PREFERENTIALLY_SEQUENCE,
     POSITIVE_RESULT_VALUE,
 )
 from crawler.db.mongo import get_mongo_collection
@@ -173,6 +178,39 @@ def test_process_files_one_wrong_format(mongo_database, config, testing_files_fo
     assert imports_collection.count_documents({"csv_file_used": "TEST_sanger_report_200518_2207.csv"}) == 1
     for i in imports_collection.find({"csv_file_used": "TEST_sanger_report_200518_2207.csv"}):
         assert "CRITICAL: File is unexpected type and cannot be processed. (TYPE 10)" in i["errors"]
+
+
+def test_process_files_with_priority_samples(mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn):
+    _, mongo_database = mongo_database
+    print("start...")
+    centre_config = config.CENTRES[0]
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+
+    priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
+    priority_samples_collection.insert_one({"Root Sample ID": "1", "must_sequence": True, "preferentially_sequence": False, "processed": False})
+    priority_samples_collection.insert_one({"Root Sample ID": "2", "must_sequence": False, "preferentially_sequence": True, "processed": False})
+    priority_samples_collection.insert_one({"Root Sample ID": "3", "must_sequence": True, "preferentially_sequence": False, "processed": True})
+    priority_samples_collection.insert_one({"Root Sample ID": "4", "must_sequence": False, "preferentially_sequence": False, "processed": False})
+    priority_samples_collection.insert_one({"Root Sample ID": "5", "must_sequence": True, "preferentially_sequence": False, "processed": False})
+    priority_samples_collection.insert_one({"Root Sample ID": "6", "must_sequence": False, "preferentially_sequence": True, "processed": False})
+
+    centre.process_files(True)
+
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+
+    pyodbc_conn.assert_called()
+
+    # We record *all* our samples
+    date_time = datetime(year=2020, month=4, day=16, hour=14, minute=30, second=40)
+    assert (
+        samples_collection.count_documents({"RNA ID": "AP123_B09", "source": "Alderley", FIELD_DATE_TESTED: date_time})
+        == 1
+    )
+    assert source_plates_collection.count_documents({"barcode": "AP123"}) == 1
+    print("end...")
 
 
 # ----- tests for class CentreFile -----
@@ -1155,6 +1193,8 @@ def test_insert_samples_from_docs_into_mlwh(
                 FIELD_DATE_TESTED: datetime(2020, 4, 23, 14, 40, 0),
                 FIELD_SOURCE: "Test Centre",
                 FIELD_LAB_ID: "TC",
+                FIELD_MUST_SEQUENCE: False,
+                FIELD_PREFERENTIALLY_SEQUENCE: True,
             },
             {
                 "_id": ObjectId("5f562d9931d9959b92544729"),
@@ -1181,6 +1221,8 @@ def test_insert_samples_from_docs_into_mlwh(
                 FIELD_FILTERED_POSITIVE: True,
                 FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
                 FIELD_FILTERED_POSITIVE_TIMESTAMP: filtered_positive_timestamp,
+                FIELD_MUST_SEQUENCE: True,
+                FIELD_PREFERENTIALLY_SEQUENCE: False,
             },
         ]
 
@@ -1224,6 +1266,8 @@ def test_insert_samples_from_docs_into_mlwh(
         assert rows[0][MLWH_FILTERED_POSITIVE_TIMESTAMP] is None
         assert rows[0][MLWH_CREATED_AT] is not None
         assert rows[0][MLWH_UPDATED_AT] is not None
+        assert rows[0][MLWH_MUST_SEQUENCE] == 0
+        assert rows[0][MLWH_PREFERENTIALLY_SEQUENCE] == 1
 
         assert rows[1][MLWH_MONGODB_ID] == "5f562d9931d9959b92544729"
         assert rows[1][MLWH_ROOT_SAMPLE_ID] == "ABC00000005"
@@ -1251,6 +1295,8 @@ def test_insert_samples_from_docs_into_mlwh(
         assert rows[1][MLWH_FILTERED_POSITIVE_TIMESTAMP] == filtered_positive_timestamp
         assert rows[1][MLWH_CREATED_AT] is not None
         assert rows[1][MLWH_UPDATED_AT] is not None
+        assert rows[1][MLWH_MUST_SEQUENCE] == 1
+        assert rows[1][MLWH_PREFERENTIALLY_SEQUENCE] == 0
 
 
 def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_connection):

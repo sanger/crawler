@@ -146,7 +146,9 @@ def add_dart_plate_if_doesnt_exist(cursor: pyodbc.Cursor, plate_barcode: str, bi
     return state
 
 
+# add_dart_well_properties_if_positive_or_of_importance
 def add_dart_well_properties_if_positive(cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str) -> None:
+    # if that sample is positive or must/pref seq
     """Adds well properties to DART for the specified sample if that sample is positive.
 
     Arguments:
@@ -154,6 +156,11 @@ def add_dart_well_properties_if_positive(cursor: pyodbc.Cursor, sample: SampleDo
         sample {Sample} -- The sample for which to add well properties.
         plate_barcode {str} -- The barcode of the plate to which this sample belongs.
     """
+
+    # remove if sample field_result = positive, as sample Result may now be negative too
+    # if sample is result OR must_sequence OR preferentially_sequence
+
+    # if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE || must_sequence == true || preferentially_sequence == true
     if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
         well_index = get_dart_well_index(str(sample.get(FIELD_COORDINATE)))
         if well_index is not None:

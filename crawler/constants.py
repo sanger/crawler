@@ -6,6 +6,7 @@ from typing import Final, Tuple
 COLLECTION_CENTRES: Final[str] = "centres"
 COLLECTION_IMPORTS: Final[str] = "imports"
 COLLECTION_SAMPLES: Final[str] = "samples"
+COLLECTION_PRIORITY_SAMPLES: Final[str] = "priority_samples"
 COLLECTION_SAMPLES_HISTORY: Final[str] = "samples_history"
 COLLECTION_SOURCE_PLATES: Final[str] = "source_plates"
 
@@ -44,6 +45,9 @@ FIELD_SOURCE: Final[str] = "source"
 FIELD_LH_SAMPLE_UUID: Final[str] = "lh_sample_uuid"
 FIELD_LH_SOURCE_PLATE_UUID: Final[str] = "lh_source_plate_uuid"
 FIELD_BARCODE: Final[str] = "barcode"
+FIELD_MUST_SEQUENCE: Final[str] = "must_sequence"
+FIELD_PREFERENTIALLY_SEQUENCE: Final[str] = "preferentially_sequence"
+FIELD_PROCESSED: Final[str] = "processed"
 
 # filtered-positive field names
 FIELD_FILTERED_POSITIVE_TIMESTAMP: Final[str] = "filtered_positive_timestamp"
@@ -80,6 +84,8 @@ MLWH_LH_SAMPLE_UUID: Final[str] = "lh_sample_uuid"
 MLWH_LH_SOURCE_PLATE_UUID: Final[str] = "lh_source_plate_uuid"
 MLWH_CREATED_AT: Final[str] = "created_at"
 MLWH_UPDATED_AT: Final[str] = "updated_at"
+MLWH_MUST_SEQUENCE: Final[str] = "must_sequence"
+MLWH_PREFERENTIALLY_SEQUENCE: Final[str] = "preferentially_sequence"
 
 # datetime formats
 MONGO_DATETIME_FORMAT: Final[str] = "%y%m%d_%H%M"

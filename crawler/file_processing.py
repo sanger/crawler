@@ -26,6 +26,7 @@ from crawler.constants import (
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
+    COLLECTION_PRIORITY_SAMPLES,
     DART_STATE_PENDING,
     FIELD_BARCODE,
     FIELD_CH1_CQ,
@@ -61,6 +62,9 @@ from crawler.constants import (
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
+    FIELD_MUST_SEQUENCE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
+    FIELD_PROCESSED,
     MAX_CQ_VALUE,
     MIN_CQ_VALUE,
     POSITIVE_RESULT_VALUE,
@@ -391,6 +395,8 @@ class CentreFile:
         if (num_docs_to_insert := len(docs_to_insert)) > 0:
             logger.debug(f"{num_docs_to_insert} docs to insert")
 
+            # Step 1:
+            # - Process files as is - insert data into mongo
             mongo_ids_of_inserted = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
 
             if len(mongo_ids_of_inserted) > 0:
@@ -399,13 +405,69 @@ class CentreFile:
                     filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert)
                 )
 
+                """
+                for each doc (ModifiedRow /sample?) in docs_to_insert_mlwh
+                check if sample is in priority_samples
+
+                check if either must_sequence or preferentially_sequence is true and processed false
+                if yes
+                stored identifier of sample to access in priority_sample
+
+                for each successful add sample, merge into docs_to_insert_mlwh
+                with must_sequence and preferentially_sequence values
+                use docs_to_insert to update MLWH
+                use docs_to_insert to update DART
+                use stored identifiers to update priority_samples table to processed true
+                """
+
+
+                # for each file, docs_to_insert_mlwh contains a list of samples
+                # that have been created in mongo
+                # these may include duplicate "Root Sample ID"
+
+                priority_samples_collection = get_mongo_collection(self.get_db(), COLLECTION_PRIORITY_SAMPLES)
+
+                priority_samples = []
+                for doc in docs_to_insert_mlwh:
+                    # have to match on four fields of Root sample id, RNA ID, Result and Lab ID.
+                    # OK for now, but matching on Root Sample ID, which ARENT unique in samples_collection, use CREATED AT
+                    matching_priority_entry = { "Root Sample ID": doc[FIELD_ROOT_SAMPLE_ID], "processed": False }
+                    of_importance = { "$or": [ { "must_sequence": True }, { "preferentially_sequence": True } ] }
+
+                    # pipeline = [{"$match": {"Root Sample ID": {"$eq": doc[FIELD_ROOT_SAMPLE_ID]}}}]
+                    # pipeline = [{"$match": {"Root Sample ID": {"$eq": doc[FIELD_ROOT_SAMPLE_ID]},"processed": {"$eq": False}}}]
+
+                    query = {
+                        "$and": [
+                            matching_priority_entry,
+                            processed_false,
+                            of_importance,
+                        ]
+                    }
+
+                    import pdb
+                    pdb.set_trace()
+
+                    priority_sample = priority_samples_collection.find(query)[0]
+                    priority_samples.append(priority_sample)
+
+
+                #  Create all samples in MLWH with docs_to_insert including must_seq/ pre_seq
                 mlwh_success = self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
                 # add to the DART database if the config flag is set and we have successfully updated the MLWH
                 if add_to_dart and mlwh_success:
                     logger.info("MLWH insert successful and adding to DART")
 
+                    #  Create in DART with docs_to_insert including must_seq/ pre_seq
                     self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
+
+                # if mlwh_success and dart_success:
+                    # new method (identifiers)
+                    # log error if fails to update process true
+                    # use stored identifiers to update priority_samples table to processed: true
+
+
         else:
             logger.info("No new docs to insert")
 
@@ -644,6 +706,8 @@ class CentreFile:
         """
         values: List[Dict[str, Any]] = []
 
+        # make sure must_sequence/ preferentially_sequence values are present in sample_doc
+
         for sample_doc in docs_to_insert:
             values.append(map_mongo_sample_to_mysql(sample_doc))
 
@@ -680,7 +744,7 @@ class CentreFile:
         if (sql_server_connection := create_dart_sql_server_conn(self.config)) is not None:
             try:
                 cursor = sql_server_connection.cursor()
-
+                # check docs_to_insert contain must_seq/ pre_seq
                 for plate_barcode, samples in groupby_transform(  # type: ignore
                     docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]
                 ):
@@ -690,6 +754,7 @@ class CentreFile:
                         )
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
+                                # add_dart_well_properties_if_positive_or_of_importance
                                 add_dart_well_properties_if_positive(cursor, sample, plate_barcode)  # type: ignore
                         cursor.commit()
                     except Exception as e:

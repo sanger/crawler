@@ -32,6 +32,8 @@ from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
+    FIELD_MUST_SEQUENCE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
     MLWH_COORDINATE,
     MLWH_CREATED_AT,
     MLWH_DATE_TESTED,
@@ -48,6 +50,8 @@ from crawler.constants import (
     MLWH_ROOT_SAMPLE_ID,
     MLWH_SOURCE,
     MLWH_UPDATED_AT,
+    MLWH_MUST_SEQUENCE,
+    MLWH_PREFERENTIALLY_SEQUENCE,
 )
 from crawler.helpers.general_helpers import (
     create_source_plate_doc,
@@ -118,6 +122,8 @@ def test_map_mongo_sample_to_mysql(config):
         FIELD_FILTERED_POSITIVE_TIMESTAMP: filtered_positive_timestamp,
         FIELD_LH_SAMPLE_UUID: "7512638d-f25e-4ef0-85f0-d921d5263449",
         FIELD_LH_SOURCE_PLATE_UUID: "88ed5139-9e0c-4118-8cc8-20413b9ffa01",
+        FIELD_MUST_SEQUENCE: True,
+        FIELD_PREFERENTIALLY_SEQUENCE: False,
     }
 
     result = map_mongo_sample_to_mysql(doc_to_transform)
@@ -138,6 +144,8 @@ def test_map_mongo_sample_to_mysql(config):
     assert result[MLWH_LH_SOURCE_PLATE_UUID] == "88ed5139-9e0c-4118-8cc8-20413b9ffa01"
     assert result.get(MLWH_CREATED_AT) is not None
     assert result.get(MLWH_UPDATED_AT) is not None
+    assert result[MLWH_MUST_SEQUENCE] is True
+    assert result[MLWH_PREFERENTIALLY_SEQUENCE] is False
 
 
 def test_map_mongo_sample_to_mysql_with_copy(config):

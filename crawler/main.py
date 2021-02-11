@@ -100,6 +100,12 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                         if sftp:
                             centre_instance.download_csv_files()
 
+                        # Step 1
+                        # process files as is
+                        # AND check if the samples being processed are priority samples
+                        # update MLWH
+                        # update DART
+                        # set processed in priority_samples collection to true
                         centre_instance.process_files(add_to_dart)
                     except Exception as e:
                         logger.error("An exception occured")
@@ -108,6 +114,17 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                     finally:
                         if not keep_files and centre_instance.is_download_dir_walkable:
                             centre_instance.clean_up()
+
+                # Step 2
+                # check if there are any priority samples in the priority_samples collection
+                # go through priorit samples, that havent been processes
+                # that nave not been processed, processed = false
+                # and exist in the samples table
+                # update MLWH
+                # update DART
+                # set processed in priority_samples collection to true
+                # logger message, as cant log on a file
+
 
         logger.info(f"Import complete in {round(time.time() - start, 2)}s")
         logger.info("=" * 80)
