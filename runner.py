@@ -50,7 +50,7 @@ if __name__ == "__main__":
         print("Scheduled to run every 15 minutes")
 
         # if a run misses its scheduled time, it queues up
-        # if more than one run is queued up, they execute sequentially
+        #  if more than one run is queued up, they execute sequentially
         # i.e. no parallel processing
         schedule.every(15).minutes.do(
             main.run, sftp=args.sftp, keep_files=args.keep_files, add_to_dart=args.add_to_dart
