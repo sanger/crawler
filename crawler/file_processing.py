@@ -153,7 +153,7 @@ class Centre:
 
         # iterate through each file in the centre
         for file_name in self.centre_files:
-            logger.info(f"Checking file {file_name}")
+            logger.debug(f"Checking file {file_name}")
 
             # create an instance of the file class to handle the file
             centre_file = CentreFile(file_name, self)
@@ -163,18 +163,18 @@ class Centre:
 
             # Process depending on file state
             if centre_file.file_state == CentreFileState.FILE_IN_BLACKLIST:
-                logger.info("File in blacklist, skipping")
+                logger.debug("File in blacklist, skipping")
                 # next file
                 continue
             elif centre_file.file_state == CentreFileState.FILE_NOT_PROCESSED_YET:
                 # process it
                 centre_file.process_samples(add_to_dart)
             elif centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_ERROR:
-                logger.info("File already processed as errored, skipping")
+                logger.debug("File already processed as errored, skipping")
                 # next file
                 continue
             elif centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_SUCCESS:
-                logger.info("File already processed successfully, skipping")
+                logger.debug("File already processed successfully, skipping")
                 # next file
                 continue
             else:
