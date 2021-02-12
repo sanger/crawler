@@ -211,6 +211,21 @@ def unpad_coordinate(coordinate: ModifiedRowValue) -> Optional[str]:
     return re.sub(r"0(\d+)$", r"\1", coordinate)
 
 
+def pad_coordinate(coordinate: ModifiedRowValue) -> str:
+    """Add leading zeros to the coordinate, eg. A1 => A01.
+
+    Arguments:
+        coordinate (str): coordinate to pad
+
+    Returns:
+        str: padded coordinate with 2 characters adding 0's
+    """
+    if not coordinate or not isinstance(coordinate, str):
+        raise Exception("Expecting string coordinate to pad")
+
+    return f"{coordinate[0]}{coordinate[1:].zfill(2)}"
+
+
 def map_mongo_sample_to_mysql(doc: SampleDoc, copy_date: bool = False) -> Dict[str, Any]:
     """Transform the sample document fields into a form suitable for the MLWH. We are setting created_at and updated_at
     fields to current timestamp for inserts here, because it would be too slow to retrieve them from mongo and they
