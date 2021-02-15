@@ -11,6 +11,7 @@ from sqlalchemy import MetaData
 from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_SAMPLES,
+    COLLECTION_PRIORITY_SAMPLES,
     COLLECTION_SAMPLES_HISTORY,
     FIELD_FILTERED_POSITIVE,
     MLWH_TABLE_NAME,
@@ -28,6 +29,7 @@ from tests.data.testing_objects import (
     MONGO_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS,
     MONGO_SAMPLES_WITHOUT_FILTERED_POSITIVE_FIELDS,
     TESTING_SAMPLES,
+    TESTING_PRIORITY_SAMPLES,
 )
 
 logger = logging.getLogger(__name__)
@@ -119,6 +121,11 @@ def samples_collection_accessor(mongo_database):
 
 
 @pytest.fixture
+def priority_samples_collection_accessor(mongo_database):
+    return get_mongo_collection(mongo_database[1], COLLECTION_PRIORITY_SAMPLES)
+
+
+@pytest.fixture
 def centres_collection_accessor(mongo_database):
     return get_mongo_collection(mongo_database[1], COLLECTION_CENTRES)
 
@@ -136,6 +143,15 @@ def testing_samples(samples_collection_accessor):
         yield samples
     finally:
         samples_collection_accessor.delete_many({})
+
+@pytest.fixture
+def testing_priority_samples(priority_samples_collection_accessor):
+    result = priority_samples_collection_accessor.insert_many(TESTING_PRIORITY_SAMPLES)
+    samples = list(priority_samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
+    try:
+        yield samples
+    finally:
+        priority_samples_collection_accessor.delete_many({})
 
 
 @pytest.fixture

@@ -82,6 +82,7 @@ from crawler.constants import (
     MLWH_MUST_SEQUENCE,
     MLWH_PREFERENTIALLY_SEQUENCE,
     POSITIVE_RESULT_VALUE,
+    FIELD_PROCESSED
 )
 from crawler.db.mongo import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
@@ -180,37 +181,18 @@ def test_process_files_one_wrong_format(mongo_database, config, testing_files_fo
         assert "CRITICAL: File is unexpected type and cannot be processed. (TYPE 10)" in i["errors"]
 
 
-def test_process_files_with_priority_samples(mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn):
+def test_process_files_with_priority_samples(mongo_database, config, testing_files_for_process, testing_centres, testing_priority_samples, pyodbc_conn):
     _, mongo_database = mongo_database
-    print("start...")
+
     centre_config = config.CENTRES[0]
     centre_config["sftp_root_read"] = "tmp/files"
     centre = Centre(config, centre_config)
-
-    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
-
-    priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
-    priority_samples_collection.insert_one({"Root Sample ID": "1", "must_sequence": True, "preferentially_sequence": False, "processed": False})
-    priority_samples_collection.insert_one({"Root Sample ID": "2", "must_sequence": False, "preferentially_sequence": True, "processed": False})
-    priority_samples_collection.insert_one({"Root Sample ID": "3", "must_sequence": True, "preferentially_sequence": False, "processed": True})
-    priority_samples_collection.insert_one({"Root Sample ID": "4", "must_sequence": False, "preferentially_sequence": False, "processed": False})
-    priority_samples_collection.insert_one({"Root Sample ID": "5", "must_sequence": True, "preferentially_sequence": False, "processed": False})
-    priority_samples_collection.insert_one({"Root Sample ID": "6", "must_sequence": False, "preferentially_sequence": True, "processed": False})
-
     centre.process_files(True)
-
-    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
 
     pyodbc_conn.assert_called()
 
-    # We record *all* our samples
-    date_time = datetime(year=2020, month=4, day=16, hour=14, minute=30, second=40)
-    assert (
-        samples_collection.count_documents({"RNA ID": "AP123_B09", "source": "Alderley", FIELD_DATE_TESTED: date_time})
-        == 1
-    )
-    assert source_plates_collection.count_documents({"barcode": "AP123"}) == 1
-    print("end...")
+    priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
+    assert len(list(priority_samples_collection.find({FIELD_PROCESSED: True}))) == 3, f"Wrong number of priority samples updated. Expected: 3"
 
 
 # ----- tests for class CentreFile -----
@@ -1595,7 +1577,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
                     test_well_props = {"prop1": "value1", "test prop": "test value"}
                     mock_map.return_value = test_well_props
                     with patch("crawler.db.dart.set_dart_well_properties") as mock_set_well_props:
-                        centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+                        result = centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
                         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
@@ -1626,6 +1608,9 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
                         mock_conn().cursor().rollback.assert_not_called()
                         assert mock_conn().cursor().commit.call_count == 3
                         mock_conn().close.assert_called_once()
+
+                        # returns
+                        assert result == True
 
 
 def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_wells(config):

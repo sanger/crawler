@@ -406,12 +406,9 @@ class CentreFile:
                 )
 
                 """
-                for each doc (ModifiedRow /sample?) in docs_to_insert_mlwh
+                for each row/sample in docs_to_insert_mlwh
                 check if sample is in priority_samples
-
-                check if either must_sequence or preferentially_sequence is true and processed false
-                if yes
-                stored identifier of sample to access in priority_sample
+                and either must_sequence/preferentially_sequence is true, and processed false
 
                 for each successful add sample, merge into docs_to_insert_mlwh
                 with must_sequence and preferentially_sequence values
@@ -420,37 +417,33 @@ class CentreFile:
                 use stored identifiers to update priority_samples table to processed true
                 """
 
+                priority_samples_root_samples_id = []
 
-                # for each file, docs_to_insert_mlwh contains a list of samples
-                # that have been created in mongo
-                # these may include duplicate "Root Sample ID"
-
-                priority_samples_collection = get_mongo_collection(self.get_db(), COLLECTION_PRIORITY_SAMPLES)
-
-                priority_samples = []
                 for doc in docs_to_insert_mlwh:
-                    # have to match on four fields of Root sample id, RNA ID, Result and Lab ID.
-                    # OK for now, but matching on Root Sample ID, which ARENT unique in samples_collection, use CREATED AT
-                    matching_priority_entry = { "Root Sample ID": doc[FIELD_ROOT_SAMPLE_ID], "processed": False }
+                    matching_unprocessed_priority_entry = { "Root Sample ID": doc[FIELD_ROOT_SAMPLE_ID], "processed": False }
                     of_importance = { "$or": [ { "must_sequence": True }, { "preferentially_sequence": True } ] }
-
-                    # pipeline = [{"$match": {"Root Sample ID": {"$eq": doc[FIELD_ROOT_SAMPLE_ID]}}}]
-                    # pipeline = [{"$match": {"Root Sample ID": {"$eq": doc[FIELD_ROOT_SAMPLE_ID]},"processed": {"$eq": False}}}]
 
                     query = {
                         "$and": [
-                            matching_priority_entry,
-                            processed_false,
+                            matching_unprocessed_priority_entry,
                             of_importance,
                         ]
                     }
 
-                    import pdb
-                    pdb.set_trace()
+                    priority_samples_collection = get_mongo_collection(self.get_db(), COLLECTION_PRIORITY_SAMPLES)
+                    priority_sample_cursor = priority_samples_collection.find(query)
 
-                    priority_sample = priority_samples_collection.find(query)[0]
-                    priority_samples.append(priority_sample)
-
+                    if priority_sample_cursor.count() == 1:
+                        priority_samples_root_samples_id.append(priority_samples_collection.find(query)[0]["Root Sample ID"])
+                        logger.info("Piority sample found for Root Sample ID: %s", doc[FIELD_ROOT_SAMPLE_ID])
+                    elif priority_sample_cursor.count() == 0:
+                        logger.info("No priority samples found for Root Sample ID: %s", doc[FIELD_ROOT_SAMPLE_ID])
+                    elif priority_sample_cursor.count() > 1:
+                        # Samples previously created in mongo may include duplicate "Root Sample ID"
+                        # Therefore, should match on four fields of Root sample id, RNA ID, Result and Lab ID
+                        # As Root Sample ID may not be not unique in priority_samples table too
+                        # TODO: Use created_at to find by latest
+                        logger.info("%s duplicate priority samples were found for Root Sample ID: %s", priority_sample_cursor.count(), doc[FIELD_ROOT_SAMPLE_ID])
 
                 #  Create all samples in MLWH with docs_to_insert including must_seq/ pre_seq
                 mlwh_success = self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
@@ -460,19 +453,25 @@ class CentreFile:
                     logger.info("MLWH insert successful and adding to DART")
 
                     #  Create in DART with docs_to_insert including must_seq/ pre_seq
-                    self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
-
-                # if mlwh_success and dart_success:
-                    # new method (identifiers)
-                    # log error if fails to update process true
-                    # use stored identifiers to update priority_samples table to processed: true
-
+                    dart_success = self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
+                    if dart_success:
+                        mongo_success = self.update_priority_samples_to_processed(priority_samples_root_samples_id)
 
         else:
             logger.info("No new docs to insert")
 
         self.backup_file()
         self.create_import_record_for_file()
+
+
+    def update_priority_samples_to_processed(self, root_sample_ids) -> bool:
+        priority_samples_collection = get_mongo_collection(self.get_db(), COLLECTION_PRIORITY_SAMPLES)
+        for root_sample_id in root_sample_ids:
+            # TODO: Assumes Root Sample IDs are unique in priority_samples table
+            priority_samples_collection.update({"Root Sample ID": root_sample_id}, {"$set": { "processed": True}})
+        logger.info("Mongo update of processed for priority samples successful")
+        return True
+
 
     def backup_filename(self) -> str:
         """Backup the file.
@@ -735,11 +734,15 @@ class CentreFile:
 
         return False
 
-    def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[ModifiedRow]) -> None:
+    def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[ModifiedRow]) -> bool:
         """Insert plates and wells into the DART database.
 
         Arguments:
             docs_to_insert {List[ModifiedRow]} -- List of filtered sample information extracted from CSV files.
+
+        Returns:
+            TODO: check return False
+            {bool} -- True if the insert was successful; otherwise False
         """
         if (sql_server_connection := create_dart_sql_server_conn(self.config)) is not None:
             try:
@@ -765,8 +768,10 @@ class CentreFile:
                         logger.exception(e)
                         # rollback statements executed since previous commit/rollback
                         cursor.rollback()
+                        return False
 
                 logger.debug(f"DART database inserts completed successfully for file {self.file_name}")
+                return True
             except Exception as e:
                 self.logging_collection.add_error(
                     "TYPE 23",
@@ -774,6 +779,7 @@ class CentreFile:
                 )
                 logger.critical(f"Critical error in file {self.file_name}: {e}")
                 logger.exception(e)
+                return False
             finally:
                 sql_server_connection.close()
         else:
@@ -782,6 +788,7 @@ class CentreFile:
                 f"DART database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
+            return False
 
     def process_csv(self) -> List[ModifiedRow]:
         """Parses and processes the CSV file of the centre.
