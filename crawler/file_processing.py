@@ -418,6 +418,7 @@ class CentreFile:
                 """
 
                 priority_samples_root_samples_id = []
+                priority_samples_collection = get_mongo_collection(self.get_db(), COLLECTION_PRIORITY_SAMPLES)
 
                 for doc in docs_to_insert_mlwh:
                     matching_unprocessed_priority_entry = { "Root Sample ID": doc[FIELD_ROOT_SAMPLE_ID], "processed": False }
@@ -430,11 +431,14 @@ class CentreFile:
                         ]
                     }
 
-                    priority_samples_collection = get_mongo_collection(self.get_db(), COLLECTION_PRIORITY_SAMPLES)
                     priority_sample_cursor = priority_samples_collection.find(query)
 
                     if priority_sample_cursor.count() == 1:
                         priority_samples_root_samples_id.append(priority_samples_collection.find(query)[0]["Root Sample ID"])
+
+                        # find sample in docs_to_insert_mlwh
+                        # appead must_seq/ pre_seq data
+
                         logger.info("Piority sample found for Root Sample ID: %s", doc[FIELD_ROOT_SAMPLE_ID])
                     elif priority_sample_cursor.count() == 0:
                         logger.info("No priority samples found for Root Sample ID: %s", doc[FIELD_ROOT_SAMPLE_ID])
@@ -455,7 +459,7 @@ class CentreFile:
                     #  Create in DART with docs_to_insert including must_seq/ pre_seq
                     dart_success = self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
                     if dart_success:
-                        mongo_success = self.update_priority_samples_to_processed(priority_samples_root_samples_id)
+                        self.update_priority_samples_to_processed(priority_samples_root_samples_id)
 
         else:
             logger.info("No new docs to insert")
@@ -468,9 +472,10 @@ class CentreFile:
         priority_samples_collection = get_mongo_collection(self.get_db(), COLLECTION_PRIORITY_SAMPLES)
         for root_sample_id in root_sample_ids:
             # TODO: Assumes Root Sample IDs are unique in priority_samples table
+            # Add index to Root Sample ID in priority samples collection
+            # If more than one, it updates the first one that is found
             priority_samples_collection.update({"Root Sample ID": root_sample_id}, {"$set": { "processed": True}})
         logger.info("Mongo update of processed for priority samples successful")
-        return True
 
 
     def backup_filename(self) -> str:
@@ -704,6 +709,9 @@ class CentreFile:
             {bool} -- True if the insert was successful; otherwise False
         """
         values: List[Dict[str, Any]] = []
+
+        # import pdb
+        # pdb.set_trace()
 
         # make sure must_sequence/ preferentially_sequence values are present in sample_doc
 

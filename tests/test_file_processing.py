@@ -191,8 +191,31 @@ def test_process_files_with_priority_samples(mongo_database, config, testing_fil
 
     pyodbc_conn.assert_called()
 
+    # assert insert_samples_from_docs_into_mlwh called with docs_to_insert_mlwh() including must_seq/ pre_seq
+
+
     priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
     assert len(list(priority_samples_collection.find({FIELD_PROCESSED: True}))) == 3, f"Wrong number of priority samples updated. Expected: 3"
+
+
+
+
+def test_update_priority_samples_to_processed(mongo_database, config, testing_priority_samples):
+    _, mongo_database = mongo_database
+
+    centre_config = config.CENTRES[0]
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+
+    centre_file = CentreFile('AP_sanger_report_200503_2338.csv', centre)
+
+    root_sample_ids = ['1', '2']
+    centre_file.update_priority_samples_to_processed(root_sample_ids)
+
+    priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
+
+    assert priority_samples_collection.find({ FIELD_ROOT_SAMPLE_ID: root_sample_ids[0]})[0][FIELD_PROCESSED] == True
+    assert priority_samples_collection.find({ FIELD_ROOT_SAMPLE_ID: root_sample_ids[1]})[0][FIELD_PROCESSED] == True
 
 
 # ----- tests for class CentreFile -----
@@ -1175,8 +1198,8 @@ def test_insert_samples_from_docs_into_mlwh(
                 FIELD_DATE_TESTED: datetime(2020, 4, 23, 14, 40, 0),
                 FIELD_SOURCE: "Test Centre",
                 FIELD_LAB_ID: "TC",
-                FIELD_MUST_SEQUENCE: False,
-                FIELD_PREFERENTIALLY_SEQUENCE: True,
+                # FIELD_MUST_SEQUENCE: False,
+                # FIELD_PREFERENTIALLY_SEQUENCE: True,
             },
             {
                 "_id": ObjectId("5f562d9931d9959b92544729"),
@@ -1203,8 +1226,8 @@ def test_insert_samples_from_docs_into_mlwh(
                 FIELD_FILTERED_POSITIVE: True,
                 FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
                 FIELD_FILTERED_POSITIVE_TIMESTAMP: filtered_positive_timestamp,
-                FIELD_MUST_SEQUENCE: True,
-                FIELD_PREFERENTIALLY_SEQUENCE: False,
+                # FIELD_MUST_SEQUENCE: True,
+                # FIELD_PREFERENTIALLY_SEQUENCE: False,
             },
         ]
 
