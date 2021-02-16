@@ -30,6 +30,9 @@ from crawler.constants import (
     POSITIVE_RESULT_VALUE,
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
+    FIELD_MUST_SEQUENCE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
+    FIELD_PROCESSED,
 )
 
 TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
@@ -64,6 +67,33 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         "released": True,
         FIELD_ROOT_SAMPLE_ID: "MCM004",
     },
+]
+
+TESTING_PRIORITY_SAMPLES: List[Dict[str, Union[str, bool]]] = [
+    {
+        FIELD_ROOT_SAMPLE_ID: "1",
+        FIELD_MUST_SEQUENCE: True,
+        FIELD_PREFERENTIALLY_SEQUENCE: False,
+        FIELD_PROCESSED: False
+    },
+    {
+        FIELD_ROOT_SAMPLE_ID: "2",
+        FIELD_MUST_SEQUENCE: False,
+        FIELD_PREFERENTIALLY_SEQUENCE: True,
+        FIELD_PROCESSED: False
+    },
+    {
+        FIELD_ROOT_SAMPLE_ID: "3",
+        FIELD_MUST_SEQUENCE: True,
+        FIELD_PREFERENTIALLY_SEQUENCE: False,
+        FIELD_PROCESSED: True
+    },
+    {
+        FIELD_ROOT_SAMPLE_ID: "4",
+        FIELD_MUST_SEQUENCE: False,
+        FIELD_PREFERENTIALLY_SEQUENCE: False,
+        FIELD_PROCESSED: False
+    }
 ]
 
 
