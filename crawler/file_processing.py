@@ -374,43 +374,45 @@ class CentreFile:
 
         return self.file_state
 
-    def merge_priority_samples_into_docs_to_insert(self, priority_samples, docs_to_insert):
-        return True
+    def merge_priority_samples_into_docs_to_insert(self, priority_samples: List[Any], docs_to_insert):
+        """
+        Updates the sample records with must_sequence and preferentially_sequence values
+        Arguments:
+            priority_samples  - priority samples to update docs_to_insert with
+            docs_to_insert {List[ModifiedRow]} -- the sample records to update
+
+        # Returns:
+        #     List[Sample] -- the updated, filtered samples
+        """
+        priority_root_sample_ids = map(lambda x: x[FIELD_ROOT_SAMPLE_ID], priority_samples)
+
+        for doc in docs_to_insert:
+            root_sample_id = doc[FIELD_ROOT_SAMPLE_ID]
+            if root_sample_id in priority_root_sample_ids:
+                # Assuming Root Saple ID is unique in priority_samples collection
+                priority_sample = list(filter(lambda x: x[FIELD_ROOT_SAMPLE_ID] == root_sample_id, priority_samples))[0]
+                doc[FIELD_MUST_SEQUENCE] = priority_sample[FIELD_MUST_SEQUENCE]
+                doc[FIELD_PREFERENTIALLY_SEQUENCE] = priority_sample[FIELD_PREFERENTIALLY_SEQUENCE]
+
 
     def get_priority_samples(self, root_sample_ids: List[str]) -> List[Any]:
-        matching_unprocessed_priority_entry = {
-            "Root Sample ID": doc[FIELD_ROOT_SAMPLE_ID],
-            "processed": False,
-        }
+        # Assuming Root Saple ID is unique in priority_samples collection
+        matching_priority_entry ={FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}
+        unprocessed = { "processed": False }
         of_importance = {"$or": [{"must_sequence": True}, {"preferentially_sequence": True}]}
 
-        query = {"$and": [matching_unprocessed_priority_entry, of_importance,]}
+        query = {"$and": [matching_priority_entry, unprocessed, of_importance]}
+
+        priority_samples_collection = get_mongo_collection(self.get_db(), COLLECTION_PRIORITY_SAMPLES)
 
         priority_sample_cursor = priority_samples_collection.find(query)
+        return list(priority_sample_cursor)
 
-        if priority_sample_cursor.count() == 1:
-            priority_samples_root_samples_id.append(priority_samples_collection.find(query)[0]["Root Sample ID"])
-
-            # find sample in docs_to_insert_mlwh
-            # appead must_seq/ pre_seq data
-
-            logger.info("Piority sample found for Root Sample ID: %s", doc[FIELD_ROOT_SAMPLE_ID])
-        elif priority_sample_cursor.count() == 0:
-            logger.info("No priority samples found for Root Sample ID: %s", doc[FIELD_ROOT_SAMPLE_ID])
-        elif priority_sample_cursor.count() > 1:
-            # Samples previously created in mongo may include duplicate "Root Sample ID"
-            # Therefore, should match on four fields of Root sample id, RNA ID, Result and Lab ID
-            # As Root Sample ID may not be not unique in priority_samples table too
-            # TODO: Use created_at to find by latest
-            logger.info(
-                "%s duplicate priority samples were found for Root Sample ID: %s",
-                priority_sample_cursor.count(),
-                doc[FIELD_ROOT_SAMPLE_ID],
-            )
 
     def get_root_sample_ids(self, mongo_sample_ids: List[str]) -> List[str]:
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
         return list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], samples_collection.find({"_id": {"$in": mongo_sample_ids}})))
+
 
     def process_samples(self, add_to_dart: bool) -> None:
         """Processes the samples extracted from the centre file.
@@ -444,57 +446,18 @@ class CentreFile:
                     filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert)
                 )
 
-                """
-                for each row/sample in docs_to_insert_mlwh
-                check if sample is in priority_samples
-                and either must_sequence/preferentially_sequence is true, and processed false
-
-                for each successful add sample, merge into docs_to_insert_mlwh
-                with must_sequence and preferentially_sequence values
-                use docs_to_insert to update MLWH
-                use docs_to_insert to update DART
-                use stored identifiers to update priority_samples table to processed true
-                """
-
-                priority_samples_root_samples_id = []
-                priority_samples_collection = get_mongo_collection(self.get_db(), COLLECTION_PRIORITY_SAMPLES)
-
+                # get the root sample ideas of the samples
+                # that were sucessfully inserted into the samples collection
                 root_sample_ids = self.get_root_sample_ids(mongo_ids_of_inserted)
+
+                # check if sample is in priority_samples
+                # either must_sequence/preferentially_sequence is true, and processed false
                 priority_samples = self.get_priority_samples(root_sample_ids)
+
+                # for each successful add sample, merge into docs_to_insert_mlwh
+                # with must_sequence and preferentially_sequence values
+                # use docs_to_insert to update MLWH
                 self.merge_priority_samples_into_docs_to_insert(priority_samples, docs_to_insert_mlwh)
-
-                for doc in docs_to_insert_mlwh:
-                    matching_unprocessed_priority_entry = {
-                        "Root Sample ID": doc[FIELD_ROOT_SAMPLE_ID],
-                        "processed": False,
-                    }
-                    of_importance = {"$or": [{"must_sequence": True}, {"preferentially_sequence": True}]}
-
-                    query = {"$and": [matching_unprocessed_priority_entry, of_importance,]}
-
-                    priority_sample_cursor = priority_samples_collection.find(query)
-
-                    if priority_sample_cursor.count() == 1:
-                        priority_samples_root_samples_id.append(
-                            priority_samples_collection.find(query)[0]["Root Sample ID"]
-                        )
-
-                        # find sample in docs_to_insert_mlwh
-                        # appead must_seq/ pre_seq data
-
-                        logger.info("Piority sample found for Root Sample ID: %s", doc[FIELD_ROOT_SAMPLE_ID])
-                    elif priority_sample_cursor.count() == 0:
-                        logger.info("No priority samples found for Root Sample ID: %s", doc[FIELD_ROOT_SAMPLE_ID])
-                    elif priority_sample_cursor.count() > 1:
-                        # Samples previously created in mongo may include duplicate "Root Sample ID"
-                        # Therefore, should match on four fields of Root sample id, RNA ID, Result and Lab ID
-                        # As Root Sample ID may not be not unique in priority_samples table too
-                        # TODO: Use created_at to find by latest
-                        logger.info(
-                            "%s duplicate priority samples were found for Root Sample ID: %s",
-                            priority_sample_cursor.count(),
-                            doc[FIELD_ROOT_SAMPLE_ID],
-                        )
 
                 #  Create all samples in MLWH with docs_to_insert including must_seq/ pre_seq
                 mlwh_success = self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
@@ -504,8 +467,11 @@ class CentreFile:
                     logger.info("MLWH insert successful and adding to DART")
 
                     #  Create in DART with docs_to_insert including must_seq/ pre_seq
+                    #  use docs_to_insert to update DART
                     dart_success = self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
                     if dart_success:
+                        # use stored identifiers to update priority_samples table to processed true
+                        priority_samples_root_samples_id = map(lambda x: x[FIELD_ROOT_SAMPLE_ID], priority_samples)
                         self.update_priority_samples_to_processed(priority_samples_root_samples_id)
 
         else:
@@ -755,8 +721,8 @@ class CentreFile:
         """
         values: List[Dict[str, Any]] = []
 
-        # import pdb
-        # pdb.set_trace()
+        import pdb
+        pdb.set_trace()
 
         # make sure must_sequence/ preferentially_sequence values are present in sample_doc
 

@@ -181,44 +181,6 @@ def test_process_files_one_wrong_format(mongo_database, config, testing_files_fo
         assert "CRITICAL: File is unexpected type and cannot be processed. (TYPE 10)" in i["errors"]
 
 
-def test_process_files_with_priority_samples(
-    mongo_database, config, testing_files_for_process, testing_centres, testing_priority_samples, pyodbc_conn
-):
-    _, mongo_database = mongo_database
-
-    centre_config = config.CENTRES[0]
-    centre_config["sftp_root_read"] = "tmp/files"
-    centre = Centre(config, centre_config)
-    centre.process_files(True)
-
-    pyodbc_conn.assert_called()
-
-    # assert insert_samples_from_docs_into_mlwh called with docs_to_insert_mlwh() including must_seq/ pre_seq
-
-    priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
-    assert (
-        len(list(priority_samples_collection.find({FIELD_PROCESSED: True}))) == 3
-    ), f"Wrong number of priority samples updated. Expected: 3"
-
-
-def test_update_priority_samples_to_processed(mongo_database, config, testing_priority_samples):
-    _, mongo_database = mongo_database
-
-    centre_config = config.CENTRES[0]
-    centre_config["sftp_root_read"] = "tmp/files"
-    centre = Centre(config, centre_config)
-
-    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
-
-    root_sample_ids = ["1", "2"]
-    centre_file.update_priority_samples_to_processed(root_sample_ids)
-
-    priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
-
-    assert priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: root_sample_ids[0]})[0][FIELD_PROCESSED] == True
-    assert priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: root_sample_ids[1]})[0][FIELD_PROCESSED] == True
-
-
 # ----- tests for class CentreFile -----
 
 # tests for checksums
@@ -1197,8 +1159,8 @@ def test_insert_samples_from_docs_into_mlwh(
                 FIELD_DATE_TESTED: datetime(2020, 4, 23, 14, 40, 0),
                 FIELD_SOURCE: "Test Centre",
                 FIELD_LAB_ID: "TC",
-                # FIELD_MUST_SEQUENCE: False,
-                # FIELD_PREFERENTIALLY_SEQUENCE: True,
+                FIELD_MUST_SEQUENCE: False,
+                FIELD_PREFERENTIALLY_SEQUENCE: True,
             },
             {
                 "_id": ObjectId("5f562d9931d9959b92544729"),
@@ -1225,8 +1187,8 @@ def test_insert_samples_from_docs_into_mlwh(
                 FIELD_FILTERED_POSITIVE: True,
                 FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
                 FIELD_FILTERED_POSITIVE_TIMESTAMP: filtered_positive_timestamp,
-                # FIELD_MUST_SEQUENCE: True,
-                # FIELD_PREFERENTIALLY_SEQUENCE: False,
+                FIELD_MUST_SEQUENCE: True,
+                FIELD_PREFERENTIALLY_SEQUENCE: False,
             },
         ]
 
@@ -1858,3 +1820,83 @@ def test_get_root_sample_ids_returns_root_sample_ids(config, mongo_database, tes
     centre_file = CentreFile("some file", centre)
 
     assert root_sample_ids == centre_file.get_root_sample_ids(ids)
+
+
+def test_process_files_with_priority_samples(
+    mongo_database, config, testing_files_for_process, testing_centres, testing_priority_samples_for_aldp, pyodbc_conn
+):
+    _, mongo_database = mongo_database
+
+    centre_config = config.CENTRES[0]
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+    centre.process_files(True)
+
+    pyodbc_conn.assert_called()
+
+    priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
+    assert (
+        len(list(priority_samples_collection.find({FIELD_PROCESSED: True}))) == 3
+    ), f"Wrong number of priority samples updated. Expected: 3"
+
+
+def test_get_priority_samples_returns_priority_samples_for_root_sample_ids(config, mongo_database, testing_samples, testing_priority_samples):
+    _, mongo_database = mongo_database
+
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    root_sample_ids = []
+
+    samples = samples_collection.find({})
+    for sample in samples:
+        root_sample_ids.append(sample[FIELD_ROOT_SAMPLE_ID])
+
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some file", centre)
+
+    result = centre_file.get_priority_samples(root_sample_ids)
+    assert len(result) == 2
+    assert result[0][FIELD_ROOT_SAMPLE_ID] == root_sample_ids[0]
+    assert result[1][FIELD_ROOT_SAMPLE_ID] == root_sample_ids[1]
+    assert result[0][FIELD_PROCESSED] == False
+    assert result[1][FIELD_MUST_SEQUENCE] == True or result[1][FIELD_PREFERENTIALLY_SEQUENCE] == True
+    assert result[0][FIELD_MUST_SEQUENCE] == True or result[0][FIELD_PREFERENTIALLY_SEQUENCE] == True
+
+
+def test_merge_priority_samples_into_docs_to_insert(mongo_database, config, testing_priority_samples, testing_docs_to_insert):
+    _, mongo_database = mongo_database
+
+    centre_config = config.CENTRES[0]
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
+
+    priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
+    root_sample_ids = ["MCM001", "MCM002"]
+    priority_samples = list(priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}))
+
+    centre_file.merge_priority_samples_into_docs_to_insert(priority_samples, testing_docs_to_insert)
+
+    assert (FIELD_MUST_SEQUENCE in testing_docs_to_insert[0]) == True
+    assert (FIELD_MUST_SEQUENCE in testing_docs_to_insert[1]) == True
+    assert (FIELD_PREFERENTIALLY_SEQUENCE in testing_docs_to_insert[0]) == True
+    assert (FIELD_PREFERENTIALLY_SEQUENCE in testing_docs_to_insert[1]) == True
+
+
+def test_update_priority_samples_to_processed(mongo_database, config, testing_priority_samples):
+    _, mongo_database = mongo_database
+
+    centre_config = config.CENTRES[0]
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+
+    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
+
+    root_sample_ids = ["1", "2"]
+    centre_file.update_priority_samples_to_processed(root_sample_ids)
+
+    priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
+
+    assert priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: root_sample_ids[0]})[0][FIELD_PROCESSED] == True
+    assert priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: root_sample_ids[1]})[0][FIELD_PROCESSED] == True
+
+

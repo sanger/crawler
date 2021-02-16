@@ -4,6 +4,9 @@ import logging.config
 import shutil
 from unittest.mock import patch
 
+import datetime
+from bson.objectid import ObjectId
+
 import pytest
 import sqlalchemy
 from sqlalchemy import MetaData
@@ -30,6 +33,7 @@ from tests.data.testing_objects import (
     MONGO_SAMPLES_WITHOUT_FILTERED_POSITIVE_FIELDS,
     TESTING_SAMPLES,
     TESTING_PRIORITY_SAMPLES,
+    TESTING_PRIORITY_SAMPLES_FOR_ALDP
 )
 
 logger = logging.getLogger(__name__)
@@ -147,6 +151,16 @@ def testing_samples(samples_collection_accessor):
 @pytest.fixture
 def testing_priority_samples(priority_samples_collection_accessor):
     result = priority_samples_collection_accessor.insert_many(TESTING_PRIORITY_SAMPLES)
+    samples = list(priority_samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
+    try:
+        yield samples
+    finally:
+        priority_samples_collection_accessor.delete_many({})
+
+
+@pytest.fixture
+def testing_priority_samples_for_aldp(priority_samples_collection_accessor):
+    result = priority_samples_collection_accessor.insert_many(TESTING_PRIORITY_SAMPLES_FOR_ALDP)
     samples = list(priority_samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
     try:
         yield samples
