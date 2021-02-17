@@ -8,6 +8,7 @@ from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
 
 from crawler.constants import (
+    POSITIVE_RESULT_VALUE,
     DART_EMPTY_VALUE,
     DART_LAB_ID,
     DART_LH_SAMPLE_UUID,
@@ -62,6 +63,9 @@ from crawler.helpers.general_helpers import (
     parse_decimal128,
     unpad_coordinate,
     pad_coordinate,
+    is_sample_important,
+    is_sample_priority,
+    is_sample_pickable,
 )
 from crawler.types import SampleDoc
 
@@ -263,6 +267,34 @@ def test_map_mongo_doc_to_dart_well_props(config):
 
     assert result[DART_STATE] == DART_EMPTY_VALUE
 
+    # is pickabile as filtered positive is false, but must sequence is true
+    doc_to_transform = {
+        FIELD_FILTERED_POSITIVE: False,
+        FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+        FIELD_MUST_SEQUENCE: True,
+        FIELD_RNA_ID: "TC-rna-00000029_H01",
+    }
+
+    result = map_mongo_doc_to_dart_well_props(doc_to_transform)
+
+    assert result[DART_STATE] == DART_STATE_PICKABLE
+    assert result[DART_ROOT_SAMPLE_ID] == "ABC00000004"
+    assert result[DART_RNA_ID] == "TC-rna-00000029_H01"
+
+    # is pickabile as filtered positive is false, but preferentially sequence is true
+    doc_to_transform = {
+        FIELD_FILTERED_POSITIVE: False,
+        FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+        FIELD_PREFERENTIALLY_SEQUENCE: True,
+        FIELD_RNA_ID: "TC-rna-00000029_H01",
+    }
+
+    result = map_mongo_doc_to_dart_well_props(doc_to_transform)
+
+    assert result[DART_STATE] == DART_STATE_PICKABLE
+    assert result[DART_ROOT_SAMPLE_ID] == "ABC00000004"
+    assert result[DART_RNA_ID] == "TC-rna-00000029_H01"
+
 
 def test_create_source_plate_doc(freezer):
     """Tests for updating docs with source plate UUIDs."""
@@ -281,17 +313,36 @@ def test_create_source_plate_doc(freezer):
         assert source_plate[FIELD_CREATED_AT] == now
 
 
-def test_is_sample_important(sample):
-    return (sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE) or (is_sample_priority(sample))
+def test_is_sample_important():
+    negative = 'negative'
+    assert is_sample_important({FIELD_RESULT: negative, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == False
+    assert is_sample_important({FIELD_RESULT: negative}) == False
+    assert is_sample_important({FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
+    assert is_sample_important({FIELD_RESULT: POSITIVE_RESULT_VALUE}) == True
+    assert is_sample_important({FIELD_RESULT: negative, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
+    assert is_sample_important({FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
+    assert is_sample_important({FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
+    assert is_sample_important({FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
 
 
-def test_is_sample_priority(sample):
-    return (sample[FIELD_MUST_SEQUENCE] == True) or (sample[FIELD_PREFERENTIALLY_SEQUENCE] == True)
+def test_is_sample_priority():
+    assert is_sample_priority({ FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
+    assert is_sample_priority({ FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
+    assert is_sample_priority({ FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == False
+    assert is_sample_priority({ FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
+    assert is_sample_priority({ FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
+    assert is_sample_priority({ FIELD_MUST_SEQUENCE: True}) == True
+    assert is_sample_priority({}) == False
 
 
-def test_is_sample_pickable(sample):
-    return sample.get(FIELD_FILTERED_POSITIVE, False) or is_sample_priority(sample)
+def test_is_sample_pickable():
+    assert is_sample_pickable({ FIELD_FILTERED_POSITIVE: True, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
+    assert is_sample_pickable({ FIELD_FILTERED_POSITIVE: True, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
+    assert is_sample_pickable({ FIELD_FILTERED_POSITIVE: True, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
+    assert is_sample_pickable({ FIELD_FILTERED_POSITIVE: False, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
+    assert is_sample_pickable({ FIELD_FILTERED_POSITIVE: False, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
+    assert is_sample_pickable({ FIELD_FILTERED_POSITIVE: False, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == False
+    assert is_sample_pickable({ FIELD_FILTERED_POSITIVE: True }) == True
+    assert is_sample_pickable({ FIELD_MUST_SEQUENCE: True }) == True
+    assert is_sample_pickable({ FIELD_PREFERENTIALLY_SEQUENCE: True }) == True
 
-
-## Also a test for this:
-## def test_map_mongo_doc_to_dart_well_props(sample: SampleDoc) -> DartWellProp:

@@ -1623,6 +1623,16 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
             FIELD_LAB_ID: "AP",
             FIELD_RESULT: "Void",
         },
+        {
+            "_id": ObjectId("5f562d9931d9959b92544728"),
+            FIELD_ROOT_SAMPLE_ID: "ABC00000009",
+            FIELD_RNA_ID: f"{plate_barcode}_A04",
+            FIELD_PLATE_BARCODE: plate_barcode,
+            FIELD_COORDINATE: "A04",
+            FIELD_LAB_ID: "AP",
+            FIELD_RESULT: "Void",
+            FIELD_MUST_SEQUENCE: True
+        },
     ]
 
     with patch("crawler.file_processing.create_dart_sql_server_conn") as mock_conn:
@@ -1646,14 +1656,16 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
                         )
 
                         # calls for well index and to map as expected
-                        assert mock_get_well_index.call_count == 2
-                        assert mock_map.call_count == 2
-                        for doc in docs_to_insert[:2]:
+                        assert mock_get_well_index.call_count == 3
+                        assert mock_map.call_count == 3
+                        # Only important samples
+                        important_docs = [docs_to_insert[0], docs_to_insert[1], docs_to_insert[3]]
+                        for doc in important_docs:
                             mock_get_well_index.assert_any_call(doc[FIELD_COORDINATE])
                             mock_map.assert_any_call(doc)
 
                         # calls to set well properties as expected
-                        assert mock_set_well_props.call_count == 2
+                        assert mock_set_well_props.call_count == 3
                         mock_set_well_props.assert_any_call(
                             mock_conn().cursor(), plate_barcode, test_well_props, test_well_index
                         )

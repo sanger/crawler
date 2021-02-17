@@ -292,12 +292,13 @@ def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
     return None
 
 
+# handle columns dont exist
 def is_sample_important(sample):
-    return (sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE) or (is_sample_priority(sample))
+    return (sample.get(FIELD_RESULT, False) == POSITIVE_RESULT_VALUE) or (is_sample_priority(sample))
 
 
 def is_sample_priority(sample):
-    return (sample[FIELD_MUST_SEQUENCE] == True) or (sample[FIELD_PREFERENTIALLY_SEQUENCE] == True)
+    return (sample.get(FIELD_MUST_SEQUENCE, False) == True) or (sample.get(FIELD_PREFERENTIALLY_SEQUENCE, False) == True)
 
 
 def is_sample_pickable(sample):
