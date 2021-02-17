@@ -13,6 +13,7 @@ import pysftp
 from bson.decimal128 import Decimal128
 
 from crawler.constants import (
+    POSITIVE_RESULT_VALUE,
     DART_EMPTY_VALUE,
     DART_LAB_ID,
     DART_LH_SAMPLE_UUID,
@@ -120,11 +121,7 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
     sftp_password = config.SFTP_READ_PASSWORD if not username else password
 
     return pysftp.Connection(
-        host=sftp_host,
-        port=sftp_port,
-        username=sftp_username,
-        password=sftp_password,
-        cnopts=cnopts,
+        host=sftp_host, port=sftp_port, username=sftp_username, password=sftp_password, cnopts=cnopts,
     )
 
 
@@ -295,6 +292,18 @@ def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
     return None
 
 
+def is_sample_important(sample):
+    return (sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE) or (is_sample_priority(sample))
+
+
+def is_sample_priority(sample):
+    return (sample[FIELD_MUST_SEQUENCE] == True) or (sample[FIELD_PREFERENTIALLY_SEQUENCE] == True)
+
+
+def is_sample_pickable(sample):
+    return sample.get(FIELD_FILTERED_POSITIVE, False) or is_sample_priority(sample)
+
+
 def map_mongo_doc_to_dart_well_props(sample: SampleDoc) -> DartWellProp:
     """Transform a mongo sample doc into DART well properties.
 
@@ -307,7 +316,7 @@ def map_mongo_doc_to_dart_well_props(sample: SampleDoc) -> DartWellProp:
     # TODO: DART_STATE_PICKABLE if sample is filtered_positive OR must_sequence OR preferentially_sequence
     # new function to check if pickable or not, which checks the above
     return {
-        DART_STATE: DART_STATE_PICKABLE if sample.get(FIELD_FILTERED_POSITIVE, False) else DART_EMPTY_VALUE,
+        DART_STATE: DART_STATE_PICKABLE if is_sample_pickable(sample) else DART_EMPTY_VALUE,
         DART_ROOT_SAMPLE_ID: str(sample[FIELD_ROOT_SAMPLE_ID]),
         DART_RNA_ID: str(sample[FIELD_RNA_ID]),
         DART_LAB_ID: str(sample.get(FIELD_LAB_ID, DART_EMPTY_VALUE)),

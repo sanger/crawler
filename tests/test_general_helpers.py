@@ -279,3 +279,19 @@ def test_create_source_plate_doc(freezer):
         assert source_plate[FIELD_LAB_ID] == lab_id
         assert source_plate[FIELD_UPDATED_AT] == now
         assert source_plate[FIELD_CREATED_AT] == now
+
+
+def test_is_sample_important(sample):
+    return (sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE) or (is_sample_priority(sample))
+
+
+def test_is_sample_priority(sample):
+    return (sample[FIELD_MUST_SEQUENCE] == True) or (sample[FIELD_PREFERENTIALLY_SEQUENCE] == True)
+
+
+def test_is_sample_pickable(sample):
+    return sample.get(FIELD_FILTERED_POSITIVE, False) or is_sample_priority(sample)
+
+
+## Also a test for this:
+## def test_map_mongo_doc_to_dart_well_props(sample: SampleDoc) -> DartWellProp:

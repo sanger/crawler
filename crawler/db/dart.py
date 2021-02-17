@@ -11,11 +11,13 @@ from crawler.constants import (
     DART_STATE_PENDING,
     FIELD_COORDINATE,
     FIELD_RESULT,
+    FIELD_MUST_SEQUENCE,
     FIELD_ROOT_SAMPLE_ID,
     POSITIVE_RESULT_VALUE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
 )
 from crawler.exceptions import DartStateError
-from crawler.helpers.general_helpers import get_dart_well_index, map_mongo_doc_to_dart_well_props
+from crawler.helpers.general_helpers import get_dart_well_index, map_mongo_doc_to_dart_well_props, is_sample_important
 from crawler.sql_queries import (
     SQL_DART_ADD_PLATE,
     SQL_DART_GET_PLATE_PROPERTY,
@@ -147,7 +149,32 @@ def add_dart_plate_if_doesnt_exist(cursor: pyodbc.Cursor, plate_barcode: str, bi
 
 
 # TODO: add_dart_well_properties_if_positive_or_of_importance
-def add_dart_well_properties_if_positive(cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str) -> None:
+def add_dart_well_properties_if_important(cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str) -> None:
+    # if that sample is positive or must/pref seq
+    """Adds well properties to DART for the specified sample if that sample is positive.
+
+    Arguments:
+        cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
+        sample {Sample} -- The sample for which to add well properties.
+        plate_barcode {str} -- The barcode of the plate to which this sample belongs.
+    """
+
+    # remove if sample field_result = positive, as sample Result may now be negative too
+    # if sample is result OR must_sequence OR preferentially_sequence
+
+    # if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE || must_sequence == true || preferentially_sequence == true
+    if is_sample_important(sample):
+        well_index = get_dart_well_index(str(sample.get(FIELD_COORDINATE)))
+        if well_index is not None:
+            dart_well_props = map_mongo_doc_to_dart_well_props(sample)
+            set_dart_well_properties(cursor, plate_barcode, dart_well_props, well_index)
+        else:
+            raise ValueError(
+                f"Unable to determine DART well index for {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
+            )
+
+
+def _add_dart_well_properties_if_positive(cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str) -> None:
     # if that sample is positive or must/pref seq
     """Adds well properties to DART for the specified sample if that sample is positive.
 
