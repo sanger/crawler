@@ -1835,9 +1835,13 @@ def test_process_files_with_priority_samples(
     pyodbc_conn.assert_called()
 
     priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
+    """
+    testing_priority_samples_for_aldp includes a sample where Result is False,
+    but it is a priority sample, therefore should be updated in MLWH
+    """
     assert (
-        len(list(priority_samples_collection.find({FIELD_PROCESSED: True}))) == 3
-    ), f"Wrong number of priority samples updated. Expected: 3"
+        len(list(priority_samples_collection.find({FIELD_PROCESSED: True}))) == 4
+    ), f"Wrong number of priority samples updated. Expected: 4"
 
 
 def test_get_priority_samples_returns_priority_samples_for_root_sample_ids(config, mongo_database, testing_samples, testing_priority_samples):
@@ -1862,7 +1866,7 @@ def test_get_priority_samples_returns_priority_samples_for_root_sample_ids(confi
     assert result[0][FIELD_MUST_SEQUENCE] == True or result[0][FIELD_PREFERENTIALLY_SEQUENCE] == True
 
 
-def test_merge_priority_samples_into_docs_to_insert(mongo_database, config, testing_priority_samples, testing_docs_to_insert):
+def test_merge_priority_samples_into_docs_to_insert(mongo_database, config, testing_priority_samples, testing_docs_to_insert_for_aldp):
     _, mongo_database = mongo_database
 
     centre_config = config.CENTRES[0]
@@ -1874,12 +1878,12 @@ def test_merge_priority_samples_into_docs_to_insert(mongo_database, config, test
     root_sample_ids = ["MCM001", "MCM002"]
     priority_samples = list(priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}))
 
-    centre_file.merge_priority_samples_into_docs_to_insert(priority_samples, testing_docs_to_insert)
+    centre_file.merge_priority_samples_into_docs_to_insert(priority_samples, testing_docs_to_insert_for_aldp)
 
-    assert (FIELD_MUST_SEQUENCE in testing_docs_to_insert[0]) == True
-    assert (FIELD_MUST_SEQUENCE in testing_docs_to_insert[1]) == True
-    assert (FIELD_PREFERENTIALLY_SEQUENCE in testing_docs_to_insert[0]) == True
-    assert (FIELD_PREFERENTIALLY_SEQUENCE in testing_docs_to_insert[1]) == True
+    assert (FIELD_MUST_SEQUENCE in testing_docs_to_insert_for_aldp[0]) == True
+    assert (FIELD_MUST_SEQUENCE in testing_docs_to_insert_for_aldp[1]) == True
+    assert (FIELD_PREFERENTIALLY_SEQUENCE in testing_docs_to_insert_for_aldp[0]) == True
+    assert (FIELD_PREFERENTIALLY_SEQUENCE in testing_docs_to_insert_for_aldp[1]) == True
 
 
 def test_update_priority_samples_to_processed(mongo_database, config, testing_priority_samples):
@@ -1891,7 +1895,7 @@ def test_update_priority_samples_to_processed(mongo_database, config, testing_pr
 
     centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
 
-    root_sample_ids = ["1", "2"]
+    root_sample_ids = ["MCM001", "MCM002"]
     centre_file.update_priority_samples_to_processed(root_sample_ids)
 
     priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)

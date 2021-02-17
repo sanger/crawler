@@ -384,7 +384,7 @@ class CentreFile:
         # Returns:
         #     List[Sample] -- the updated, filtered samples
         """
-        priority_root_sample_ids = map(lambda x: x[FIELD_ROOT_SAMPLE_ID], priority_samples)
+        priority_root_sample_ids = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], priority_samples))
 
         for doc in docs_to_insert:
             root_sample_id = doc[FIELD_ROOT_SAMPLE_ID]
@@ -471,7 +471,7 @@ class CentreFile:
                     dart_success = self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
                     if dart_success:
                         # use stored identifiers to update priority_samples table to processed true
-                        priority_samples_root_samples_id = map(lambda x: x[FIELD_ROOT_SAMPLE_ID], priority_samples)
+                        priority_samples_root_samples_id = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], priority_samples))
                         self.update_priority_samples_to_processed(priority_samples_root_samples_id)
 
         else:
@@ -720,11 +720,6 @@ class CentreFile:
             {bool} -- True if the insert was successful; otherwise False
         """
         values: List[Dict[str, Any]] = []
-
-        import pdb
-        pdb.set_trace()
-
-        # make sure must_sequence/ preferentially_sequence values are present in sample_doc
 
         for sample_doc in docs_to_insert:
             values.append(map_mongo_sample_to_mysql(sample_doc))

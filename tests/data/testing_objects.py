@@ -121,12 +121,12 @@ TESTING_PRIORITY_SAMPLES_FOR_ALDP: List[Dict[str, Union[str, bool]]] = [
         FIELD_PREFERENTIALLY_SEQUENCE: False,
         FIELD_PROCESSED: False
     },
-    # {
-    #     FIELD_ROOT_SAMPLE_ID: "5",
-    #     FIELD_MUST_SEQUENCE: False,
-    #     FIELD_PREFERENTIALLY_SEQUENCE: False,
-    #     FIELD_PROCESSED: False
-    # }
+    {
+        FIELD_ROOT_SAMPLE_ID: "5",
+        FIELD_MUST_SEQUENCE: True,
+        FIELD_PREFERENTIALLY_SEQUENCE: False,
+        FIELD_PROCESSED: False
+    }
 ]
 
 
