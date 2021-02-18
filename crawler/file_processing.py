@@ -383,7 +383,6 @@ class CentreFile:
 
         return self.file_state
 
-
     def get_unprocessed_priority_samples_for_root_sample_ids(self, root_sample_ids: List[str]) -> List[Any]:
         """
         Description

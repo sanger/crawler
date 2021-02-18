@@ -216,25 +216,6 @@ def update_priority_samples_to_processed_for_priority_samples(db, root_sample_id
     logger.info("Mongo update of processed for priority samples successful")
 
 
-def get_unprocessed_priority_samples_for_root_sample_ids(self, db, root_sample_ids: List[str]) -> List[Any]:
-    """
-    Description
-    check if sample is in priority_samples either must_sequence/preferentially_sequence is true, and processed false
-    Arguments:
-        x {Type} -- description
-    """
-    matching_priority_entry ={FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}
-    unprocessed = { "processed": False }
-    of_importance = {"$or": [{"must_sequence": True}, {"preferentially_sequence": True}]}
-
-    query = {"$and": [matching_priority_entry, unprocessed, of_importance]}
-
-    priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
-
-    priority_sample_cursor = priority_samples_collection.find(query)
-    return list(priority_sample_cursor)
-
-
 def get_all_unprocessed_priority_samples(db) -> List[Any]:
     """
     Description
