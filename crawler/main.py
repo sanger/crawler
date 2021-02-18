@@ -6,6 +6,7 @@ import pymongo
 
 from crawler.constants import (
     COLLECTION_CENTRES,
+    COLLECTION_PRIORITY_SAMPLES,
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
     FIELD_BARCODE,
@@ -24,6 +25,7 @@ from crawler.db.mongo import (
     populate_collection,
     samples_collection_accessor,
 )
+from crawler.priority_samples_process import step_two
 from crawler.file_processing import Centre
 from crawler.helpers.general_helpers import get_config
 
@@ -116,17 +118,16 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                             centre_instance.clean_up()
 
                 # Step 2
-                # check if there are any priority samples in the priority_samples collection
-                # go through priorit samples, that havent been processes
-                # that nave not been processed, processed = false
-                # and exist in the samples table
-                # update MLWH
-                # update DART
-                # set processed in priority_samples collection to true
-                # logger message, as cant log on a file
+                step_two(db)
 
 
         logger.info(f"Import complete in {round(time.time() - start, 2)}s")
         logger.info("=" * 80)
     except Exception as e:
         logger.exception(e)
+
+
+
+
+
+

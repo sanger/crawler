@@ -292,7 +292,6 @@ def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
     return None
 
 
-# handle columns dont exist
 def is_sample_important(sample):
     return (sample.get(FIELD_RESULT, False) == POSITIVE_RESULT_VALUE) or (is_sample_priority(sample))
 
@@ -314,8 +313,7 @@ def map_mongo_doc_to_dart_well_props(sample: SampleDoc) -> DartWellProp:
     Returns:
         DartWellProp -- Dictionary of DART property names and values.
     """
-    # TODO: DART_STATE_PICKABLE if sample is filtered_positive OR must_sequence OR preferentially_sequence
-    # new function to check if pickable or not, which checks the above
+
     return {
         DART_STATE: DART_STATE_PICKABLE if is_sample_pickable(sample) else DART_EMPTY_VALUE,
         DART_ROOT_SAMPLE_ID: str(sample[FIELD_ROOT_SAMPLE_ID]),

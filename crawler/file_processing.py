@@ -69,13 +69,23 @@ from crawler.constants import (
     MIN_CQ_VALUE,
     POSITIVE_RESULT_VALUE,
 )
+
+from crawler.priority_samples_process import (
+    merge_priority_samples_into_docs_to_insert,
+    update_priority_samples_to_processed,
+    get_unprocessed_priority_samples_for_root_sample_ids
+)
+
 from crawler.db.dart import (
-    add_dart_plate_if_doesnt_exist,
-    add_dart_well_properties_if_positive,
     create_dart_sql_server_conn,
+    insert_plates_and_wells_from_docs_into_dart,add_dart_plate_if_doesnt_exist,
 )
 from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
-from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
+
+from crawler.db.mysql import (
+    insert_samples_from_docs_into_mlwh
+)
+
 from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.enums import CentreFileState
 from crawler.helpers.general_helpers import (
@@ -374,42 +384,17 @@ class CentreFile:
 
         return self.file_state
 
-    def merge_priority_samples_into_docs_to_insert(self, priority_samples: List[Any], docs_to_insert):
+
+    def get_unprocessed_priority_samples_for_root_sample_ids(self, root_sample_ids: List[str]) -> List[Any]:
+        get_unprocessed_priority_samples_for_root_sample_ids(self.get_db(), root_sample_ids)
+
+
+    def get_root_sample_ids_for_mongo_ids(self, mongo_sample_ids: List[str]) -> List[str]:
         """
-        Updates the sample records with must_sequence and preferentially_sequence values
+        Get the root sample ids for samples with the given mongo _id
         Arguments:
-            priority_samples  - priority samples to update docs_to_insert with
-            docs_to_insert {List[ModifiedRow]} -- the sample records to update
-
-        # Returns:
-        #     List[Sample] -- the updated, filtered samples
+            x {Type} -- description
         """
-        priority_root_sample_ids = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], priority_samples))
-
-        for doc in docs_to_insert:
-            root_sample_id = doc[FIELD_ROOT_SAMPLE_ID]
-            if root_sample_id in priority_root_sample_ids:
-                # Assuming Root Saple ID is unique in priority_samples collection
-                priority_sample = list(filter(lambda x: x[FIELD_ROOT_SAMPLE_ID] == root_sample_id, priority_samples))[0]
-                doc[FIELD_MUST_SEQUENCE] = priority_sample[FIELD_MUST_SEQUENCE]
-                doc[FIELD_PREFERENTIALLY_SEQUENCE] = priority_sample[FIELD_PREFERENTIALLY_SEQUENCE]
-
-
-    def get_priority_samples(self, root_sample_ids: List[str]) -> List[Any]:
-        # Assuming Root Saple ID is unique in priority_samples collection
-        matching_priority_entry ={FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}
-        unprocessed = { "processed": False }
-        of_importance = {"$or": [{"must_sequence": True}, {"preferentially_sequence": True}]}
-
-        query = {"$and": [matching_priority_entry, unprocessed, of_importance]}
-
-        priority_samples_collection = get_mongo_collection(self.get_db(), COLLECTION_PRIORITY_SAMPLES)
-
-        priority_sample_cursor = priority_samples_collection.find(query)
-        return list(priority_sample_cursor)
-
-
-    def get_root_sample_ids(self, mongo_sample_ids: List[str]) -> List[str]:
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
         return list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], samples_collection.find({"_id": {"$in": mongo_sample_ids}})))
 
@@ -436,7 +421,7 @@ class CentreFile:
         if (num_docs_to_insert := len(docs_to_insert)) > 0:
             logger.debug(f"{num_docs_to_insert} docs to insert")
 
-            # Step 1:
+            # Step 1
             # - Process files as is - insert data into mongo
             mongo_ids_of_inserted = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
 
@@ -446,33 +431,23 @@ class CentreFile:
                     filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert)
                 )
 
-                # get the root sample ideas of the samples
-                # that were sucessfully inserted into the samples collection
-                root_sample_ids = self.get_root_sample_ids(mongo_ids_of_inserted)
+                # Get root sample ids of samples that were sucessfully inserted into the samples collection
+                root_sample_ids = self.get_root_sample_ids_for_mongo_ids(mongo_ids_of_inserted)
 
-                # check if sample is in priority_samples
-                # either must_sequence/preferentially_sequence is true, and processed false
-                priority_samples = self.get_priority_samples(root_sample_ids)
+                priority_samples = self.get_unprocessed_priority_samples_for_root_sample_ids(root_sample_ids)
 
-                # for each successful add sample, merge into docs_to_insert_mlwh
-                # with must_sequence and preferentially_sequence values
-                # use docs_to_insert to update MLWH
-                self.merge_priority_samples_into_docs_to_insert(priority_samples, docs_to_insert_mlwh)
+                merge_priority_samples_into_docs_to_insert(priority_samples, docs_to_insert_mlwh)
 
-                #  Create all samples in MLWH with docs_to_insert including must_seq/ pre_seq
                 mlwh_success = self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
                 # add to the DART database if the config flag is set and we have successfully updated the MLWH
                 if add_to_dart and mlwh_success:
                     logger.info("MLWH insert successful and adding to DART")
 
-                    #  Create in DART with docs_to_insert including must_seq/ pre_seq
-                    #  use docs_to_insert to update DART
-                    dart_success = self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
+                    dart_success = insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
                     if dart_success:
-                        # use stored identifiers to update priority_samples table to processed true
                         priority_samples_root_samples_id = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], priority_samples))
-                        self.update_priority_samples_to_processed(priority_samples_root_samples_id)
+                        update_priority_samples_to_processed(self.get_db(), priority_samples_root_samples_id)
 
         else:
             logger.info("No new docs to insert")
@@ -480,14 +455,65 @@ class CentreFile:
         self.backup_file()
         self.create_import_record_for_file()
 
-    def update_priority_samples_to_processed(self, root_sample_ids) -> bool:
-        priority_samples_collection = get_mongo_collection(self.get_db(), COLLECTION_PRIORITY_SAMPLES)
-        for root_sample_id in root_sample_ids:
-            # TODO: Assumes Root Sample IDs are unique in priority_samples table
-            # Add index to Root Sample ID in priority samples collection
-            # If more than one, it updates the first one that is found
-            priority_samples_collection.update({"Root Sample ID": root_sample_id}, {"$set": {"processed": True}})
-        logger.info("Mongo update of processed for priority samples successful")
+
+    def insert_samples_from_docs_into_mlwh(self, docs_to_insert_mlwh):
+        mlwh_success = insert_samples_from_docs_into_mlwh(self.config, docs_to_insert_mlwh, self.file_name)
+
+    def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[ModifiedRow]) -> bool:
+        """Insert plates and wells into the DART database.
+        Create in DART with docs_to_insert including must_seq/ pre_seq
+        use docs_to_insert to update DART
+
+        Arguments:
+            docs_to_insert {List[ModifiedRow]} -- List of filtered sample information extracted from CSV files.
+
+        Returns:
+            TODO: check return False
+            {bool} -- True if the insert was successful; otherwise False
+        """
+        if (sql_server_connection := create_dart_sql_server_conn(self.config)) is not None:
+            try:
+                cursor = sql_server_connection.cursor()
+                # check docs_to_insert contain must_seq/ pre_seq
+                for plate_barcode, samples in groupby_transform(  # type: ignore
+                    docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]
+                ):
+                    try:
+                        plate_state = add_dart_plate_if_doesnt_exist(
+                            cursor, plate_barcode, self.centre_config["biomek_labware_class"]  # type: ignore
+                        )
+                        if plate_state == DART_STATE_PENDING:
+                            for sample in samples:
+                                add_dart_well_properties_if_positive_or_of_importance(cursor, sample, plate_barcode)  # type: ignore
+                        cursor.commit()
+                    except Exception as e:
+                        self.logging.add_error(
+                            "TYPE 22",
+                            f"DART database inserts failed for plate {plate_barcode} in file {self.file_name}",
+                        )
+                        logger.exception(e)
+                        # rollback statements executed since previous commit/rollback
+                        cursor.rollback()
+                        return False
+
+                logger.debug(f"DART database inserts completed successfully for file {self.file_name}")
+                return True
+            except Exception as e:
+                self.logging.add_error(
+                    "TYPE 23", f"DART database inserts failed for file {self.file_name}",
+                )
+                logger.critical(f"Critical error in file {self.file_name}: {e}")
+                logger.exception(e)
+                return False
+            finally:
+                sql_server_connection.close()
+        else:
+            self.logging.add_error(
+                "TYPE 24", f"DART database inserts failed, could not connect, for file {self.file_name}",
+            )
+            logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
+            return False
+
 
     def backup_filename(self) -> str:
         """Backup the file.
@@ -708,28 +734,6 @@ class CentreFile:
             logger.critical(f"Critical error in file {self.file_name}: {e}")
             logger.exception(e)
             return []
-
-    def insert_samples_from_docs_into_mlwh(self, docs_to_insert: List[ModifiedRow]) -> bool:
-        """Insert sample records into the MLWH database from the parsed file information, including the corresponding
-        mongodb _id
-
-        Arguments:
-            docs_to_insert {List[ModifiedRow]} -- List of filtered sample information extracted from CSV files.
-
-        Returns:
-            {bool} -- True if the insert was successful; otherwise False
-        """
-        values: List[Dict[str, Any]] = []
-
-        for sample_doc in docs_to_insert:
-            values.append(map_mongo_sample_to_mysql(sample_doc))
-
-        mysql_conn = create_mysql_connection(self.config, False)
-
-        if mysql_conn is not None and mysql_conn.is_connected():
-            try:
-                run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
-
                 logger.debug(f"MLWH database inserts completed successfully for file {self.file_name}")
                 return True
             except Exception as e:
@@ -744,61 +748,6 @@ class CentreFile:
             )
             logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
 
-        return False
-
-    def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[ModifiedRow]) -> bool:
-        """Insert plates and wells into the DART database.
-
-        Arguments:
-            docs_to_insert {List[ModifiedRow]} -- List of filtered sample information extracted from CSV files.
-
-        Returns:
-            TODO: check return False
-            {bool} -- True if the insert was successful; otherwise False
-        """
-        if (sql_server_connection := create_dart_sql_server_conn(self.config)) is not None:
-            try:
-                cursor = sql_server_connection.cursor()
-                # check docs_to_insert contain must_seq/ pre_seq
-                for plate_barcode, samples in groupby_transform(  # type: ignore
-                    docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]
-                ):
-                    try:
-                        plate_state = add_dart_plate_if_doesnt_exist(
-                            cursor, plate_barcode, self.centre_config["biomek_labware_class"]  # type: ignore
-                        )
-                        if plate_state == DART_STATE_PENDING:
-                            for sample in samples:
-                                # add_dart_well_properties_if_positive_or_of_importance
-                                add_dart_well_properties_if_positive(cursor, sample, plate_barcode)  # type: ignore
-                        cursor.commit()
-                    except Exception as e:
-                        self.logging_collection.add_error(
-                            "TYPE 22",
-                            f"DART database inserts failed for plate {plate_barcode} in file {self.file_name}",
-                        )
-                        logger.exception(e)
-                        # rollback statements executed since previous commit/rollback
-                        cursor.rollback()
-                        return False
-
-                logger.debug(f"DART database inserts completed successfully for file {self.file_name}")
-                return True
-            except Exception as e:
-                self.logging_collection.add_error(
-                    "TYPE 23", f"DART database inserts failed for file {self.file_name}",
-                )
-                logger.critical(f"Critical error in file {self.file_name}: {e}")
-                logger.exception(e)
-                return False
-            finally:
-                sql_server_connection.close()
-        else:
-            self.logging_collection.add_error(
-                "TYPE 24", f"DART database inserts failed, could not connect, for file {self.file_name}",
-            )
-            logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
-            return False
 
     def process_csv(self) -> List[ModifiedRow]:
         """Parses and processes the CSV file of the centre.
