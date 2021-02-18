@@ -1869,8 +1869,7 @@ def test_get_important_unprocessed_priority_samples_returns_priority_samples_for
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
 
-    result = centre_file.get_important_unprocessed_priority_samples(insert_samples_from_docs_into_mlwh
-    )
+    result = centre_file.get_important_unprocessed_priority_samples(root_sample_ids)
     assert len(result) == 2
     assert result[0][FIELD_ROOT_SAMPLE_ID] == root_sample_ids[0]
     assert result[1][FIELD_ROOT_SAMPLE_ID] == root_sample_ids[1]

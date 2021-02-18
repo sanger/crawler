@@ -42,6 +42,7 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_RESULT: "Positive",
         FIELD_PLATE_BARCODE: "123",
         "released": True,
+        FIELD_RNA_ID: "A01aaa",
         FIELD_ROOT_SAMPLE_ID: "MCM001",
     },
     {
@@ -50,6 +51,7 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_RESULT: "Negative",
         FIELD_PLATE_BARCODE: "123",
         "released": False,
+        FIELD_RNA_ID: "B01aaa",
         FIELD_ROOT_SAMPLE_ID: "MCM002",
     },
     {
@@ -58,14 +60,16 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_RESULT: "Void",
         FIELD_PLATE_BARCODE: "123",
         FIELD_ROOT_SAMPLE_ID: "MCM003",
+        FIELD_RNA_ID: "C01aaa",
     },
     {
-        FIELD_COORDINATE: "A01",
+        FIELD_COORDINATE: "D01",
         FIELD_SOURCE: "test1",
         FIELD_RESULT: "Positive",
         FIELD_PLATE_BARCODE: "456",
         "released": True,
         FIELD_ROOT_SAMPLE_ID: "MCM004",
+        FIELD_RNA_ID: "D01aaa",
     },
 ]
 
