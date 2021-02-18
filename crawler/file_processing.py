@@ -383,7 +383,7 @@ class CentreFile:
 
         return self.file_state
 
-    def get_unprocessed_priority_samples_for_root_sample_ids(self, root_sample_ids: List[str]) -> List[Any]:
+    def get_important_unprocessed_priority_samples(self, root_sample_ids: List[str]) -> List[Any]:
         """
         Description
         check if sample is in priority_samples either must_sequence/preferentially_sequence is true, and processed false
@@ -402,14 +402,14 @@ class CentreFile:
         return list(priority_sample_cursor)
 
 
-    def get_root_sample_ids_for_mongo_ids(self, mongo_sample_ids: List[str]) -> List[str]:
+    def get_root_sample_ids_from_samples_collection(self, mongo_ids: List[str]) -> List[str]:
         """
         Get the root sample ids for samples with the given mongo _id
         Arguments:
             x {Type} -- description
         """
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
-        return list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], samples_collection.find({"_id": {"$in": mongo_sample_ids}})))
+        return list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], samples_collection.find({"_id": {"$in": mongo_ids}})))
 
 
     def process_samples(self, add_to_dart: bool) -> None:
@@ -445,11 +445,11 @@ class CentreFile:
                 )
 
                 # Get root sample ids of samples that were sucessfully inserted into the samples collection
-                root_sample_ids = self.get_root_sample_ids_for_mongo_ids(mongo_ids_of_inserted)
+                root_sample_ids = self.get_root_sample_ids_from_samples_collection(mongo_ids_of_inserted)
 
-                priority_samples = self.get_unprocessed_priority_samples_for_root_sample_ids(root_sample_ids)
+                important_unprocessed_priority_samples = self.get_important_unprocessed_priority_samples(root_sample_ids)
 
-                merge_priority_samples_into_docs_to_insert(priority_samples, docs_to_insert_mlwh)
+                merge_priority_samples_into_docs_to_insert(important_unprocessed_priority_samples, docs_to_insert_mlwh)
 
                 mlwh_success = self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
@@ -459,8 +459,8 @@ class CentreFile:
 
                     dart_success = self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
                     if dart_success:
-                        priority_samples_root_samples_id = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], priority_samples))
-                        self.update_priority_samples_to_processed(priority_samples_root_samples_id)
+                        root_samples_id = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], important_unprocessed_priority_samples))
+                        self.update_important_unprocessed_priority_samples_to_processed(root_samples_id)
 
         else:
             logger.info("No new docs to insert")
@@ -469,7 +469,8 @@ class CentreFile:
         self.create_import_record_for_file()
 
 
-    def update_priority_samples_to_processed(self, root_sample_ids) -> bool:
+    # TODO: refactor duplicated function
+    def update_important_unprocessed_priority_samples_to_processed(self, root_sample_ids) -> bool:
         """
         Description
         use stored identifiers to update priority_samples table to processed true
@@ -481,7 +482,7 @@ class CentreFile:
             priority_samples_collection.update({"Root Sample ID": root_sample_id}, {"$set": {"processed": True}})
         logger.info("Mongo update of processed for priority samples successful")
 
-
+    # TODO: refactor duplicated function
     def insert_samples_from_docs_into_mlwh(self, docs_to_insert: List[ModifiedRow]) -> bool:
         """Insert sample records into the MLWH database from the parsed file information, including the corresponding
         mongodb _id
@@ -520,7 +521,7 @@ class CentreFile:
 
         return False
 
-
+    # TODO: refactor duplicated function
     def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[ModifiedRow]) -> bool:
         """Insert plates and wells into the DART database.
         Create in DART with docs_to_insert including must_seq/ pre_seq

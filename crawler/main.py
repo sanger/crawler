@@ -118,6 +118,7 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                             centre_instance.clean_up()
 
                 # Step 2
+                # logger message, as cant log on a file
                 step_two(db)
 
 

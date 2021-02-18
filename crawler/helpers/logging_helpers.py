@@ -322,6 +322,27 @@ class AggregateType27(AggregateTypeBase):
         self.short_display_description = "Unknown date format"
 
 
+class AggregateType28(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 28"
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = f"{self.error_level.name}: Samples from priority where the MLWH database insert has failed. ({self.type_str})"
+        self.short_display_description = "Failed MLWH inserts"
+
+
+class AggregateType29(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 29"
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = (
+            f"{self.error_level.name}: Samples from priority where the MLWH database connection could not be made. ({self.type_str})"
+        )
+        self.short_display_description = "Failed MLWH connection"
+
+
+
 # Class to handle logging of errors of the various types per file
 class LoggingCollection:
     def __init__(self):
@@ -351,6 +372,8 @@ class LoggingCollection:
             "TYPE 25": AggregateType25(),
             "TYPE 26": AggregateType26(),
             "TYPE 27": AggregateType27(),
+            "TYPE 28": AggregateType28(),
+            "TYPE 29": AggregateType29(),
             # new TYPE 28 error for when updating priority samples update to processed: true
             # add to confluence
         }

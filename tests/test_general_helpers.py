@@ -63,8 +63,8 @@ from crawler.helpers.general_helpers import (
     parse_decimal128,
     unpad_coordinate,
     pad_coordinate,
+    is_sample_important_or_positive,
     is_sample_important,
-    is_sample_priority,
     is_sample_pickable,
 )
 from crawler.types import SampleDoc
@@ -313,26 +313,26 @@ def test_create_source_plate_doc(freezer):
         assert source_plate[FIELD_CREATED_AT] == now
 
 
-def test_is_sample_important():
+def test_is_sample_important_or_positive():
     negative = 'negative'
-    assert is_sample_important({FIELD_RESULT: negative, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == False
-    assert is_sample_important({FIELD_RESULT: negative}) == False
-    assert is_sample_important({FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
-    assert is_sample_important({FIELD_RESULT: POSITIVE_RESULT_VALUE}) == True
-    assert is_sample_important({FIELD_RESULT: negative, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
-    assert is_sample_important({FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
-    assert is_sample_important({FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
-    assert is_sample_important({FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
+    assert is_sample_important_or_positive({FIELD_RESULT: negative, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == False
+    assert is_sample_important_or_positive({FIELD_RESULT: negative}) == False
+    assert is_sample_important_or_positive({FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
+    assert is_sample_important_or_positive({FIELD_RESULT: POSITIVE_RESULT_VALUE}) == True
+    assert is_sample_important_or_positive({FIELD_RESULT: negative, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
+    assert is_sample_important_or_positive({FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
+    assert is_sample_important_or_positive({FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
+    assert is_sample_important_or_positive({FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
 
 
-def test_is_sample_priority():
-    assert is_sample_priority({ FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
-    assert is_sample_priority({ FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
-    assert is_sample_priority({ FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == False
-    assert is_sample_priority({ FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
-    assert is_sample_priority({ FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
-    assert is_sample_priority({ FIELD_MUST_SEQUENCE: True}) == True
-    assert is_sample_priority({}) == False
+def test_is_sample_important():
+    assert is_sample_important({ FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
+    assert is_sample_important({ FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
+    assert is_sample_important({ FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == False
+    assert is_sample_important({ FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
+    assert is_sample_important({ FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
+    assert is_sample_important({ FIELD_MUST_SEQUENCE: True}) == True
+    assert is_sample_important({}) == False
 
 
 def test_is_sample_pickable():

@@ -1815,7 +1815,7 @@ def test_docs_to_insert_updated_with_source_plate_handles_duplicate_existing_bar
     assert centre_file.logging_collection.aggregator_types["TYPE 25"].count_errors == 1
 
 
-def test_get_root_sample_ids_for_mongo_ids_returns_root_sample_ids(config, mongo_database, testing_samples):
+def test_get_root_sample_ids_from_samples_collection(config, mongo_database, testing_samples):
     _, mongo_database = mongo_database
 
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
@@ -1831,7 +1831,7 @@ def test_get_root_sample_ids_for_mongo_ids_returns_root_sample_ids(config, mongo
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
 
-    assert root_sample_ids == centre_file.get_root_sample_ids_for_mongo_ids(ids)
+    assert root_sample_ids == centre_file.get_root_sample_ids_from_samples_collection(ids)
 
 
 def test_process_files_with_priority_samples(
@@ -1856,7 +1856,7 @@ def test_process_files_with_priority_samples(
     ), f"Wrong number of priority samples updated. Expected: 4"
 
 
-def test_get_unprocessed_priority_samples_for_root_sample_ids_returns_priority_samples_for_root_sample_ids(config, mongo_database, testing_samples, testing_priority_samples):
+def test_get_important_unprocessed_priority_samples_returns_priority_samples_for_root_sample_ids(config, mongo_database, testing_samples, testing_priority_samples):
     _, mongo_database = mongo_database
 
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
@@ -1869,7 +1869,8 @@ def test_get_unprocessed_priority_samples_for_root_sample_ids_returns_priority_s
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
 
-    result = centre_file.get_unprocessed_priority_samples_for_root_sample_ids(root_sample_ids)
+    result = centre_file.get_important_unprocessed_priority_samples(insert_samples_from_docs_into_mlwh
+    )
     assert len(result) == 2
     assert result[0][FIELD_ROOT_SAMPLE_ID] == root_sample_ids[0]
     assert result[1][FIELD_ROOT_SAMPLE_ID] == root_sample_ids[1]
@@ -1879,7 +1880,7 @@ def test_get_unprocessed_priority_samples_for_root_sample_ids_returns_priority_s
 
 
 
-def test_update_priority_samples_to_processed(mongo_database, config, testing_priority_samples):
+def test_update_important_unprocessed_priority_samples_to_processed(mongo_database, config, testing_priority_samples):
     _, mongo_database = mongo_database
 
     centre_config = config.CENTRES[0]
@@ -1889,7 +1890,7 @@ def test_update_priority_samples_to_processed(mongo_database, config, testing_pr
     centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
 
     root_sample_ids = ["MCM001", "MCM002"]
-    centre_file.update_priority_samples_to_processed(root_sample_ids)
+    centre_file.update_important_unprocessed_priority_samples_to_processed(root_sample_ids)
 
     priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
 

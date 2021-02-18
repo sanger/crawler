@@ -24,6 +24,8 @@ from crawler.helpers.general_helpers import (
     map_mongo_sample_to_mysql,
 )
 
+from crawler.helpers.logging_helpers import LoggingCollection
+
 from crawler.db.mysql import (
     create_mysql_connection,
     run_mysql_executemany_query
@@ -39,7 +41,6 @@ from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 logger = logging.getLogger(__name__)
 
-# logger message, as cant log on a file
 # posisble move to seperate script
 def step_two(db) -> None:
     """
@@ -47,21 +48,23 @@ def step_two(db) -> None:
     Arguments:
         x {Type} -- description
     """
+    import pdb
+    pdb.set_trace()
 
     logger.info(f"Starting Step 2")
+    logging_collection = LoggingCollection()
 
-    priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
-    unprocessed_priority_samples = get_all_unprocessed_priority_samples(db)
-    unprocessed_priority_samples_root_sample_ids = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], unprocessed_priority_samples))
+    all_unprocessed_priority_samples = get_all_unprocessed_priority_samples(db)
+    unprocessed_root_sample_ids = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], all_unprocessed_priority_samples))
 
-    samples = get_samples_for_root_sample_ids(db, unprocessed_priority_samples_root_sample_ids)
+    samples = get_samples_for_root_sample_ids(db, unprocessed_root_sample_ids)
 
-    merge_priority_samples_into_docs_to_insert(unprocessed_priority_samples, samples)
+    merge_priority_samples_into_docs_to_insert(all_unprocessed_priority_samples, samples)
 
     # Create all samples in MLWH with docs_to_insert including must_seq/ pre_seq
     # TODO remove file name?
     file_name_substitute = "STEP_TWO"
-    mlwh_success = insert_samples_from_docs_into_mlwh_for_priority_samples(samples, file_name_substitute)
+    mlwh_success = update_priority_samples_into_mlwh(samples, file_name_substitute)
 
     # add to the DART database if the config flag is set and we have successfully updated the MLWH
     if mlwh_success:
@@ -72,11 +75,11 @@ def step_two(db) -> None:
         dart_success = insert_plates_and_wells_from_docs_into_dart_for_priority_samples(samples)
         if dart_success:
             # use stored identifiers to update priority_samples table to processed true
-            priority_samples_root_samples_id = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], unprocessed_priority_samples))
-            update_priority_samples_to_processed_for_priority_samples(db, priority_samples_root_samples_id)
+            all_unprocessed_priority_samples_root_samples_id = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], all_unprocessed_priority_samples))
+            update_unprocessed_priority_samples_to_processed(db, all_unprocessed_priority_samples_root_samples_id)
 
 
-# TODO:future refactor as duplication with file_processing.py
+# TODO: refactor duplicated function
 def insert_plates_and_wells_from_docs_into_dart_for_priority_samples(self, docs_to_insert: List[ModifiedRow]) -> bool:
     """Insert plates and wells into the DART database.
     Create in DART with docs_to_insert including must_seq/ pre_seq
@@ -132,21 +135,21 @@ def insert_plates_and_wells_from_docs_into_dart_for_priority_samples(self, docs_
         logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
         return False
 
-# TODO:future refactor as duplication with file_processing.py
-def insert_samples_from_docs_into_mlwh_for_priority_samples(self, docs_to_insert: List[ModifiedRow], file_name) -> bool:
+# TODO: refactor duplicated function
+def update_priority_samples_into_mlwh(self, samples: List[Any], file_name) -> bool:
     """Insert sample records into the MLWH database from the parsed file information, including the corresponding
     mongodb _id
-    Create all samples in MLWH with docs_to_insert including must_seq/ pre_seq
+    Create all samples in MLWH with samples including must_seq/ pre_seq
 
     Arguments:
-        docs_to_insert {List[ModifiedRow]} -- List of filtered sample information extracted from CSV files.
+        samples {List[ModifiedRow]} -- List of filtered sample information extracted from CSV files.
 
     Returns:
         {bool} -- True if the insert was successful; otherwise False
     """
     values: List[Dict[str, Any]] = []
 
-    for sample_doc in docs_to_insert:
+    for sample_doc in samples:
         values.append(map_mongo_sample_to_mysql(sample_doc))
 
     mysql_conn = create_mysql_connection(self.config, False)
@@ -159,13 +162,13 @@ def insert_samples_from_docs_into_mlwh_for_priority_samples(self, docs_to_insert
             return True
         except Exception as e:
             self.logging_collection.add_error(
-                "TYPE 14", f"MLWH database inserts failed for file {file_name}",
+                "TYPE 28", f"MLWH database inserts failed for priority samples",
             )
-            logger.critical(f"Critical error while processing file '{file_name}': {e}")
+            logger.critical(f"Critical error while processing priority samples': {e}")
             logger.exception(e)
     else:
         self.logging_collection.add_error(
-            "TYPE 15", f"MLWH database inserts failed, could not connect, for file {file_name}",
+            "TYPE 29", f"MLWH database inserts failed, could not connect",
         )
         logger.critical(f"Error writing to MLWH for file {file_name}, could not create Database connection")
 
@@ -202,8 +205,8 @@ def get_samples_for_root_sample_ids(db, root_sample_ids) -> List[Any]:
     samples_collection = get_mongo_collection(db, COLLECTION_SAMPLES)
     return list(map(lambda x: x, samples_collection.find({FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}})))
 
-
-def update_priority_samples_to_processed_for_priority_samples(db, root_sample_ids) -> bool:
+# TODO: refactor duplicated function
+def update_unprocessed_priority_samples_to_processed(db, root_sample_ids) -> bool:
     """
     Description
     use stored identifiers to update priority_samples table to processed true
@@ -223,9 +226,7 @@ def get_all_unprocessed_priority_samples(db) -> List[Any]:
         x {Type} -- description
     """
     unprocessed = { "processed": False }
-    of_importance = {"$or": [{"must_sequence": True}, {"preferentially_sequence": True}]}
-
-    query = {"$and": [unprocessed, of_importance]}
+    query = unprocessed
 
     priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
     priority_sample_cursor = priority_samples_collection.find(query)

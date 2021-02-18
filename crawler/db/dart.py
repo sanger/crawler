@@ -21,7 +21,7 @@ from crawler.constants import (
     FIELD_PREFERENTIALLY_SEQUENCE,
 )
 from crawler.exceptions import DartStateError
-from crawler.helpers.general_helpers import get_dart_well_index, map_mongo_doc_to_dart_well_props, is_sample_important
+from crawler.helpers.general_helpers import get_dart_well_index, map_mongo_doc_to_dart_well_props, is_sample_important_or_positive
 from crawler.sql_queries import (
     SQL_DART_ADD_PLATE,
     SQL_DART_GET_PLATE_PROPERTY,
@@ -166,7 +166,7 @@ def add_dart_well_properties_if_positive_or_of_importance(cursor: pyodbc.Cursor,
     # if sample is result OR must_sequence OR preferentially_sequence
 
     # if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE || must_sequence == true || preferentially_sequence == true
-    if is_sample_important(sample):
+    if is_sample_important_or_positive(sample):
         well_index = get_dart_well_index(str(sample.get(FIELD_COORDINATE)))
         if well_index is not None:
             dart_well_props = map_mongo_doc_to_dart_well_props(sample)

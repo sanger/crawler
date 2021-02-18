@@ -97,6 +97,14 @@ Where the time format is YYMMDD_HHmm. Both start and end timestamps must be pres
 The process should not duplicate rows that are already present in MLWH, so you can be generous with your timestamp
 range.
 
+### Priority Samples
+
+#### Glossary:
+- **Priority**: samples in the priority collection
+- **Important**: refers to samples that have must_sequence or preferentially_sequence to True
+- **Important** or Positive: refers to samples that have a Positive Result of are Important
+- **Pickable**: samples that have Filtered Positive Result or are Important
+
 ### Filtered Positive Rules
 
 This is a history of past and current rules by which positive samples are further filtered and identified as
