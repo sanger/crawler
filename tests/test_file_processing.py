@@ -1878,25 +1878,6 @@ def test_get_unprocessed_priority_samples_for_root_sample_ids_returns_priority_s
     assert result[0][FIELD_MUST_SEQUENCE] == True or result[0][FIELD_PREFERENTIALLY_SEQUENCE] == True
 
 
-def test_merge_priority_samples_into_docs_to_insert(mongo_database, config, testing_priority_samples, testing_docs_to_insert_for_aldp):
-    _, mongo_database = mongo_database
-
-    centre_config = config.CENTRES[0]
-    centre_config["sftp_root_read"] = "tmp/files"
-    centre = Centre(config, centre_config)
-    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
-
-    priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
-    root_sample_ids = ["MCM001", "MCM002"]
-    priority_samples = list(priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}))
-
-    centre_file.merge_priority_samples_into_docs_to_insert(priority_samples, testing_docs_to_insert_for_aldp)
-
-    assert (FIELD_MUST_SEQUENCE in testing_docs_to_insert_for_aldp[0]) == True
-    assert (FIELD_MUST_SEQUENCE in testing_docs_to_insert_for_aldp[1]) == True
-    assert (FIELD_PREFERENTIALLY_SEQUENCE in testing_docs_to_insert_for_aldp[0]) == True
-    assert (FIELD_PREFERENTIALLY_SEQUENCE in testing_docs_to_insert_for_aldp[1]) == True
-
 
 def test_update_priority_samples_to_processed(mongo_database, config, testing_priority_samples):
     _, mongo_database = mongo_database
