@@ -342,6 +342,25 @@ class AggregateType29(AggregateTypeBase):
         self.short_display_description = "Failed MLWH connection"
 
 
+class AggregateType30(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 30"
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = f"{self.error_level.name}: Priority samples where all DART database inserts have failed. ({self.type_str})"
+        self.short_display_description = "Failed DART priority samples inserts"
+
+
+class AggregateType31(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 31"
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = (
+            f"{self.error_level.name}: Priority samples where the DART database connection could not be made. ({self.type_str})"
+        )
+        self.short_display_description = "Failed priority samples DART connection"
+
 
 # Class to handle logging of errors of the various types per file
 class LoggingCollection:
@@ -374,6 +393,8 @@ class LoggingCollection:
             "TYPE 27": AggregateType27(),
             "TYPE 28": AggregateType28(),
             "TYPE 29": AggregateType29(),
+            "TYPE 30": AggregateType30(),
+            "TYPE 31": AggregateType31(),
             # new TYPE 28 error for when updating priority samples update to processed: true
             # add to confluence
         }

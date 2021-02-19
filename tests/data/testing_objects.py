@@ -38,7 +38,7 @@ from crawler.constants import (
 TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
     {
         FIELD_COORDINATE: "A01",
-        FIELD_SOURCE: "test1",
+        FIELD_SOURCE: "Test Centre",
         FIELD_RESULT: "Positive",
         FIELD_PLATE_BARCODE: "123",
         "released": True,
@@ -47,7 +47,7 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
     },
     {
         FIELD_COORDINATE: "B01",
-        FIELD_SOURCE: "test1",
+        FIELD_SOURCE: "Test Centre",
         FIELD_RESULT: "Negative",
         FIELD_PLATE_BARCODE: "123",
         "released": False,
@@ -56,7 +56,7 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
     },
     {
         FIELD_COORDINATE: "C01",
-        FIELD_SOURCE: "test1",
+        FIELD_SOURCE: "Test Centre",
         FIELD_RESULT: "Void",
         FIELD_PLATE_BARCODE: "123",
         FIELD_ROOT_SAMPLE_ID: "MCM003",
@@ -64,7 +64,7 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
     },
     {
         FIELD_COORDINATE: "D01",
-        FIELD_SOURCE: "test1",
+        FIELD_SOURCE: "Test Centre",
         FIELD_RESULT: "Positive",
         FIELD_PLATE_BARCODE: "456",
         "released": True,

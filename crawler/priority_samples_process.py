@@ -25,6 +25,8 @@ from crawler.helpers.general_helpers import (
     map_mongo_sample_to_mysql,
 )
 
+from more_itertools import groupby_transform
+
 from crawler.helpers.logging_helpers import LoggingCollection
 
 from crawler.db.mysql import (
@@ -37,10 +39,13 @@ from crawler.db.dart import (
     add_dart_plate_if_doesnt_exist,
     add_dart_well_properties_if_positive_or_of_importance
 )
+from crawler.helpers.logging_helpers import LoggingCollection
 
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 logger = logging.getLogger(__name__)
+
+logging_collection = LoggingCollection()
 
 # posisble move to seperate script
 def step_two(db, config: Config) -> None:
@@ -59,10 +64,8 @@ def step_two(db, config: Config) -> None:
     merge_priority_samples_into_docs_to_insert(all_unprocessed_priority_samples, samples)
 
     # Create all samples in MLWH with docs_to_insert including must_seq/ pre_seq
-    # TODO remove file name?
-    file_name_substitute = "STEP_TWO"
 
-    mlwh_success = update_priority_samples_into_mlwh(samples, file_name_substitute, config)
+    mlwh_success = update_priority_samples_into_mlwh(samples, config)
 
     # add to the DART database if the config flag is set and we have successfully updated the MLWH
     if mlwh_success:
@@ -138,7 +141,7 @@ def update_unprocessed_priority_samples_to_processed(db, root_sample_ids) -> boo
 
 
 # TODO: refactor duplicated function
-def update_priority_samples_into_mlwh(samples, file_name, config) -> bool:
+def update_priority_samples_into_mlwh(samples, config) -> bool:
     """Insert sample records into the MLWH database from the parsed file information, including the corresponding
     mongodb _id
     Create all samples in MLWH with samples including must_seq/ pre_seq
@@ -161,7 +164,7 @@ def update_priority_samples_into_mlwh(samples, file_name, config) -> bool:
         try:
             run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
 
-            logger.debug(f"MLWH database inserts completed successfully for file {file_name}")
+            logger.debug(f"MLWH database inserts completed successfully for priority samples")
             return True
         except Exception as e:
             logging_collection.add_error(
@@ -173,7 +176,7 @@ def update_priority_samples_into_mlwh(samples, file_name, config) -> bool:
         logging_collection.add_error(
             "TYPE 29", f"MLWH database inserts failed, could not connect",
         )
-        logger.critical(f"Error writing to MLWH for file {file_name}, could not create Database connection")
+        logger.critical(f"Error writing to MLWH for priority samples, could not create Database connection")
 
     return False
 
@@ -199,9 +202,8 @@ def insert_plates_and_wells_from_docs_into_dart_for_priority_samples(docs_to_ins
                 docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]
             ):
                 try:
-                    sample = samples[0]
-                    centre_name = sample[FIELD_SOURCE]
-                    centre_config = config[centre_name]
+                    samples = list(samples)
+                    centre_config = centre_config_for_samples(config, samples)
 
                     plate_state = add_dart_plate_if_doesnt_exist(
                         cursor, plate_barcode, centre_config["biomek_labware_class"]  # type: ignore
@@ -211,33 +213,38 @@ def insert_plates_and_wells_from_docs_into_dart_for_priority_samples(docs_to_ins
                             add_dart_well_properties_if_positive_or_of_importance(cursor, sample, plate_barcode)  # type: ignore
                     cursor.commit()
                 except Exception as e:
-                    self.logging.add_error(
+                    logging_collection.add_error(
                         "TYPE 22",
-                        f"DART database inserts failed for plate {plate_barcode} in file {self.file_name}",
+                        f"DART database inserts failed for plate {plate_barcode} in priority samples inserts",
                     )
                     logger.exception(e)
                     # rollback statements executed since previous commit/rollback
                     cursor.rollback()
                     return False
 
-            logger.debug(f"DART database inserts completed successfully for file {self.file_name}")
+            logger.debug(f"DART database inserts completed successfully for priority samples")
             return True
         except Exception as e:
-            self.logging.add_error(
-                "TYPE 23", f"DART database inserts failed for file {self.file_name}",
+            logging_collection.add_error(
+                "TYPE 30", f"DART database inserts failed for priority samples",
             )
-            logger.critical(f"Critical error in file {self.file_name}: {e}")
+            logger.critical(f"Critical error for priority samples: {e}")
             logger.exception(e)
             return False
         finally:
             sql_server_connection.close()
     else:
-        self.logging.add_error(
-            "TYPE 24", f"DART database inserts failed, could not connect, for file {self.file_name}",
+        logging_collection.add_error(
+            "TYPE 31", f"DART database inserts failed, could not connect, for priority samples",
         )
-        logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
+        logger.critical(f"Error writing to DART for priority samples, could not create Database connection")
         return False
 
 
 
+
+def centre_config_for_samples(config, samples):
+    centre_name = samples[0][FIELD_SOURCE]
+
+    return list(filter(lambda x: x['name']==centre_name, config.CENTRES))[0]
 
