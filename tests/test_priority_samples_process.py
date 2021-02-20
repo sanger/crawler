@@ -54,6 +54,7 @@ class TestStepTwo:
             "processed_status": [True, True, True, True],
             "plate_barcodes": ["123", "123", "123", "123"],
             "plates_status":  {"123": DART_STATE_PENDING, "456": DART_STATE_PENDING},
+            "expected_mlwh_samples": [False, False, False, False],
             "expected_samples": [],
             "expected_plates": [],
         },
@@ -62,6 +63,7 @@ class TestStepTwo:
             "processed_status": [False, False, False, False],
             "plate_barcodes": ["123", "123", "123", "123"],
             "plates_status":  {"123": DART_STATE_PENDING, "456": DART_STATE_PENDING},
+            "expected_mlwh_samples": [True, True, True, True],
             "expected_samples": [True, True, True, True],
             "expected_plates": ["123"],
         },
@@ -70,6 +72,7 @@ class TestStepTwo:
             "processed_status": [False, False, False, False],
             "plate_barcodes": ["123", "123", "456", "456"],
             "plates_status":  {"123": DART_STATE_PENDING, "456": DART_STATE_PENDING},
+            "expected_mlwh_samples": [True, True, True, True],
             "expected_samples": [True, True, True, True],
             "expected_plates": ["123", "456"],
         },
@@ -78,6 +81,7 @@ class TestStepTwo:
             "processed_status": [False, True, False, True],
             "plate_barcodes": ["123", "123", "456", "456"],
             "plates_status":  {"123": DART_STATE_PENDING, "456": DART_STATE_PENDING},
+            "expected_mlwh_samples": [True, False, True, False],
             "expected_samples": [True, False, True, False],
             "expected_plates": ["123", "456"],
         },
@@ -86,6 +90,7 @@ class TestStepTwo:
             "processed_status": [False, True, True, True],
             "plate_barcodes": ["123", "123", "456", "456"],
             "plates_status":  {"123": DART_STATE_PENDING, "456": DART_STATE_PENDING},
+            "expected_mlwh_samples": [True, False, False, False],
             "expected_samples": [True, False, False, False],
             "expected_plates": ["123"],
         },
@@ -94,6 +99,7 @@ class TestStepTwo:
              "processed_status": [False, False, False, False],
             "plate_barcodes": ["123", "123", "456", "456"],
             "plates_status":  {"123": DART_STATE_PENDING, "456": "RUNNING"},
+            "expected_mlwh_samples": [True, True, True, True],
             "expected_samples": [True, True, False, False],
             "expected_plates": ["123", "456"],
         },
@@ -102,6 +108,7 @@ class TestStepTwo:
              "processed_status": [False, False, False, True],
             "plate_barcodes": ["123", "123", "123", "456"],
             "plates_status":  {"123": DART_STATE_PENDING, "456": "RUNNING"},
+            "expected_mlwh_samples": [True, True, True, False],
             "expected_samples": [True, True, True, False],
             "expected_plates": ["123"],
         },
@@ -110,6 +117,7 @@ class TestStepTwo:
              "processed_status": [False, False, False, False],
             "plate_barcodes": ["123", "123", "123", "456"],
             "plates_status":  {"123": "RUNNING", "456": "RUNNING"},
+            "expected_mlwh_samples": [True, True, True, True],
             "expected_samples": [False, False, False, False],
             "expected_plates": ["123", "456"],
         },
@@ -137,7 +145,16 @@ class TestStepTwo:
 
         self.mock_add_dart_plate.side_effect = find_plate_status
 
-        # Set expected samples
+        # Set expected mlwh samples
+        self.expected_mlwh_samples = list(map(
+            lambda info: info[0],
+            filter(
+                lambda info: info[1],
+                zip(testing_priority_samples, request.param["expected_mlwh_samples"])
+            )
+        ))
+
+        # Set expected dart samples
         self.expected_samples = list(map(
             lambda info: info[0],
             filter(
@@ -146,11 +163,23 @@ class TestStepTwo:
             )
         ))
 
-        # Set expected plates
+        # Set expected dart plates
         self.expected_plates = request.param["expected_plates"]
 
+
     def validate_expected_data(self, with_different_scenarios):
-        # Store list of expected samples and plates
+        # Check list of expected mlwh samples
+        expected_mlwh_samples = list(map(
+                lambda info: info[0],
+                filter(
+                    lambda info: not(info[1]),
+                    zip(testing_priority_samples, self.processed_status)
+                )
+            )
+        )
+        assert self.expected_mlwh_samples == expected_mlwh_samples
+
+        # Check list of expected dart samples and plates
         result = list(filter(
                 lambda info: ((self.plate_status[info[1]] == DART_STATE_PENDING) and not(info[2])),
                 zip(testing_samples, self.plate_barcodes, self.processed_status)
@@ -207,24 +236,33 @@ class TestStepTwo:
     #     assert self.mock_conn().cursor().commit.call_count == 2
     #     self.mock_conn().close.assert_called_once()
 
-    def test_mlwh_was_correctly_updated_in_step_two(self, mongo_database, config, mlwh_connection):
+    def test_mlwh_was_correctly_updated_in_step_two(self, mongo_database, config, mlwh_connection, with_different_scenarios):
         _, mongo_database = mongo_database
 
         step_two(mongo_database, config)
 
         cursor = mlwh_connection.cursor(dictionary=True)
-        root_sample_ids = ",".join(map(lambda(x): x[FIELD_ROOT_SAMPLE_ID], self.expected_samples))
-        cursor.execute(
-            f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} "
-            f" WHERE {FIELD_ROOT_SAMPLE_ID} IN ({root_sample_ids})"
-        )
-        rows = cursor.fetchall()
-        cursor.close()
 
-        for sample, pos in enumerator(self.expected_samples):
-            assert rows[pos][MLWH_ROOT_SAMPLE_ID] == sample[FIELD_ROOT_SAMPLE_ID]
-            assert rows[pos][MLWH_MUST_SEQUENCE] == sample[FIELD_MUST_SEQUENCE]
-            assert rows[pos][MLWH_PREFERENTIALLY_SEQUENCE] == sample[FIELD_PREFERENTIALLY_SEQUENCE]
+        if len(self.expected_mlwh_samples) == 0:
+            cursor.execute(
+                f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} "
+            )
+            rows = cursor.fetchall()
+            cursor.close()
+            assert len(rows) == 0
+        else:
+            root_sample_ids = ",".join(map(lambda x: f"\"{x[FIELD_ROOT_SAMPLE_ID]}\"", self.expected_mlwh_samples))
+            cursor.execute(
+                f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} "
+                f" WHERE {MLWH_ROOT_SAMPLE_ID} IN ({root_sample_ids})"
+            )
+            rows = cursor.fetchall()
+            cursor.close()
+
+            for pos, priority_sample in enumerate(self.expected_mlwh_samples):
+                assert rows[pos][MLWH_ROOT_SAMPLE_ID] == priority_sample[FIELD_ROOT_SAMPLE_ID]
+                assert rows[pos][MLWH_MUST_SEQUENCE] == priority_sample[FIELD_MUST_SEQUENCE]
+                assert rows[pos][MLWH_PREFERENTIALLY_SEQUENCE] == priority_sample[FIELD_PREFERENTIALLY_SEQUENCE]
 
         # assert rows[0][MLWH_ROOT_SAMPLE_ID] == 'MCM001'
         # assert rows[0]['must_sequence'] == 1
