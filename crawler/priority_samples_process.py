@@ -4,7 +4,7 @@
 import logging
 import logging.config
 
-from typing import Any, List,  Dict
+from typing import Any, List, Dict
 from crawler.types import ModifiedRow, Config
 from crawler.db.mongo import (
     get_mongo_collection,
@@ -18,7 +18,7 @@ from crawler.constants import (
     FIELD_PREFERENTIALLY_SEQUENCE,
     FIELD_PLATE_BARCODE,
     DART_STATE_PENDING,
-    FIELD_SOURCE
+    FIELD_SOURCE,
 )
 
 from crawler.helpers.general_helpers import (
@@ -29,15 +29,12 @@ from more_itertools import groupby_transform
 
 from crawler.helpers.logging_helpers import LoggingCollection
 
-from crawler.db.mysql import (
-    create_mysql_connection,
-    run_mysql_executemany_query
-)
+from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
 
 from crawler.db.dart import (
     create_dart_sql_server_conn,
     add_dart_plate_if_doesnt_exist,
-    add_dart_well_properties_if_positive_or_of_importance
+    add_dart_well_properties_if_positive_or_of_importance,
 )
 from crawler.helpers.logging_helpers import LoggingCollection
 
@@ -77,7 +74,9 @@ def step_two(db, config: Config) -> None:
         dart_success = insert_plates_and_wells_from_docs_into_dart_for_priority_samples(samples, config)
         if dart_success:
             # use stored identifiers to update priority_samples table to processed true
-            all_unprocessed_priority_samples_root_samples_id = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], all_unprocessed_priority_samples))
+            all_unprocessed_priority_samples_root_samples_id = list(
+                map(lambda x: x[FIELD_ROOT_SAMPLE_ID], all_unprocessed_priority_samples)
+            )
             update_unprocessed_priority_samples_to_processed(db, all_unprocessed_priority_samples_root_samples_id)
 
 
@@ -87,7 +86,7 @@ def get_all_unprocessed_priority_samples(db) -> List[Any]:
     Arguments:
         x {Type} -- description
     """
-    unprocessed = { "processed": False }
+    unprocessed = {"processed": False}
     query = unprocessed
 
     priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
@@ -168,13 +167,15 @@ def update_priority_samples_into_mlwh(samples, config) -> bool:
             return True
         except Exception as e:
             logging_collection.add_error(
-                "TYPE 28", f"MLWH database inserts failed for priority samples",
+                "TYPE 28",
+                f"MLWH database inserts failed for priority samples",
             )
             logger.critical(f"Critical error while processing priority samples': {e}")
             logger.exception(e)
     else:
         logging_collection.add_error(
-            "TYPE 29", f"MLWH database inserts failed, could not connect",
+            "TYPE 29",
+            f"MLWH database inserts failed, could not connect",
         )
         logger.critical(f"Error writing to MLWH for priority samples, could not create Database connection")
 
@@ -182,7 +183,9 @@ def update_priority_samples_into_mlwh(samples, config) -> bool:
 
 
 # TODO: refactor duplicated function
-def insert_plates_and_wells_from_docs_into_dart_for_priority_samples(docs_to_insert: List[ModifiedRow], config: Config) -> bool:
+def insert_plates_and_wells_from_docs_into_dart_for_priority_samples(
+    docs_to_insert: List[ModifiedRow], config: Config
+) -> bool:
     """Insert plates and wells into the DART database.
     Create in DART with docs_to_insert including must_seq/ pre_seq
     use docs_to_insert to update DART
@@ -225,7 +228,8 @@ def insert_plates_and_wells_from_docs_into_dart_for_priority_samples(docs_to_ins
             return True
         except Exception as e:
             logging_collection.add_error(
-                "TYPE 30", f"DART database inserts failed for priority samples",
+                "TYPE 30",
+                f"DART database inserts failed for priority samples",
             )
             logger.critical(f"Critical error for priority samples: {e}")
             logger.exception(e)
@@ -234,16 +238,14 @@ def insert_plates_and_wells_from_docs_into_dart_for_priority_samples(docs_to_ins
             sql_server_connection.close()
     else:
         logging_collection.add_error(
-            "TYPE 31", f"DART database inserts failed, could not connect, for priority samples",
+            "TYPE 31",
+            f"DART database inserts failed, could not connect, for priority samples",
         )
         logger.critical(f"Error writing to DART for priority samples, could not create Database connection")
         return False
 
 
-
-
 def centre_config_for_samples(config, samples):
     centre_name = samples[0][FIELD_SOURCE]
 
-    return list(filter(lambda x: x['name']==centre_name, config.CENTRES))[0]
-
+    return list(filter(lambda x: x["name"] == centre_name, config.CENTRES))[0]

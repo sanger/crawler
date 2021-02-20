@@ -300,11 +300,17 @@ def test_extract_plate_barcode_and_coordinate(config):
 
     # invalid coordinate format
     invalid_coord = {"RNA ID": "AP-abc-12345678_HH0"}
-    assert centre_file.extract_plate_barcode_and_coordinate(invalid_coord, 0, barcode_field, barcode_regex) == ("", "",)
+    assert centre_file.extract_plate_barcode_and_coordinate(invalid_coord, 0, barcode_field, barcode_regex) == (
+        "",
+        "",
+    )
 
     # missing underscore between plate barcode and coordinate
     missing = {"RNA ID": "AP-abc-12345678H0"}
-    assert centre_file.extract_plate_barcode_and_coordinate(missing, 0, barcode_field, barcode_regex) == ("", "",)
+    assert centre_file.extract_plate_barcode_and_coordinate(missing, 0, barcode_field, barcode_regex) == (
+        "",
+        "",
+    )
 
     # shorter plate barcode
     short = {"RNA ID": "DN1234567_H01"}
@@ -329,7 +335,10 @@ def test_extract_plate_barcode_and_coordinate(config):
 
     # lowercase coordinates
     lower_coord = {"RNA ID": "AP-abc-12345678_h01"}
-    assert centre_file.extract_plate_barcode_and_coordinate(lower_coord, 0, barcode_field, barcode_regex) == ("", "",)
+    assert centre_file.extract_plate_barcode_and_coordinate(lower_coord, 0, barcode_field, barcode_regex) == (
+        "",
+        "",
+    )
 
     # unpadded coordinates
     lower_coord = {"RNA ID": "AP-abc-12345678_A2"}
@@ -1460,7 +1469,9 @@ def test_insert_plates_and_wells_from_docs_into_dart_failure_adding_new_plate(co
             mock_conn().close.assert_called_once()
 
 
-def test_insert_plates_and_wells_from_docs_into_dart_non_pending_plate_does_not_update_wells(config,):
+def test_insert_plates_and_wells_from_docs_into_dart_non_pending_plate_does_not_update_wells(
+    config,
+):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
     docs_to_insert = [
@@ -1502,7 +1513,8 @@ def test_insert_plates_and_wells_from_docs_into_dart_none_well_index(config):
 
     with patch("crawler.file_processing.create_dart_sql_server_conn") as mock_conn:
         with patch(
-            "crawler.file_processing.add_dart_plate_if_doesnt_exist", return_value=DART_STATE_PENDING,
+            "crawler.file_processing.add_dart_plate_if_doesnt_exist",
+            return_value=DART_STATE_PENDING,
         ):
             with patch("crawler.db.dart.get_dart_well_index", return_value=None):
                 centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
@@ -1579,7 +1591,10 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
                             mock_get_well_index.assert_any_call(doc[FIELD_COORDINATE])
                             mock_map.assert_any_call(doc)
                             mock_set_well_props.assert_any_call(
-                                mock_conn().cursor(), doc[FIELD_PLATE_BARCODE], test_well_props, test_well_index,
+                                mock_conn().cursor(),
+                                doc[FIELD_PLATE_BARCODE],
+                                test_well_props,
+                                test_well_index,
                             )
 
                         # commits changes
@@ -1631,7 +1646,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
             FIELD_COORDINATE: "A04",
             FIELD_LAB_ID: "AP",
             FIELD_RESULT: "Void",
-            FIELD_MUST_SEQUENCE: True
+            FIELD_MUST_SEQUENCE: True,
         },
     ]
 
@@ -1652,7 +1667,9 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
                         # adds a single plate
                         assert mock_add_plate.call_count == 1
                         mock_add_plate.assert_any_call(
-                            mock_conn().cursor(), plate_barcode, centre_file.centre_config["biomek_labware_class"],
+                            mock_conn().cursor(),
+                            plate_barcode,
+                            centre_file.centre_config["biomek_labware_class"],
                         )
 
                         # calls for well index and to map as expected
@@ -1856,7 +1873,9 @@ def test_process_files_with_priority_samples(
     ), f"Wrong number of priority samples updated. Expected: 4"
 
 
-def test_get_important_unprocessed_priority_samples_returns_priority_samples_for_root_sample_ids(config, mongo_database, testing_samples, testing_priority_samples):
+def test_get_important_unprocessed_priority_samples_returns_priority_samples_for_root_sample_ids(
+    config, mongo_database, testing_samples, testing_priority_samples
+):
     _, mongo_database = mongo_database
 
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
@@ -1878,7 +1897,6 @@ def test_get_important_unprocessed_priority_samples_returns_priority_samples_for
     assert result[0][FIELD_MUST_SEQUENCE] == True or result[0][FIELD_PREFERENTIALLY_SEQUENCE] == True
 
 
-
 def test_update_important_unprocessed_priority_samples_to_processed(mongo_database, config, testing_priority_samples):
     _, mongo_database = mongo_database
 
@@ -1895,5 +1913,3 @@ def test_update_important_unprocessed_priority_samples_to_processed(mongo_databa
 
     assert priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: root_sample_ids[0]})[0][FIELD_PROCESSED] == True
     assert priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: root_sample_ids[1]})[0][FIELD_PROCESSED] == True
-
-

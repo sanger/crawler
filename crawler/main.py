@@ -121,14 +121,7 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                 # logger message, as cant log on a file
                 step_two(db, config)
 
-
         logger.info(f"Import complete in {round(time.time() - start, 2)}s")
         logger.info("=" * 80)
     except Exception as e:
         logger.exception(e)
-
-
-
-
-
-

@@ -21,7 +21,11 @@ from crawler.constants import (
     FIELD_PREFERENTIALLY_SEQUENCE,
 )
 from crawler.exceptions import DartStateError
-from crawler.helpers.general_helpers import get_dart_well_index, map_mongo_doc_to_dart_well_props, is_sample_important_or_positive
+from crawler.helpers.general_helpers import (
+    get_dart_well_index,
+    map_mongo_doc_to_dart_well_props,
+    is_sample_important_or_positive,
+)
 from crawler.sql_queries import (
     SQL_DART_ADD_PLATE,
     SQL_DART_GET_PLATE_PROPERTY,
@@ -152,7 +156,9 @@ def add_dart_plate_if_doesnt_exist(cursor: pyodbc.Cursor, plate_barcode: str, bi
     return state
 
 
-def add_dart_well_properties_if_positive_or_of_importance(cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str) -> None:
+def add_dart_well_properties_if_positive_or_of_importance(
+    cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str
+) -> None:
     # if that sample is positive or must/pref seq
     """Adds well properties to DART for the specified sample if that sample is positive.
 
@@ -195,7 +201,6 @@ def add_dart_well_properties_if_positive_or_of_importance(cursor: pyodbc.Cursor,
 #             raise ValueError(
 #                 f"Unable to determine DART well index for {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
 #             )
-
 
 
 # def update_priority_wells_from_docs_into_dart(samples, logging):
@@ -241,5 +246,3 @@ def add_dart_well_properties_if_positive_or_of_importance(cursor: pyodbc.Cursor,
 #         )
 #         logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
 #         return False
-
-

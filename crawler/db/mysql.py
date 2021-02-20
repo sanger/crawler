@@ -199,5 +199,3 @@ def create_mysql_connection_engine(connection_string: str, database: str = "") -
         create_engine_string += f"/{database}"
 
     return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
-
-

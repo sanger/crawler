@@ -76,7 +76,7 @@ from crawler.priority_samples_process import (
 from crawler.db.dart import (
     create_dart_sql_server_conn,
     add_dart_plate_if_doesnt_exist,
-    add_dart_well_properties_if_positive_or_of_importance
+    add_dart_well_properties_if_positive_or_of_importance,
 )
 from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
 
@@ -390,8 +390,8 @@ class CentreFile:
         Arguments:
             x {Type} -- description
         """
-        matching_priority_entry ={FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}
-        unprocessed = { "processed": False }
+        matching_priority_entry = {FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}
+        unprocessed = {"processed": False}
         of_importance = {"$or": [{"must_sequence": True}, {"preferentially_sequence": True}]}
 
         query = {"$and": [matching_priority_entry, unprocessed, of_importance]}
@@ -401,7 +401,6 @@ class CentreFile:
         priority_sample_cursor = priority_samples_collection.find(query)
         return list(priority_sample_cursor)
 
-
     def get_root_sample_ids_from_samples_collection(self, mongo_ids: List[str]) -> List[str]:
         """
         Get the root sample ids for samples with the given mongo _id
@@ -410,7 +409,6 @@ class CentreFile:
         """
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
         return list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], samples_collection.find({"_id": {"$in": mongo_ids}})))
-
 
     def process_samples(self, add_to_dart: bool) -> None:
         """Processes the samples extracted from the centre file.
@@ -447,7 +445,9 @@ class CentreFile:
                 # Get root sample ids of samples that were sucessfully inserted into the samples collection
                 root_sample_ids = self.get_root_sample_ids_from_samples_collection(mongo_ids_of_inserted)
 
-                important_unprocessed_priority_samples = self.get_important_unprocessed_priority_samples(root_sample_ids)
+                important_unprocessed_priority_samples = self.get_important_unprocessed_priority_samples(
+                    root_sample_ids
+                )
 
                 merge_priority_samples_into_docs_to_insert(important_unprocessed_priority_samples, docs_to_insert_mlwh)
 
@@ -459,7 +459,9 @@ class CentreFile:
 
                     dart_success = self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
                     if dart_success:
-                        root_samples_id = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], important_unprocessed_priority_samples))
+                        root_samples_id = list(
+                            map(lambda x: x[FIELD_ROOT_SAMPLE_ID], important_unprocessed_priority_samples)
+                        )
                         self.update_important_unprocessed_priority_samples_to_processed(root_samples_id)
 
         else:
@@ -467,7 +469,6 @@ class CentreFile:
 
         self.backup_file()
         self.create_import_record_for_file()
-
 
     # TODO: refactor duplicated function
     def update_important_unprocessed_priority_samples_to_processed(self, root_sample_ids) -> bool:
@@ -509,13 +510,15 @@ class CentreFile:
                 return True
             except Exception as e:
                 self.logging_collection.add_error(
-                    "TYPE 14", f"MLWH database inserts failed for file {self.file_name}",
+                    "TYPE 14",
+                    f"MLWH database inserts failed for file {self.file_name}",
                 )
                 logger.critical(f"Critical error while processing file '{self.file_name}': {e}")
                 logger.exception(e)
         else:
             self.logging_collection.add_error(
-                "TYPE 15", f"MLWH database inserts failed, could not connect, for file {self.file_name}",
+                "TYPE 15",
+                f"MLWH database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
 
@@ -563,7 +566,8 @@ class CentreFile:
                 return True
             except Exception as e:
                 self.logging_collection.add_error(
-                    "TYPE 23", f"DART database inserts failed for file {self.file_name}",
+                    "TYPE 23",
+                    f"DART database inserts failed for file {self.file_name}",
                 )
                 logger.critical(f"Critical error in file {self.file_name}: {e}")
                 logger.exception(e)
@@ -572,11 +576,11 @@ class CentreFile:
                 sql_server_connection.close()
         else:
             self.logging_collection.add_error(
-                "TYPE 24", f"DART database inserts failed, could not connect, for file {self.file_name}",
+                "TYPE 24",
+                f"DART database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
             return False
-
 
     def backup_filename(self) -> str:
         """Backup the file.
@@ -725,7 +729,8 @@ class CentreFile:
 
         except Exception as e:
             self.logging_collection.add_error(
-                "TYPE 26", f"Failed assigning source plate UUIDs to samples in file {self.file_name}",
+                "TYPE 26",
+                f"Failed assigning source plate UUIDs to samples in file {self.file_name}",
             )
             logger.critical("Error assigning source plate UUIDs to samples in file " f"{self.file_name}: {e}")
             logger.exception(e)
@@ -891,7 +896,8 @@ class CentreFile:
             if not required.issubset(fieldnames):
                 # LOG_HANDLER TYPE 2: Fail file
                 self.logging_collection.add_error(
-                    "TYPE 2", f"Wrong headers, {', '.join(list(required - fieldnames))} missing in CSV file",
+                    "TYPE 2",
+                    f"Wrong headers, {', '.join(list(required - fieldnames))} missing in CSV file",
                 )
                 return False
         else:
@@ -956,7 +962,8 @@ class CentreFile:
     def log_adding_default_lab_id(self, row, line_number):
         logger.debug(f"Adding in missing Lab ID for row {line_number}")
         self.logging_collection.add_error(
-            "TYPE 12", f"No Lab ID, line: {line_number}, root_sample_id: {row.get(FIELD_ROOT_SAMPLE_ID)}",
+            "TYPE 12",
+            f"No Lab ID, line: {line_number}, root_sample_id: {row.get(FIELD_ROOT_SAMPLE_ID)}",
         )
 
     def filtered_row(self, row: CSVRow, line_number: int) -> ModifiedRow:
@@ -1113,7 +1120,8 @@ class CentreFile:
         if row_signature in seen_rows:
             logger.debug(f"Skipping {row_signature}: duplicate")
             self.logging_collection.add_error(
-                "TYPE 5", f"Duplicated, line: {line_number}, root_sample_id: {modified_row[FIELD_ROOT_SAMPLE_ID]}",
+                "TYPE 5",
+                f"Duplicated, line: {line_number}, root_sample_id: {modified_row[FIELD_ROOT_SAMPLE_ID]}",
             )
             return None
 
@@ -1221,7 +1229,8 @@ class CentreFile:
                 row[channel_cq_field] = Decimal128(channel_cq_field_val)
             except Exception:
                 self.logging_collection.add_error(
-                    "TYPE 19", f"{channel_cq_field} invalid, line: {line_number}, value: {channel_cq_field_val}",
+                    "TYPE 19",
+                    f"{channel_cq_field} invalid, line: {line_number}, value: {channel_cq_field_val}",
                 )
                 return False
 
@@ -1283,7 +1292,8 @@ class CentreFile:
 
             # no patterns were matched to log an error
             self.logging_collection.add_error(
-                "TYPE 27", f"{date_field} has an unknown date format, line: {line_number}",
+                "TYPE 27",
+                f"{date_field} has an unknown date format, line: {line_number}",
             )
             return False, {}
 
@@ -1299,7 +1309,8 @@ class CentreFile:
         """
         if (result := row.get(FIELD_RESULT)) not in ALLOWED_RESULT_VALUES:
             self.logging_collection.add_error(
-                "TYPE 16", f"{FIELD_RESULT} invalid, line: {line_number}, result: {result}",
+                "TYPE 16",
+                f"{FIELD_RESULT} invalid, line: {line_number}, result: {result}",
             )
             return False
 
@@ -1318,7 +1329,8 @@ class CentreFile:
         """
         if (ch_target_value := row.get(fieldname)) is not None and ch_target_value not in ALLOWED_CH_TARGET_VALUES:
             self.logging_collection.add_error(
-                "TYPE 17", f"{fieldname} invalid, line: {line_number}, result: {ch_target_value}",
+                "TYPE 17",
+                f"{fieldname} invalid, line: {line_number}, result: {ch_target_value}",
             )
             return False
 
@@ -1355,7 +1367,8 @@ class CentreFile:
             channel_result_field_val := row.get(channel_result_field)
         ) is not None and channel_result_field_val not in ALLOWED_CH_RESULT_VALUES:
             self.logging_collection.add_error(
-                "TYPE 18", f"{channel_result_field} invalid, line: {line_number}, result: {channel_result_field_val}",
+                "TYPE 18",
+                f"{channel_result_field} invalid, line: {line_number}, result: {channel_result_field_val}",
             )
             return False
 

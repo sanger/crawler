@@ -314,35 +314,94 @@ def test_create_source_plate_doc(freezer):
 
 
 def test_is_sample_important_or_positive():
-    negative = 'negative'
-    assert is_sample_important_or_positive({FIELD_RESULT: negative, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == False
+    negative = "negative"
+    assert (
+        is_sample_important_or_positive(
+            {FIELD_RESULT: negative, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}
+        )
+        == False
+    )
     assert is_sample_important_or_positive({FIELD_RESULT: negative}) == False
-    assert is_sample_important_or_positive({FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
+    assert (
+        is_sample_important_or_positive(
+            {FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}
+        )
+        == True
+    )
     assert is_sample_important_or_positive({FIELD_RESULT: POSITIVE_RESULT_VALUE}) == True
-    assert is_sample_important_or_positive({FIELD_RESULT: negative, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
-    assert is_sample_important_or_positive({FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
-    assert is_sample_important_or_positive({FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
-    assert is_sample_important_or_positive({FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
+    assert (
+        is_sample_important_or_positive(
+            {FIELD_RESULT: negative, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}
+        )
+        == True
+    )
+    assert (
+        is_sample_important_or_positive(
+            {FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}
+        )
+        == True
+    )
+    assert (
+        is_sample_important_or_positive(
+            {FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}
+        )
+        == True
+    )
+    assert (
+        is_sample_important_or_positive(
+            {FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}
+        )
+        == True
+    )
 
 
 def test_is_sample_important():
-    assert is_sample_important({ FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
-    assert is_sample_important({ FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
-    assert is_sample_important({ FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == False
-    assert is_sample_important({ FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
-    assert is_sample_important({ FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
-    assert is_sample_important({ FIELD_MUST_SEQUENCE: True}) == True
+    assert is_sample_important({FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
+    assert is_sample_important({FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
+    assert is_sample_important({FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == False
+    assert is_sample_important({FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
+    assert is_sample_important({FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
+    assert is_sample_important({FIELD_MUST_SEQUENCE: True}) == True
     assert is_sample_important({}) == False
 
 
 def test_is_sample_pickable():
-    assert is_sample_pickable({ FIELD_FILTERED_POSITIVE: True, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
-    assert is_sample_pickable({ FIELD_FILTERED_POSITIVE: True, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
-    assert is_sample_pickable({ FIELD_FILTERED_POSITIVE: True, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
-    assert is_sample_pickable({ FIELD_FILTERED_POSITIVE: False, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) == True
-    assert is_sample_pickable({ FIELD_FILTERED_POSITIVE: False, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
-    assert is_sample_pickable({ FIELD_FILTERED_POSITIVE: False, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) == False
-    assert is_sample_pickable({ FIELD_FILTERED_POSITIVE: True }) == True
-    assert is_sample_pickable({ FIELD_MUST_SEQUENCE: True }) == True
-    assert is_sample_pickable({ FIELD_PREFERENTIALLY_SEQUENCE: True }) == True
-
+    assert (
+        is_sample_pickable(
+            {FIELD_FILTERED_POSITIVE: True, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}
+        )
+        == True
+    )
+    assert (
+        is_sample_pickable(
+            {FIELD_FILTERED_POSITIVE: True, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}
+        )
+        == True
+    )
+    assert (
+        is_sample_pickable(
+            {FIELD_FILTERED_POSITIVE: True, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}
+        )
+        == True
+    )
+    assert (
+        is_sample_pickable(
+            {FIELD_FILTERED_POSITIVE: False, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}
+        )
+        == True
+    )
+    assert (
+        is_sample_pickable(
+            {FIELD_FILTERED_POSITIVE: False, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}
+        )
+        == True
+    )
+    assert (
+        is_sample_pickable(
+            {FIELD_FILTERED_POSITIVE: False, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}
+        )
+        == False
+    )
+    assert is_sample_pickable({FIELD_FILTERED_POSITIVE: True}) == True
+    assert is_sample_pickable({FIELD_MUST_SEQUENCE: True}) == True
+    assert is_sample_pickable({FIELD_PREFERENTIALLY_SEQUENCE: True}) == True
