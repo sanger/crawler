@@ -204,7 +204,6 @@ def insert_plates_and_wells_from_docs_into_dart_for_priority_samples(docs_to_ins
                 try:
                     samples = list(samples)
                     centre_config = centre_config_for_samples(config, samples)
-
                     plate_state = add_dart_plate_if_doesnt_exist(
                         cursor, plate_barcode, centre_config["biomek_labware_class"]  # type: ignore
                     )

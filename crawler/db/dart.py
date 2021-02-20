@@ -161,7 +161,6 @@ def add_dart_well_properties_if_positive_or_of_importance(cursor: pyodbc.Cursor,
         sample {Sample} -- The sample for which to add well properties.
         plate_barcode {str} -- The barcode of the plate to which this sample belongs.
     """
-
     if is_sample_important_or_positive(sample):
         well_index = get_dart_well_index(str(sample.get(FIELD_COORDINATE)))
         if well_index is not None:
