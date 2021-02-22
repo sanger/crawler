@@ -360,6 +360,27 @@ class AggregateType31(AggregateTypeBase):
         self.short_display_description = "Failed priority samples DART connection"
 
 
+class AggregateType32(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 32"
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = f"{self.error_level.name}: Priority samples that we have in Mongodb but they are still unprocessed. ({self.type_str})"
+        self.short_display_description = "Step 2 validation failure"
+
+
+class AggregateType33(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 33"
+        self.error_level = ErrorLevel.ERROR
+        self.message = (
+            "{self.error_level.name}: Priority samples where the DART database inserts have failed for some plates. "
+            f"({self.type_str})"
+        )
+        self.short_display_description = "Failed DART plate inserts - Step 2"
+
+
 # Class to handle logging of errors of the various types per file
 class LoggingCollection:
     def __init__(self):
@@ -393,6 +414,8 @@ class LoggingCollection:
             "TYPE 29": AggregateType29(),
             "TYPE 30": AggregateType30(),
             "TYPE 31": AggregateType31(),
+            "TYPE 32": AggregateType32(),
+            "TYPE 33": AggregateType33(),
             # new TYPE 28 error for when updating priority samples update to processed: true
             # add to confluence
         }

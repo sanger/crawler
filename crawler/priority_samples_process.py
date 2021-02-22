@@ -216,7 +216,7 @@ def insert_plates_and_wells_from_docs_into_dart_for_priority_samples(
                     cursor.commit()
                 except Exception as e:
                     logging_collection.add_error(
-                        "TYPE 22",
+                        "TYPE 33",
                         f"DART database inserts failed for plate {plate_barcode} in priority samples inserts",
                     )
                     logger.exception(e)
