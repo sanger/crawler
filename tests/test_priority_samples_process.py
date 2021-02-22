@@ -390,6 +390,7 @@ class TestStepTwo:
             assert logging_collection.aggregator_types["TYPE 31"].count_errors == 1
 
 
+# TODO remove testing_priority_samples from all test headers
 def test_merge_priority_samples_into_docs_to_insert(
     mongo_database, config, testing_priority_samples, testing_docs_to_insert_for_aldp
 ):

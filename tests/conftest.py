@@ -17,6 +17,7 @@ from crawler.constants import (
     COLLECTION_PRIORITY_SAMPLES,
     COLLECTION_SAMPLES_HISTORY,
     FIELD_FILTERED_POSITIVE,
+    FIELD_MONGODB_ID,
     MLWH_TABLE_NAME,
 )
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
@@ -142,7 +143,7 @@ def samples_history_collection_accessor(mongo_database):
 @pytest.fixture
 def testing_samples(samples_collection_accessor):
     result = samples_collection_accessor.insert_many(TESTING_SAMPLES)
-    samples = list(samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
+    samples = list(samples_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
     try:
         yield samples
     finally:
@@ -152,7 +153,7 @@ def testing_samples(samples_collection_accessor):
 @pytest.fixture
 def testing_priority_samples(priority_samples_collection_accessor):
     result = priority_samples_collection_accessor.insert_many(TESTING_PRIORITY_SAMPLES)
-    samples = list(priority_samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
+    samples = list(priority_samples_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
     try:
         yield samples
     finally:
@@ -162,7 +163,7 @@ def testing_priority_samples(priority_samples_collection_accessor):
 @pytest.fixture
 def testing_priority_samples_for_aldp(priority_samples_collection_accessor):
     result = priority_samples_collection_accessor.insert_many(TESTING_PRIORITY_SAMPLES_FOR_ALDP)
-    samples = list(priority_samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
+    samples = list(priority_samples_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
     try:
         yield samples
     finally:
@@ -172,7 +173,7 @@ def testing_priority_samples_for_aldp(priority_samples_collection_accessor):
 @pytest.fixture
 def filtered_positive_testing_samples(samples_collection_accessor):
     result = samples_collection_accessor.insert_many(FILTERED_POSITIVE_TESTING_SAMPLES)
-    samples = list(samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
+    samples = list(samples_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
     try:
         yield samples
     finally:
@@ -237,7 +238,7 @@ def filtered_positive_testing_samples_no_version_set(samples_collection_accessor
     del samples[3][FIELD_FILTERED_POSITIVE]
 
     result = samples_collection_accessor.insert_many(samples)
-    samples = list(samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
+    samples = list(samples_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
     try:
         yield samples
     finally:

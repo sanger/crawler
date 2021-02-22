@@ -48,6 +48,7 @@ FIELD_BARCODE: Final[str] = "barcode"
 FIELD_MUST_SEQUENCE: Final[str] = "must_sequence"
 FIELD_PREFERENTIALLY_SEQUENCE: Final[str] = "preferentially_sequence"
 FIELD_PROCESSED: Final[str] = "processed"
+FIELD_SAMPLE_ID: Final[str] = "sample_id"
 
 # filtered-positive field names
 FIELD_FILTERED_POSITIVE_TIMESTAMP: Final[str] = "filtered_positive_timestamp"

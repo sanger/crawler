@@ -15,6 +15,9 @@ from crawler.constants import (
     COLLECTION_SAMPLES,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_MUST_SEQUENCE,
+    FIELD_PROCESSED,
+    FIELD_SAMPLE_ID,
+    FIELD_MONGODB_ID,
     FIELD_PREFERENTIALLY_SEQUENCE,
     FIELD_PLATE_BARCODE,
     DART_STATE_PENDING,
@@ -53,56 +56,69 @@ def step_two(db, config: Config) -> None:
     """
     logger.info(f"Starting Step 2")
 
-    all_unprocessed_priority_samples = get_all_unprocessed_priority_samples(db)
-    unprocessed_root_sample_ids = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], all_unprocessed_priority_samples))
+    samples = query_important_unprocessed_samples(db)
 
-    samples = get_samples_for_root_sample_ids(db, unprocessed_root_sample_ids)
-
-    merge_priority_samples_into_docs_to_insert(all_unprocessed_priority_samples, samples)
-
-    # Create all samples in MLWH with docs_to_insert including must_seq/ pre_seq
-
+    # Create all samples in MLWH with samples containing both sample and priority sample info
     mlwh_success = update_priority_samples_into_mlwh(samples, config)
 
-    # add to the DART database if the config flag is set and we have successfully updated the MLWH
+    # Add to the DART database if MLWH update was successful
     if mlwh_success:
         logger.info("MLWH insert successful and adding to DART")
 
-        #  Create in DART with docs_to_insert including must_seq/ pre_seq
-        #  use docs_to_insert to update DART
-        # TODO not from docs
         dart_success = insert_plates_and_wells_from_docs_into_dart_for_priority_samples(samples, config)
         if dart_success:
             # use stored identifiers to update priority_samples table to processed true
-            all_unprocessed_priority_samples_root_samples_id = list(
-                map(lambda x: x[FIELD_ROOT_SAMPLE_ID], all_unprocessed_priority_samples)
+            sample_ids = list(
+                map(lambda x: x[FIELD_MONGODB_ID], samples)
             )
-            update_unprocessed_priority_samples_to_processed(db, all_unprocessed_priority_samples_root_samples_id)
+            update_unprocessed_priority_samples_to_processed(db, sample_ids)
 
 
-def get_all_unprocessed_priority_samples(db) -> List[Any]:
-    """
-    Description
-    Arguments:
-        x {Type} -- description
-    """
-    unprocessed = {"processed": False}
-    query = unprocessed
+
+def query_important_unprocessed_samples(db) -> List[Any]:
+    # Query:
+    # from the priority samples collection
+    # get all samples where processed is False, and must_sequence or preferentially_sequence is Trye
+    # join on the samples collection using sample_id in priority_samples collection to _id in the samples collection
+    # flatten object so sample fields are at the same level as the priority samples fields, removing the nested sample object
+    # return a list of the samples
+    # e.g db.priority_samples.aggregate([{"$match":{"$and": [ {"processed": false}, {"$or":  [{"must_sequence": true}, {"preferentially_sequence": true}] } ]}}, {"$lookup": {"from": "samples", "let": {"sample_id": "$_id"},"pipeline":[{"$match": {"$expr": {"$and":[{"$eq": ["$sample_id", "$$sample_id"]}]}}}], "as": "from_samples"}}])
 
     priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
-    priority_sample_cursor = priority_samples_collection.find(query)
-    return list(priority_sample_cursor)
 
+    IMPORTANT_UNPROCESSED_SAMPLES_MONGO_QUERY: Final[Dict[str, Any]] = [
+        # first get only unprocessed important priority samples
+        {"$match":
+            {"$and":
+                [
+                    {FIELD_PROCESSED: False},
+                    {"$or": [
+                        {FIELD_MUST_SEQUENCE: True},
+                        {FIELD_PREFERENTIALLY_SEQUENCE: True},
+                    ]}
+                ]
+            }
+        },
+        {"$lookup":
+            {
+                "from": "samples",
+                "localField": "sample_id",
+                "foreignField": FIELD_MONGODB_ID,
+                "as": "related_samples"
+            }
+        },
+        # replace the document with a merge of the original and the first element of the array created from the lookup
+        # above - this should always be 1 element
+        {"$replaceRoot": {"newRoot": {"$mergeObjects": [{"$arrayElemAt": ["$related_samples", 0]}, "$$ROOT"]}}},
+        # result = { mongo_sample_id=1234, must_sequence=true; related_samples: { uuid: 132 } }
+        # remove the lookup document
+        {"$project": {"related_samples": 0} }
+        # result = { mongo_sample_id=1234, must_sequence=true, uuid: 132 }
+    ]
 
-def get_samples_for_root_sample_ids(db, root_sample_ids) -> List[Any]:
-    """
-    Description
-    Arguments:
-        x {Type} -- description
-    """
-    samples_collection = get_mongo_collection(db, COLLECTION_SAMPLES)
-    return list(map(lambda x: x, samples_collection.find({FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}})))
-
+    value = priority_samples_collection.aggregate(IMPORTANT_UNPROCESSED_SAMPLES_MONGO_QUERY)
+    return list(value)
+    
 
 def merge_priority_samples_into_docs_to_insert(priority_samples: List[Any], docs_to_insert) -> None:
     """
@@ -126,7 +142,7 @@ def merge_priority_samples_into_docs_to_insert(priority_samples: List[Any], docs
 
 
 # TODO: refactor duplicated function
-def update_unprocessed_priority_samples_to_processed(db, root_sample_ids) -> bool:
+def update_unprocessed_priority_samples_to_processed(db, sample_ids) -> bool:
     """
     Description
     use stored identifiers to update priority_samples table to processed true
@@ -134,8 +150,8 @@ def update_unprocessed_priority_samples_to_processed(db, root_sample_ids) -> boo
         x {Type} -- description
     """
     priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
-    for root_sample_id in root_sample_ids:
-        priority_samples_collection.update({FIELD_ROOT_SAMPLE_ID: root_sample_id}, {"$set": {"processed": True}})
+    for sample_id in sample_ids:
+        priority_samples_collection.update({FIELD_SAMPLE_ID: sample_id}, {"$set": {FIELD_PROCESSED: True}})
     logger.info("Mongo update of processed for priority samples successful")
 
 

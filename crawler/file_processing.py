@@ -391,8 +391,8 @@ class CentreFile:
             x {Type} -- description
         """
         matching_priority_entry = {FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}
-        unprocessed = {"processed": False}
-        of_importance = {"$or": [{"must_sequence": True}, {"preferentially_sequence": True}]}
+        unprocessed = {FIELD_PROCESSED: False}
+        of_importance = {"$or": [{FIELD_MUST_SEQUENCE: True}, {FIELD_PREFERENTIALLY_SEQUENCE: True}]}
 
         query = {"$and": [matching_priority_entry, unprocessed, of_importance]}
 
@@ -408,7 +408,7 @@ class CentreFile:
             x {Type} -- description
         """
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
-        return list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], samples_collection.find({"_id": {"$in": mongo_ids}})))
+        return list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], samples_collection.find({FIELD_MONGODB_ID: {"$in": mongo_ids}})))
 
     def process_samples(self, add_to_dart: bool) -> None:
         """Processes the samples extracted from the centre file.
@@ -451,6 +451,12 @@ class CentreFile:
 
                 merge_priority_samples_into_docs_to_insert(important_unprocessed_priority_samples, docs_to_insert_mlwh)
 
+                # Currently MLWH is updated using docs_to_insert_mlwh, which is the same group of objects in memory that
+                # we use to update MongoDB and Dart. Changing this part to a MongoDB query would modify how the
+                # samples are created in warehouse and dart, being different source than mongodb
+
+                # docs_to_insert_mlwh = query_samples_with_unprocessed_important_priority_samples(mongo_ids_of_inserted, docs_to_insert_mlwh)
+
                 mlwh_success = self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
                 # add to the DART database if the config flag is set and we have successfully updated the MLWH
@@ -480,7 +486,7 @@ class CentreFile:
         """
         priority_samples_collection = get_mongo_collection(self.get_db(), COLLECTION_PRIORITY_SAMPLES)
         for root_sample_id in root_sample_ids:
-            priority_samples_collection.update({FIELD_ROOT_SAMPLE_ID: root_sample_id}, {"$set": {"processed": True}})
+            priority_samples_collection.update({FIELD_ROOT_SAMPLE_ID: root_sample_id}, {"$set": {FIELD_PROCESSED: True}})
         logger.info("Mongo update of processed for priority samples successful")
 
     def backup_filename(self) -> str:
