@@ -1,7 +1,8 @@
 from unittest.mock import patch
 from crawler.db.mongo import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
-from crawler.priority_samples_process import merge_priority_samples_into_docs_to_insert, step_two
+from crawler.priority_samples_process import merge_priority_samples_into_docs_to_insert, step_two, logging_collection
+from crawler.helpers.logging_helpers import LoggingCollection
 
 from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
@@ -20,8 +21,17 @@ from crawler.constants import (
 )
 import pytest
 
-
 class TestStepTwo:
+    # @pytest.fixture(autouse=True)
+    # def mock_logging_collection(self):
+    #     with patch("crawler.priority_samples_process.LoggingCollection") as log_col:
+    #         if logging_col is None:
+    #             logging_col = LoggingCollection()
+
+    #         logging_col.aggregator_types=LoggingCollection().aggregator_types
+    #         log_col.return_value = logging_col
+    #         yield
+
     @pytest.fixture(autouse=True)
     def mock_dart_calls(self, testing_samples, testing_priority_samples):
         with patch("crawler.priority_samples_process.create_dart_sql_server_conn") as self.mock_conn:
@@ -274,6 +284,27 @@ class TestStepTwo:
         # assert rows[2]['must_sequence'] == 0
         # assert rows[2]['preferentially_sequence'] == 0
 
+    def test_mlwh_insert_fails_in_step_two(self, config, mongo_database):
+        _, mongo_database = mongo_database
+
+        with patch("crawler.priority_samples_process.run_mysql_executemany_query", side_effect=Exception("Boom!")):
+            step_two(mongo_database, config)
+
+            assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
+            assert logging_collection.aggregator_types["TYPE 28"].count_errors == 1
+
+
+    def test_mlwh_mysql_cannot_connect(self, config, mongo_database):
+        _, mongo_database = mongo_database
+
+        with patch("crawler.priority_samples_process.create_mysql_connection") as mock_connection:
+            mock_connection().is_connected.return_value = False
+            step_two(mongo_database, config)
+
+            assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
+            assert logging_collection.aggregator_types["TYPE 29"].count_errors == 1
+
+
     def test_creates_right_number_of_plates_in_dart(self, mongo_database, config, with_different_scenarios):
         _, mongo_database = mongo_database
 
@@ -323,6 +354,40 @@ class TestStepTwo:
         # 1 commit per pending plate
         assert self.mock_conn().cursor().commit.call_count == len(self.expected_plates)
         self.mock_conn().close.assert_called_once()
+
+
+    def test_adding_plate_and_wells_to_dart_fails_with_expection(self, mongo_database, config):
+        _, mongo_database = mongo_database
+
+        with patch("crawler.priority_samples_process.add_dart_well_properties_if_positive_or_of_importance", side_effect=Exception("Boom!")):
+            step_two(mongo_database, config)
+
+            assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
+            assert logging_collection.aggregator_types["TYPE 33"].count_errors == 1
+
+
+
+    def test_adding_plate_and_wells_insert_failed(self, mongo_database, config):
+        _, mongo_database = mongo_database
+
+        with patch("crawler.priority_samples_process.create_dart_sql_server_conn") as mocked_conn:
+            mocked_conn().cursor.side_effect = Exception('Boom!!')
+            step_two(mongo_database, config)
+
+            assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
+            assert logging_collection.aggregator_types["TYPE 30"].count_errors == 1
+
+
+    def test_dart_sql_server_cannot_connect(self, config, mongo_database):
+        _, mongo_database = mongo_database
+
+        with patch("crawler.priority_samples_process.create_dart_sql_server_conn") as mock_conn:
+            mock_conn.return_value = None
+
+            step_two(mongo_database, config)
+
+            assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
+            assert logging_collection.aggregator_types["TYPE 31"].count_errors == 1
 
 
 def test_merge_priority_samples_into_docs_to_insert(

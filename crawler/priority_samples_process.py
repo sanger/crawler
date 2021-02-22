@@ -151,7 +151,7 @@ def update_priority_samples_into_mlwh(samples, config) -> bool:
     Returns:
         {bool} -- True if the insert was successful; otherwise False
     """
-    logging_collection = LoggingCollection()
+
     values: List[Dict[str, Any]] = []
 
     for sample_doc in samples:
