@@ -135,7 +135,7 @@ def update_unprocessed_priority_samples_to_processed(db, root_sample_ids) -> boo
     """
     priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
     for root_sample_id in root_sample_ids:
-        priority_samples_collection.update({"Root Sample ID": root_sample_id}, {"$set": {"processed": True}})
+        priority_samples_collection.update({FIELD_ROOT_SAMPLE_ID: root_sample_id}, {"$set": {"processed": True}})
     logger.info("Mongo update of processed for priority samples successful")
 
 

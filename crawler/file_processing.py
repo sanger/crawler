@@ -480,10 +480,100 @@ class CentreFile:
         """
         priority_samples_collection = get_mongo_collection(self.get_db(), COLLECTION_PRIORITY_SAMPLES)
         for root_sample_id in root_sample_ids:
-            priority_samples_collection.update({"Root Sample ID": root_sample_id}, {"$set": {"processed": True}})
+            priority_samples_collection.update({FIELD_ROOT_SAMPLE_ID: root_sample_id}, {"$set": {"processed": True}})
         logger.info("Mongo update of processed for priority samples successful")
 
-    # TODO: refactor duplicated function
+    def backup_filename(self) -> str:
+        """Backup the file.
+
+        Returns:
+            str -- the filepath of the file backup
+        """
+        if self.logging_collection.get_count_of_all_errors_and_criticals() > 0:
+            return f"{self.centre_config['backups_folder']}/{ERRORS_DIR}/{self.timestamped_filename()}"
+        else:
+            return f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}/{self.timestamped_filename()}"
+
+    def timestamped_filename(self) -> str:
+        return f"{current_time()}_{self.file_name}_{self.checksum()}"
+
+    def full_path_to_file(self) -> Path:
+        return PROJECT_ROOT.joinpath(self.centre.get_download_dir(), self.file_name)
+
+    def backup_file(self) -> None:
+        """Backup the file."""
+        destination = self.backup_filename()
+
+        shutil.copyfile(self.full_path_to_file(), destination)
+
+    def create_import_record_for_file(self) -> None:
+        """Writes to the imports collection with information about the CSV file processed."""
+        imports_collection = get_mongo_collection(self.get_db(), COLLECTION_IMPORTS)
+
+        create_import_record(
+            imports_collection,
+            self.centre_config,
+            self.docs_inserted,
+            self.file_name,
+            self.logging_collection.get_messages_for_import(),
+        )
+
+    def get_db(self) -> Database:
+        """Fetch the mongo database.
+
+        Returns:
+            Database -- a reference to the database in mongo
+        """
+        if not hasattr(self, "db"):
+            client = create_mongo_client(self.config)
+            self.db = get_mongo_db(self.config, client)
+
+        return self.db
+
+    def add_duplication_errors(self, exception: BulkWriteError) -> None:
+        """Add errors to the logging collection when we have the BulkWriteError exception.
+
+        Args:
+            exception (BulkWriteError): Exception with all the failed writes.
+        """
+        try:
+            wrong_instances = [write_error["op"] for write_error in exception.details["writeErrors"]]
+            samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
+            for wrong_instance in wrong_instances:
+                # To identify TYPE 7 we need to do a search for
+                entry = samples_collection.find(
+                    {
+                        FIELD_ROOT_SAMPLE_ID: wrong_instance[FIELD_ROOT_SAMPLE_ID],
+                        FIELD_RNA_ID: wrong_instance[FIELD_RNA_ID],
+                        FIELD_RESULT: wrong_instance[FIELD_RESULT],
+                        FIELD_LAB_ID: wrong_instance[FIELD_LAB_ID],
+                    }
+                )[0]
+                if not (entry):
+                    logger.critical(
+                        f"When trying to insert root_sample_id: "
+                        f"{wrong_instance[FIELD_ROOT_SAMPLE_ID]}, contents: {wrong_instance}"
+                    )
+                    continue
+
+                if entry[FIELD_DATE_TESTED] != wrong_instance[FIELD_DATE_TESTED]:
+                    self.logging_collection.add_error(
+                        "TYPE 7",
+                        f"Already in database, line: {wrong_instance['line_number']}, root sample "
+                        f"id: {wrong_instance['Root Sample ID']}, dates: "
+                        f"({entry[FIELD_DATE_TESTED]} != {wrong_instance[FIELD_DATE_TESTED]})",
+                    )
+                else:
+                    self.logging_collection.add_error(
+                        "TYPE 6",
+                        f"Already in database, line: {wrong_instance['line_number']}, root sample "
+                        f"id: {wrong_instance['Root Sample ID']}",
+                    )
+        except Exception as e:
+            logger.critical(f"Unknown error with file {self.file_name}: {e}")
+
+
+   # TODO: refactor duplicated function
     def insert_samples_from_docs_into_mlwh(self, docs_to_insert: List[ModifiedRow]) -> bool:
         """Insert sample records into the MLWH database from the parsed file information, including the corresponding
         mongodb _id
@@ -582,94 +672,6 @@ class CentreFile:
             logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
             return False
 
-    def backup_filename(self) -> str:
-        """Backup the file.
-
-        Returns:
-            str -- the filepath of the file backup
-        """
-        if self.logging_collection.get_count_of_all_errors_and_criticals() > 0:
-            return f"{self.centre_config['backups_folder']}/{ERRORS_DIR}/{self.timestamped_filename()}"
-        else:
-            return f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}/{self.timestamped_filename()}"
-
-    def timestamped_filename(self) -> str:
-        return f"{current_time()}_{self.file_name}_{self.checksum()}"
-
-    def full_path_to_file(self) -> Path:
-        return PROJECT_ROOT.joinpath(self.centre.get_download_dir(), self.file_name)
-
-    def backup_file(self) -> None:
-        """Backup the file."""
-        destination = self.backup_filename()
-
-        shutil.copyfile(self.full_path_to_file(), destination)
-
-    def create_import_record_for_file(self) -> None:
-        """Writes to the imports collection with information about the CSV file processed."""
-        imports_collection = get_mongo_collection(self.get_db(), COLLECTION_IMPORTS)
-
-        create_import_record(
-            imports_collection,
-            self.centre_config,
-            self.docs_inserted,
-            self.file_name,
-            self.logging_collection.get_messages_for_import(),
-        )
-
-    def get_db(self) -> Database:
-        """Fetch the mongo database.
-
-        Returns:
-            Database -- a reference to the database in mongo
-        """
-        if not hasattr(self, "db"):
-            client = create_mongo_client(self.config)
-            self.db = get_mongo_db(self.config, client)
-
-        return self.db
-
-    def add_duplication_errors(self, exception: BulkWriteError) -> None:
-        """Add errors to the logging collection when we have the BulkWriteError exception.
-
-        Args:
-            exception (BulkWriteError): Exception with all the failed writes.
-        """
-        try:
-            wrong_instances = [write_error["op"] for write_error in exception.details["writeErrors"]]
-            samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
-            for wrong_instance in wrong_instances:
-                # To identify TYPE 7 we need to do a search for
-                entry = samples_collection.find(
-                    {
-                        FIELD_ROOT_SAMPLE_ID: wrong_instance[FIELD_ROOT_SAMPLE_ID],
-                        FIELD_RNA_ID: wrong_instance[FIELD_RNA_ID],
-                        FIELD_RESULT: wrong_instance[FIELD_RESULT],
-                        FIELD_LAB_ID: wrong_instance[FIELD_LAB_ID],
-                    }
-                )[0]
-                if not (entry):
-                    logger.critical(
-                        f"When trying to insert root_sample_id: "
-                        f"{wrong_instance[FIELD_ROOT_SAMPLE_ID]}, contents: {wrong_instance}"
-                    )
-                    continue
-
-                if entry[FIELD_DATE_TESTED] != wrong_instance[FIELD_DATE_TESTED]:
-                    self.logging_collection.add_error(
-                        "TYPE 7",
-                        f"Already in database, line: {wrong_instance['line_number']}, root sample "
-                        f"id: {wrong_instance['Root Sample ID']}, dates: "
-                        f"({entry[FIELD_DATE_TESTED]} != {wrong_instance[FIELD_DATE_TESTED]})",
-                    )
-                else:
-                    self.logging_collection.add_error(
-                        "TYPE 6",
-                        f"Already in database, line: {wrong_instance['line_number']}, root sample "
-                        f"id: {wrong_instance['Root Sample ID']}",
-                    )
-        except Exception as e:
-            logger.critical(f"Unknown error with file {self.file_name}: {e}")
 
     def docs_to_insert_updated_with_source_plate_uuids(self, docs_to_insert: List[ModifiedRow]) -> List[ModifiedRow]:
         """Updates sample records with source plate UUIDs, returning only those for which a source plate UUID could
