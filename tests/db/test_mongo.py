@@ -7,6 +7,9 @@ from pymongo.database import Database
 from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.helpers.logging_helpers import LoggingCollection
 
+from crawler.constants import (
+    FIELD_MONGODB_ID,
+)
 
 def test_create_mongo_client(config):
     assert type(create_mongo_client(config)) == MongoClient

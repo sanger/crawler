@@ -57,7 +57,7 @@ class TestStepTwo:
 
     @pytest.fixture(
         params=[
-            # Nothing to process
+            # Nothing to process "with_different_scenarios0"
             {
                 "processed_status": [True, True, True, True],
                 "plate_barcodes": ["123", "123", "123", "123"],
@@ -177,8 +177,9 @@ class TestStepTwo:
         # Set expected dart plates
         self.expected_plates = request.param["expected_plates"]
 
-    def validate_expected_data(self, with_different_scenarios):
+    def validate_expected_data(self, with_different_scenarios, testing_priority_samples, testing_samples):
         # Check list of expected mlwh samples
+        # Get unprocessed samples from list
         expected_mlwh_samples = list(
             map(
                 lambda info: info[0],
@@ -196,13 +197,13 @@ class TestStepTwo:
         )
         if len(result) == 0:
             assert self.expected_samples == []
-            assert self.expected_plates == set([])
+            assert sorted(self.expected_plates) == sorted(set(self.plate_barcodes))
         else:
             expected_samples, expected_plates, _ = zip(*result)
             expected_plates = set(expected_plates)
 
-            assert self.expected_samples == expected_samples
-            assert self.expected_plates == expected_plates
+            assert self.expected_samples == list(expected_samples)
+            assert self.expected_plates == list(expected_plates)
 
     # def test_step_two(self, config, mongo_database, mlwh_connection, testing_samples, testing_priority_samples, with_different_scenarios):
     #     _, mongo_database = mongo_database
@@ -274,15 +275,6 @@ class TestStepTwo:
                 assert rows[pos][MLWH_MUST_SEQUENCE] == priority_sample[FIELD_MUST_SEQUENCE]
                 assert rows[pos][MLWH_PREFERENTIALLY_SEQUENCE] == priority_sample[FIELD_PREFERENTIALLY_SEQUENCE]
 
-        # assert rows[0][MLWH_ROOT_SAMPLE_ID] == 'MCM001'
-        # assert rows[0]['must_sequence'] == 1
-        # assert rows[0]['preferentially_sequence'] == 0
-        # assert rows[1][MLWH_ROOT_SAMPLE_ID] == 'MCM002'
-        # assert rows[1]['must_sequence'] == 0
-        # assert rows[1]['preferentially_sequence'] == 1
-        # assert rows[2][MLWH_ROOT_SAMPLE_ID] == 'MCM004'
-        # assert rows[2]['must_sequence'] == 0
-        # assert rows[2]['preferentially_sequence'] == 0
 
     def test_mlwh_insert_fails_in_step_two(self, config, mongo_database):
         _, mongo_database = mongo_database
@@ -359,7 +351,7 @@ class TestStepTwo:
     def test_adding_plate_and_wells_to_dart_fails_with_expection(self, mongo_database, config):
         _, mongo_database = mongo_database
 
-        with patch("crawler.priority_samples_process.add_dart_well_properties_if_positive_or_of_importance", side_effect=Exception("Boom!")):
+        with patch("crawler.priority_samples_process.add_dart_well_properties", side_effect=Exception("Boom!")):
             step_two(mongo_database, config)
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1

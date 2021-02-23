@@ -37,7 +37,7 @@ from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_quer
 from crawler.db.dart import (
     create_dart_sql_server_conn,
     add_dart_plate_if_doesnt_exist,
-    add_dart_well_properties_if_positive_or_of_importance,
+    add_dart_well_properties,
 )
 from crawler.helpers.logging_helpers import LoggingCollection
 
@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 logging_collection = LoggingCollection()
 
-# posisble move to seperate script
+# Possibly move to seperate script
 def step_two(db, config: Config) -> None:
     """
     Description
@@ -56,7 +56,7 @@ def step_two(db, config: Config) -> None:
     """
     logger.info(f"Starting Step 2")
 
-    samples = query_important_unprocessed_samples(db)
+    samples = query_any_unprocessed_samples(db)
 
     # Create all samples in MLWH with samples containing both sample and priority sample info
     mlwh_success = update_priority_samples_into_mlwh(samples, config)
@@ -65,7 +65,7 @@ def step_two(db, config: Config) -> None:
     if mlwh_success:
         logger.info("MLWH insert successful and adding to DART")
 
-        dart_success = insert_plates_and_wells_from_docs_into_dart_for_priority_samples(samples, config)
+        dart_success = insert_plates_and_wells_into_dart(samples, config)
         if dart_success:
             # use stored identifiers to update priority_samples table to processed true
             sample_ids = list(
@@ -75,27 +75,22 @@ def step_two(db, config: Config) -> None:
 
 
 
-def query_important_unprocessed_samples(db) -> List[Any]:
+def query_any_unprocessed_samples(db) -> List[Any]:
+    priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
+
     # Query:
     # from the priority samples collection
-    # get all samples where processed is False, and must_sequence or preferentially_sequence is Trye
+    # get all unprocessed samples, we want to update also samples that have changed their importance
     # join on the samples collection using sample_id in priority_samples collection to _id in the samples collection
     # flatten object so sample fields are at the same level as the priority samples fields, removing the nested sample object
     # return a list of the samples
-    # e.g db.priority_samples.aggregate([{"$match":{"$and": [ {"processed": false}, {"$or":  [{"must_sequence": true}, {"preferentially_sequence": true}] } ]}}, {"$lookup": {"from": "samples", "let": {"sample_id": "$_id"},"pipeline":[{"$match": {"$expr": {"$and":[{"$eq": ["$sample_id", "$$sample_id"]}]}}}], "as": "from_samples"}}])
-
-    priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
-
+    # e.g db.priority_samples.aggregate([{"$match":{"$and": [ {"processed": false} ]}}, {"$lookup": {"from": "samples", "let": {"sample_id": "$_id"},"pipeline":[{"$match": {"$expr": {"$and":[{"$eq": ["$sample_id", "$$sample_id"]}]}}}], "as": "from_samples"}}])
     IMPORTANT_UNPROCESSED_SAMPLES_MONGO_QUERY: Final[Dict[str, Any]] = [
-        # first get only unprocessed important priority samples
+        # first get only unprocessed priority samples
         {"$match":
             {"$and":
                 [
                     {FIELD_PROCESSED: False},
-                    {"$or": [
-                        {FIELD_MUST_SEQUENCE: True},
-                        {FIELD_PREFERENTIALLY_SEQUENCE: True},
-                    ]}
                 ]
             }
         },
@@ -118,7 +113,7 @@ def query_important_unprocessed_samples(db) -> List[Any]:
 
     value = priority_samples_collection.aggregate(IMPORTANT_UNPROCESSED_SAMPLES_MONGO_QUERY)
     return list(value)
-    
+
 
 def merge_priority_samples_into_docs_to_insert(priority_samples: List[Any], docs_to_insert) -> None:
     """
@@ -199,7 +194,7 @@ def update_priority_samples_into_mlwh(samples, config) -> bool:
 
 
 # TODO: refactor duplicated function
-def insert_plates_and_wells_from_docs_into_dart_for_priority_samples(
+def insert_plates_and_wells_into_dart(
     docs_to_insert: List[ModifiedRow], config: Config
 ) -> bool:
     """Insert plates and wells into the DART database.
@@ -228,7 +223,7 @@ def insert_plates_and_wells_from_docs_into_dart_for_priority_samples(
                     )
                     if plate_state == DART_STATE_PENDING:
                         for sample in samples:
-                            add_dart_well_properties_if_positive_or_of_importance(cursor, sample, plate_barcode)  # type: ignore
+                            add_dart_well_properties(cursor, sample, plate_barcode)  # type: ignore
                     cursor.commit()
                 except Exception as e:
                     logging_collection.add_error(

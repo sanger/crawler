@@ -128,6 +128,8 @@ def set_dart_well_properties(
     """
     for prop_name, prop_value in well_props.items():
         params = (plate_barcode, prop_name, prop_value, well_index)
+        # TODO: if they change state and it was picked, not perform the change
+        #
         cursor.execute(SQL_DART_SET_WELL_PROPERTY, params)
 
 
@@ -156,11 +158,51 @@ def add_dart_plate_if_doesnt_exist(cursor: pyodbc.Cursor, plate_barcode: str, bi
     return state
 
 
+def add_dart_well_properties(
+    cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str
+) -> None:
+    """Adds well properties to DART for the specified sample
+        regardless of if it is important
+        as fields may have been updated to not being important
+        and these need to be update in Dart
+
+    Arguments:
+        cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
+        sample {Sample} -- The sample for which to add well properties.
+        plate_barcode {str} -- The barcode of the plate to which this sample belongs.
+    """
+    well_index = get_dart_well_index(str(sample.get(FIELD_COORDINATE)))
+    if well_index is not None:
+        dart_well_props = map_mongo_doc_to_dart_well_props(sample)
+        set_dart_well_properties(cursor, plate_barcode, dart_well_props, well_index)
+    else:
+        raise ValueError(
+            f"Unable to determine DART well index for {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
+        )
+
+
+# def add_dart_well_properties(
+#     cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str
+# ) -> None:
+    """Adds well properties to DART for the specified sample if that sample is positive
+        or must_sequence or preferentially_sequence
+
+    Arguments:
+        cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
+        sample {Sample} -- The sample for which to add well properties.
+        plate_barcode {str} -- The barcode of the plate to which this sample belongs.
+    """
+    # if is_sample_important_or_positive(sample):
+    # add_dart_well_properties(cursor, sample, plate_barcode)
+
+
+
+
 def add_dart_well_properties_if_positive_or_of_importance(
     cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str
 ) -> None:
-    # if that sample is positive or must/pref seq
-    """Adds well properties to DART for the specified sample if that sample is positive.
+    """Adds well properties to DART for the specified sample if that sample is positive
+        or must_sequence or preferentially_sequence
 
     Arguments:
         cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
@@ -168,14 +210,17 @@ def add_dart_well_properties_if_positive_or_of_importance(
         plate_barcode {str} -- The barcode of the plate to which this sample belongs.
     """
     if is_sample_important_or_positive(sample):
-        well_index = get_dart_well_index(str(sample.get(FIELD_COORDINATE)))
-        if well_index is not None:
-            dart_well_props = map_mongo_doc_to_dart_well_props(sample)
-            set_dart_well_properties(cursor, plate_barcode, dart_well_props, well_index)
-        else:
-            raise ValueError(
-                f"Unable to determine DART well index for {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
-            )
+        add_dart_well_properties(cursor, sample, plate_barcode)
+
+
+        # well_index = get_dart_well_index(str(sample.get(FIELD_COORDINATE)))
+        # if well_index is not None:
+        #     dart_well_props = map_mongo_doc_to_dart_well_props(sample)
+        #     set_dart_well_properties(cursor, plate_barcode, dart_well_props, well_index)
+        # else:
+        #     raise ValueError(
+        #         f"Unable to determine DART well index for {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
+        #     )
 
 
 # def _add_dart_well_properties_if_positive_old(cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str) -> None:
