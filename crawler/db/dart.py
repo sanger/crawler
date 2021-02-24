@@ -155,7 +155,7 @@ def add_dart_well_properties(cursor: pyodbc.Cursor, sample: SampleDoc, plate_bar
     """Adds well properties to DART for the specified sample
         regardless of if it is important
         as fields may have been updated to not being important
-        and these need to be update in Dart
+        and these need to be updated in Dart
 
     Arguments:
         cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
