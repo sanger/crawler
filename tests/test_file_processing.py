@@ -83,6 +83,8 @@ from crawler.constants import (
     MLWH_PREFERENTIALLY_SEQUENCE,
     POSITIVE_RESULT_VALUE,
     FIELD_PROCESSED,
+    FIELD_SAMPLE_ID,
+    FIELD_MONGODB_ID,
 )
 from crawler.db.mongo import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
@@ -1602,7 +1604,6 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
                         assert mock_conn().cursor().commit.call_count == 3
                         mock_conn().close.assert_called_once()
 
-                        # returns
                         assert result is True
 
 
@@ -1873,25 +1874,25 @@ def test_process_files_with_priority_samples(
     ), "Wrong number of priority samples updated. Expected: 4"
 
 
-def test_get_important_unprocessed_priority_samples_returns_priority_samples_for_root_sample_ids(
+def test_get_important_unprocessed_priority_samples_returns_priority_samples_for_sample_ids(
     config, mongo_database, testing_samples, testing_priority_samples
 ):
     _, mongo_database = mongo_database
 
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
-    root_sample_ids = []
+    sample_ids = []
 
     samples = samples_collection.find({})
     for sample in samples:
-        root_sample_ids.append(sample[FIELD_ROOT_SAMPLE_ID])
+        sample_ids.append(sample[FIELD_MONGODB_ID])
 
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
 
-    result = centre_file.get_important_unprocessed_priority_samples(root_sample_ids)
+    result = centre_file.get_important_unprocessed_priority_samples(sample_ids)
     assert len(result) == 2
-    assert result[0][FIELD_ROOT_SAMPLE_ID] == root_sample_ids[0]
-    assert result[1][FIELD_ROOT_SAMPLE_ID] == root_sample_ids[1]
+    assert result[0][FIELD_SAMPLE_ID] == sample_ids[0]
+    assert result[1][FIELD_SAMPLE_ID] == sample_ids[1]
     assert result[0][FIELD_PROCESSED] is False
     assert result[1][FIELD_MUST_SEQUENCE] is True or result[1][FIELD_PREFERENTIALLY_SEQUENCE] is True
     assert result[0][FIELD_MUST_SEQUENCE] is True or result[0][FIELD_PREFERENTIALLY_SEQUENCE] is True
@@ -1906,10 +1907,10 @@ def test_update_important_unprocessed_priority_samples_to_processed(mongo_databa
 
     centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
 
-    root_sample_ids = ["MCM001", "MCM002"]
-    centre_file.update_important_unprocessed_priority_samples_to_processed(root_sample_ids)
+    sample_ids = [testing_priority_samples[0][FIELD_SAMPLE_ID], testing_priority_samples[1][FIELD_SAMPLE_ID]]
+    centre_file.update_important_unprocessed_priority_samples_to_processed(sample_ids)
 
     priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
 
-    assert priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: root_sample_ids[0]})[0][FIELD_PROCESSED] is True
-    assert priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: root_sample_ids[1]})[0][FIELD_PROCESSED] is True
+    assert priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: sample_ids[0]})[0][FIELD_PROCESSED] is True
+    assert priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: sample_ids[1]})[0][FIELD_PROCESSED] is True

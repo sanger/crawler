@@ -59,6 +59,7 @@ from crawler.constants import (
     FIELD_RNA_ID,
     FIELD_RNA_PCR_ID,
     FIELD_ROOT_SAMPLE_ID,
+    FIELD_SAMPLE_ID,
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
@@ -393,14 +394,14 @@ class CentreFile:
 
         return self.file_state
 
-    def get_important_unprocessed_priority_samples(self, root_sample_ids: List[str]) -> List[Any]:
+    def get_important_unprocessed_priority_samples(self, sample_ids: List[str]) -> List[Any]:
         """
         Description
         check if sample is in priority_samples either must_sequence/preferentially_sequence is true, and processed false
         Arguments:
             x {Type} -- description
         """
-        matching_priority_entry = {FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}
+        matching_priority_entry = {FIELD_SAMPLE_ID: {"$in": sample_ids}}
         unprocessed = {FIELD_PROCESSED: False}
         of_importance = {"$or": [{FIELD_MUST_SEQUENCE: True}, {FIELD_PREFERENTIALLY_SEQUENCE: True}]}
 
@@ -432,8 +433,8 @@ class CentreFile:
         """
         logger.info("Processing samples")
 
-        def extract_root_sample_id(sample: SampleDoc) -> SampleDocValue:
-            return sample[FIELD_ROOT_SAMPLE_ID]
+        def extract_sample_id(sample: SampleDoc) -> SampleDocValue:
+            return sample[FIELD_SAMPLE_ID]
 
         # Internally traps TYPE 2: missing headers and TYPE 10 malformed files and returns
         docs_to_insert = self.process_csv()
@@ -459,11 +460,8 @@ class CentreFile:
                     filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert)
                 )
 
-                # Get root sample ids of samples that were sucessfully inserted into the samples collection
-                root_sample_ids = self.get_root_sample_ids_from_samples_collection(mongo_ids_of_inserted)
-
                 important_unprocessed_priority_samples = self.get_important_unprocessed_priority_samples(
-                    root_sample_ids
+                    mongo_ids_of_inserted
                 )
 
                 merge_priority_samples_into_docs_to_insert(important_unprocessed_priority_samples, docs_to_insert_mlwh)
@@ -480,8 +478,8 @@ class CentreFile:
 
                     dart_success = self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
                     if dart_success:
-                        root_samples_id = list(map(extract_root_sample_id, important_unprocessed_priority_samples))
-                        self.update_important_unprocessed_priority_samples_to_processed(root_samples_id)
+                        sample_ids = list(map(extract_sample_id, important_unprocessed_priority_samples))
+                        self.update_important_unprocessed_priority_samples_to_processed(sample_ids)
 
         else:
             logger.info("No new docs to insert")
@@ -490,7 +488,7 @@ class CentreFile:
         self.create_import_record_for_file()
 
     # TODO: refactor duplicated function
-    def update_important_unprocessed_priority_samples_to_processed(self, root_sample_ids: list) -> None:
+    def update_important_unprocessed_priority_samples_to_processed(self, sample_ids: list) -> None:
         """
         Description
         use stored identifiers to update priority_samples table to processed true
@@ -498,9 +496,9 @@ class CentreFile:
             x {Type} -- description
         """
         priority_samples_collection = get_mongo_collection(self.get_db(), COLLECTION_PRIORITY_SAMPLES)
-        for root_sample_id in root_sample_ids:
+        for sample_id in sample_ids:
             priority_samples_collection.update(
-                {FIELD_ROOT_SAMPLE_ID: root_sample_id}, {"$set": {FIELD_PROCESSED: True}}
+                {FIELD_SAMPLE_ID: sample_id}, {"$set": {FIELD_PROCESSED: True}}
             )
         logger.info("Mongo update of processed for priority samples successful")
 

@@ -73,7 +73,9 @@ source=VALUES(source),
 lab_id=VALUES(lab_id),
 updated_at=VALUES(updated_at),
 lh_sample_uuid=VALUES(lh_sample_uuid),
-lh_source_plate_uuid=VALUES(lh_source_plate_uuid);
+lh_source_plate_uuid=VALUES(lh_source_plate_uuid),
+must_sequence=VALUES(must_sequence),
+preferentially_sequence=VALUES(preferentially_sequence);
 """
 
 SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE = """\

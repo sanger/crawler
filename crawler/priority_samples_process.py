@@ -5,7 +5,7 @@ import logging
 import logging.config
 
 from typing import Any, List, Dict, Final
-from crawler.types import ModifiedRow, Config, SampleDoc, SampleDocValue
+from crawler.types import ModifiedRow, Config, SampleDoc, SampleDocValue, SamplePriorityDoc
 from crawler.db.mongo import (
     get_mongo_collection,
 )
@@ -50,9 +50,10 @@ logging_collection = LoggingCollection()
 # Possibly move to seperate script
 def step_two(db: Database, config: Config) -> None:
     """
-    Description
+    Update any remaining unprocessed priority samples in MLWH and DART
     Arguments:
-        x {Type} -- description
+        db {Database} -- mongo db instance
+        config {Config} -- config for mysql and dart connections
     """
 
     def extract_mongo_id(sample: SampleDoc) -> SampleDocValue:
@@ -76,12 +77,11 @@ def step_two(db: Database, config: Config) -> None:
             update_unprocessed_priority_samples_to_processed(db, sample_ids)
 
 
-def query_any_unprocessed_samples(db: Database) -> List[Any]:
+def query_any_unprocessed_samples(db: Database) -> List[SamplePriorityDoc]:
     priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
 
     # Query:
-    # from the priority samples collection
-    # get all unprocessed samples, we want to update also samples that have changed their importance
+    # get all unprocessed priority samples, we want to update also samples that have changed their importance
     # join on the samples collection using sample_id in priority_samples collection to _id in the samples collection
     # flatten object so sample fields are at the same level as the priority samples fields, removing
     # the nested sample object return a list of the samples
@@ -89,7 +89,6 @@ def query_any_unprocessed_samples(db: Database) -> List[Any]:
     # {"processed": false} ]}}, {"$lookup": {"from": "samples", "let": {"sample_id": "$_id"},"pipeline":
     # [{"$match": {"$expr": {"$and":[{"$eq": ["$sample_id", "$$sample_id"]}]}}}], "as": "from_samples"}}])
     IMPORTANT_UNPROCESSED_SAMPLES_MONGO_QUERY: Final[List[object]] = [
-        # first get only unprocessed priority samples
         {
             "$match": {
                 "$and": [
@@ -100,18 +99,13 @@ def query_any_unprocessed_samples(db: Database) -> List[Any]:
         {
             "$lookup": {
                 "from": "samples",
-                "localField": "sample_id",
+                "localField": FIELD_SAMPLE_ID,
                 "foreignField": FIELD_MONGODB_ID,
                 "as": "related_samples",
             }
         },
-        # replace the document with a merge of the original and the first element of the array created from the lookup
-        # above - this should always be 1 element
         {"$replaceRoot": {"newRoot": {"$mergeObjects": [{"$arrayElemAt": ["$related_samples", 0]}, "$$ROOT"]}}},
-        # result = { mongo_sample_id=1234, must_sequence=true; related_samples: { uuid: 132 } }
-        # remove the lookup document
         {"$project": {"related_samples": 0}}
-        # result = { mongo_sample_id=1234, must_sequence=true, uuid: 132 }
     ]
 
     value = priority_samples_collection.aggregate(IMPORTANT_UNPROCESSED_SAMPLES_MONGO_QUERY)
@@ -122,49 +116,44 @@ def merge_priority_samples_into_docs_to_insert(priority_samples: List[Any], docs
     """
     Updates the sample records with must_sequence and preferentially_sequence values
 
-    for each successful add sample, merge into docs_to_insert_mlwh
-    with must_sequence and preferentially_sequence values
-
     Arguments:
         priority_samples  - priority samples to update docs_to_insert with
-        docs_to_insert {List[ModifiedRow]} -- the sample records to update
+        docs_to_insert {List[Any]} -- the sample records to update
     """
 
-    def extract_root_sample_id(sample: SampleDoc) -> SampleDocValue:
-        return sample[FIELD_ROOT_SAMPLE_ID]
+    def extract_mongo_sample_id(sample: SampleDoc) -> SampleDocValue:
+        return sample[FIELD_MONGODB_ID]
 
-    priority_root_sample_ids = list(map(extract_root_sample_id, priority_samples))
+    priority_mongo_sample_ids = list(map(extract_mongo_sample_id, priority_samples))
 
     for doc in docs_to_insert:
-        root_sample_id = doc[FIELD_ROOT_SAMPLE_ID]
-        if root_sample_id in priority_root_sample_ids:
-            priority_sample = list(filter(lambda x: x[FIELD_ROOT_SAMPLE_ID] == root_sample_id, priority_samples))[0]
+        mongo_sample_id = extract_mongo_sample_id(doc)
+        if mongo_sample_id in priority_mongo_sample_ids:
+            priority_sample = list(filter(lambda x: extract_mongo_sample_id(x) == mongo_sample_id, priority_samples))[0]
             doc[FIELD_MUST_SEQUENCE] = priority_sample[FIELD_MUST_SEQUENCE]
             doc[FIELD_PREFERENTIALLY_SEQUENCE] = priority_sample[FIELD_PREFERENTIALLY_SEQUENCE]
 
 
-# TODO: refactor duplicated function
-def update_unprocessed_priority_samples_to_processed(db: Database, sample_ids: list) -> None:
+def update_unprocessed_priority_samples_to_processed(db: Database, mongo_sample_ids: list) -> None:
     """
-    Description
-    use stored identifiers to update priority_samples table to processed true
+    Update the given samples processed field in mongo to true
     Arguments:
-        x {Type} -- description
+       mongo_sample_ids {list} -- a list of sample mongodb _ids to update
     """
     priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
-    for sample_id in sample_ids:
+    for sample_id in mongo_sample_ids:
         priority_samples_collection.update({FIELD_SAMPLE_ID: sample_id}, {"$set": {FIELD_PROCESSED: True}})
     logger.info("Mongo update of processed for priority samples successful")
 
 
-# TODO: refactor duplicated function
+# TODO: Duplicate method to insert_samples_from_docs_into_mlwh in file_processing.py
+# possibly refactor to MLWH helper
 def update_priority_samples_into_mlwh(samples: List[Any], config: Config) -> bool:
-    """Update priority sample records into the MLWH database from the parsed file information, including the corresponding
-    mongodb _id
-    Create all samples in MLWH with samples including must_seq/ pre_seq
+    """Update sample records in the MLWH database from unprocessed priority samples,
+    including the corresponding mongodb _id, must_seqequence, preferentially_sequence
 
     Arguments:
-        samples {List[ModifiedRow]} -- List of filtered sample information extracted from CSV files.
+        samples {List[Any]} -- List of unprocessed priority samples
 
     Returns:
         {bool} -- True if the insert was successful; otherwise False
@@ -172,8 +161,8 @@ def update_priority_samples_into_mlwh(samples: List[Any], config: Config) -> boo
 
     values: List[Dict[str, Any]] = []
 
-    for sample_doc in samples:
-        values.append(map_mongo_sample_to_mysql(sample_doc))
+    for sample in samples:
+        values.append(map_mongo_sample_to_mysql(sample))
 
     mysql_conn = create_mysql_connection(config, False)
 
