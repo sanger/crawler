@@ -6,7 +6,6 @@ import pymongo
 
 from crawler.constants import (
     COLLECTION_CENTRES,
-    COLLECTION_PRIORITY_SAMPLES,
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
     FIELD_BARCODE,

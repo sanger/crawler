@@ -1,8 +1,6 @@
 from unittest.mock import patch
 from crawler.db.mongo import get_mongo_collection
-from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
 from crawler.priority_samples_process import merge_priority_samples_into_docs_to_insert, step_two, logging_collection
-from crawler.helpers.logging_helpers import LoggingCollection
 
 from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
@@ -23,16 +21,6 @@ import pytest
 
 
 class TestStepTwo:
-    # @pytest.fixture(autouse=True)
-    # def mock_logging_collection(self):
-    #     with patch("crawler.priority_samples_process.LoggingCollection") as log_col:
-    #         if logging_col is None:
-    #             logging_col = LoggingCollection()
-
-    #         logging_col.aggregator_types=LoggingCollection().aggregator_types
-    #         log_col.return_value = logging_col
-    #         yield
-
     @pytest.fixture(autouse=True)
     def mock_dart_calls(self, testing_samples, testing_priority_samples):
         with patch("crawler.priority_samples_process.create_dart_sql_server_conn") as self.mock_conn:
@@ -188,7 +176,6 @@ class TestStepTwo:
             )
         )
         assert self.expected_mlwh_samples == expected_mlwh_samples
-
         # Check list of expected dart samples and plates
         result = list(
             filter(
@@ -202,61 +189,15 @@ class TestStepTwo:
         else:
             expected_samples, expected_plates, _ = zip(*result)
             expected_plates = set(expected_plates)
-
             assert self.expected_samples == list(expected_samples)
             assert self.expected_plates == list(expected_plates)
-
-    # def test_step_two(self, config, mongo_database, mlwh_connection, testing_samples, testing_priority_samples, with_different_scenarios):
-    #     _, mongo_database = mongo_database
-
-    #     num_plates = 2
-    #     num_wells = 3
-
-    #     plates_status = [DART_STATE_PENDING, DART_STATE_PENDING]
-    #     samples_root_sample_ids = ['MCM001','MCM002','MCM003','MCM004']
-    #     priority_samples_root_sample_ids = ['MCM001','MCM002','MCM004']
-
-    #     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
-    #     important_docs = list(samples_collection.find({FIELD_ROOT_SAMPLE_ID: {"$in": priority_samples_root_sample_ids}}))
-
-    #     self.mock_add_dart_plate.side_effect = plates_status
-
-    #     step_two(mongo_database, config)
-
-    #     # plates created
-    #     assert self.mock_add_dart_plate.call_count == num_plates
-    #     # 3 wells checked in dart (2+1)
-    #     assert self.mock_get_well_index.call_count == num_wells
-    #     # 3 wells mapped to dart
-    #     assert self.mock_map.call_count == num_wells
-
-    #     for doc in important_docs:
-    #         self.mock_get_well_index.assert_any_call(doc[FIELD_COORDINATE])
-
-    #     # 3 wells created in dart
-    #     assert self.mock_set_well_props.call_count == num_wells
-
-    #     # Wells created from plate
-    #     for barcode in self.expected_plates:
-    #         self.mock_set_well_props.assert_any_call(
-    #             self.mock_conn().cursor(), barcode, self.test_well_props, self.test_well_index
-    #         )
-
-    #     # commits changes
-    #     self.mock_conn().cursor().rollback.assert_not_called()
-    #     # 1 commit/plate = 2 commits
-    #     assert self.mock_conn().cursor().commit.call_count == 2
-    #     self.mock_conn().close.assert_called_once()
 
     def test_mlwh_was_correctly_updated_in_step_two(
         self, mongo_database, config, mlwh_connection, with_different_scenarios
     ):
         _, mongo_database = mongo_database
-
         step_two(mongo_database, config)
-
         cursor = mlwh_connection.cursor(dictionary=True)
-
         if len(self.expected_mlwh_samples) == 0:
             cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} ")
             rows = cursor.fetchall()
@@ -270,7 +211,6 @@ class TestStepTwo:
             )
             rows = cursor.fetchall()
             cursor.close()
-
             for pos, priority_sample in enumerate(self.expected_mlwh_samples):
                 assert rows[pos][MLWH_ROOT_SAMPLE_ID] == priority_sample[FIELD_ROOT_SAMPLE_ID]
                 assert rows[pos][MLWH_MUST_SEQUENCE] == priority_sample[FIELD_MUST_SEQUENCE]
@@ -384,8 +324,6 @@ def test_merge_priority_samples_into_docs_to_insert(
 
     centre_config = config.CENTRES[0]
     centre_config["sftp_root_read"] = "tmp/files"
-    centre = Centre(config, centre_config)
-    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
 
     priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
     root_sample_ids = ["MCM001", "MCM002"]
@@ -393,10 +331,10 @@ def test_merge_priority_samples_into_docs_to_insert(
 
     merge_priority_samples_into_docs_to_insert(priority_samples, testing_docs_to_insert_for_aldp)
 
-    assert (FIELD_MUST_SEQUENCE in testing_docs_to_insert_for_aldp[0]) == True
-    assert (FIELD_MUST_SEQUENCE in testing_docs_to_insert_for_aldp[1]) == True
-    assert (FIELD_PREFERENTIALLY_SEQUENCE in testing_docs_to_insert_for_aldp[0]) == True
-    assert (FIELD_PREFERENTIALLY_SEQUENCE in testing_docs_to_insert_for_aldp[1]) == True
+    assert (FIELD_MUST_SEQUENCE in testing_docs_to_insert_for_aldp[0]) is True
+    assert (FIELD_MUST_SEQUENCE in testing_docs_to_insert_for_aldp[1]) is True
+    assert (FIELD_PREFERENTIALLY_SEQUENCE in testing_docs_to_insert_for_aldp[0]) is True
+    assert (FIELD_PREFERENTIALLY_SEQUENCE in testing_docs_to_insert_for_aldp[1]) is True
 
 
 # We have priority samples that have not been received yet (not in mongodb)

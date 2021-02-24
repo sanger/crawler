@@ -3,8 +3,6 @@ from typing import Dict, Optional
 
 import pyodbc
 
-from typing import List, Any
-from crawler.types import ModifiedRow, Config
 
 from crawler.constants import (
     DART_SET_PROP_STATUS_SUCCESS,
@@ -13,12 +11,7 @@ from crawler.constants import (
     DART_STATE_NO_PROP,
     DART_STATE_PENDING,
     FIELD_COORDINATE,
-    FIELD_RESULT,
-    FIELD_PLATE_BARCODE,
-    FIELD_MUST_SEQUENCE,
     FIELD_ROOT_SAMPLE_ID,
-    POSITIVE_RESULT_VALUE,
-    FIELD_PREFERENTIALLY_SEQUENCE,
 )
 from crawler.exceptions import DartStateError
 from crawler.helpers.general_helpers import (
@@ -178,20 +171,6 @@ def add_dart_well_properties(cursor: pyodbc.Cursor, sample: SampleDoc, plate_bar
             f"Unable to determine DART well index for {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
         )
 
-    # def add_dart_well_properties(
-    #     cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str
-    # ) -> None:
-    """Adds well properties to DART for the specified sample if that sample is positive
-        or must_sequence or preferentially_sequence
-
-    Arguments:
-        cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
-        sample {Sample} -- The sample for which to add well properties.
-        plate_barcode {str} -- The barcode of the plate to which this sample belongs.
-    """
-    # if is_sample_important_or_positive(sample):
-    # add_dart_well_properties(cursor, sample, plate_barcode)
-
 
 def add_dart_well_properties_if_positive_or_of_importance(
     cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str
@@ -206,82 +185,3 @@ def add_dart_well_properties_if_positive_or_of_importance(
     """
     if is_sample_important_or_positive(sample):
         add_dart_well_properties(cursor, sample, plate_barcode)
-
-        # well_index = get_dart_well_index(str(sample.get(FIELD_COORDINATE)))
-        # if well_index is not None:
-        #     dart_well_props = map_mongo_doc_to_dart_well_props(sample)
-        #     set_dart_well_properties(cursor, plate_barcode, dart_well_props, well_index)
-        # else:
-        #     raise ValueError(
-        #         f"Unable to determine DART well index for {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
-        #     )
-
-
-# def _add_dart_well_properties_if_positive_old(cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str) -> None:
-#     # if that sample is positive or must/pref seq
-#     """Adds well properties to DART for the specified sample if that sample is positive.
-
-#     Arguments:
-#         cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
-#         sample {Sample} -- The sample for which to add well properties.
-#         plate_barcode {str} -- The barcode of the plate to which this sample belongs.
-#     """
-
-#     # remove if sample field_result = positive, as sample Result may now be negative too
-#     # if sample is result OR must_sequence OR preferentially_sequence
-
-#     # if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE || must_sequence == true || preferentially_sequence == true
-#     if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
-#         well_index = get_dart_well_index(str(sample.get(FIELD_COORDINATE)))
-#         if well_index is not None:
-#             dart_well_props = map_mongo_doc_to_dart_well_props(sample)
-#             set_dart_well_properties(cursor, plate_barcode, dart_well_props, well_index)
-#         else:
-#             raise ValueError(
-#                 f"Unable to determine DART well index for {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
-#             )
-
-
-# def update_priority_wells_from_docs_into_dart(samples, logging):
-#     if (sql_server_connection := create_dart_sql_server_conn(self.config)) is not None:
-#         try:
-#             cursor = sql_server_connection.cursor()
-#             # check docs_to_insert contain must_seq/ pre_seq
-#             for plate_barcode, samples in groupby_transform(  # type: ignore
-#                 docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]
-#             ):
-#                 try:
-#                     plate_state = add_dart_plate_if_doesnt_exist(
-#                         cursor, plate_barcode, self.centre_config["biomek_labware_class"]  # type: ignore
-#                     )
-#                     if plate_state == DART_STATE_PENDING:
-#                         for sample in samples:
-#                             add_dart_well_properties_if_positive_or_of_importance(cursor, sample, plate_barcode)  # type: ignore
-#                     cursor.commit()
-#                 except Exception as e:
-#                     self.logging.add_error(
-#                         "TYPE 22",
-#                         f"DART database inserts failed for plate {plate_barcode} in file {self.file_name}",
-#                     )
-#                     logger.exception(e)
-#                     # rollback statements executed since previous commit/rollback
-#                     cursor.rollback()
-#                     return False
-
-#             logger.debug(f"DART database inserts completed successfully for file {self.file_name}")
-#             return True
-#         except Exception as e:
-#             self.logging.add_error(
-#                 "TYPE 23", f"DART database inserts failed for file {self.file_name}",
-#             )
-#             logger.critical(f"Critical error in file {self.file_name}: {e}")
-#             logger.exception(e)
-#             return False
-#         finally:
-#             sql_server_connection.close()
-#     else:
-#         self.logging.add_error(
-#             "TYPE 24", f"DART database inserts failed, could not connect, for file {self.file_name}",
-#         )
-#         logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
-#         return False

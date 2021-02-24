@@ -297,12 +297,12 @@ def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
 
 
 def is_sample_important_or_positive(sample):
-    return (sample.get(FIELD_RESULT, False) == POSITIVE_RESULT_VALUE) or (is_sample_important(sample))
+    return (sample.get(FIELD_RESULT, False) is POSITIVE_RESULT_VALUE) or (is_sample_important(sample))
 
 
 def is_sample_important(sample):
-    return (sample.get(FIELD_MUST_SEQUENCE, False) == True) or (
-        sample.get(FIELD_PREFERENTIALLY_SEQUENCE, False) == True
+    return (sample.get(FIELD_MUST_SEQUENCE, False) is True) or (
+        sample.get(FIELD_PREFERENTIALLY_SEQUENCE, False) is True
     )
 
 

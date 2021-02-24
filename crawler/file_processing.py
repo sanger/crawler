@@ -457,8 +457,6 @@ class CentreFile:
                 # we use to update MongoDB and Dart. Changing this part to a MongoDB query would modify how the
                 # samples are created in warehouse and dart, being different source than mongodb
 
-                # docs_to_insert_mlwh = query_samples_with_unprocessed_important_priority_samples(mongo_ids_of_inserted, docs_to_insert_mlwh)
-
                 mlwh_success = self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
                 # add to the DART database if the config flag is set and we have successfully updated the MLWH
@@ -781,7 +779,10 @@ class CentreFile:
                         )
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
-                                add_dart_well_properties_if_positive_or_of_importance(cursor, sample, plate_barcode)  # type: ignore
+                                add_dart_well_properties_if_positive_or_of_importance(
+                                    cursor,
+                                    sample, plate_barcode
+                                )  # type: ignore
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(

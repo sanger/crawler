@@ -4,7 +4,7 @@
 import logging
 import logging.config
 
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Final
 from crawler.types import ModifiedRow, Config
 from crawler.db.mongo import (
     get_mongo_collection,
@@ -12,7 +12,6 @@ from crawler.db.mongo import (
 
 from crawler.constants import (
     COLLECTION_PRIORITY_SAMPLES,
-    COLLECTION_SAMPLES,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_MUST_SEQUENCE,
     FIELD_PROCESSED,
@@ -39,13 +38,13 @@ from crawler.db.dart import (
     add_dart_plate_if_doesnt_exist,
     add_dart_well_properties,
 )
-from crawler.helpers.logging_helpers import LoggingCollection
 
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 logger = logging.getLogger(__name__)
 
 logging_collection = LoggingCollection()
+
 
 # Possibly move to seperate script
 def step_two(db, config: Config) -> None:
@@ -54,7 +53,7 @@ def step_two(db, config: Config) -> None:
     Arguments:
         x {Type} -- description
     """
-    logger.info(f"Starting Step 2")
+    logger.info("Starting Step 2")
 
     samples = query_any_unprocessed_samples(db)
 
@@ -79,9 +78,11 @@ def query_any_unprocessed_samples(db) -> List[Any]:
     # from the priority samples collection
     # get all unprocessed samples, we want to update also samples that have changed their importance
     # join on the samples collection using sample_id in priority_samples collection to _id in the samples collection
-    # flatten object so sample fields are at the same level as the priority samples fields, removing the nested sample object
-    # return a list of the samples
-    # e.g db.priority_samples.aggregate([{"$match":{"$and": [ {"processed": false} ]}}, {"$lookup": {"from": "samples", "let": {"sample_id": "$_id"},"pipeline":[{"$match": {"$expr": {"$and":[{"$eq": ["$sample_id", "$$sample_id"]}]}}}], "as": "from_samples"}}])
+    # flatten object so sample fields are at the same level as the priority samples fields, removing
+    # the nested sample object return a list of the samples
+    # e.g db.priority_samples.aggregate([{"$match":{"$and": [
+    # {"processed": false} ]}}, {"$lookup": {"from": "samples", "let": {"sample_id": "$_id"},"pipeline":
+    # [{"$match": {"$expr": {"$and":[{"$eq": ["$sample_id", "$$sample_id"]}]}}}], "as": "from_samples"}}])
     IMPORTANT_UNPROCESSED_SAMPLES_MONGO_QUERY: Final[Dict[str, Any]] = [
         # first get only unprocessed priority samples
         {
@@ -171,21 +172,21 @@ def update_priority_samples_into_mlwh(samples, config) -> bool:
         try:
             run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
 
-            logger.debug(f"MLWH database inserts completed successfully for priority samples")
+            logger.debug("MLWH database inserts completed successfully for priority samples")
             return True
         except Exception as e:
             logging_collection.add_error(
                 "TYPE 28",
-                f"MLWH database inserts failed for priority samples",
+                "MLWH database inserts failed for priority samples",
             )
             logger.critical(f"Critical error while processing priority samples': {e}")
             logger.exception(e)
     else:
         logging_collection.add_error(
             "TYPE 29",
-            f"MLWH database inserts failed, could not connect",
+            "MLWH database inserts failed, could not connect",
         )
-        logger.critical(f"Error writing to MLWH for priority samples, could not create Database connection")
+        logger.critical("Error writing to MLWH for priority samples, could not create Database connection")
 
     return False
 
@@ -230,12 +231,12 @@ def insert_plates_and_wells_into_dart(docs_to_insert: List[ModifiedRow], config:
                     cursor.rollback()
                     return False
 
-            logger.debug(f"DART database inserts completed successfully for priority samples")
+            logger.debug("DART database inserts completed successfully for priority samples")
             return True
         except Exception as e:
             logging_collection.add_error(
                 "TYPE 30",
-                f"DART database inserts failed for priority samples",
+                "DART database inserts failed for priority samples",
             )
             logger.critical(f"Critical error for priority samples: {e}")
             logger.exception(e)
@@ -245,9 +246,9 @@ def insert_plates_and_wells_into_dart(docs_to_insert: List[ModifiedRow], config:
     else:
         logging_collection.add_error(
             "TYPE 31",
-            f"DART database inserts failed, could not connect, for priority samples",
+            "DART database inserts failed, could not connect, for priority samples",
         )
-        logger.critical(f"Error writing to DART for priority samples, could not create Database connection")
+        logger.critical("Error writing to DART for priority samples, could not create Database connection")
         return False
 
 

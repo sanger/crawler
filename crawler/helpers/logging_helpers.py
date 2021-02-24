@@ -327,7 +327,9 @@ class AggregateType28(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 28"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = f"{self.error_level.name}: Samples from priority where the MLWH database insert has failed. ({self.type_str})"
+        self.message = (
+            f"{self.error_level.name}: Samples from priority where the MLWH database "
+            f"insert has failed. ({self.type_str})"
         self.short_display_description = "Failed MLWH inserts"
 
 
@@ -336,7 +338,9 @@ class AggregateType29(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 29"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = f"{self.error_level.name}: Samples from priority where the MLWH database connection could not be made. ({self.type_str})"
+        self.message = (
+            f"{self.error_level.name}: Samples from priority where the MLWH database connection "
+            f"could not be made. ({self.type_str})"
         self.short_display_description = "Failed MLWH connection"
 
 
@@ -356,7 +360,9 @@ class AggregateType31(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 31"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = f"{self.error_level.name}: Priority samples where the DART database connection could not be made. ({self.type_str})"
+        self.message = (
+            f"{self.error_level.name}: Priority samples where the DART database connection "
+            f"could not be made. ({self.type_str})"
         self.short_display_description = "Failed priority samples DART connection"
 
 
@@ -365,7 +371,10 @@ class AggregateType32(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 32"
         self.error_level = ErrorLevel.CRITICAL
-        self.message = f"{self.error_level.name}: Priority samples that we have in Mongodb but they are still unprocessed. ({self.type_str})"
+        self.message = (
+            f"{self.error_level.name}: Priority samples that we have in Mongodb "
+            f"but they are still unprocessed. ({self.type_str})"
+        )
         self.short_display_description = "Step 2 validation failure"
 
 

@@ -1603,7 +1603,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
                         mock_conn().close.assert_called_once()
 
                         # returns
-                        assert result == True
+                        assert result is True
 
 
 def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_wells(config):
@@ -1870,7 +1870,7 @@ def test_process_files_with_priority_samples(
     """
     assert (
         len(list(priority_samples_collection.find({FIELD_PROCESSED: True}))) == 4
-    ), f"Wrong number of priority samples updated. Expected: 4"
+    ), "Wrong number of priority samples updated. Expected: 4"
 
 
 def test_get_important_unprocessed_priority_samples_returns_priority_samples_for_root_sample_ids(
@@ -1892,9 +1892,9 @@ def test_get_important_unprocessed_priority_samples_returns_priority_samples_for
     assert len(result) == 2
     assert result[0][FIELD_ROOT_SAMPLE_ID] == root_sample_ids[0]
     assert result[1][FIELD_ROOT_SAMPLE_ID] == root_sample_ids[1]
-    assert result[0][FIELD_PROCESSED] == False
-    assert result[1][FIELD_MUST_SEQUENCE] == True or result[1][FIELD_PREFERENTIALLY_SEQUENCE] == True
-    assert result[0][FIELD_MUST_SEQUENCE] == True or result[0][FIELD_PREFERENTIALLY_SEQUENCE] == True
+    assert result[0][FIELD_PROCESSED] is False
+    assert result[1][FIELD_MUST_SEQUENCE] is True or result[1][FIELD_PREFERENTIALLY_SEQUENCE] is True
+    assert result[0][FIELD_MUST_SEQUENCE] is True or result[0][FIELD_PREFERENTIALLY_SEQUENCE] is True
 
 
 def test_update_important_unprocessed_priority_samples_to_processed(mongo_database, config, testing_priority_samples):
@@ -1911,5 +1911,5 @@ def test_update_important_unprocessed_priority_samples_to_processed(mongo_databa
 
     priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
 
-    assert priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: root_sample_ids[0]})[0][FIELD_PROCESSED] == True
-    assert priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: root_sample_ids[1]})[0][FIELD_PROCESSED] == True
+    assert priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: root_sample_ids[0]})[0][FIELD_PROCESSED] is True
+    assert priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: root_sample_ids[1]})[0][FIELD_PROCESSED] is True
