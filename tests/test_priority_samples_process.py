@@ -1,7 +1,8 @@
 from unittest.mock import patch
 from crawler.db.mongo import get_mongo_collection
 from crawler.priority_samples_process import merge_priority_samples_into_docs_to_insert, step_two, logging_collection
-
+from crawler.types import SampleDoc, SamplePriorityDoc, SampleDocValue
+from typing import Union, List, Any
 from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
     FIELD_MUST_SEQUENCE,
@@ -19,6 +20,7 @@ from crawler.constants import (
 )
 import pytest
 
+RecordScenarioList = Any
 
 class TestStepTwo:
     @pytest.fixture(autouse=True)
@@ -147,10 +149,13 @@ class TestStepTwo:
 
         self.mock_add_dart_plate.side_effect = find_plate_status
 
+        def extract_mongo_record(info: RecordScenarioList) -> SampleDocValue:
+            return info[0]
+
         # Set expected mlwh samples
         self.expected_mlwh_samples = list(
             map(
-                lambda info: info[0],
+                extract_mongo_record,
                 filter(lambda info: info[1], zip(testing_priority_samples, request.param["expected_mlwh_samples"])),
             )
         )
@@ -158,7 +163,7 @@ class TestStepTwo:
         # Set expected dart samples
         self.expected_samples = list(
             map(
-                lambda info: info[0],
+                extract_mongo_record,
                 filter(lambda info: info[1], zip(testing_samples, request.param["expected_samples"])),
             )
         )
@@ -169,9 +174,12 @@ class TestStepTwo:
     def validate_expected_data(self, with_different_scenarios, testing_priority_samples, testing_samples):
         # Check list of expected mlwh samples
         # Get unprocessed samples from list
+        def extract_priority_sample(info: RecordScenarioList) -> SampleDocValue:
+            return info[0]
+
         expected_mlwh_samples = list(
             map(
-                lambda info: info[0],
+                extract_priority_sample,
                 filter(lambda info: not (info[1]), zip(testing_priority_samples, self.processed_status)),
             )
         )

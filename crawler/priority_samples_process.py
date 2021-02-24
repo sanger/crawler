@@ -5,10 +5,11 @@ import logging
 import logging.config
 
 from typing import Any, List, Dict, Final
-from crawler.types import ModifiedRow, Config
+from crawler.types import ModifiedRow, Config, SampleDoc, SampleDocValue
 from crawler.db.mongo import (
     get_mongo_collection,
 )
+from pymongo.database import Database
 
 from crawler.constants import (
     COLLECTION_PRIORITY_SAMPLES,
@@ -47,12 +48,15 @@ logging_collection = LoggingCollection()
 
 
 # Possibly move to seperate script
-def step_two(db, config: Config) -> None:
+def step_two(db: Database, config: Config) -> None:
     """
     Description
     Arguments:
         x {Type} -- description
     """
+    def extract_mongo_id(sample: SampleDoc) -> SampleDocValue:
+        return sample[FIELD_MONGODB_ID]
+
     logger.info("Starting Step 2")
 
     samples = query_any_unprocessed_samples(db)
@@ -67,11 +71,11 @@ def step_two(db, config: Config) -> None:
         dart_success = insert_plates_and_wells_into_dart(samples, config)
         if dart_success:
             # use stored identifiers to update priority_samples table to processed true
-            sample_ids = list(map(lambda x: x[FIELD_MONGODB_ID], samples))
+            sample_ids = list(map(extract_mongo_id, samples))
             update_unprocessed_priority_samples_to_processed(db, sample_ids)
 
 
-def query_any_unprocessed_samples(db) -> List[Any]:
+def query_any_unprocessed_samples(db: Database) -> List[Any]:
     priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
 
     # Query:
@@ -83,7 +87,7 @@ def query_any_unprocessed_samples(db) -> List[Any]:
     # e.g db.priority_samples.aggregate([{"$match":{"$and": [
     # {"processed": false} ]}}, {"$lookup": {"from": "samples", "let": {"sample_id": "$_id"},"pipeline":
     # [{"$match": {"$expr": {"$and":[{"$eq": ["$sample_id", "$$sample_id"]}]}}}], "as": "from_samples"}}])
-    IMPORTANT_UNPROCESSED_SAMPLES_MONGO_QUERY: Final[Dict[str, Any]] = [
+    IMPORTANT_UNPROCESSED_SAMPLES_MONGO_QUERY: Final[List[object]] = [
         # first get only unprocessed priority samples
         {
             "$match": {
@@ -113,7 +117,7 @@ def query_any_unprocessed_samples(db) -> List[Any]:
     return list(value)
 
 
-def merge_priority_samples_into_docs_to_insert(priority_samples: List[Any], docs_to_insert) -> None:
+def merge_priority_samples_into_docs_to_insert(priority_samples: List[Any], docs_to_insert: list) -> None:
     """
     Updates the sample records with must_sequence and preferentially_sequence values
 
@@ -124,7 +128,11 @@ def merge_priority_samples_into_docs_to_insert(priority_samples: List[Any], docs
         priority_samples  - priority samples to update docs_to_insert with
         docs_to_insert {List[ModifiedRow]} -- the sample records to update
     """
-    priority_root_sample_ids = list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], priority_samples))
+
+    def extract_root_sample_id(sample: SampleDoc) -> SampleDocValue:
+        return sample[FIELD_ROOT_SAMPLE_ID]
+
+    priority_root_sample_ids = list(map(extract_root_sample_id, priority_samples))
 
     for doc in docs_to_insert:
         root_sample_id = doc[FIELD_ROOT_SAMPLE_ID]
@@ -135,7 +143,7 @@ def merge_priority_samples_into_docs_to_insert(priority_samples: List[Any], docs
 
 
 # TODO: refactor duplicated function
-def update_unprocessed_priority_samples_to_processed(db, sample_ids) -> bool:
+def update_unprocessed_priority_samples_to_processed(db: Database, sample_ids: list) -> None:
     """
     Description
     use stored identifiers to update priority_samples table to processed true
@@ -149,7 +157,7 @@ def update_unprocessed_priority_samples_to_processed(db, sample_ids) -> bool:
 
 
 # TODO: refactor duplicated function
-def update_priority_samples_into_mlwh(samples, config) -> bool:
+def update_priority_samples_into_mlwh(samples: List[Any], config: Config) -> bool:
     """Insert sample records into the MLWH database from the parsed file information, including the corresponding
     mongodb _id
     Create all samples in MLWH with samples including must_seq/ pre_seq

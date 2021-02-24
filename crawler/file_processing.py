@@ -11,7 +11,7 @@ from decimal import Decimal
 from hashlib import md5
 from logging import INFO, WARN
 from pathlib import Path
-from typing import Any, Dict, Final, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, Final, List, Optional, Set, Tuple, cast, Iterator
 
 from bson.decimal128 import Decimal128
 from more_itertools import groupby_transform
@@ -96,7 +96,7 @@ from crawler.helpers.general_helpers import (
 )
 from crawler.helpers.logging_helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
-from crawler.types import CentreConf, CentreDoc, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc
+from crawler.types import CentreConf, CentreDoc, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc, SampleDoc, SampleDocValue
 
 logger = logging.getLogger(__name__)
 
@@ -407,9 +407,12 @@ class CentreFile:
         Arguments:
             x {Type} -- description
         """
+        def extract_root_sample_id(sample: SampleDoc) -> SampleDocValue:
+            return sample[FIELD_ROOT_SAMPLE_ID]
+
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
         return list(
-            map(lambda x: x[FIELD_ROOT_SAMPLE_ID], samples_collection.find({FIELD_MONGODB_ID: {"$in": mongo_ids}}))
+            map(extract_root_sample_id, samples_collection.find({FIELD_MONGODB_ID: {"$in": mongo_ids}}))
         )
 
     def process_samples(self, add_to_dart: bool) -> None:
@@ -419,6 +422,9 @@ class CentreFile:
             add_to_dart {bool} -- whether to add the samples to DART
         """
         logger.info("Processing samples")
+
+        def extract_root_sample_id(sample: SampleDoc) -> SampleDocValue:
+            return sample[FIELD_ROOT_SAMPLE_ID]
 
         # Internally traps TYPE 2: missing headers and TYPE 10 malformed files and returns
         docs_to_insert = self.process_csv()
@@ -466,7 +472,7 @@ class CentreFile:
                     dart_success = self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
                     if dart_success:
                         root_samples_id = list(
-                            map(lambda x: x[FIELD_ROOT_SAMPLE_ID], important_unprocessed_priority_samples)
+                            map(extract_root_sample_id, important_unprocessed_priority_samples)
                         )
                         self.update_important_unprocessed_priority_samples_to_processed(root_samples_id)
 
@@ -477,7 +483,7 @@ class CentreFile:
         self.create_import_record_for_file()
 
     # TODO: refactor duplicated function
-    def update_important_unprocessed_priority_samples_to_processed(self, root_sample_ids) -> bool:
+    def update_important_unprocessed_priority_samples_to_processed(self, root_sample_ids: list) -> None:
         """
         Description
         use stored identifiers to update priority_samples table to processed true
@@ -766,22 +772,28 @@ class CentreFile:
             TODO: check return False
             {bool} -- True if the insert was successful; otherwise False
         """
+        def extract_plate_barcode(sample: SampleDoc) -> SampleDocValue:
+            return sample[FIELD_PLATE_BARCODE]
+
         if (sql_server_connection := create_dart_sql_server_conn(self.config)) is not None:
             try:
                 cursor = sql_server_connection.cursor()
-                # check docs_to_insert contain must_seq/ pre_seq
-                for plate_barcode, samples in groupby_transform(  # type: ignore
-                    docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]
-                ):
+
+                group_iterator: Iterator[Tuple[Any, Any]] = groupby_transform(
+                    docs_to_insert, extract_plate_barcode
+                )
+
+                for plate_barcode, samples in group_iterator:
                     try:
                         plate_state = add_dart_plate_if_doesnt_exist(
-                            cursor, plate_barcode, self.centre_config["biomek_labware_class"]  # type: ignore
+                            cursor, plate_barcode, self.centre_config["biomek_labware_class"]
                         )
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
+                                print(plate_barcode)
                                 add_dart_well_properties_if_positive_or_of_importance(
                                     cursor, sample, plate_barcode
-                                )  # type: ignore
+                                )
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(
