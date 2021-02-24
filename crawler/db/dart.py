@@ -180,7 +180,7 @@ def add_dart_well_properties_if_positive_or_of_importance(
 
     Arguments:
         cursor {pyodbc.Cursor} -- The cursor with which to execute queries.
-        sample {Sample} -- The sample for which to add well properties.
+        sample {SampleDoc} -- The sample for which to add well properties.
         plate_barcode {str} -- The barcode of the plate to which this sample belongs.
     """
     if is_sample_important_or_positive(sample):
