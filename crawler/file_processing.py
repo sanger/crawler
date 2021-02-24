@@ -780,8 +780,7 @@ class CentreFile:
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
                                 add_dart_well_properties_if_positive_or_of_importance(
-                                    cursor,
-                                    sample, plate_barcode
+                                    cursor, sample, plate_barcode
                                 )  # type: ignore
                         cursor.commit()
                     except Exception as e:
