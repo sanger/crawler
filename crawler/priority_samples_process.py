@@ -159,7 +159,7 @@ def update_unprocessed_priority_samples_to_processed(db: Database, sample_ids: l
 
 # TODO: refactor duplicated function
 def update_priority_samples_into_mlwh(samples: List[Any], config: Config) -> bool:
-    """Insert sample records into the MLWH database from the parsed file information, including the corresponding
+    """Update priority sample records into the MLWH database from the parsed file information, including the corresponding
     mongodb _id
     Create all samples in MLWH with samples including must_seq/ pre_seq
 
@@ -200,23 +200,19 @@ def update_priority_samples_into_mlwh(samples: List[Any], config: Config) -> boo
     return False
 
 
-# TODO: refactor duplicated function
 def insert_plates_and_wells_into_dart(docs_to_insert: List[ModifiedRow], config: Config) -> bool:
     """Insert plates and wells into the DART database.
-    Create in DART with docs_to_insert including must_seq/ pre_seq
-    use docs_to_insert to update DART
+    Create in DART with docs_to_insert
 
     Arguments:
-        docs_to_insert {List[ModifiedRow]} -- List of filtered sample information extracted from CSV files.
+        docs_to_insert {List[ModifiedRow]} -- List of any unprocessed samples
 
     Returns:
-        TODO: check return False
         {bool} -- True if the insert was successful; otherwise False
     """
     if (sql_server_connection := create_dart_sql_server_conn(config)) is not None:
         try:
             cursor = sql_server_connection.cursor()
-            # check docs_to_insert contain must_seq/ pre_seq
             for plate_barcode, samples in groupby_transform(  # type: ignore
                 docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]
             ):

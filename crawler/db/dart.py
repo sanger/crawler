@@ -121,8 +121,6 @@ def set_dart_well_properties(
     """
     for prop_name, prop_value in well_props.items():
         params = (plate_barcode, prop_name, prop_value, well_index)
-        # TODO: if they change state and it was picked, not perform the change
-        #
         cursor.execute(SQL_DART_SET_WELL_PROPERTY, params)
 
 

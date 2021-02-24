@@ -776,7 +776,6 @@ class CentreFile:
             docs_to_insert {List[ModifiedRow]} -- List of filtered sample information extracted from CSV files.
 
         Returns:
-            TODO: check return False
             {bool} -- True if the insert was successful; otherwise False
         """
 
@@ -796,7 +795,6 @@ class CentreFile:
                         )
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
-                                print(plate_barcode)
                                 add_dart_well_properties_if_positive_or_of_importance(cursor, sample, plate_barcode)
                         cursor.commit()
                     except Exception as e:
