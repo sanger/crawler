@@ -68,11 +68,8 @@ def step_two(db, config: Config) -> None:
         dart_success = insert_plates_and_wells_into_dart(samples, config)
         if dart_success:
             # use stored identifiers to update priority_samples table to processed true
-            sample_ids = list(
-                map(lambda x: x[FIELD_MONGODB_ID], samples)
-            )
+            sample_ids = list(map(lambda x: x[FIELD_MONGODB_ID], samples))
             update_unprocessed_priority_samples_to_processed(db, sample_ids)
-
 
 
 def query_any_unprocessed_samples(db) -> List[Any]:
@@ -87,19 +84,19 @@ def query_any_unprocessed_samples(db) -> List[Any]:
     # e.g db.priority_samples.aggregate([{"$match":{"$and": [ {"processed": false} ]}}, {"$lookup": {"from": "samples", "let": {"sample_id": "$_id"},"pipeline":[{"$match": {"$expr": {"$and":[{"$eq": ["$sample_id", "$$sample_id"]}]}}}], "as": "from_samples"}}])
     IMPORTANT_UNPROCESSED_SAMPLES_MONGO_QUERY: Final[Dict[str, Any]] = [
         # first get only unprocessed priority samples
-        {"$match":
-            {"$and":
-                [
+        {
+            "$match": {
+                "$and": [
                     {FIELD_PROCESSED: False},
                 ]
             }
         },
-        {"$lookup":
-            {
+        {
+            "$lookup": {
                 "from": "samples",
                 "localField": "sample_id",
                 "foreignField": FIELD_MONGODB_ID,
-                "as": "related_samples"
+                "as": "related_samples",
             }
         },
         # replace the document with a merge of the original and the first element of the array created from the lookup
@@ -107,7 +104,7 @@ def query_any_unprocessed_samples(db) -> List[Any]:
         {"$replaceRoot": {"newRoot": {"$mergeObjects": [{"$arrayElemAt": ["$related_samples", 0]}, "$$ROOT"]}}},
         # result = { mongo_sample_id=1234, must_sequence=true; related_samples: { uuid: 132 } }
         # remove the lookup document
-        {"$project": {"related_samples": 0} }
+        {"$project": {"related_samples": 0}}
         # result = { mongo_sample_id=1234, must_sequence=true, uuid: 132 }
     ]
 
@@ -194,9 +191,7 @@ def update_priority_samples_into_mlwh(samples, config) -> bool:
 
 
 # TODO: refactor duplicated function
-def insert_plates_and_wells_into_dart(
-    docs_to_insert: List[ModifiedRow], config: Config
-) -> bool:
+def insert_plates_and_wells_into_dart(docs_to_insert: List[ModifiedRow], config: Config) -> bool:
     """Insert plates and wells into the DART database.
     Create in DART with docs_to_insert including must_seq/ pre_seq
     use docs_to_insert to update DART

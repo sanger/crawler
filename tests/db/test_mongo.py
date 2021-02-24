@@ -11,6 +11,7 @@ from crawler.constants import (
     FIELD_MONGODB_ID,
 )
 
+
 def test_create_mongo_client(config):
     assert type(create_mongo_client(config)) == MongoClient
 

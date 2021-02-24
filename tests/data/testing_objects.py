@@ -47,7 +47,7 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         "released": True,
         FIELD_RNA_ID: "A01aaa",
         FIELD_ROOT_SAMPLE_ID: "MCM001",
-        FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa1")
+        FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa1"),
     },
     {
         FIELD_COORDINATE: "B01",
@@ -57,7 +57,7 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         "released": False,
         FIELD_RNA_ID: "B01aaa",
         FIELD_ROOT_SAMPLE_ID: "MCM002",
-        FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa2")
+        FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa2"),
     },
     {
         FIELD_COORDINATE: "C01",
@@ -66,7 +66,7 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         FIELD_PLATE_BARCODE: "123",
         FIELD_ROOT_SAMPLE_ID: "MCM003",
         FIELD_RNA_ID: "C01aaa",
-        FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa3")
+        FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa3"),
     },
     {
         FIELD_COORDINATE: "D01",
@@ -76,7 +76,7 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
         "released": True,
         FIELD_ROOT_SAMPLE_ID: "MCM004",
         FIELD_RNA_ID: "D01aaa",
-        FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa4")
+        FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa4"),
     },
 ]
 

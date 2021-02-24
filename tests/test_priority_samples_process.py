@@ -21,6 +21,7 @@ from crawler.constants import (
 )
 import pytest
 
+
 class TestStepTwo:
     # @pytest.fixture(autouse=True)
     # def mock_logging_collection(self):
@@ -275,7 +276,6 @@ class TestStepTwo:
                 assert rows[pos][MLWH_MUST_SEQUENCE] == priority_sample[FIELD_MUST_SEQUENCE]
                 assert rows[pos][MLWH_PREFERENTIALLY_SEQUENCE] == priority_sample[FIELD_PREFERENTIALLY_SEQUENCE]
 
-
     def test_mlwh_insert_fails_in_step_two(self, config, mongo_database):
         _, mongo_database = mongo_database
 
@@ -284,7 +284,6 @@ class TestStepTwo:
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
             assert logging_collection.aggregator_types["TYPE 28"].count_errors == 1
-
 
     def test_mlwh_mysql_cannot_connect(self, config, mongo_database):
         _, mongo_database = mongo_database
@@ -295,7 +294,6 @@ class TestStepTwo:
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
             assert logging_collection.aggregator_types["TYPE 29"].count_errors == 1
-
 
     def test_creates_right_number_of_plates_in_dart(self, mongo_database, config, with_different_scenarios):
         _, mongo_database = mongo_database
@@ -347,7 +345,6 @@ class TestStepTwo:
         assert self.mock_conn().cursor().commit.call_count == len(self.expected_plates)
         self.mock_conn().close.assert_called_once()
 
-
     def test_adding_plate_and_wells_to_dart_fails_with_expection(self, mongo_database, config):
         _, mongo_database = mongo_database
 
@@ -357,18 +354,15 @@ class TestStepTwo:
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
             assert logging_collection.aggregator_types["TYPE 33"].count_errors == 1
 
-
-
     def test_adding_plate_and_wells_insert_failed(self, mongo_database, config):
         _, mongo_database = mongo_database
 
         with patch("crawler.priority_samples_process.create_dart_sql_server_conn") as mocked_conn:
-            mocked_conn().cursor.side_effect = Exception('Boom!!')
+            mocked_conn().cursor.side_effect = Exception("Boom!!")
             step_two(mongo_database, config)
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
             assert logging_collection.aggregator_types["TYPE 30"].count_errors == 1
-
 
     def test_dart_sql_server_cannot_connect(self, config, mongo_database):
         _, mongo_database = mongo_database

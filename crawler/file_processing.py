@@ -408,7 +408,9 @@ class CentreFile:
             x {Type} -- description
         """
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
-        return list(map(lambda x: x[FIELD_ROOT_SAMPLE_ID], samples_collection.find({FIELD_MONGODB_ID: {"$in": mongo_ids}})))
+        return list(
+            map(lambda x: x[FIELD_ROOT_SAMPLE_ID], samples_collection.find({FIELD_MONGODB_ID: {"$in": mongo_ids}}))
+        )
 
     def process_samples(self, add_to_dart: bool) -> None:
         """Processes the samples extracted from the centre file.
@@ -486,7 +488,9 @@ class CentreFile:
         """
         priority_samples_collection = get_mongo_collection(self.get_db(), COLLECTION_PRIORITY_SAMPLES)
         for root_sample_id in root_sample_ids:
-            priority_samples_collection.update({FIELD_ROOT_SAMPLE_ID: root_sample_id}, {"$set": {FIELD_PROCESSED: True}})
+            priority_samples_collection.update(
+                {FIELD_ROOT_SAMPLE_ID: root_sample_id}, {"$set": {FIELD_PROCESSED: True}}
+            )
         logger.info("Mongo update of processed for priority samples successful")
 
     def backup_filename(self) -> str:
@@ -577,7 +581,6 @@ class CentreFile:
                     )
         except Exception as e:
             logger.critical(f"Unknown error with file {self.file_name}: {e}")
-
 
     def docs_to_insert_updated_with_source_plate_uuids(self, docs_to_insert: List[ModifiedRow]) -> List[ModifiedRow]:
         """Updates sample records with source plate UUIDs, returning only those for which a source plate UUID could
@@ -711,8 +714,7 @@ class CentreFile:
             logger.exception(e)
             return []
 
-
-   # TODO: refactor duplicated function
+    # TODO: refactor duplicated function
     def insert_samples_from_docs_into_mlwh(self, docs_to_insert: List[ModifiedRow]) -> bool:
         """Insert sample records into the MLWH database from the parsed file information, including the corresponding
         mongodb _id
@@ -752,7 +754,6 @@ class CentreFile:
             logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
 
         return False
-
 
     # TODO: refactor duplicated function
     def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[ModifiedRow]) -> bool:
@@ -811,7 +812,6 @@ class CentreFile:
             )
             logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
             return False
-
 
     def process_csv(self) -> List[ModifiedRow]:
         """Parses and processes the CSV file of the centre.

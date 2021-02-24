@@ -158,9 +158,7 @@ def add_dart_plate_if_doesnt_exist(cursor: pyodbc.Cursor, plate_barcode: str, bi
     return state
 
 
-def add_dart_well_properties(
-    cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str
-) -> None:
+def add_dart_well_properties(cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str) -> None:
     """Adds well properties to DART for the specified sample
         regardless of if it is important
         as fields may have been updated to not being important
@@ -180,10 +178,9 @@ def add_dart_well_properties(
             f"Unable to determine DART well index for {sample[FIELD_ROOT_SAMPLE_ID]} in plate {plate_barcode}"
         )
 
-
-# def add_dart_well_properties(
-#     cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str
-# ) -> None:
+    # def add_dart_well_properties(
+    #     cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str
+    # ) -> None:
     """Adds well properties to DART for the specified sample if that sample is positive
         or must_sequence or preferentially_sequence
 
@@ -194,8 +191,6 @@ def add_dart_well_properties(
     """
     # if is_sample_important_or_positive(sample):
     # add_dart_well_properties(cursor, sample, plate_barcode)
-
-
 
 
 def add_dart_well_properties_if_positive_or_of_importance(
@@ -211,7 +206,6 @@ def add_dart_well_properties_if_positive_or_of_importance(
     """
     if is_sample_important_or_positive(sample):
         add_dart_well_properties(cursor, sample, plate_barcode)
-
 
         # well_index = get_dart_well_index(str(sample.get(FIELD_COORDINATE)))
         # if well_index is not None:
