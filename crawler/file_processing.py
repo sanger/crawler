@@ -96,7 +96,17 @@ from crawler.helpers.general_helpers import (
 )
 from crawler.helpers.logging_helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
-from crawler.types import CentreConf, CentreDoc, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc, SampleDoc, SampleDocValue
+from crawler.types import (
+    CentreConf,
+    CentreDoc,
+    Config,
+    CSVRow,
+    ModifiedRow,
+    RowSignature,
+    SourcePlateDoc,
+    SampleDoc,
+    SampleDocValue,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -407,13 +417,12 @@ class CentreFile:
         Arguments:
             x {Type} -- description
         """
+
         def extract_root_sample_id(sample: SampleDoc) -> SampleDocValue:
             return sample[FIELD_ROOT_SAMPLE_ID]
 
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
-        return list(
-            map(extract_root_sample_id, samples_collection.find({FIELD_MONGODB_ID: {"$in": mongo_ids}}))
-        )
+        return list(map(extract_root_sample_id, samples_collection.find({FIELD_MONGODB_ID: {"$in": mongo_ids}})))
 
     def process_samples(self, add_to_dart: bool) -> None:
         """Processes the samples extracted from the centre file.
@@ -471,9 +480,7 @@ class CentreFile:
 
                     dart_success = self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
                     if dart_success:
-                        root_samples_id = list(
-                            map(extract_root_sample_id, important_unprocessed_priority_samples)
-                        )
+                        root_samples_id = list(map(extract_root_sample_id, important_unprocessed_priority_samples))
                         self.update_important_unprocessed_priority_samples_to_processed(root_samples_id)
 
         else:
@@ -772,6 +779,7 @@ class CentreFile:
             TODO: check return False
             {bool} -- True if the insert was successful; otherwise False
         """
+
         def extract_plate_barcode(sample: SampleDoc) -> SampleDocValue:
             return sample[FIELD_PLATE_BARCODE]
 
@@ -779,9 +787,7 @@ class CentreFile:
             try:
                 cursor = sql_server_connection.cursor()
 
-                group_iterator: Iterator[Tuple[Any, Any]] = groupby_transform(
-                    docs_to_insert, extract_plate_barcode
-                )
+                group_iterator: Iterator[Tuple[Any, Any]] = groupby_transform(docs_to_insert, extract_plate_barcode)
 
                 for plate_barcode, samples in group_iterator:
                     try:
@@ -791,9 +797,7 @@ class CentreFile:
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
                                 print(plate_barcode)
-                                add_dart_well_properties_if_positive_or_of_importance(
-                                    cursor, sample, plate_barcode
-                                )
+                                add_dart_well_properties_if_positive_or_of_importance(cursor, sample, plate_barcode)
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(

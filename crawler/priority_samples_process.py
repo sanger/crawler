@@ -54,6 +54,7 @@ def step_two(db: Database, config: Config) -> None:
     Arguments:
         x {Type} -- description
     """
+
     def extract_mongo_id(sample: SampleDoc) -> SampleDocValue:
         return sample[FIELD_MONGODB_ID]
 

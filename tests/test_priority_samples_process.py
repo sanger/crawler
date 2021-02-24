@@ -1,8 +1,8 @@
 from unittest.mock import patch
 from crawler.db.mongo import get_mongo_collection
 from crawler.priority_samples_process import merge_priority_samples_into_docs_to_insert, step_two, logging_collection
-from crawler.types import SampleDoc, SamplePriorityDoc, SampleDocValue
-from typing import Union, List, Any
+from crawler.types import SampleDocValue
+from typing import Any
 from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
     FIELD_MUST_SEQUENCE,
@@ -21,6 +21,7 @@ from crawler.constants import (
 import pytest
 
 RecordScenarioList = Any
+
 
 class TestStepTwo:
     @pytest.fixture(autouse=True)
