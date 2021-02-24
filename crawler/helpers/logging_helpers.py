@@ -330,6 +330,7 @@ class AggregateType28(AggregateTypeBase):
         self.message = (
             f"{self.error_level.name}: Samples from priority where the MLWH database "
             f"insert has failed. ({self.type_str})"
+        )
         self.short_display_description = "Failed MLWH inserts"
 
 
@@ -341,6 +342,7 @@ class AggregateType29(AggregateTypeBase):
         self.message = (
             f"{self.error_level.name}: Samples from priority where the MLWH database connection "
             f"could not be made. ({self.type_str})"
+        )
         self.short_display_description = "Failed MLWH connection"
 
 
@@ -363,6 +365,7 @@ class AggregateType31(AggregateTypeBase):
         self.message = (
             f"{self.error_level.name}: Priority samples where the DART database connection "
             f"could not be made. ({self.type_str})"
+        )
         self.short_display_description = "Failed priority samples DART connection"
 
 
