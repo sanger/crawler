@@ -112,7 +112,7 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                             centre_instance.clean_up()
 
                 # Step 2
-                update_priority_samples(db, config)
+                update_priority_samples(db, config, add_to_dart)
 
         logger.info(f"Import complete in {round(time.time() - start, 2)}s")
         logger.info("=" * 80)

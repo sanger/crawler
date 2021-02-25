@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 logging_collection = LoggingCollection()
 
 
-def update_priority_samples(db: Database, config: Config) -> None:
+def update_priority_samples(db: Database, config: Config, add_to_dart: bool) -> None:
     """
     Update any remaining unprocessed priority samples in MLWH and DART
     Arguments:
@@ -64,10 +64,12 @@ def update_priority_samples(db: Database, config: Config) -> None:
 
     # Add to the DART database if MLWH update was successful
     if mlwh_success:
-        logger.info("MLWH insert successful and adding to DART")
-
-        dart_success = insert_plates_and_wells_into_dart(samples, config)
-        if dart_success:
+        logger.info("MLWH insert successful")
+        if add_to_dart:
+            logger.info("Adding to DART")
+            dart_success = insert_plates_and_wells_into_dart(samples, config)
+        if (not (add_to_dart) or dart_success):
+            logger.info("Updating Mongodb priority samples to processed")
             # use stored identifiers to update priority_samples table to processed true
             sample_ids = list(map(extract_mongo_id, samples))
             update_unprocessed_priority_samples_to_processed(db, sample_ids)
