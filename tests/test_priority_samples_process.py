@@ -207,7 +207,7 @@ class TestStepTwo:
         self, mongo_database, config, mlwh_connection, with_different_scenarios
     ):
         _, mongo_database = mongo_database
-        update_priority_samples(mongo_database, config)
+        update_priority_samples(mongo_database, config, True)
         cursor = mlwh_connection.cursor(dictionary=True)
         if len(self.expected_mlwh_samples) == 0:
             cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} ")
@@ -231,7 +231,7 @@ class TestStepTwo:
         _, mongo_database = mongo_database
 
         with patch("crawler.priority_samples_process.run_mysql_executemany_query", side_effect=Exception("Boom!")):
-            update_priority_samples(mongo_database, config)
+            update_priority_samples(mongo_database, config, True)
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
             assert logging_collection.aggregator_types["TYPE 28"].count_errors == 1
@@ -241,7 +241,7 @@ class TestStepTwo:
 
         with patch("crawler.priority_samples_process.create_mysql_connection") as mock_connection:
             mock_connection().is_connected.return_value = False
-            update_priority_samples(mongo_database, config)
+            update_priority_samples(mongo_database, config, True)
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
             assert logging_collection.aggregator_types["TYPE 29"].count_errors == 1
@@ -249,7 +249,7 @@ class TestStepTwo:
     def test_creates_right_number_of_plates_in_dart(self, mongo_database, config, with_different_scenarios):
         _, mongo_database = mongo_database
 
-        update_priority_samples(mongo_database, config)
+        update_priority_samples(mongo_database, config, True)
 
         # plates created
         assert self.mock_add_dart_plate.call_count == len(self.expected_dart_plates)
@@ -263,7 +263,7 @@ class TestStepTwo:
 
         num_wells = len(self.expected_dart_samples)
 
-        update_priority_samples(mongo_database, config)
+        update_priority_samples(mongo_database, config, True)
 
         # wells checked in dart
         assert self.mock_get_well_index.call_count == num_wells
@@ -287,7 +287,7 @@ class TestStepTwo:
     def test_commits_changes_to_dart(self, mongo_database, config, with_different_scenarios):
         _, mongo_database = mongo_database
 
-        update_priority_samples(mongo_database, config)
+        update_priority_samples(mongo_database, config, True)
 
         # commits changes
         self.mock_conn().cursor().rollback.assert_not_called()
@@ -300,7 +300,7 @@ class TestStepTwo:
         _, mongo_database = mongo_database
 
         with patch("crawler.priority_samples_process.add_dart_well_properties", side_effect=Exception("Boom!")):
-            update_priority_samples(mongo_database, config)
+            update_priority_samples(mongo_database, config, True)
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
             assert logging_collection.aggregator_types["TYPE 33"].count_errors == 1
@@ -310,7 +310,7 @@ class TestStepTwo:
 
         with patch("crawler.priority_samples_process.create_dart_sql_server_conn") as mocked_conn:
             mocked_conn().cursor.side_effect = Exception("Boom!!")
-            update_priority_samples(mongo_database, config)
+            update_priority_samples(mongo_database, config, True)
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
             assert logging_collection.aggregator_types["TYPE 30"].count_errors == 1
@@ -321,7 +321,7 @@ class TestStepTwo:
         with patch("crawler.priority_samples_process.create_dart_sql_server_conn") as mock_conn:
             mock_conn.return_value = None
 
-            update_priority_samples(mongo_database, config)
+            update_priority_samples(mongo_database, config, True)
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
             assert logging_collection.aggregator_types["TYPE 31"].count_errors == 1
