@@ -24,7 +24,7 @@ from crawler.db.mongo import (
     populate_collection,
     samples_collection_accessor,
 )
-from crawler.priority_samples_process import step_two
+from crawler.priority_samples_process import update_priority_samples
 from crawler.file_processing import Centre
 from crawler.helpers.general_helpers import get_config
 
@@ -102,11 +102,6 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                             centre_instance.download_csv_files()
 
                         # Step 1
-                        # process files as is
-                        # AND check if the samples being processed are priority samples
-                        # update MLWH
-                        # update DART
-                        # set processed in priority_samples collection to true
                         centre_instance.process_files(add_to_dart)
                     except Exception as e:
                         logger.error("An exception occured")
@@ -117,8 +112,7 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                             centre_instance.clean_up()
 
                 # Step 2
-                # logger message, as cant log on a file
-                step_two(db, config)
+                update_priority_samples(db, config)
 
         logger.info(f"Import complete in {round(time.time() - start, 2)}s")
         logger.info("=" * 80)

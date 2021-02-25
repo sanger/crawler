@@ -14,7 +14,6 @@ from mysql.connector.connection_cext import CMySQLConnection
 from crawler.constants import (
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
-    COLLECTION_PRIORITY_SAMPLES,
     COLLECTION_SOURCE_PLATES,
     DART_STATE_PENDING,
     FIELD_BARCODE,
@@ -82,9 +81,6 @@ from crawler.constants import (
     MLWH_MUST_SEQUENCE,
     MLWH_PREFERENTIALLY_SEQUENCE,
     POSITIVE_RESULT_VALUE,
-    FIELD_PROCESSED,
-    FIELD_SAMPLE_ID,
-    FIELD_MONGODB_ID,
 )
 from crawler.db.mongo import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
@@ -1831,86 +1827,3 @@ def test_docs_to_insert_updated_with_source_plate_handles_duplicate_existing_bar
 
     assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
     assert centre_file.logging_collection.aggregator_types["TYPE 25"].count_errors == 1
-
-
-def test_get_root_sample_ids_from_samples_collection(config, mongo_database, testing_samples):
-    _, mongo_database = mongo_database
-
-    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
-    root_sample_ids = []
-    ids = []
-
-    samples = samples_collection.find({})
-
-    for sample in samples:
-        root_sample_ids.append(sample[FIELD_ROOT_SAMPLE_ID])
-        ids.append(sample["_id"])
-
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
-
-    assert root_sample_ids == centre_file.get_root_sample_ids_from_samples_collection(ids)
-
-
-def test_process_files_with_priority_samples(
-    mongo_database, config, testing_files_for_process, testing_centres, testing_priority_samples_for_aldp, pyodbc_conn
-):
-    _, mongo_database = mongo_database
-
-    centre_config = config.CENTRES[0]
-    centre_config["sftp_root_read"] = "tmp/files"
-    centre = Centre(config, centre_config)
-    centre.process_files(True)
-
-    pyodbc_conn.assert_called()
-
-    priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
-    """
-    testing_priority_samples_for_aldp includes a sample where Result is False,
-    but it is a priority sample, therefore should be updated in MLWH
-    """
-    assert (
-        len(list(priority_samples_collection.find({FIELD_PROCESSED: True}))) == 4
-    ), "Wrong number of priority samples updated. Expected: 4"
-
-
-def test_get_important_unprocessed_priority_samples_returns_priority_samples_for_sample_ids(
-    config, mongo_database, testing_samples, testing_priority_samples
-):
-    _, mongo_database = mongo_database
-
-    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
-    sample_ids = []
-
-    samples = samples_collection.find({})
-    for sample in samples:
-        sample_ids.append(sample[FIELD_MONGODB_ID])
-
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
-
-    result = centre_file.get_important_unprocessed_priority_samples(sample_ids)
-    assert len(result) == 2
-    assert result[0][FIELD_SAMPLE_ID] == sample_ids[0]
-    assert result[1][FIELD_SAMPLE_ID] == sample_ids[1]
-    assert result[0][FIELD_PROCESSED] is False
-    assert result[1][FIELD_MUST_SEQUENCE] is True or result[1][FIELD_PREFERENTIALLY_SEQUENCE] is True
-    assert result[0][FIELD_MUST_SEQUENCE] is True or result[0][FIELD_PREFERENTIALLY_SEQUENCE] is True
-
-
-def test_update_important_unprocessed_priority_samples_to_processed(mongo_database, config, testing_priority_samples):
-    _, mongo_database = mongo_database
-
-    centre_config = config.CENTRES[0]
-    centre_config["sftp_root_read"] = "tmp/files"
-    centre = Centre(config, centre_config)
-
-    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
-
-    sample_ids = [testing_priority_samples[0][FIELD_SAMPLE_ID], testing_priority_samples[1][FIELD_SAMPLE_ID]]
-    centre_file.update_important_unprocessed_priority_samples_to_processed(sample_ids)
-
-    priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
-
-    assert priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: sample_ids[0]})[0][FIELD_PROCESSED] is True
-    assert priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: sample_ids[1]})[0][FIELD_PROCESSED] is True

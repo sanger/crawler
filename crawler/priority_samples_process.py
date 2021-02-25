@@ -4,7 +4,7 @@
 import logging
 import logging.config
 
-from typing import Any, List, Dict, Final
+from typing import Any, List, Final
 from crawler.types import ModifiedRow, Config, SampleDoc, SampleDocValue, SamplePriorityDoc
 from crawler.db.mongo import (
     get_mongo_collection,
@@ -13,12 +13,9 @@ from pymongo.database import Database
 
 from crawler.constants import (
     COLLECTION_PRIORITY_SAMPLES,
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_MUST_SEQUENCE,
     FIELD_PROCESSED,
     FIELD_SAMPLE_ID,
     FIELD_MONGODB_ID,
-    FIELD_PREFERENTIALLY_SEQUENCE,
     FIELD_PLATE_BARCODE,
     DART_STATE_PENDING,
     FIELD_SOURCE,
@@ -47,8 +44,7 @@ logger = logging.getLogger(__name__)
 logging_collection = LoggingCollection()
 
 
-# Possibly move to seperate script
-def step_two(db: Database, config: Config) -> None:
+def update_priority_samples(db: Database, config: Config) -> None:
     """
     Update any remaining unprocessed priority samples in MLWH and DART
     Arguments:
@@ -105,33 +101,11 @@ def query_any_unprocessed_samples(db: Database) -> List[SamplePriorityDoc]:
             }
         },
         {"$replaceRoot": {"newRoot": {"$mergeObjects": [{"$arrayElemAt": ["$related_samples", 0]}, "$$ROOT"]}}},
-        {"$project": {"related_samples": 0}}
+        {"$project": {"related_samples": 0}},
     ]
 
     value = priority_samples_collection.aggregate(IMPORTANT_UNPROCESSED_SAMPLES_MONGO_QUERY)
     return list(value)
-
-
-def merge_priority_samples_into_docs_to_insert(priority_samples: List[Any], docs_to_insert: list) -> None:
-    """
-    Updates the sample records with must_sequence and preferentially_sequence values
-
-    Arguments:
-        priority_samples  - priority samples to update docs_to_insert with
-        docs_to_insert {List[Any]} -- the sample records to update
-    """
-
-    def extract_mongo_sample_id(sample: SampleDoc) -> SampleDocValue:
-        return sample[FIELD_MONGODB_ID]
-
-    priority_mongo_sample_ids = list(map(extract_mongo_sample_id, priority_samples))
-
-    for doc in docs_to_insert:
-        mongo_sample_id = extract_mongo_sample_id(doc)
-        if mongo_sample_id in priority_mongo_sample_ids:
-            priority_sample = list(filter(lambda x: extract_mongo_sample_id(x) == mongo_sample_id, priority_samples))[0]
-            doc[FIELD_MUST_SEQUENCE] = priority_sample[FIELD_MUST_SEQUENCE]
-            doc[FIELD_PREFERENTIALLY_SEQUENCE] = priority_sample[FIELD_PREFERENTIALLY_SEQUENCE]
 
 
 def update_unprocessed_priority_samples_to_processed(db: Database, mongo_sample_ids: list) -> None:
@@ -158,11 +132,7 @@ def update_priority_samples_into_mlwh(samples: List[Any], config: Config) -> boo
     Returns:
         {bool} -- True if the insert was successful; otherwise False
     """
-
-    values: List[Dict[str, Any]] = []
-
-    for sample in samples:
-        values.append(map_mongo_sample_to_mysql(sample))
+    values = list(map(map_mongo_sample_to_mysql, samples))
 
     mysql_conn = create_mysql_connection(config, False)
 
@@ -182,7 +152,7 @@ def update_priority_samples_into_mlwh(samples: List[Any], config: Config) -> boo
     else:
         logging_collection.add_error(
             "TYPE 29",
-            "MLWH database inserts failed, could not connect",
+            "MLWH database inserts failed for priority samples, could not connect",
         )
         logger.critical("Error writing to MLWH for priority samples, could not create Database connection")
 

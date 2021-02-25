@@ -1,6 +1,6 @@
 from unittest.mock import patch
 from crawler.db.mongo import get_mongo_collection
-from crawler.priority_samples_process import merge_priority_samples_into_docs_to_insert, step_two, logging_collection
+from crawler.priority_samples_process import update_priority_samples, logging_collection
 from crawler.types import SampleDocValue
 from typing import Any
 from crawler.constants import (
@@ -201,11 +201,11 @@ class TestStepTwo:
             assert self.expected_samples == list(expected_samples)
             assert self.expected_plates == list(expected_plates)
 
-    def test_mlwh_was_correctly_updated_in_step_two(
+    def test_mlwh_was_correctly_updated_in_update_priority_samples(
         self, mongo_database, config, mlwh_connection, with_different_scenarios
     ):
         _, mongo_database = mongo_database
-        step_two(mongo_database, config)
+        update_priority_samples(mongo_database, config)
         cursor = mlwh_connection.cursor(dictionary=True)
         if len(self.expected_mlwh_samples) == 0:
             cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} ")
@@ -225,11 +225,11 @@ class TestStepTwo:
                 assert rows[pos][MLWH_MUST_SEQUENCE] == priority_sample[FIELD_MUST_SEQUENCE]
                 assert rows[pos][MLWH_PREFERENTIALLY_SEQUENCE] == priority_sample[FIELD_PREFERENTIALLY_SEQUENCE]
 
-    def test_mlwh_insert_fails_in_step_two(self, config, mongo_database):
+    def test_mlwh_insert_fails_in_update_priority_samples(self, config, mongo_database):
         _, mongo_database = mongo_database
 
         with patch("crawler.priority_samples_process.run_mysql_executemany_query", side_effect=Exception("Boom!")):
-            step_two(mongo_database, config)
+            update_priority_samples(mongo_database, config)
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
             assert logging_collection.aggregator_types["TYPE 28"].count_errors == 1
@@ -239,7 +239,7 @@ class TestStepTwo:
 
         with patch("crawler.priority_samples_process.create_mysql_connection") as mock_connection:
             mock_connection().is_connected.return_value = False
-            step_two(mongo_database, config)
+            update_priority_samples(mongo_database, config)
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
             assert logging_collection.aggregator_types["TYPE 29"].count_errors == 1
@@ -247,7 +247,7 @@ class TestStepTwo:
     def test_creates_right_number_of_plates_in_dart(self, mongo_database, config, with_different_scenarios):
         _, mongo_database = mongo_database
 
-        step_two(mongo_database, config)
+        update_priority_samples(mongo_database, config)
 
         # plates created
         assert self.mock_add_dart_plate.call_count == len(self.expected_plates)
@@ -261,7 +261,7 @@ class TestStepTwo:
 
         num_wells = len(self.expected_samples)
 
-        step_two(mongo_database, config)
+        update_priority_samples(mongo_database, config)
 
         # wells checked in dart
         assert self.mock_get_well_index.call_count == num_wells
@@ -285,7 +285,7 @@ class TestStepTwo:
     def test_commits_changes_to_dart(self, mongo_database, config, with_different_scenarios):
         _, mongo_database = mongo_database
 
-        step_two(mongo_database, config)
+        update_priority_samples(mongo_database, config)
 
         # commits changes
         self.mock_conn().cursor().rollback.assert_not_called()
@@ -298,7 +298,7 @@ class TestStepTwo:
         _, mongo_database = mongo_database
 
         with patch("crawler.priority_samples_process.add_dart_well_properties", side_effect=Exception("Boom!")):
-            step_two(mongo_database, config)
+            update_priority_samples(mongo_database, config)
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
             assert logging_collection.aggregator_types["TYPE 33"].count_errors == 1
@@ -308,7 +308,7 @@ class TestStepTwo:
 
         with patch("crawler.priority_samples_process.create_dart_sql_server_conn") as mocked_conn:
             mocked_conn().cursor.side_effect = Exception("Boom!!")
-            step_two(mongo_database, config)
+            update_priority_samples(mongo_database, config)
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
             assert logging_collection.aggregator_types["TYPE 30"].count_errors == 1
@@ -319,61 +319,39 @@ class TestStepTwo:
         with patch("crawler.priority_samples_process.create_dart_sql_server_conn") as mock_conn:
             mock_conn.return_value = None
 
-            step_two(mongo_database, config)
+            update_priority_samples(mongo_database, config)
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
             assert logging_collection.aggregator_types["TYPE 31"].count_errors == 1
 
 
-# TODO remove testing_priority_samples from all test headers
-def test_merge_priority_samples_into_docs_to_insert(
-    mongo_database, config, testing_priority_samples, testing_docs_to_insert_for_aldp
-):
-    _, mongo_database = mongo_database
-
-    centre_config = config.CENTRES[0]
-    centre_config["sftp_root_read"] = "tmp/files"
-
-    priority_samples_collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
-    root_sample_ids = ["MCM001", "MCM002"]
-    priority_samples = list(priority_samples_collection.find({FIELD_ROOT_SAMPLE_ID: {"$in": root_sample_ids}}))
-
-    merge_priority_samples_into_docs_to_insert(priority_samples, testing_docs_to_insert_for_aldp)
-
-    assert (FIELD_MUST_SEQUENCE in testing_docs_to_insert_for_aldp[0]) is True
-    assert (FIELD_MUST_SEQUENCE in testing_docs_to_insert_for_aldp[1]) is True
-    assert (FIELD_PREFERENTIALLY_SEQUENCE in testing_docs_to_insert_for_aldp[0]) is True
-    assert (FIELD_PREFERENTIALLY_SEQUENCE in testing_docs_to_insert_for_aldp[1]) is True
-
-
 # We have priority samples that have not been received yet (not in mongodb)
 # Assert: dont do anything with them
-# def test_step_two_unprocessed_priority_sample_not_received_yet():
-
+# def test_update_priority_samples_unprocessed_priority_sample_not_received_yet():
 #     #assert False
 
 # # We have priority samples that were received a while ago
 # # Assert: process them
-# def test_step_two_unprocessed_priority_sample_already_received():
+# def test_update_priority_samples_unprocessed_priority_sample_already_received():
 #     #assert False
 
 # # We have priority samples that were already processed
 # # Assert: dont do anything with them
-# def test_step_two_priority_sample_already_processed():
+# def test_update_priority_samples_priority_sample_already_processed():
 #     #assert False
 
 # # We have priority samples received and where the plate has already started in dart
 # # Assert: update all unpicked with priority samples changes
 # # Assert: it does not change status of picked samples
-# def test_step_two_priority_samples_received_dart_started():
+# def test_update_priority_samples_priority_samples_received_dart_started():
 #     #assert False
 
 # # We have priority samples received and where the plate has not started in dart
 # # Assert: update all unpicked with priority samples changes
-# def test_step_two_priority_samples_received_dart_pending():
+# def test_update_priority_samples_priority_samples_received_dart_pending():
 #     #assert False
 
 # # We have priority samples received and where the plate has been completed in dart
 # # Assert: dont do anything
-# def test_step_two_priority_samples_received_dart_complete():
+# def test_update_priority_samples_priority_samples_received_dart_complete():
 #     #assert False
