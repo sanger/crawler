@@ -203,6 +203,21 @@ class TestStepTwo:
             assert self.expected_dart_samples == list(expected_dart_samples)
             assert self.expected_dart_plates == list(expected_dart_plates)
 
+    def test_when_for_one_priority_sample_doesnt_exist_the_related_sample(
+        self, mongo_database, config, mlwh_connection, with_different_scenarios
+    ):
+        # Creates one error sample priority
+        _, mongo_database = mongo_database
+        collection = get_mongo_collection(mongo_database, COLLECTION_PRIORITY_SAMPLES)
+        _id = collection.find({})[0]['_id']
+        collection.find_one_and_update({"_id": _id}, {"$set": {"sample_id": "aaaaaaaxxxaaaaaaaaaaaaa1"}})
+
+        try:
+            update_priority_samples(mongo_database, config, True)
+        except Exception:
+            pytest.fail("Unexpected error ..")
+
+
     def test_mlwh_was_correctly_updated_in_update_priority_samples(
         self, mongo_database, config, mlwh_connection, with_different_scenarios
     ):

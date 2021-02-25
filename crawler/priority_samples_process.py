@@ -102,6 +102,7 @@ def query_any_unprocessed_samples(db: Database) -> List[SamplePriorityDoc]:
                 "as": "related_samples",
             }
         },
+        {"$match": {"related_samples":{"$ne":[]}}},
         {"$replaceRoot": {"newRoot": {"$mergeObjects": [{"$arrayElemAt": ["$related_samples", 0]}, "$$ROOT"]}}},
         {"$project": {"related_samples": 0}},
     ]
