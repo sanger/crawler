@@ -1,6 +1,6 @@
 from unittest.mock import patch
 from crawler.db.mongo import get_mongo_collection
-from crawler.priority_samples_process import update_priority_samples, logging_collection
+from crawler.priority_samples_process import update_priority_samples, logging_collection, centre_config_for_samples
 from crawler.types import SampleDocValue
 from typing import Any
 from crawler.constants import (
@@ -17,6 +17,7 @@ from crawler.constants import (
     FIELD_COORDINATE,
     FIELD_PROCESSED,
     FIELD_PLATE_BARCODE,
+    FIELD_SOURCE,
 )
 import pytest
 
@@ -55,8 +56,8 @@ class TestStepTwo:
                 "plate_barcodes": ["123", "123", "123", "123"],
                 "plates_status": {"123": DART_STATE_PENDING, "456": DART_STATE_PENDING},
                 "expected_mlwh_samples": [False, False, False, False],
-                "expected_samples": [],
-                "expected_plates": [],
+                "expected_dart_samples": [],
+                "expected_dart_plates": [],
             },
             # Process all, one plate pending
             {
@@ -64,8 +65,8 @@ class TestStepTwo:
                 "plate_barcodes": ["123", "123", "123", "123"],
                 "plates_status": {"123": DART_STATE_PENDING, "456": DART_STATE_PENDING},
                 "expected_mlwh_samples": [True, True, True, True],
-                "expected_samples": [True, True, True, True],
-                "expected_plates": ["123"],
+                "expected_dart_samples": [True, True, True, True],
+                "expected_dart_plates": ["123"],
             },
             # Process all, different plates pending
             {
@@ -73,8 +74,8 @@ class TestStepTwo:
                 "plate_barcodes": ["123", "123", "456", "456"],
                 "plates_status": {"123": DART_STATE_PENDING, "456": DART_STATE_PENDING},
                 "expected_mlwh_samples": [True, True, True, True],
-                "expected_samples": [True, True, True, True],
-                "expected_plates": ["123", "456"],
+                "expected_dart_samples": [True, True, True, True],
+                "expected_dart_plates": ["123", "456"],
             },
             # Process some, different plates pending
             {
@@ -82,8 +83,8 @@ class TestStepTwo:
                 "plate_barcodes": ["123", "123", "456", "456"],
                 "plates_status": {"123": DART_STATE_PENDING, "456": DART_STATE_PENDING},
                 "expected_mlwh_samples": [True, False, True, False],
-                "expected_samples": [True, False, True, False],
-                "expected_plates": ["123", "456"],
+                "expected_dart_samples": [True, False, True, False],
+                "expected_dart_plates": ["123", "456"],
             },
             # Process some, different plates pending, one pending plate nothing to process
             {
@@ -91,8 +92,8 @@ class TestStepTwo:
                 "plate_barcodes": ["123", "123", "456", "456"],
                 "plates_status": {"123": DART_STATE_PENDING, "456": DART_STATE_PENDING},
                 "expected_mlwh_samples": [True, False, False, False],
-                "expected_samples": [True, False, False, False],
-                "expected_plates": ["123"],
+                "expected_dart_samples": [True, False, False, False],
+                "expected_dart_plates": ["123"],
             },
             # Process all, different plates, one plate running
             {
@@ -100,8 +101,8 @@ class TestStepTwo:
                 "plate_barcodes": ["123", "123", "456", "456"],
                 "plates_status": {"123": DART_STATE_PENDING, "456": "RUNNING"},
                 "expected_mlwh_samples": [True, True, True, True],
-                "expected_samples": [True, True, False, False],
-                "expected_plates": ["123", "456"],
+                "expected_dart_samples": [True, True, False, False],
+                "expected_dart_plates": ["123", "456"],
             },
             # Process some, different plates, one plate running, one plate running nothing to process
             {
@@ -109,8 +110,8 @@ class TestStepTwo:
                 "plate_barcodes": ["123", "123", "123", "456"],
                 "plates_status": {"123": DART_STATE_PENDING, "456": "RUNNING"},
                 "expected_mlwh_samples": [True, True, True, False],
-                "expected_samples": [True, True, True, False],
-                "expected_plates": ["123"],
+                "expected_dart_samples": [True, True, True, False],
+                "expected_dart_plates": ["123"],
             },
             # Process all, different plates, all plates running, so no process
             {
@@ -118,8 +119,8 @@ class TestStepTwo:
                 "plate_barcodes": ["123", "123", "123", "456"],
                 "plates_status": {"123": "RUNNING", "456": "RUNNING"},
                 "expected_mlwh_samples": [True, True, True, True],
-                "expected_samples": [False, False, False, False],
-                "expected_plates": ["123", "456"],
+                "expected_dart_samples": [False, False, False, False],
+                "expected_dart_plates": ["123", "456"],
             },
         ]
     )
@@ -162,16 +163,17 @@ class TestStepTwo:
         )
 
         # Set expected dart samples
-        self.expected_samples = list(
+        self.expected_dart_samples = list(
             map(
                 extract_mongo_record,
-                filter(lambda info: info[1], zip(testing_samples, request.param["expected_samples"])),
+                filter(lambda info: info[1], zip(testing_samples, request.param["expected_dart_samples"])),
             )
         )
 
         # Set expected dart plates
-        self.expected_plates = request.param["expected_plates"]
+        self.expected_dart_plates = request.param["expected_dart_plates"]
 
+    # Currently not being ran
     def validate_expected_data(self, with_different_scenarios, testing_priority_samples, testing_samples):
         # Check list of expected mlwh samples
         # Get unprocessed samples from list
@@ -193,13 +195,13 @@ class TestStepTwo:
             )
         )
         if len(result) == 0:
-            assert self.expected_samples == []
-            assert sorted(self.expected_plates) == sorted(set(self.plate_barcodes))
+            assert self.expected_dart_samples == []
+            assert self.expected_dart_plates == set(self.plate_barcodes)
         else:
-            expected_samples, expected_plates, _ = zip(*result)
-            expected_plates = set(expected_plates)
-            assert self.expected_samples == list(expected_samples)
-            assert self.expected_plates == list(expected_plates)
+            expected_dart_samples, expected_dart_plates, _ = zip(*result)
+            expected_dart_plates = set(expected_dart_plates)
+            assert self.expected_dart_samples == list(expected_dart_samples)
+            assert self.expected_dart_plates == list(expected_dart_plates)
 
     def test_mlwh_was_correctly_updated_in_update_priority_samples(
         self, mongo_database, config, mlwh_connection, with_different_scenarios
@@ -250,16 +252,16 @@ class TestStepTwo:
         update_priority_samples(mongo_database, config)
 
         # plates created
-        assert self.mock_add_dart_plate.call_count == len(self.expected_plates)
+        assert self.mock_add_dart_plate.call_count == len(self.expected_dart_plates)
         # 1 commit/plate = 2 commits
-        assert self.mock_conn().cursor().commit.call_count == len(self.expected_plates)
+        assert self.mock_conn().cursor().commit.call_count == len(self.expected_dart_plates)
 
     def test_creates_right_number_of_wells_in_dart(
         self, mongo_database, config, testing_samples, with_different_scenarios
     ):
         _, mongo_database = mongo_database
 
-        num_wells = len(self.expected_samples)
+        num_wells = len(self.expected_dart_samples)
 
         update_priority_samples(mongo_database, config)
 
@@ -268,7 +270,7 @@ class TestStepTwo:
         # wells mapped to dart
         assert self.mock_map.call_count == num_wells
 
-        for doc in self.expected_samples:
+        for doc in self.expected_dart_samples:
             self.mock_get_well_index.assert_any_call(doc[FIELD_COORDINATE])
 
         # wells created in dart
@@ -276,7 +278,7 @@ class TestStepTwo:
 
         # Wells created from plate
         if num_wells > 0:
-            for barcode in self.expected_plates:
+            for barcode in self.expected_dart_plates:
                 if self.plate_status[barcode] == DART_STATE_PENDING:
                     self.mock_set_well_props.assert_any_call(
                         self.mock_conn().cursor(), barcode, self.test_well_props, self.test_well_index
@@ -291,7 +293,7 @@ class TestStepTwo:
         self.mock_conn().cursor().rollback.assert_not_called()
 
         # 1 commit per pending plate
-        assert self.mock_conn().cursor().commit.call_count == len(self.expected_plates)
+        assert self.mock_conn().cursor().commit.call_count == len(self.expected_dart_plates)
         self.mock_conn().close.assert_called_once()
 
     def test_adding_plate_and_wells_to_dart_fails_with_expection(self, mongo_database, config):
@@ -323,6 +325,12 @@ class TestStepTwo:
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
             assert logging_collection.aggregator_types["TYPE 31"].count_errors == 1
+
+    def test_centre_config_for_samples(self, config):
+        result = centre_config_for_samples(config, [{FIELD_SOURCE: "Test Centre"}])
+        assert result["name"] == "Test Centre"
+        assert result["prefix"] == "TEST"
+        assert result["lab_id_default"] == "TE"
 
 
 # We have priority samples that have not been received yet (not in mongodb)

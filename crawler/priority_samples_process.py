@@ -159,6 +159,8 @@ def update_priority_samples_into_mlwh(samples: List[Any], config: Config) -> boo
     return False
 
 
+# TODO: refactor duplicated function insert_plates_and_wells_from_docs_into_dart in file_processing.py
+# possibly refactor to DART helper
 def insert_plates_and_wells_into_dart(docs_to_insert: List[ModifiedRow], config: Config) -> bool:
     """Insert plates and wells into the DART database.
     Create in DART with docs_to_insert

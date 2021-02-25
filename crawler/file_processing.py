@@ -657,7 +657,8 @@ class CentreFile:
             logger.exception(e)
             return []
 
-    # TODO: refactor duplicated function
+    # TODO: Duplicate method to update_priority_samples_into_mlwh in prioriry_samples_process.py
+    # possibly refactor to MLWH helper
     def insert_samples_from_docs_into_mlwh(self, docs_to_insert: List[ModifiedRow]) -> bool:
         """Insert sample records into the MLWH database from the parsed file information, including the corresponding
         mongodb _id
@@ -695,7 +696,8 @@ class CentreFile:
 
         return False
 
-    # TODO: refactor duplicated function
+    # TODO: refactor duplicated function insert_plates_and_wells_into_dart in priority_samples_process.py
+    # possibly refactor to DART helper
     def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[ModifiedRow]) -> bool:
         """Insert plates and wells into the DART database.
         Create in DART with docs_to_insert including must_seq/ pre_seq
