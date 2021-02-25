@@ -74,33 +74,6 @@ The following runtime flags are available:
     --add-to-dart add samples to DART, by default they are not
 
 
-## Priority samples
-
-If a sample is prioritised it will be treated the same as a fit_to_pick sample. Priorities could be
-referring to samples currently received (Step 1), or to samples received in previous days, but that we didn't
-have the priority until after being received (Step 2); depending on these two conditions the sample would be
-processed in a different stage.
-
-### Priorites Step 1:
-
-During the file centres processing (named as Priorities Step 1), the sample will be:
-   - Inserted in Mongodb Samples as usual
-   - Inserted in MLWH lighthouse_sample with the values of the priority added to it
-   - Inserted in DART as pickable if the plate is in state 'pending'
-   - Updated as 'processed'
-
-This step will always take the sample and update the priorities if they exist
-**it doesnt filter out unprocessed samples as step 2**. This means we need to make sure
-that the value in priorities_samples is up to date.
-
-### Priorites Step 2:
-
-After the file centres processing (named as Priorities Step 2), any existing
-priority samples flagged as unprocessed will be:
-   - Updated in MLWH lighthouse_sample with the values of the priority added to it
-   - Inserted in DART as pickable if the plate is in state 'pending'.
-   - Updated as 'processed' so it won't be processed again unless there is a change for it
-
 ## Migrations
 
 ### Updating the MLWH lighthouse_sample table
@@ -126,12 +99,20 @@ The process should not duplicate rows that are already present in MLWH, so you c
 range.
 
 ### Priority Samples
+If a sample is prioritised it will be treated the same as a fit_to_pick sample.
 
 #### Glossary:
-- **Priority**: samples in the priority collection
 - **Important**: refers to samples that have must_sequence or preferentially_sequence to True
-- **Important** or Positive: refers to samples that have a Positive Result of are Important
-- **Pickable**: samples that have Filtered Positive Result or are Important
+- **Important Or Positive**: refers to samples that have a _Positive_ Result of are Important
+- **Pickable**: samples that have _Filtered Positive_ Result or are Important
+
+#### Step 2 (in main.py):
+After the file centres processing, any existing
+priority samples flagged as unprocessed will be:
+   - Updated in MLWH lighthouse_sample with the values of the priority (must_sequence and preferentially_sequence) added to it
+   - Inserted in DART as pickable if the plate is in state 'pending'
+   - Updated as 'processed' in mongo so it won't be processed again unless there is a change for it
+
 
 ### Filtered Positive Rules
 
