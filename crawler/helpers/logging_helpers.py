@@ -428,8 +428,6 @@ class LoggingCollection:
             "TYPE 31": AggregateType31(),
             "TYPE 32": AggregateType32(),
             "TYPE 33": AggregateType33(),
-            # new TYPE 28 error for when updating priority samples update to processed: true
-            # add to confluence
         }
 
     def add_error(self, aggregate_error_type, message):

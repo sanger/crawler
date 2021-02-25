@@ -662,7 +662,6 @@ class CentreFile:
     def insert_samples_from_docs_into_mlwh(self, docs_to_insert: List[ModifiedRow]) -> bool:
         """Insert sample records into the MLWH database from the parsed file information, including the corresponding
         mongodb _id
-        Create all samples in MLWH with docs_to_insert including must_seq/ pre_seq
 
         Arguments:
             docs_to_insert {List[ModifiedRow]} -- List of filtered sample information extracted from CSV files.
