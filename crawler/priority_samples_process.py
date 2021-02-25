@@ -68,7 +68,7 @@ def update_priority_samples(db: Database, config: Config, add_to_dart: bool) -> 
         if add_to_dart:
             logger.info("Adding to DART")
             dart_success = insert_plates_and_wells_into_dart(samples, config)
-        if (not (add_to_dart) or dart_success):
+        if not (add_to_dart) or dart_success:
             logger.info("Updating Mongodb priority samples to processed")
             # use stored identifiers to update priority_samples table to processed true
             sample_ids = list(map(extract_mongo_id, samples))
