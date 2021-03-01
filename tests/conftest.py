@@ -3,10 +3,6 @@ import logging
 import logging.config
 import shutil
 from unittest.mock import patch
-
-import datetime
-from bson.objectid import ObjectId
-
 import pytest
 import sqlalchemy
 from sqlalchemy import MetaData

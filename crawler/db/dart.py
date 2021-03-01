@@ -167,9 +167,7 @@ def add_dart_well_properties(cursor: pyodbc.Cursor, sample: SampleDoc, plate_bar
         )
 
 
-def add_dart_well_properties_if_positive(
-    cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str
-) -> None:
+def add_dart_well_properties_if_positive(cursor: pyodbc.Cursor, sample: SampleDoc, plate_barcode: str) -> None:
     """Adds well properties to DART for the specified sample if that sample is positive
         or must_sequence or preferentially_sequence
 

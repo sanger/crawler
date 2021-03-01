@@ -98,7 +98,7 @@ from crawler.types import (
     RowSignature,
     SourcePlateDoc,
     SampleDoc,
-    SampleDocValue,
+    ModifiedRowValue,
 )
 
 logger = logging.getLogger(__name__)
@@ -706,7 +706,7 @@ class CentreFile:
             {bool} -- True if the insert was successful; otherwise False
         """
 
-        def extract_plate_barcode(sample: SampleDoc) -> SampleDocValue:
+        def extract_plate_barcode(sample: SampleDoc) -> ModifiedRowValue:
             return sample[FIELD_PLATE_BARCODE]
 
         if (sql_server_connection := create_dart_sql_server_conn(self.config)) is not None:

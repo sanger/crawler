@@ -5,7 +5,7 @@ import logging
 import logging.config
 
 from typing import Any, List, Final
-from crawler.types import ModifiedRow, Config, SampleDoc, SampleDocValue, SamplePriorityDoc
+from crawler.types import ModifiedRow, Config, SampleDoc, SamplePriorityDoc, ModifiedRowValue
 from crawler.db.mongo import (
     get_mongo_collection,
 )
@@ -52,7 +52,7 @@ def update_priority_samples(db: Database, config: Config, add_to_dart: bool) -> 
         config {Config} -- config for mysql and dart connections
     """
 
-    def extract_mongo_id(sample: SampleDoc) -> SampleDocValue:
+    def extract_mongo_id(sample: SampleDoc) -> ModifiedRowValue:
         return sample[FIELD_MONGODB_ID]
 
     logger.info("Starting Step 2")
