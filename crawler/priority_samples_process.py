@@ -1,10 +1,11 @@
 #
-# This helper module will contain all functions required for running Step 2
+# This helper module will contain all functions required for updating the
+# priority information of the samples
 #
 import logging
 import logging.config
 
-from typing import Any, List, Final
+from typing import Any, List, Final, Iterator, Tuple
 from crawler.types import ModifiedRow, Config, SampleDoc, SamplePriorityDoc, ModifiedRowValue
 from crawler.db.mongo import (
     get_mongo_collection,
@@ -21,23 +22,19 @@ from crawler.constants import (
     FIELD_SOURCE,
 )
 
-from crawler.helpers.general_helpers import (
-    map_mongo_sample_to_mysql,
-)
-
 from more_itertools import groupby_transform
 
 from crawler.helpers.logging_helpers import LoggingCollection
 
-from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
+from crawler.db.mysql import (
+    insert_or_update_samples_in_mlwh,
+)
 
 from crawler.db.dart import (
     create_dart_sql_server_conn,
     add_dart_plate_if_doesnt_exist,
     add_dart_well_properties,
 )
-
-from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +43,11 @@ logging_collection = LoggingCollection()
 
 def update_priority_samples(db: Database, config: Config, add_to_dart: bool) -> None:
     """
-    Update any remaining unprocessed priority samples in MLWH and DART
+    Update any unprocessed priority samples in MLWH and DART with an up to date
+    value for the priority attributes (must_sequence and preferentially_sequence);
+    after this, all correctly processed priorities from the collection priority_samples
+    will be flagged with processed: True
+
     Arguments:
         db {Database} -- mongo db instance
         config {Config} -- config for mysql and dart connections
@@ -55,7 +56,8 @@ def update_priority_samples(db: Database, config: Config, add_to_dart: bool) -> 
     def extract_mongo_id(sample: SampleDoc) -> ModifiedRowValue:
         return sample[FIELD_MONGODB_ID]
 
-    logger.info("Starting Step 2")
+    logger.info("**********************************")
+    logger.info("Starting Prioritisation of samples")
 
     samples = query_any_unprocessed_samples(db)
 
@@ -76,20 +78,21 @@ def update_priority_samples(db: Database, config: Config, add_to_dart: bool) -> 
 
 
 def query_any_unprocessed_samples(db: Database) -> List[SamplePriorityDoc]:
+    """
+    Returns the list of unprocessed priority samples (from priority_samples mongo collection)
+    that have at least one related sample (from samples mongo collection).
+
+    Arguments:
+        db {Database} -- mongo db instance
+    """
     priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
 
-    # Query:
-    # get all unprocessed priority samples, we want to update also samples that have changed their importance
-    # join on the samples collection using sample_id in priority_samples collection to _id in the samples collection
-    # flatten object so sample fields are at the same level as the priority samples fields, removing
-    # the nested sample object return a list of the samples
-    # e.g db.priority_samples.aggregate([{"$match":{"$and": [
-    # {"processed": false} ]}}, {"$lookup": {"from": "samples", "let": {"sample_id": "$_id"},"pipeline":
-    # [{"$match": {"$expr": {"$and":[{"$eq": ["$sample_id", "$$sample_id"]}]}}}], "as": "from_samples"}}])
     IMPORTANT_UNPROCESSED_SAMPLES_MONGO_QUERY: Final[List[object]] = [
+        # All unprocessed priority samples
         {
             "$match": {FIELD_PROCESSED: False},
         },
+        # Joins priority_samples and samples
         {
             "$lookup": {
                 "from": "samples",
@@ -99,9 +102,11 @@ def query_any_unprocessed_samples(db: Database) -> List[SamplePriorityDoc]:
             }
         },
         # match is required so "Exception: Cannot unpad coordinate" isn't thrown
-        # if there isnt a related sample for the priority sample
+        # Only priority samples with a sample associated with them
         {"$match": {"related_samples": {"$ne": []}}},
+        # Copy all sample attributes into the root of the object (merge sample+priority_sample)
         {"$replaceRoot": {"newRoot": {"$mergeObjects": [{"$arrayElemAt": ["$related_samples", 0]}, "$$ROOT"]}}},
+        # Prune the branch for related samples as all that info is now in the root of the object
         {"$project": {"related_samples": 0}},
     ]
 
@@ -121,47 +126,10 @@ def update_unprocessed_priority_samples_to_processed(db: Database, mongo_sample_
     logger.info("Mongo update of processed for priority samples successful")
 
 
-# TODO: Duplicate method to insert_samples_from_docs_into_mlwh in file_processing.py
-# possibly refactor to MLWH helper
 def update_priority_samples_into_mlwh(samples: List[Any], config: Config) -> bool:
-    """Update sample records in the MLWH database from unprocessed priority samples,
-    including the corresponding mongodb _id, must_seqequence, preferentially_sequence
-
-    Arguments:
-        samples {List[Any]} -- List of unprocessed priority samples
-
-    Returns:
-        {bool} -- True if the insert was successful; otherwise False
-    """
-    values = list(map(map_mongo_sample_to_mysql, samples))
-
-    mysql_conn = create_mysql_connection(config, False)
-
-    if mysql_conn is not None and mysql_conn.is_connected():
-        try:
-            run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
-
-            logger.debug("MLWH database inserts completed successfully for priority samples")
-            return True
-        except Exception as e:
-            logging_collection.add_error(
-                "TYPE 28",
-                "MLWH database inserts failed for priority samples",
-            )
-            logger.critical(f"Critical error while processing priority samples': {e}")
-            logger.exception(e)
-    else:
-        logging_collection.add_error(
-            "TYPE 29",
-            "MLWH database inserts failed for priority samples, could not connect",
-        )
-        logger.critical("Error writing to MLWH for priority samples, could not create Database connection")
-
-    return False
+    return insert_or_update_samples_in_mlwh(samples, config, True, logging_collection)
 
 
-# TODO: refactor duplicated function insert_plates_and_wells_from_docs_into_dart in file_processing.py
-# possibly refactor to DART helper
 def insert_plates_and_wells_into_dart(docs_to_insert: List[ModifiedRow], config: Config) -> bool:
     """Insert plates and wells into the DART database.
     Create in DART with docs_to_insert
@@ -172,21 +140,26 @@ def insert_plates_and_wells_into_dart(docs_to_insert: List[ModifiedRow], config:
     Returns:
         {bool} -- True if the insert was successful; otherwise False
     """
+
+    def extract_plate_barcode(sample: SampleDoc) -> ModifiedRowValue:
+        return sample[FIELD_PLATE_BARCODE]
+
     if (sql_server_connection := create_dart_sql_server_conn(config)) is not None:
         try:
             cursor = sql_server_connection.cursor()
-            for plate_barcode, samples in groupby_transform(  # type: ignore
-                docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]
-            ):
+
+            group_iterator: Iterator[Tuple[Any, Any]] = groupby_transform(docs_to_insert, extract_plate_barcode)
+
+            for plate_barcode, samples in group_iterator:
                 try:
                     samples = list(samples)
                     centre_config = centre_config_for_samples(config, samples)
                     plate_state = add_dart_plate_if_doesnt_exist(
-                        cursor, plate_barcode, centre_config["biomek_labware_class"]  # type: ignore
+                        cursor, plate_barcode, centre_config["biomek_labware_class"]
                     )
                     if plate_state == DART_STATE_PENDING:
                         for sample in samples:
-                            add_dart_well_properties(cursor, sample, plate_barcode)  # type: ignore
+                            add_dart_well_properties(cursor, sample, plate_barcode)
                     cursor.commit()
                 except Exception as e:
                     logging_collection.add_error(

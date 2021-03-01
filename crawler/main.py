@@ -101,7 +101,6 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                         if sftp:
                             centre_instance.download_csv_files()
 
-                        # Step 1
                         centre_instance.process_files(add_to_dart)
                     except Exception as e:
                         logger.error("An exception occured")
@@ -111,7 +110,7 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                         if not keep_files and centre_instance.is_download_dir_walkable:
                             centre_instance.clean_up()
 
-                # Step 2
+                # Prioritisation of samples
                 update_priority_samples(db, config, add_to_dart)
 
         logger.info(f"Import complete in {round(time.time() - start, 2)}s")

@@ -1,6 +1,6 @@
 from unittest.mock import patch
 from crawler.db.mongo import get_mongo_collection
-from crawler.priority_samples_process import update_priority_samples, logging_collection, centre_config_for_samples
+from crawler.priority_samples_process import update_priority_samples, centre_config_for_samples, logging_collection
 from typing import Dict, Tuple
 from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
@@ -174,36 +174,6 @@ class TestPrioritySamplesProcess:
         # Set expected dart plates
         self.expected_dart_plates = request.param["expected_dart_plates"]
 
-    # Currently not being ran
-    # TODO fix/check/delete
-    # def validate_expected_data(self, with_different_scenarios, testing_priority_samples, testing_samples):
-    #     # Check list of expected mlwh samples
-    #     # Get unprocessed samples from list
-    #     def extract_priority_sample(info: RecordScenarioList) -> Dict:
-    #         return info[0]
-
-    #     expected_mlwh_samples = list(
-    #         map(
-    #             extract_priority_sample,
-    #             filter(lambda info: not (info[1]), zip(testing_priority_samples, self.processed_status)),
-    #         )
-    #     )
-    #     assert self.expected_mlwh_samples == expected_mlwh_samples
-    #     # Check list of expected dart samples and plates
-    #     result = list(
-    #         filter(
-    #             lambda info: ((self.plate_status[info[1]] == DART_STATE_PENDING) and not (info[2])),
-    #             zip(testing_samples, self.plate_barcodes, self.processed_status),
-    #         )
-    #     )
-    #     if len(result) == 0:
-    #         assert self.expected_dart_samples == []
-    #         assert self.expected_dart_plates == set(self.plate_barcodes)
-    #     else:
-    #         expected_dart_samples, expected_dart_plates, _ = zip(*result)
-    #         expected_dart_plates = set(expected_dart_plates)
-    #         assert self.expected_dart_samples == list(expected_dart_samples)
-    #         assert self.expected_dart_plates == list(expected_dart_plates)
 
     def test_when_for_one_priority_sample_doesnt_exist_the_related_sample(
         self, mongo_database, config, mlwh_connection, with_different_scenarios
@@ -221,7 +191,6 @@ class TestPrioritySamplesProcess:
             # so if there isnt a match, an Exception isn't thrown but handled
             pytest.fail("Unexpected error ..")
 
-
     def test_mlwh_not_updated_when_no_priority_samples_in_update_priority_samples(
         self, mongo_database, config, mlwh_connection, with_different_scenarios
     ):
@@ -233,7 +202,6 @@ class TestPrioritySamplesProcess:
             rows = cursor.fetchall()
             cursor.close()
             assert len(rows) == 0
-
 
     def test_mlwh_was_correctly_updated_in_update_priority_samples(
         self, mongo_database, config, mlwh_connection, with_different_scenarios
@@ -262,7 +230,7 @@ class TestPrioritySamplesProcess:
     def test_mlwh_insert_fails_in_update_priority_samples(self, config, mongo_database):
         _, mongo_database = mongo_database
 
-        with patch("crawler.priority_samples_process.run_mysql_executemany_query", side_effect=Exception("Boom!")):
+        with patch("crawler.db.mysql.run_mysql_executemany_query", side_effect=Exception("Boom!")):
             update_priority_samples(mongo_database, config, True)
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
@@ -271,7 +239,7 @@ class TestPrioritySamplesProcess:
     def test_mlwh_mysql_cannot_connect(self, config, mongo_database):
         _, mongo_database = mongo_database
 
-        with patch("crawler.priority_samples_process.create_mysql_connection") as mock_connection:
+        with patch("crawler.db.mysql.create_mysql_connection") as mock_connection:
             mock_connection().is_connected.return_value = False
             update_priority_samples(mongo_database, config, True)
 

@@ -328,10 +328,10 @@ class AggregateType28(AggregateTypeBase):
         self.type_str = "TYPE 28"
         self.error_level = ErrorLevel.CRITICAL
         self.message = (
-            f"{self.error_level.name}: Samples from priority where the MLWH database "
+            f"{self.error_level.name}: Priority samples where the MLWH database "
             f"insert has failed. ({self.type_str})"
         )
-        self.short_display_description = "Failed MLWH inserts"
+        self.short_display_description = "Priority samples - Failed MLWH inserts"
 
 
 class AggregateType29(AggregateTypeBase):
@@ -340,10 +340,10 @@ class AggregateType29(AggregateTypeBase):
         self.type_str = "TYPE 29"
         self.error_level = ErrorLevel.CRITICAL
         self.message = (
-            f"{self.error_level.name}: Samples from priority where the MLWH database connection "
+            f"{self.error_level.name}: Priority samples where the MLWH database connection "
             f"could not be made. ({self.type_str})"
         )
-        self.short_display_description = "Failed MLWH connection"
+        self.short_display_description = "Priority samples - Failed MLWH connection"
 
 
 class AggregateType30(AggregateTypeBase):
@@ -354,7 +354,7 @@ class AggregateType30(AggregateTypeBase):
         self.message = (
             f"{self.error_level.name}: Priority samples where all DART database inserts have failed. ({self.type_str})"
         )
-        self.short_display_description = "Failed DART priority samples inserts"
+        self.short_display_description = "Priority samples - Failed DART inserts"
 
 
 class AggregateType31(AggregateTypeBase):
@@ -366,7 +366,7 @@ class AggregateType31(AggregateTypeBase):
             f"{self.error_level.name}: Priority samples where the DART database connection "
             f"could not be made. ({self.type_str})"
         )
-        self.short_display_description = "Failed priority samples DART connection"
+        self.short_display_description = "Priority samples - Failed priority DART connection"
 
 
 class AggregateType32(AggregateTypeBase):
@@ -378,7 +378,7 @@ class AggregateType32(AggregateTypeBase):
             f"{self.error_level.name}: Priority samples that we have in Mongodb "
             f"but they are still unprocessed. ({self.type_str})"
         )
-        self.short_display_description = "Step 2 validation failure"
+        self.short_display_description = "Priority samples - Validation failure"
 
 
 class AggregateType33(AggregateTypeBase):
@@ -390,7 +390,7 @@ class AggregateType33(AggregateTypeBase):
             "{self.error_level.name}: Priority samples where the DART database inserts have failed for some plates. "
             f"({self.type_str})"
         )
-        self.short_display_description = "Failed DART plate inserts - Step 2"
+        self.short_display_description = "Priority samples - Failed DART plate inserts"
 
 
 # Class to handle logging of errors of the various types per file

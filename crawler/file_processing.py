@@ -74,8 +74,7 @@ from crawler.db.dart import (
 from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
 
 from crawler.db.mysql import (
-    create_mysql_connection,
-    run_mysql_executemany_query,
+    insert_or_update_samples_in_mlwh,
 )
 
 from crawler.filtered_positive_identifier import current_filtered_positive_identifier
@@ -84,11 +83,10 @@ from crawler.helpers.general_helpers import (
     create_source_plate_doc,
     current_time,
     get_sftp_connection,
-    map_mongo_sample_to_mysql,
     pad_coordinate,
 )
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
+
 from crawler.types import (
     CentreConf,
     CentreDoc,
@@ -654,46 +652,11 @@ class CentreFile:
             logger.exception(e)
             return []
 
-    # TODO: Duplicate method to update_priority_samples_into_mlwh in prioriry_samples_process.py
-    # possibly refactor to MLWH helper
     def insert_samples_from_docs_into_mlwh(self, docs_to_insert: List[ModifiedRow]) -> bool:
-        """Insert sample records into the MLWH database from the parsed file information, including the corresponding
-        mongodb _id
+        return insert_or_update_samples_in_mlwh(
+            docs_to_insert, self.config, False, self.logging_collection, self.file_name
+        )
 
-        Arguments:
-            docs_to_insert {List[ModifiedRow]} -- List of filtered sample information extracted from CSV files.
-
-        Returns:
-            {bool} -- True if the insert was successful; otherwise False
-        """
-        values = list(map(map_mongo_sample_to_mysql, docs_to_insert))
-
-        mysql_conn = create_mysql_connection(self.config, False)
-
-        if mysql_conn is not None and mysql_conn.is_connected():
-            try:
-                run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
-
-                logger.debug(f"MLWH database inserts completed successfully for file {self.file_name}")
-                return True
-            except Exception as e:
-                self.logging_collection.add_error(
-                    "TYPE 14",
-                    f"MLWH database inserts failed for file {self.file_name}",
-                )
-                logger.critical(f"Critical error while processing file '{self.file_name}': {e}")
-                logger.exception(e)
-        else:
-            self.logging_collection.add_error(
-                "TYPE 15",
-                f"MLWH database inserts failed, could not connect, for file {self.file_name}",
-            )
-            logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
-
-        return False
-
-    # TODO: refactor duplicated function insert_plates_and_wells_into_dart in priority_samples_process.py
-    # possibly refactor to DART helper
     def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[ModifiedRow]) -> bool:
         """Insert plates and wells into the DART database. New plates will be created if they didnt exist
         previously. New wells will only be created if the plate they belong to is in state 'pending', and

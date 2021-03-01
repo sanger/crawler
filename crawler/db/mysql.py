@@ -1,4 +1,6 @@
 import logging
+from crawler.helpers.logging_helpers import LoggingCollection
+
 from typing import Any, Dict, List, cast
 
 import mysql.connector as mysql
@@ -6,8 +8,12 @@ import sqlalchemy
 from mysql.connector.connection_cext import CMySQLConnection
 from mysql.connector.cursor_cext import CMySQLCursor
 from sqlalchemy.engine.base import Engine
+from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
-from crawler.types import Config
+from crawler.types import Config, ModifiedRow
+from crawler.helpers.general_helpers import (
+    map_mongo_sample_to_mysql,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -199,3 +205,68 @@ def create_mysql_connection_engine(connection_string: str, database: str = "") -
         create_engine_string += f"/{database}"
 
     return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
+
+
+def insert_or_update_samples_in_mlwh(
+    samples: List[ModifiedRow],
+    config: Config,
+    priority_samples: bool,
+    logging_collection: LoggingCollection,
+    file_name: str = "",
+) -> bool:
+    """Insert or update sample records into the MLWH database from the given samples, including the corresponding
+    mongodb _id, must_seqequence, preferentially_sequence
+
+    Arguments:
+        samples {List[ModifiedRow]} -- List of sample information
+        config {Config} --
+        priority_samples {bool} --
+        logging_collection {LoggingCollection} --
+        file_name {str} --
+
+    Returns:
+        {bool} -- True if the insert was successful; otherwise False
+    """
+    values = list(map(map_mongo_sample_to_mysql, samples))
+    mysql_conn = create_mysql_connection(config, False)
+
+    if mysql_conn is not None and mysql_conn.is_connected():
+        try:
+            run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
+            # refactor
+            if priority_samples:
+                logger.debug("MLWH database inserts completed successfully for priority samples")
+            else:
+                logger.debug(f"MLWH database inserts completed successfully for file {file_name}")
+
+            return True
+        except Exception as e:
+            # refactor
+            if priority_samples:
+                logging_collection.add_error(
+                    "TYPE 28",
+                    "MLWH database inserts failed for priority samples",
+                )
+                logger.critical(f"Critical error while processing priority samples': {e}")
+            else:
+                logging_collection.add_error(
+                    "TYPE 14",
+                    f"MLWH database inserts failed for file {file_name}",
+                )
+                logger.critical(f"Critical error while processing file '{file_name}': {e}")
+            logger.exception(e)
+    else:
+        if priority_samples:
+            logging_collection.add_error(
+                "TYPE 29",
+                "MLWH database inserts failed for priority samples, could not connect",
+            )
+            logger.critical("Error writing to MLWH for priority samples, could not create Database connection")
+        else:
+            logging_collection.add_error(
+                "TYPE 15",
+                f"MLWH database inserts failed, could not connect, for file {file_name}",
+            )
+            logger.critical(f"Error writing to MLWH for file {file_name}, could not create Database connection")
+
+    return False
