@@ -5,7 +5,7 @@
 import logging
 import logging.config
 
-from typing import Any, List, Final, Iterator, Tuple
+from typing import Any, List, Final, Iterator, Tuple, Dict
 from crawler.types import ModifiedRow, Config, SampleDoc, SamplePriorityDoc, ModifiedRowValue
 from crawler.db.mongo import (
     get_mongo_collection,
@@ -126,8 +126,26 @@ def update_unprocessed_priority_samples_to_processed(db: Database, mongo_sample_
     logger.info("Mongo update of processed for priority samples successful")
 
 
+def logging_message_object() -> Dict:
+    return {
+        "success": {
+            "msg": "MLWH database inserts completed successfully for priority samples",
+        },
+        "insert_failure": {
+            "error_type": "TYPE 28",
+            "msg": "MLWH database inserts failed for priority samples",
+            "critical_msg": f"Critical error while processing priority samples'",
+        },
+        "connection_failure": {
+            "error_type": "TYPE 29",
+            "msg": "MLWH database inserts failed for priority samples, could not connect",
+            "critical_msg": "Error writing to MLWH for priority samples, could not create Database connection",
+        },
+    }
+
+
 def update_priority_samples_into_mlwh(samples: List[Any], config: Config) -> bool:
-    return insert_or_update_samples_in_mlwh(samples, config, True, logging_collection)
+    return insert_or_update_samples_in_mlwh(samples, config, True, logging_collection, logging_message_object())
 
 
 def insert_plates_and_wells_into_dart(docs_to_insert: List[ModifiedRow], config: Config) -> bool:

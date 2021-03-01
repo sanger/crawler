@@ -652,9 +652,26 @@ class CentreFile:
             logger.exception(e)
             return []
 
+    def logging_message_object(self) -> Dict:
+        return {
+            "success": {
+                "msg": "MLWH database inserts completed successfully for file: {self.file_name}",
+            },
+            "insert_failure": {
+                "error_type": "TYPE 14",
+                "msg": f"MLWH database inserts failed for file {self.file_name}",
+                "critical_msg": f"Critical error while processing file '{self.file_name}'",
+            },
+            "connection_failure": {
+                "error_type": "TYPE 15",
+                "msg": f"MLWH database inserts failed, could not connect, for file {self.file_name}",
+                "critical_msg": f"Error writing to MLWH for file {self.file_name}, could not create Database connection",
+            },
+        }
+
     def insert_samples_from_docs_into_mlwh(self, docs_to_insert: List[ModifiedRow]) -> bool:
         return insert_or_update_samples_in_mlwh(
-            docs_to_insert, self.config, False, self.logging_collection, self.file_name
+            docs_to_insert, self.config, False, self.logging_collection, self.logging_message_object()
         )
 
     def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[ModifiedRow]) -> bool:

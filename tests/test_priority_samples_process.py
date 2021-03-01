@@ -174,7 +174,6 @@ class TestPrioritySamplesProcess:
         # Set expected dart plates
         self.expected_dart_plates = request.param["expected_dart_plates"]
 
-
     def test_when_for_one_priority_sample_doesnt_exist_the_related_sample(
         self, mongo_database, config, mlwh_connection, with_different_scenarios
     ):

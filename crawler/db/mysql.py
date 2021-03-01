@@ -212,7 +212,7 @@ def insert_or_update_samples_in_mlwh(
     config: Config,
     priority_samples: bool,
     logging_collection: LoggingCollection,
-    file_name: str = "",
+    logging_messages: Dict,
 ) -> bool:
     """Insert or update sample records into the MLWH database from the given samples, including the corresponding
     mongodb _id, must_seqequence, preferentially_sequence
@@ -222,7 +222,7 @@ def insert_or_update_samples_in_mlwh(
         config {Config} --
         priority_samples {bool} --
         logging_collection {LoggingCollection} --
-        file_name {str} --
+        logging_messages {Dict} --
 
     Returns:
         {bool} -- True if the insert was successful; otherwise False
@@ -233,40 +233,20 @@ def insert_or_update_samples_in_mlwh(
     if mysql_conn is not None and mysql_conn.is_connected():
         try:
             run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
-            # refactor
-            if priority_samples:
-                logger.debug("MLWH database inserts completed successfully for priority samples")
-            else:
-                logger.debug(f"MLWH database inserts completed successfully for file {file_name}")
 
+            logger.debug(logging_messages["success"]["msg"])
             return True
         except Exception as e:
-            # refactor
-            if priority_samples:
-                logging_collection.add_error(
-                    "TYPE 28",
-                    "MLWH database inserts failed for priority samples",
-                )
-                logger.critical(f"Critical error while processing priority samples': {e}")
-            else:
-                logging_collection.add_error(
-                    "TYPE 14",
-                    f"MLWH database inserts failed for file {file_name}",
-                )
-                logger.critical(f"Critical error while processing file '{file_name}': {e}")
+            logging_collection.add_error(
+                logging_messages["insert_failure"]["error_type"], logging_messages["insert_failure"]["msg"]
+            )
+            logger.critical(f"{logging_messages['insert_failure']['critical_msg']}: {e}")
             logger.exception(e)
     else:
-        if priority_samples:
-            logging_collection.add_error(
-                "TYPE 29",
-                "MLWH database inserts failed for priority samples, could not connect",
-            )
-            logger.critical("Error writing to MLWH for priority samples, could not create Database connection")
-        else:
-            logging_collection.add_error(
-                "TYPE 15",
-                f"MLWH database inserts failed, could not connect, for file {file_name}",
-            )
-            logger.critical(f"Error writing to MLWH for file {file_name}, could not create Database connection")
+        logging_collection.add_error(
+            logging_messages["connection_failure"]["error_type"],
+            logging_messages["connection_failure"]["msg"],
+        )
+        logger.critical(logging_messages["connection_failure"]["critical_msg"])
 
     return False
