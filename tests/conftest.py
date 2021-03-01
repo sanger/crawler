@@ -34,7 +34,6 @@ from tests.data.testing_objects import (
     MONGO_SAMPLES_WITHOUT_FILTERED_POSITIVE_FIELDS,
     TESTING_SAMPLES,
     TESTING_PRIORITY_SAMPLES,
-    TESTING_PRIORITY_SAMPLES_FOR_ALDP,
 )
 
 logger = logging.getLogger(__name__)
@@ -161,16 +160,6 @@ def testing_priority_samples(priority_samples_collection_accessor):
 
 
 @pytest.fixture
-def testing_priority_samples_for_aldp(priority_samples_collection_accessor):
-    result = priority_samples_collection_accessor.insert_many(TESTING_PRIORITY_SAMPLES_FOR_ALDP)
-    samples = list(priority_samples_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
-    try:
-        yield samples
-    finally:
-        priority_samples_collection_accessor.delete_many({})
-
-
-@pytest.fixture
 def filtered_positive_testing_samples(samples_collection_accessor):
     result = samples_collection_accessor.insert_many(FILTERED_POSITIVE_TESTING_SAMPLES)
     samples = list(samples_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
@@ -178,58 +167,6 @@ def filtered_positive_testing_samples(samples_collection_accessor):
         yield samples
     finally:
         samples_collection_accessor.delete_many({})
-
-
-@pytest.fixture
-def testing_docs_to_insert_for_aldp():
-    yield [
-        {
-            "Root Sample ID": "MCM001",
-            "Result": "Negative",
-            "Date Tested": datetime.datetime(2020, 4, 16, 14, 30, 40, tzinfo=datetime.timezone.utc),
-            "RNA ID": "AP123_A09",
-            "RNA-PCR ID": "CF06CR9S_B01",
-            "Viral Prep ID": "1",
-            "Lab ID": "AP",
-            "source": "Alderley",
-            "plate_barcode": "AP123",
-            "coordinate": "A09",
-            "line_number": 2,
-            "file_name": "AP_sanger_report_200503_2338.csv",
-            "file_name_date": datetime.datetime(2020, 5, 3, 23, 38),
-            "created_at": datetime.datetime(2021, 2, 17, 12, 10, 46, 289533),
-            "updated_at": datetime.datetime(2021, 2, 17, 12, 10, 46, 289562),
-            "filtered_positive": False,
-            "filtered_positive_version": "v2",
-            "filtered_positive_timestamp": datetime.datetime(2021, 2, 17, 12, 10, 46, 289602),
-            "lh_sample_uuid": "2b6a05d5-ea8b-43eb-83e9-41d0532a7129",
-            "lh_source_plate_uuid": "6f9fe8d1-8adf-4fb7-b4c3-cb34269b3042",
-            "_id": ObjectId("602d07cbb213594f0b4a9dc6"),
-        },
-        {
-            "Root Sample ID": "MCM002",
-            "Result": "Positive",
-            "Date Tested": datetime.datetime(2020, 4, 16, 14, 30, 40, tzinfo=datetime.timezone.utc),
-            "RNA ID": "AP123_A08",
-            "RNA-PCR ID": "CF06CR9S_B02",
-            "Viral Prep ID": "2",
-            "Lab ID": "AP",
-            "source": "Alderley",
-            "plate_barcode": "AP123",
-            "coordinate": "A08",
-            "line_number": 3,
-            "file_name": "AP_sanger_report_200503_2338.csv",
-            "file_name_date": datetime.datetime(2020, 5, 3, 23, 38),
-            "created_at": datetime.datetime(2021, 2, 17, 12, 10, 46, 290114),
-            "updated_at": datetime.datetime(2021, 2, 17, 12, 10, 46, 290122),
-            "filtered_positive": True,
-            "filtered_positive_version": "v2",
-            "filtered_positive_timestamp": datetime.datetime(2021, 2, 17, 12, 10, 46, 290141),
-            "lh_sample_uuid": "efd96729-3e83-4bee-976d-2d80158f5616",
-            "lh_source_plate_uuid": "6f9fe8d1-8adf-4fb7-b4c3-cb34269b3042",
-            "_id": ObjectId("602d07cbb213594f0b4a9dc7"),
-        },
-    ]
 
 
 @pytest.fixture

@@ -137,7 +137,7 @@ def migrate_all_dbs(config: Config, s_start_datetime: str = "", s_end_datetime: 
             with create_mysql_connection(config, False) as mlwh_conn:
                 # 5. update the MLWH (should be an idempotent operation)
 
-                # Check here would migration dbs be ok?
+                # TODO: Check here would migration dbs be ok?
                 run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
 
             # 6. add all the plates with non-cherrypicked samples (determined in step 2) to DART, as well as any

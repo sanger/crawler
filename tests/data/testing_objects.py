@@ -81,58 +81,26 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
 
 TESTING_PRIORITY_SAMPLES: List[Dict[str, Union[str, bool]]] = [
     {
-        FIELD_ROOT_SAMPLE_ID: "MCM001",
         FIELD_SAMPLE_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa1"),
         FIELD_MUST_SEQUENCE: True,
         FIELD_PREFERENTIALLY_SEQUENCE: False,
         FIELD_PROCESSED: False,
     },
     {
-        FIELD_ROOT_SAMPLE_ID: "MCM002",
         FIELD_SAMPLE_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa2"),
         FIELD_MUST_SEQUENCE: False,
         FIELD_PREFERENTIALLY_SEQUENCE: True,
         FIELD_PROCESSED: False,
     },
     {
-        FIELD_ROOT_SAMPLE_ID: "MCM003",
         FIELD_SAMPLE_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa3"),
         FIELD_MUST_SEQUENCE: True,
         FIELD_PREFERENTIALLY_SEQUENCE: False,
         FIELD_PROCESSED: True,
     },
     {
-        FIELD_ROOT_SAMPLE_ID: "MCM004",
         FIELD_SAMPLE_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa4"),
         FIELD_MUST_SEQUENCE: False,
-        FIELD_PREFERENTIALLY_SEQUENCE: False,
-        FIELD_PROCESSED: False,
-    },
-]
-
-TESTING_PRIORITY_SAMPLES_FOR_ALDP: List[Dict[str, Union[str, bool]]] = [
-    {
-        FIELD_ROOT_SAMPLE_ID: "1",
-        FIELD_MUST_SEQUENCE: True,
-        FIELD_PREFERENTIALLY_SEQUENCE: False,
-        FIELD_PROCESSED: False,
-    },
-    {
-        FIELD_ROOT_SAMPLE_ID: "2",
-        FIELD_MUST_SEQUENCE: False,
-        FIELD_PREFERENTIALLY_SEQUENCE: True,
-        FIELD_PROCESSED: False,
-    },
-    {FIELD_ROOT_SAMPLE_ID: "3", FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False, FIELD_PROCESSED: True},
-    {
-        FIELD_ROOT_SAMPLE_ID: "4",
-        FIELD_MUST_SEQUENCE: False,
-        FIELD_PREFERENTIALLY_SEQUENCE: False,
-        FIELD_PROCESSED: False,
-    },
-    {
-        FIELD_ROOT_SAMPLE_ID: "5",
-        FIELD_MUST_SEQUENCE: True,
         FIELD_PREFERENTIALLY_SEQUENCE: False,
         FIELD_PROCESSED: False,
     },

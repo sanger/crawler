@@ -63,6 +63,7 @@ from crawler.helpers.general_helpers import (
     parse_decimal128,
     unpad_coordinate,
     pad_coordinate,
+    is_sample_positive,
     is_sample_important_or_positive,
     is_sample_important,
     is_sample_pickable,
@@ -311,6 +312,12 @@ def test_create_source_plate_doc(freezer):
         assert source_plate[FIELD_LAB_ID] == lab_id
         assert source_plate[FIELD_UPDATED_AT] == now
         assert source_plate[FIELD_CREATED_AT] == now
+
+
+def test_is_sample_positive():
+    negative = "negative"
+    assert is_sample_positive({FIELD_RESULT: negative}) is False
+    assert is_sample_positive({FIELD_RESULT: POSITIVE_RESULT_VALUE}) is True
 
 
 def test_is_sample_important_or_positive():

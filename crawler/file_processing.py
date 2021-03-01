@@ -69,7 +69,7 @@ from crawler.constants import (
 from crawler.db.dart import (
     create_dart_sql_server_conn,
     add_dart_plate_if_doesnt_exist,
-    add_dart_well_properties_if_positive_or_of_importance,
+    add_dart_well_properties_if_positive,
 )
 from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
 
@@ -406,9 +406,9 @@ class CentreFile:
         docs_to_insert = self.docs_to_insert_updated_with_source_plate_uuids(docs_to_insert)
 
         if (num_docs_to_insert := len(docs_to_insert)) > 0:
+            # Mongodb, MLWH and DART will all be updated from the same memory object after parsing the files
             logger.debug(f"{num_docs_to_insert} docs to insert")
 
-            # Step 1
             # - Process files as is - insert data into mongo
             mongo_ids_of_inserted = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
 
@@ -418,10 +418,7 @@ class CentreFile:
                     filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert)
                 )
 
-                # Currently MLWH is updated using docs_to_insert_mlwh, which is the same group of objects in memory that
-                # we use to update MongoDB and Dart. Changing this part to a MongoDB query would modify how the
-                # samples are created in warehouse and dart, being different source than mongodb
-
+                # Update MLWH
                 mlwh_success = self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
                 # add to the DART database if the config flag is set and we have successfully updated the MLWH
@@ -698,9 +695,9 @@ class CentreFile:
     # TODO: refactor duplicated function insert_plates_and_wells_into_dart in priority_samples_process.py
     # possibly refactor to DART helper
     def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[ModifiedRow]) -> bool:
-        """Insert plates and wells into the DART database.
-        Create in DART with docs_to_insert including must_seq/ pre_seq
-        use docs_to_insert to update DART
+        """Insert plates and wells into the DART database. New plates will be created if they didnt exist
+        previously. New wells will only be created if the plate they belong to is in state 'pending', and
+        the value for Result for that plate is 'positive'.
 
         Arguments:
             docs_to_insert {List[ModifiedRow]} -- List of filtered sample information extracted from CSV files.
@@ -725,7 +722,7 @@ class CentreFile:
                         )
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
-                                add_dart_well_properties_if_positive_or_of_importance(cursor, sample, plate_barcode)
+                                add_dart_well_properties_if_positive(cursor, sample, plate_barcode)
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(

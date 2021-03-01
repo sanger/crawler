@@ -191,7 +191,7 @@ def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:
         # UUID fields
         MLWH_LH_SAMPLE_UUID: sample.get(FIELD_LH_SAMPLE_UUID),
         MLWH_LH_SOURCE_PLATE_UUID: sample.get(FIELD_LH_SOURCE_PLATE_UUID),
-        # samples of importance fields
+        # priority samples fields
         MLWH_MUST_SEQUENCE: sample.get(FIELD_MUST_SEQUENCE),
         MLWH_PREFERENTIALLY_SEQUENCE: sample.get(FIELD_PREFERENTIALLY_SEQUENCE),
     }
@@ -295,9 +295,11 @@ def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
 
     return None
 
+def is_sample_positive(sample):
+    return (sample.get(FIELD_RESULT, False) is POSITIVE_RESULT_VALUE)
 
 def is_sample_important_or_positive(sample):
-    return (sample.get(FIELD_RESULT, False) is POSITIVE_RESULT_VALUE) or (is_sample_important(sample))
+    return (is_sample_positive(sample) or is_sample_important(sample))
 
 
 def is_sample_important(sample):
@@ -307,7 +309,7 @@ def is_sample_important(sample):
 
 
 def is_sample_pickable(sample):
-    return sample.get(FIELD_FILTERED_POSITIVE, False) or is_sample_important(sample)
+    return (sample.get(FIELD_FILTERED_POSITIVE, False) is True) or is_sample_important(sample)
 
 
 def map_mongo_doc_to_dart_well_props(sample: SampleDoc) -> DartWellProp:

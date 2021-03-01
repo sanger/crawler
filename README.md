@@ -22,6 +22,7 @@ querying.
     + [Version 2 `v2` - **Current Version**](#version-2-v2---current-version)
     + [Propagating Filtered Positive version changes to MongoDB, MLWH and (optional) DART](#propagating-filtered-positive-version-changes-to-mongodb-mlwh-and-optional-dart)
   * [Migrating legacy data to DART](#migrating-legacy-data-to-dart)
+- [Priority Samples](#priority-samples)
 - [Testing](#testing)
   * [Testing requirements](#testing-requirements)
   * [Running tests](#running-tests)
@@ -98,20 +99,29 @@ Where the time format is YYMMDD_HHmm. Both start and end timestamps must be pres
 The process should not duplicate rows that are already present in MLWH, so you can be generous with your timestamp
 range.
 
-### Priority Samples
+## Priority Samples
+
+### Glossary:
+- **Important**: refers to samples that have must_sequence or preferentially_sequence set to True
+- **Positive**: refers to samples that have a _Positive_ Result
+- **Pickable**: samples that have _Filtered Positive_ set to True **or** are Important in a plate with state 'pending'
+
 If a sample is prioritised it will be treated the same as a fit_to_pick sample.
 
-#### Glossary:
-- **Important**: refers to samples that have must_sequence or preferentially_sequence to True
-- **Important Or Positive**: refers to samples that have a _Positive_ Result of are Important
-- **Pickable**: samples that have _Filtered Positive_ Result or are Important
-
-#### Step 2 (in main.py):
-After the file centres processing, any existing
-priority samples flagged as unprocessed will be:
+During the prioritisation run (after the file centres processing), any existing priority samples flagged as unprocessed will be:
    - Updated in MLWH lighthouse_sample with the values of the priority (must_sequence and preferentially_sequence) added to it
    - Inserted in DART as pickable if the plate is in state 'pending'
    - Updated as 'processed' in mongo so it won't be processed again unless there is a change for it
+
+This will be applied with the following set of rules:
+   - All records at mongodb from priority_samples where **processed** is true will be ignored
+   - All new updates of prioritisation will be updated in MLWH
+   - If the sample is in a plate that does not have state 'pending' **no updates wiil be performed in DART for this sample**
+   even if there is any new prioritisation set for it.
+   - If the sample has filtered positive set to True, the sample will be flagged as **pickable** in DART
+   - If the sample has any priority setting (must_sequence or preferentially_sequence), the sample will be flagged as **pickable** in DART
+   - If the sample change its prioritisation to False, the setting for **pickable** will be removed in DART
+   - After a record from priority_samples in mongodb has been processed, it will be flagged as **processed** set to True
 
 
 ### Filtered Positive Rules

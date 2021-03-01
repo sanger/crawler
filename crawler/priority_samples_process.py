@@ -88,11 +88,7 @@ def query_any_unprocessed_samples(db: Database) -> List[SamplePriorityDoc]:
     # [{"$match": {"$expr": {"$and":[{"$eq": ["$sample_id", "$$sample_id"]}]}}}], "as": "from_samples"}}])
     IMPORTANT_UNPROCESSED_SAMPLES_MONGO_QUERY: Final[List[object]] = [
         {
-            "$match": {
-                "$and": [
-                    {FIELD_PROCESSED: False},
-                ]
-            }
+            "$match": {FIELD_PROCESSED: False},
         },
         {
             "$lookup": {
@@ -102,6 +98,8 @@ def query_any_unprocessed_samples(db: Database) -> List[SamplePriorityDoc]:
                 "as": "related_samples",
             }
         },
+        # match is required so "Exception: Cannot unpad coordinate" isn't thrown
+        # if there isnt a related sample for the priority sample
         {"$match": {"related_samples": {"$ne": []}}},
         {"$replaceRoot": {"newRoot": {"$mergeObjects": [{"$arrayElemAt": ["$related_samples", 0]}, "$$ROOT"]}}},
         {"$project": {"related_samples": 0}},

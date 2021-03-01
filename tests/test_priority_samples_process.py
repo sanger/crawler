@@ -13,18 +13,22 @@ from crawler.constants import (
     MLWH_ROOT_SAMPLE_ID,
     MLWH_PREFERENTIALLY_SEQUENCE,
     MLWH_MUST_SEQUENCE,
+    MLWH_MONGODB_ID,
     DART_STATE_PENDING,
     FIELD_COORDINATE,
     FIELD_PROCESSED,
     FIELD_PLATE_BARCODE,
     FIELD_SOURCE,
+    FIELD_MONGODB_ID,
+    FIELD_SAMPLE_ID,
 )
 import pytest
+from bson.objectid import ObjectId
 
 RecordScenarioList = Any
 
 
-class TestStepTwo:
+class TestPrioritySamplesProcess:
     @pytest.fixture(autouse=True)
     def mock_dart_calls(self, testing_samples, testing_priority_samples):
         with patch("crawler.priority_samples_process.create_dart_sql_server_conn") as self.mock_conn:
@@ -173,7 +177,9 @@ class TestStepTwo:
         # Set expected dart plates
         self.expected_dart_plates = request.param["expected_dart_plates"]
 
+
     # Currently not being ran
+    # TODO fix/check/delete
     def validate_expected_data(self, with_different_scenarios, testing_priority_samples, testing_samples):
         # Check list of expected mlwh samples
         # Get unprocessed samples from list
@@ -203,6 +209,7 @@ class TestStepTwo:
             assert self.expected_dart_samples == list(expected_dart_samples)
             assert self.expected_dart_plates == list(expected_dart_plates)
 
+
     def test_when_for_one_priority_sample_doesnt_exist_the_related_sample(
         self, mongo_database, config, mlwh_connection, with_different_scenarios
     ):
@@ -215,9 +222,12 @@ class TestStepTwo:
         try:
             update_priority_samples(mongo_database, config, True)
         except Exception:
+            # Testing the match in IMPORTANT_UNPROCESSED_SAMPLES_MONGO_QUERY
+            # so if there isnt a match, an Exception isn't thrown but handled
             pytest.fail("Unexpected error ..")
 
-    def test_mlwh_was_correctly_updated_in_update_priority_samples(
+
+    def test_mlwh_not_updated_when_no_priority_samples_in_update_priority_samples(
         self, mongo_database, config, mlwh_connection, with_different_scenarios
     ):
         _, mongo_database = mongo_database
@@ -228,16 +238,29 @@ class TestStepTwo:
             rows = cursor.fetchall()
             cursor.close()
             assert len(rows) == 0
-        else:
-            root_sample_ids = ",".join(map(lambda x: f'"{x[FIELD_ROOT_SAMPLE_ID]}"', self.expected_mlwh_samples))
+
+
+    def test_mlwh_was_correctly_updated_in_update_priority_samples(
+        self, mongo_database, config, mlwh_connection, with_different_scenarios
+    ):
+        _, mongo_database = mongo_database
+        update_priority_samples(mongo_database, config, True)
+        cursor = mlwh_connection.cursor(dictionary=True)
+        samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+
+        if len(self.expected_mlwh_samples) > 0:
+            mongodb_ids = ",".join(map(lambda x: f'"{x[FIELD_MONGODB_ID]}"', self.expected_mlwh_samples))
             cursor.execute(
                 f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME} "
-                f" WHERE {MLWH_ROOT_SAMPLE_ID} IN ({root_sample_ids})"
+                f" WHERE {MLWH_MONGODB_ID} IN ({mongodb_ids})"
             )
             rows = cursor.fetchall()
             cursor.close()
             for pos, priority_sample in enumerate(self.expected_mlwh_samples):
-                assert rows[pos][MLWH_ROOT_SAMPLE_ID] == priority_sample[FIELD_ROOT_SAMPLE_ID]
+                expected_sample = samples_collection.find({FIELD_MONGODB_ID: priority_sample[FIELD_SAMPLE_ID]})[0]
+
+                assert ObjectId(rows[pos][MLWH_MONGODB_ID]) == priority_sample[FIELD_MONGODB_ID]
+                assert rows[pos][MLWH_ROOT_SAMPLE_ID] == expected_sample[FIELD_ROOT_SAMPLE_ID]
                 assert rows[pos][MLWH_MUST_SEQUENCE] == priority_sample[FIELD_MUST_SEQUENCE]
                 assert rows[pos][MLWH_PREFERENTIALLY_SEQUENCE] == priority_sample[FIELD_PREFERENTIALLY_SEQUENCE]
 
@@ -346,34 +369,3 @@ class TestStepTwo:
         assert result["prefix"] == "TEST"
         assert result["lab_id_default"] == "TE"
 
-
-# We have priority samples that have not been received yet (not in mongodb)
-# Assert: dont do anything with them
-# def test_update_priority_samples_unprocessed_priority_sample_not_received_yet():
-#     #assert False
-
-# # We have priority samples that were received a while ago
-# # Assert: process them
-# def test_update_priority_samples_unprocessed_priority_sample_already_received():
-#     #assert False
-
-# # We have priority samples that were already processed
-# # Assert: dont do anything with them
-# def test_update_priority_samples_priority_sample_already_processed():
-#     #assert False
-
-# # We have priority samples received and where the plate has already started in dart
-# # Assert: update all unpicked with priority samples changes
-# # Assert: it does not change status of picked samples
-# def test_update_priority_samples_priority_samples_received_dart_started():
-#     #assert False
-
-# # We have priority samples received and where the plate has not started in dart
-# # Assert: update all unpicked with priority samples changes
-# def test_update_priority_samples_priority_samples_received_dart_pending():
-#     #assert False
-
-# # We have priority samples received and where the plate has been completed in dart
-# # Assert: dont do anything
-# def test_update_priority_samples_priority_samples_received_dart_complete():
-#     #assert False
