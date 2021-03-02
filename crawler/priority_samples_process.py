@@ -9,20 +9,17 @@ from typing import Any, Dict, Final, Iterator, List, Tuple
 from more_itertools import groupby_transform
 from pymongo.database import Database
 
-from crawler.constants import (
-    COLLECTION_PRIORITY_SAMPLES,
-    DART_STATE_PENDING,
-    FIELD_MONGODB_ID,
-    FIELD_PLATE_BARCODE,
-    FIELD_PROCESSED,
-    FIELD_SAMPLE_ID,
-    FIELD_SOURCE,
-)
-from crawler.db.dart import add_dart_plate_if_doesnt_exist, add_dart_well_properties, create_dart_sql_server_conn
+from crawler.constants import (COLLECTION_PRIORITY_SAMPLES, DART_STATE_PENDING,
+                               FIELD_MONGODB_ID, FIELD_PLATE_BARCODE,
+                               FIELD_PROCESSED, FIELD_SAMPLE_ID, FIELD_SOURCE)
+from crawler.db.dart import (add_dart_plate_if_doesnt_exist,
+                             add_dart_well_properties,
+                             create_dart_sql_server_conn)
 from crawler.db.mongo import get_mongo_collection
 from crawler.db.mysql import insert_or_update_samples_in_mlwh
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.types import Config, ModifiedRow, ModifiedRowValue, SampleDoc, SamplePriorityDoc
+from crawler.types import (Config, ModifiedRow, ModifiedRowValue, SampleDoc,
+                           SamplePriorityDoc)
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +61,17 @@ def update_priority_samples(db: Database, config: Config, add_to_dart: bool) -> 
             sample_ids = list(map(extract_mongo_id, samples))
             update_unprocessed_priority_samples_to_processed(db, sample_ids)
 
+    validate_prioritisation_process()
     print_summary()
+
+
+def validate_process(db: Database):
+    num_priorities_unprocessed = count_all_unprocessed_priority_samples_records(db)
+    if num_priorities_unprocessed > 0:
+        logging_collection.add_error(
+            "TYPE 32",
+            f"There are still {num_priorities_unprocessed} sample priorities unprocessed",
+        )
 
 
 def print_summary():
@@ -77,6 +84,9 @@ def print_summary():
     else:
         logger.info("Prioritisation of samples completed successfully")
 
+def count_all_unprocessed_priority_samples_records(db: Database) -> List[SamplePriorityDoc]
+    priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
+    return priority_samples_collection.count({FIELD_PROCESSED: False})
 
 def query_any_unprocessed_samples(db: Database) -> List[SamplePriorityDoc]:
     """
