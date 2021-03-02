@@ -134,7 +134,7 @@ def logging_message_object() -> Dict:
         "insert_failure": {
             "error_type": "TYPE 28",
             "msg": "MLWH database inserts failed for priority samples",
-            "critical_msg": f"Critical error while processing priority samples'",
+            "critical_msg": "Critical error while processing priority samples'",
         },
         "connection_failure": {
             "error_type": "TYPE 29",

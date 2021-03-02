@@ -665,7 +665,8 @@ class CentreFile:
             "connection_failure": {
                 "error_type": "TYPE 15",
                 "msg": f"MLWH database inserts failed, could not connect, for file {self.file_name}",
-                "critical_msg": f"Error writing to MLWH for file {self.file_name}, could not create Database connection",
+                "critical_msg": f"Error writing to MLWH for file {self.file_name}, "
+                + "could not create Database connection",
             },
         }
 
