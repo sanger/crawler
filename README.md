@@ -250,3 +250,11 @@ README for updated instructions on how to use it.
 Node is required to run npx:
 
     npx markdown-toc -i README.md
+
+## Releases
+
+#### UAT
+On merging a pull request into develop, a release will be created with the tag/name `<branch>/<timestamp>`
+
+#### PROD
+Update `.release-version` with major/minor/patch. On merging a pull request into master, a release will be created with the release version as the tag/name 

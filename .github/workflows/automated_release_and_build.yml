@@ -1,4 +1,4 @@
-name: CI docker
+name: Automated release and build
 
 on:
   push:
@@ -7,10 +7,6 @@ on:
       - master
     paths-ignore:
       - "README.md"
-    tags:
-      - uat-*
-      - release-*
-      - v*
 
 env:
   IMAGE_NAME: ${{ github.repository }}/${{ github.event.repository.name }}
@@ -33,22 +29,37 @@ jobs:
           MYSQL_DATABASE: unified_warehouse_test
     steps:
       - uses: actions/checkout@v2
+      - name: Set release tag
+        # Generate a release tag name in the format:
+        # devel/YYYY-MM-DD/HHMMSS
+        # Writes this out to the environment file for use downstream
+        run: echo "RELEASE_TAG=$([ ${GITHUB_REF##*/} = "develop" ] && echo "${GITHUB_REF##*/}/$(date +'%Y-%m-%d/%H%M%S')" || printf '%s\n' $(cat .release-version))" >> $GITHUB_ENV
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          release_name: ${{ env.RELEASE_TAG }}
+          draft: false
+          prerelease: ${{ !(github.ref == 'refs/heads/master') }}
       - name: Build the Docker image
         run: >-
           docker build .
           --file Dockerfile
-          --tag docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
+          --tag docker.pkg.github.com/${IMAGE_NAME}:${{ env.RELEASE_TAG }}
       - name: Create mysql test warehouse database and table
         run: >-
           docker run
           --network host
-          docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
+          docker.pkg.github.com/${IMAGE_NAME}:${{ env.RELEASE_TAG }}
           python setup_test_db.py
       - name: Run tests against the image
         run: >-
           docker run
           --network host
-          docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
+          docker.pkg.github.com/${IMAGE_NAME}:${{ env.RELEASE_TAG }}
           python -m pytest -x
       - name: Login to registry
         run: >-
@@ -59,4 +70,4 @@ jobs:
       - name: Publish image with image tag being either develop/master/<tag_name>
         run: >-
           docker push
-          docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
+          docker.pkg.github.com/${IMAGE_NAME}:${{ env.RELEASE_TAG }}
