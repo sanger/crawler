@@ -4,37 +4,25 @@
 #
 import logging
 import logging.config
+from typing import Any, Dict, Final, Iterator, List, Tuple
 
-from typing import Any, List, Final, Iterator, Tuple, Dict
-from crawler.types import ModifiedRow, Config, SampleDoc, SamplePriorityDoc, ModifiedRowValue
-from crawler.db.mongo import (
-    get_mongo_collection,
-)
+from more_itertools import groupby_transform
 from pymongo.database import Database
 
 from crawler.constants import (
     COLLECTION_PRIORITY_SAMPLES,
-    FIELD_PROCESSED,
-    FIELD_SAMPLE_ID,
+    DART_STATE_PENDING,
     FIELD_MONGODB_ID,
     FIELD_PLATE_BARCODE,
-    DART_STATE_PENDING,
+    FIELD_PROCESSED,
+    FIELD_SAMPLE_ID,
     FIELD_SOURCE,
 )
-
-from more_itertools import groupby_transform
-
+from crawler.db.dart import add_dart_plate_if_doesnt_exist, add_dart_well_properties, create_dart_sql_server_conn
+from crawler.db.mongo import get_mongo_collection
+from crawler.db.mysql import insert_or_update_samples_in_mlwh
 from crawler.helpers.logging_helpers import LoggingCollection
-
-from crawler.db.mysql import (
-    insert_or_update_samples_in_mlwh,
-)
-
-from crawler.db.dart import (
-    create_dart_sql_server_conn,
-    add_dart_plate_if_doesnt_exist,
-    add_dart_well_properties,
-)
+from crawler.types import Config, ModifiedRow, ModifiedRowValue, SampleDoc, SamplePriorityDoc
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +63,19 @@ def update_priority_samples(db: Database, config: Config, add_to_dart: bool) -> 
             # use stored identifiers to update priority_samples table to processed true
             sample_ids = list(map(extract_mongo_id, samples))
             update_unprocessed_priority_samples_to_processed(db, sample_ids)
+
+    print_summary()
+
+
+def print_summary():
+    msgs = logging_collection.get_messages_for_import()
+    for msg in msgs:
+        logger.debug(msg)
+
+    if len(msgs) > 0:
+        logger.error("Prioritisation of samples has found some errors: {len(msgs)}")
+    else:
+        logger.info("Prioritisation of samples completed successfully")
 
 
 def query_any_unprocessed_samples(db: Database) -> List[SamplePriorityDoc]:
