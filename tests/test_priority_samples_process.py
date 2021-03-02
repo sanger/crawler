@@ -1,6 +1,13 @@
 from unittest.mock import patch
 from crawler.db.mongo import get_mongo_collection
-from crawler.priority_samples_process import update_priority_samples, centre_config_for_samples, logging_collection
+from crawler.priority_samples_process import (
+    update_priority_samples,
+    centre_config_for_samples,
+    logging_collection,
+    count_all_unprocessed_priority_samples_records,
+    print_summary,
+)
+from crawler.helpers.logging_helpers import LoggingCollection
 from typing import Dict, Tuple
 from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
@@ -226,6 +233,14 @@ class TestPrioritySamplesProcess:
                 assert rows[pos][MLWH_MUST_SEQUENCE] == priority_sample[FIELD_MUST_SEQUENCE]
                 assert rows[pos][MLWH_PREFERENTIALLY_SEQUENCE] == priority_sample[FIELD_PREFERENTIALLY_SEQUENCE]
 
+    def test_mongo_processed_field_was_correctly_updated_in_update_priority_samples(
+        self, mongo_database, config, mlwh_connection, with_different_scenarios
+    ):
+        _, mongo_database = mongo_database
+        update_priority_samples(mongo_database, config, True)
+
+        assert count_all_unprocessed_priority_samples_records(mongo_database) == 0
+
     def test_mlwh_insert_fails_in_update_priority_samples(self, config, mongo_database):
         _, mongo_database = mongo_database
 
@@ -330,3 +345,20 @@ class TestPrioritySamplesProcess:
         assert result["name"] == "Test Centre"
         assert result["prefix"] == "TEST"
         assert result["lab_id_default"] == "TE"
+
+    def test_print_summary_writes_error_line_if_failed(self):
+        with patch("crawler.priority_samples_process.logger") as mock_logger:
+            num_priorities_unprocessed = 1
+            logging_collection.add_error(
+                "TYPE 32",
+                f"There are still {num_priorities_unprocessed} sample priorities unprocessed",
+            )
+            print_summary()
+            assert mock_logger.error.called is True
+
+    def test_print_summary_writes_info_line_if_successful(self):
+        with patch("crawler.priority_samples_process.logger") as mock_logger:
+            logging_collection = LoggingCollection()
+            with patch("crawler.priority_samples_process.logging_collection", logging_collection) as logging_collection:
+                print_summary()
+                assert mock_logger.info.called is True
