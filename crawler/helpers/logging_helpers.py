@@ -28,7 +28,7 @@ class AggregateTypeBase:
         return self.message
 
     def get_report_message(self):
-        return f"Total number of {self.short_display_description} errors ({self.type_str}): {self.count_errors}"
+        return f"Total number of '{self.short_display_description}' errors ({self.type_str}): {self.count_errors}"
 
 
 # See confluence for full table of aggregate types
@@ -374,9 +374,10 @@ class AggregateType32(AggregateTypeBase):
         super().__init__()
         self.type_str = "TYPE 32"
         self.error_level = ErrorLevel.CRITICAL
+        self.max_errors = 5
         self.message = (
-            f"{self.error_level.name}: Priority samples that we have in Mongodb "
-            f"but they are still unprocessed. ({self.type_str})"
+            f"{self.error_level.name}: There are priority samples in Mongodb "
+            f"that are still unprocessed. ({self.type_str})"
         )
         self.short_display_description = "Priority samples - Validation failure"
 
@@ -396,6 +397,9 @@ class AggregateType33(AggregateTypeBase):
 # Class to handle logging of errors of the various types per file
 class LoggingCollection:
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.aggregator_types = {
             "TYPE 1": AggregateType1(),
             "TYPE 2": AggregateType2(),

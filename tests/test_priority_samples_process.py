@@ -4,7 +4,7 @@ from crawler.priority_samples_process import (
     update_priority_samples,
     centre_config_for_samples,
     logging_collection,
-    count_all_unprocessed_priority_samples_records,
+    get_all_unprocessed_priority_samples_records,
     print_summary,
 )
 from crawler.helpers.logging_helpers import LoggingCollection
@@ -50,6 +50,11 @@ class TestPrioritySamplesProcess:
                             self.mock_add_dart_plate.side_effect = [DART_STATE_PENDING, DART_STATE_PENDING]
 
                             yield
+
+    @pytest.fixture(autouse=True)
+    def reset_logging_collection(self):
+        logging_collection.reset()
+        yield
 
     def set_property_values_for_collection(self, mongo_database, collection_name, elements, prop, values):
         collection = get_mongo_collection(mongo_database, collection_name)
@@ -233,13 +238,12 @@ class TestPrioritySamplesProcess:
                 assert rows[pos][MLWH_MUST_SEQUENCE] == priority_sample[FIELD_MUST_SEQUENCE]
                 assert rows[pos][MLWH_PREFERENTIALLY_SEQUENCE] == priority_sample[FIELD_PREFERENTIALLY_SEQUENCE]
 
-    def test_mongo_processed_field_was_correctly_updated_in_update_priority_samples(
+    def test_there_are_no_priorities_unprocessed_after_update_priority_samples(
         self, mongo_database, config, mlwh_connection, with_different_scenarios
     ):
         _, mongo_database = mongo_database
         update_priority_samples(mongo_database, config, True)
-
-        assert count_all_unprocessed_priority_samples_records(mongo_database) == 0
+        assert len(get_all_unprocessed_priority_samples_records(mongo_database)) == 0
 
     def test_mlwh_insert_fails_in_update_priority_samples(self, config, mongo_database):
         _, mongo_database = mongo_database

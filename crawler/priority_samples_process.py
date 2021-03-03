@@ -4,7 +4,7 @@
 #
 import logging
 import logging.config
-from typing import Any, Dict, Final, Iterator, List, Tuple, cast
+from typing import Any, Dict, Final, Iterator, List, Tuple
 
 from more_itertools import groupby_transform
 from pymongo.database import Database
@@ -64,7 +64,7 @@ def update_priority_samples(db: Database, config: Config, add_to_dart: bool) -> 
             sample_ids = list(map(extract_sample_id, samples))
             update_unprocessed_priority_samples_to_processed(db, sample_ids)
 
-            validate_prioritisation_process(db)
+    validate_prioritisation_process(db)
 
     print_summary()
 
@@ -77,23 +77,29 @@ def validate_prioritisation_process(db: Database) -> None:
     Arguments:
         db {Database} -- mongo db instance
     """
-    num_priorities_unprocessed = count_all_unprocessed_priority_samples_records(db)
-    if num_priorities_unprocessed > 0:
+
+    def extract_sample_id(sample: SampleDoc) -> ModifiedRowValue:
+        return sample[FIELD_SAMPLE_ID]
+
+    priorities_unprocessed = get_all_unprocessed_priority_samples_records(db)
+    priorities_unprocessed_sample_ids = list(map(extract_sample_id, priorities_unprocessed))
+
+    for sample_id in priorities_unprocessed_sample_ids:
         logging_collection.add_error(
             "TYPE 32",
-            f"There are still {num_priorities_unprocessed} sample priorities unprocessed",
+            f"There is an unprocessed priority sample with sample_id: {sample_id}",
         )
 
 
-def count_all_unprocessed_priority_samples_records(db: Database) -> int:
+def get_all_unprocessed_priority_samples_records(db: Database) -> List[SamplePriorityDoc]:
     priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
-    return cast(int, priority_samples_collection.count_documents({FIELD_PROCESSED: False}))
+    return list(priority_samples_collection.find({FIELD_PROCESSED: False}))
 
 
 def print_summary():
     msgs = logging_collection.get_messages_for_import()
     for msg in msgs:
-        logger.debug(msg)
+        logger.error(msg)
 
     if len(msgs) > 0:
         logger.error(f"Prioritisation of samples has found some errors: {len(msgs)}")

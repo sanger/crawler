@@ -7,7 +7,7 @@ def test_logging_collection_with_a_single_error():
     aggregator = logging.aggregator_types["TYPE 3"]
     assert aggregator.count_errors == 1
     assert aggregator.max_errors == 5
-    assert aggregator.get_report_message() == "Total number of Only root sample id errors (TYPE 3): 1"
+    assert aggregator.get_report_message() == "Total number of 'Only root sample id' errors (TYPE 3): 1"
     exptd_msgs = (
         "WARNING: Sample rows that have Root Sample ID value but no other information. (TYPE 3) "
         "(e.g. This is a testing message)"
@@ -15,7 +15,7 @@ def test_logging_collection_with_a_single_error():
     assert aggregator.get_message() == exptd_msgs
     assert logging.get_aggregate_messages() == [exptd_msgs]
     assert logging.get_count_of_all_errors_and_criticals() == 0
-    assert logging.get_aggregate_total_messages() == ["Total number of Only root sample id errors (TYPE 3): 1"]
+    assert logging.get_aggregate_total_messages() == ["Total number of 'Only root sample id' errors (TYPE 3): 1"]
 
 
 def test_logging_collection_with_multiple_errors():
@@ -59,9 +59,9 @@ def test_logging_collection_with_multiple_errors():
     assert logging.get_count_of_all_errors_and_criticals() == 3
 
     exptd_report_msgs = [
-        "Total number of Blank row errors (TYPE 1): 2",
-        "Total number of Missing header column errors (TYPE 2): 2",
-        "Total number of Only root sample id errors (TYPE 3): 3",
-        "Total number of No plate barcode errors (TYPE 4): 1",
+        "Total number of 'Blank row' errors (TYPE 1): 2",
+        "Total number of 'Missing header column' errors (TYPE 2): 2",
+        "Total number of 'Only root sample id' errors (TYPE 3): 3",
+        "Total number of 'No plate barcode' errors (TYPE 4): 1",
     ]
     assert logging.get_aggregate_total_messages() == exptd_report_msgs
