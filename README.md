@@ -114,7 +114,7 @@ During the prioritisation run (after the file centres processing), any existing 
    - Updated as 'processed' in mongo so it won't be processed again unless there is a change for it
 
 This will be applied with the following set of rules:
-   - All records at mongodb from priority_samples where **processed** is true will be ignored
+   - All records in mongodb from the priority_samples collection where **processed** is true will be ignored
    - All new updates of prioritisation will be updated in MLWH
    - If the sample is in a plate that does not have state 'pending' **no updates wiil be performed in DART for this sample**
    even if there is any new prioritisation set for it.

@@ -22,7 +22,7 @@ from crawler.db.dart import add_dart_plate_if_doesnt_exist, add_dart_well_proper
 from crawler.db.mongo import get_mongo_collection
 from crawler.db.mysql import insert_or_update_samples_in_mlwh
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.types import Config, ModifiedRow, ModifiedRowValue, SampleDoc, SamplePriorityDoc
+from crawler.types import Config, ModifiedRowValue, SampleDoc, SamplePriorityDoc
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +39,7 @@ def update_priority_samples(db: Database, config: Config, add_to_dart: bool) -> 
     Arguments:
         db {Database} -- mongo db instance
         config {Config} -- config for mysql and dart connections
+        add_to_dart {bool} -- whether to add the samples to DART
     """
 
     logger.info("**********************************")
@@ -137,7 +138,7 @@ def query_any_unprocessed_samples(db: Database) -> List[SamplePriorityDoc]:
     return list(value)
 
 
-def update_unprocessed_priority_samples_to_processed(db: Database, samples: list) -> None:
+def update_unprocessed_priority_samples_to_processed(db: Database, samples: List[SamplePriorityDoc]) -> None:
     """
     Update the given samples processed field in mongo to true
     Arguments:
@@ -176,19 +177,20 @@ def logging_message_object() -> Dict:
     }
 
 
-def update_priority_samples_into_mlwh(samples: List[Any], config: Config) -> bool:
+def update_priority_samples_into_mlwh(samples: List[SamplePriorityDoc], config: Config) -> bool:
     mlwh_success = insert_or_update_samples_in_mlwh(samples, config, True, logging_collection, logging_message_object())
     if mlwh_success:
         logger.info("MLWH insert successful")
     return mlwh_success
 
 
-def insert_plates_and_wells_into_dart(docs_to_insert: List[ModifiedRow], config: Config) -> bool:
+# TODO: refactor duplicated function insert_plates_and_wells_from_docs_into_dart in file_processing.py
+def insert_plates_and_wells_into_dart(docs_to_insert: List[SamplePriorityDoc], config: Config) -> bool:
     """Insert plates and wells into the DART database.
     Create in DART with docs_to_insert
 
     Arguments:
-        docs_to_insert {List[ModifiedRow]} -- List of any unprocessed samples
+        docs_to_insert {List[SamplePriorityDoc]} -- List of any unprocessed samples
 
     Returns:
         {bool} -- True if the insert was successful; otherwise False

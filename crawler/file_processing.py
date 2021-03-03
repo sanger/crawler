@@ -675,6 +675,7 @@ class CentreFile:
             docs_to_insert, self.config, False, self.logging_collection, self.logging_message_object()
         )
 
+    # TODO: refactor duplicated function insert_plates_and_wells_into_dart in priority_samples_process.py
     def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[ModifiedRow]) -> bool:
         """Insert plates and wells into the DART database. New plates will be created if they didnt exist
         previously. New wells will only be created if the plate they belong to is in state 'pending', and
@@ -689,6 +690,8 @@ class CentreFile:
 
         def extract_plate_barcode(sample: SampleDoc) -> ModifiedRowValue:
             return sample[FIELD_PLATE_BARCODE]
+
+        logger.info("Adding to DART")
 
         if (sql_server_connection := create_dart_sql_server_conn(self.config)) is not None:
             try:
