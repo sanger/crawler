@@ -41,9 +41,6 @@ def update_priority_samples(db: Database, config: Config, add_to_dart: bool) -> 
         config {Config} -- config for mysql and dart connections
     """
 
-    def extract_sample_id(sample: SampleDoc) -> ModifiedRowValue:
-        return sample[FIELD_SAMPLE_ID]
-
     logger.info("**********************************")
     logger.info("Starting Prioritisation of samples")
 
@@ -52,17 +49,13 @@ def update_priority_samples(db: Database, config: Config, add_to_dart: bool) -> 
     # Create all samples in MLWH with samples containing both sample and priority sample info
     mlwh_success = update_priority_samples_into_mlwh(samples, config)
 
-    # Add to the DART database if MLWH update was successful
     if mlwh_success:
-        logger.info("MLWH insert successful")
         if add_to_dart:
-            logger.info("Adding to DART")
+            # Add to the DART database if MLWH update was successful
             dart_success = insert_plates_and_wells_into_dart(samples, config)
         if not (add_to_dart) or dart_success:
-            logger.info("Updating Mongodb priority samples to processed")
-            # use stored identifiers to update priority_samples table to processed true
-            sample_ids = list(map(extract_sample_id, samples))
-            update_unprocessed_priority_samples_to_processed(db, sample_ids)
+            # Update mongo priority samples processed to true if DART successful
+            update_unprocessed_priority_samples_to_processed(db, samples)
 
     validate_prioritisation_process(db)
 
@@ -144,15 +137,24 @@ def query_any_unprocessed_samples(db: Database) -> List[SamplePriorityDoc]:
     return list(value)
 
 
-def update_unprocessed_priority_samples_to_processed(db: Database, sample_ids: list) -> None:
+def update_unprocessed_priority_samples_to_processed(db: Database, samples: list) -> None:
     """
     Update the given samples processed field in mongo to true
     Arguments:
-       sample_ids {list} -- a list of sample mongodb _ids to update
+       samples {list} -- a list of samples to update
     """
+
+    def extract_sample_id(sample: SampleDoc) -> ModifiedRowValue:
+        return sample[FIELD_SAMPLE_ID]
+
+    logger.info("Updating Mongodb priority samples to processed")
+    # use stored identifiers to update priority_samples table to processed true
+    sample_ids = list(map(extract_sample_id, samples))
+
     priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
     for sample_id in sample_ids:
         priority_samples_collection.update({FIELD_SAMPLE_ID: sample_id}, {"$set": {FIELD_PROCESSED: True}})
+
     logger.info("Mongo update of processed for priority samples successful")
 
 
@@ -175,7 +177,10 @@ def logging_message_object() -> Dict:
 
 
 def update_priority_samples_into_mlwh(samples: List[Any], config: Config) -> bool:
-    return insert_or_update_samples_in_mlwh(samples, config, True, logging_collection, logging_message_object())
+    mlwh_success = insert_or_update_samples_in_mlwh(samples, config, True, logging_collection, logging_message_object())
+    if mlwh_success:
+        logger.info("MLWH insert successful")
+    return mlwh_success
 
 
 def insert_plates_and_wells_into_dart(docs_to_insert: List[ModifiedRow], config: Config) -> bool:
@@ -191,6 +196,8 @@ def insert_plates_and_wells_into_dart(docs_to_insert: List[ModifiedRow], config:
 
     def extract_plate_barcode(sample: SampleDoc) -> ModifiedRowValue:
         return sample[FIELD_PLATE_BARCODE]
+
+    logger.info("Adding to DART")
 
     if (sql_server_connection := create_dart_sql_server_conn(config)) is not None:
         try:
