@@ -84,6 +84,7 @@ CENTRES = [
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/RAND",
         "sftp_file_regex": r"^lw-randox-biocentre-box-.*\.csv$",
         "sftp_root_read": "project-heron_randox",
+        "file_names_to_ignore": [r"^lw-randox-biocentre-box-((\d)|(1\d)|20)-.*$"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
     },
 ]
