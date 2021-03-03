@@ -32,3 +32,9 @@ python_version = "3.8"
 
 [pipenv]
 allow_prereleases = true
+
+[scripts]
+black = 'black'
+mypy = 'mypy'
+flake8 = 'flake8'
+test = 'python -m pytest -vx'
