@@ -41,7 +41,7 @@ def update_priority_samples(db: Database, config: Config, add_to_dart: bool) -> 
         config {Config} -- config for mysql and dart connections
         add_to_dart {bool} -- whether to add the samples to DART
     """
-
+    logging_collection.reset()
     logger.info("**********************************")
     logger.info("Starting Prioritisation of samples")
 

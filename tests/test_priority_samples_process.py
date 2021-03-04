@@ -51,11 +51,6 @@ class TestPrioritySamplesProcess:
 
                             yield
 
-    @pytest.fixture(autouse=True)
-    def reset_logging_collection(self):
-        logging_collection.reset()
-        yield
-
     def set_property_values_for_collection(self, mongo_database, collection_name, elements, prop, values):
         collection = get_mongo_collection(mongo_database, collection_name)
         for i in range(0, len(values)):
