@@ -89,7 +89,6 @@ logger = logging.getLogger(__name__)
 
 
 PROJECT_ROOT = pathlib.Path(__file__).parent.parent
-REGEX_FIELD = "sftp_file_regex"
 ERRORS_DIR = "errors"
 SUCCESSES_DIR = "successes"
 
@@ -106,7 +105,7 @@ class Centre:
 
     def get_files_in_download_dir(self) -> List[str]:
         """Get all the files in the download directory for this centre and filter the file names using the regex
-        described in the centre's 'regex_field'.
+        described in the centre's `sftp_file_regex_heron` and (if present) `sftp_file_regex_eagle`.
 
         Returns:
             List[str] -- all the file names in the download directory after filtering
@@ -119,10 +118,22 @@ class Centre:
             logger.debug(f"Attempting to walk {path_to_walk}")
             (_, _, files) = next(os.walk(path_to_walk))
 
-            pattern = re.compile(self.centre_config[REGEX_FIELD])
+            def match_heron_and_eagle_files(file_name: str) -> bool:
+                pattern_heron = re.compile(self.centre_config["sftp_file_regex_heron"])
+
+                if pattern_heron.match(file_name):
+                    return True
+
+                if (sftp_file_regex_eagle := self.centre_config.get("sftp_file_regex_eagle")) is not None:
+                    pattern_eagle = re.compile(sftp_file_regex_eagle)
+
+                    if pattern_eagle.match(file_name):
+                        return True
+
+                return False
 
             # filter the list of files to only those which match the pattern
-            centre_files = list(filter(pattern.match, files))
+            centre_files = list(filter(match_heron_and_eagle_files, files))
 
             self.is_download_dir_walkable = True
 
@@ -270,8 +281,7 @@ class CentreFile:
             FIELD_DATE_TESTED,
         }
 
-        # These are to allow some variability in headers,
-        # due to receiving inconsistent file formats
+        # These are to allow some variability in headers, due to receiving inconsistent file formats
         self.header_regex_correction_dict = {r"^Root Sample$": FIELD_ROOT_SAMPLE_ID}
 
     def filepath(self) -> Path:
@@ -883,7 +893,7 @@ class CentreFile:
         )
 
     def filtered_row(self, row: CSVRow, line_number: int) -> ModifiedRow:
-        """Filter unneeded columns and add lab id if not present and config flag set.
+        """Filter unneeded columns and add `lab_id` if not present and config flag set.
 
         Arguments:
             row {CSVRow} - sample row read from file
@@ -924,6 +934,9 @@ class CentreFile:
 
         # and check the row for values for any of the optional CT channel headers and copy them across
         seen_headers, modified_row = self.extract_channel_fields(seen_headers, row, modified_row)
+
+        # convert None-like fields to None
+        modified_row = self.convert_channel_fields(row, modified_row)
 
         # now check if we still have any columns left in the file row that we do not recognise
         unexpected_headers = list(row.keys() - seen_headers)
@@ -966,12 +979,21 @@ class CentreFile:
 
         return seen_headers, modified_row
 
+    def convert_channel_fields(self, csv_row: CSVRow, modified_row: ModifiedRow) -> ModifiedRow:
+        pattern = re.compile(r"^unknown$", re.IGNORECASE)
+
+        for channel_field_header in self.get_channel_headers_mapping():
+            if pattern.match(str(csv_row.get(channel_field_header))):
+                modified_row[channel_field_header] = None
+
+        return modified_row
+
     def parse_and_format_file_rows(self, csvreader: DictReader) -> List[ModifiedRow]:
         """Attempts to parse and format the file rows
-           Adds additional derived and calculated fields to the imported rows that will aid querying
-           later. Filters out blank rows, duplicated rows, and rows with values failing various
-           rules on content. Creates error records for rows that do not pass checks, that will get
-           written to the import logs for display in the Lighthouse-UI imports screen.
+           Adds additional derived and calculated fields to the imported rows that will aid querying later. Filters out
+           blank rows, duplicated rows, and rows with values failing various rules on content. Creates error records for
+           rows that do not pass checks, that will get written to the import logs for display in the Lighthouse-UI
+           imports page.
 
         Arguments:
             csvreader {DictReader} -- CSV file reader to iterate over
@@ -1017,7 +1039,7 @@ class CentreFile:
     def parse_and_format_row(
         self, row: CSVRow, line_number: int, seen_rows: Set[RowSignature]
     ) -> Optional[ModifiedRow]:
-        """Parses a single row and runs validations on content.
+        """Parses a single row and runs validations on the content.
 
         Arguments:
             row {CSVRow} - row object from csv.DictReader
@@ -1046,6 +1068,9 @@ class CentreFile:
             return None
 
         # ---- perform various validations on row values ----
+        if not self.is_valid_root_sample_id(modified_row, line_number):
+            return None
+
         # Check that the date is a valid format and if so, convert it to a datetime before saving to mongo
         date_format_valid, date_string_dict = self.is_valid_date_format(modified_row, line_number, FIELD_DATE_TESTED)
         if date_format_valid:
@@ -1181,6 +1206,19 @@ class CentreFile:
             date_time = date_time.replace(tzinfo=timezone.utc)
 
         return date_time
+
+    def is_valid_root_sample_id(self, row: ModifiedRow, line_number: int) -> bool:
+        pattern = re.compile(r"^empty$", re.IGNORECASE)
+        root_sample_id = str(row.get(FIELD_ROOT_SAMPLE_ID)).strip()
+
+        if pattern.match(root_sample_id):
+            self.logging_collection.add_error(
+                "TYPE 27",
+                f"{FIELD_ROOT_SAMPLE_ID} is invalid, line: {line_number}, value: {root_sample_id}",
+            )
+            return False
+
+        return True
 
     def is_valid_date_format(self, row: ModifiedRow, line_number: int, date_field: str) -> Tuple[bool, Dict[str, str]]:
         """The possible values for the date are:
@@ -1402,12 +1440,12 @@ class CentreFile:
     def row_required_fields_present(self, row: CSVRow, line_number: int) -> bool:
         """Checks whether the row has the expected structure. Checks for:
         - blank rows
-        - root sample id
-        - result
-        - barcode
+        - 'Root Sample ID'
+        - 'Result'
+        - barcode: usually 'RNA ID'
 
         Arguments:
-            row {CSVRow} - row object from the csvreader
+            row {CSVRow} - row object from the CSVDictReader
             line_number {int} - line number within the file
 
         Returns:
