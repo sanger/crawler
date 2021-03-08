@@ -146,7 +146,9 @@ def remove_cherrypicked_samples(samples: List[SampleDoc], cherry_picked_samples:
 
 # Private, not explicitly tested methods
 
-
+# TODO: update comment
+# cherrypicked_samples view
+# combines sentinel and beckman data
 def __cherrypicked_samples_query(mlwh_db: str) -> str:
     return (
         f"SELECT root_sample_id AS `{FIELD_ROOT_SAMPLE_ID}`, `{FIELD_PLATE_BARCODE}`,"
