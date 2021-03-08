@@ -122,6 +122,21 @@ def test_process_files(mongo_database, config, testing_files_for_process, testin
         samples_collection.count_documents({"RNA ID": "AP123_B09", "source": "Alderley", FIELD_DATE_TESTED: date_time})
         == 1
     )
+    # Testing file where values contain with whitespace
+    assert (
+        samples_collection.count_documents(
+            {
+                FIELD_ROOT_SAMPLE_ID: "3",
+                FIELD_VIRAL_PREP_ID: "1",
+                FIELD_RNA_ID: "AP456_B09",
+                FIELD_RNA_PCR_ID: "CF06CR9G_B03",
+                FIELD_RESULT: "Negative",
+                "source": "Alderley",
+                FIELD_DATE_TESTED: date_time,
+            }
+        )
+        == 1
+    )
     assert source_plates_collection.count_documents({"barcode": "AP123"}) == 1
 
 
