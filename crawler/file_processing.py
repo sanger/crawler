@@ -789,10 +789,14 @@ class CentreFile:
 
         if csvreader.fieldnames:
             for i, fieldname in enumerate(csvreader.fieldnames):
+                stripped_fieldname = fieldname.strip()
+                csvreader.fieldnames[i] = stripped_fieldname  # type: ignore
+
+                # This is only for Root Sample -> Root Sample ID
                 for reg in self.header_regex_correction_dict.keys():
-                    if re.match(reg, fieldname.strip()):
+                    if re.match(reg, stripped_fieldname):
                         logger.warning(
-                            f"Found '{reg}' in field name '{fieldname}', "
+                            f"Found '{reg}' in field name '{stripped_fieldname}', "
                             f"correcting to '{self.header_regex_correction_dict[reg]}'"
                         )
                         csvreader.fieldnames[i] = self.header_regex_correction_dict[reg]  # type: ignore
