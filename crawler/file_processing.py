@@ -920,7 +920,7 @@ class CentreFile:
         for key in self.ACCEPTED_FIELDS:
             if key in row:
                 seen_headers.append(key)
-                modified_row[key] = row[key].strip()
+                modified_row[key] = row[key].strip() if type(row[key]) == str else row[key]
 
         # and check the row for values for any of the optional CT channel headers and copy them across
         seen_headers, modified_row = self.extract_channel_fields(seen_headers, row, modified_row)
