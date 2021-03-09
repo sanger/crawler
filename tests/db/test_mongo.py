@@ -7,6 +7,10 @@ from pymongo.database import Database
 from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.helpers.logging_helpers import LoggingCollection
 
+from crawler.constants import (
+    FIELD_MONGODB_ID,
+)
+
 
 def test_create_mongo_client(config):
     assert type(create_mongo_client(config)) == MongoClient
@@ -41,7 +45,7 @@ def test_create_import_record(freezer, mongo_database):
         result = create_import_record(
             import_collection, centre, len(docs), "test", error_collection.get_messages_for_import()
         )
-        import_doc = import_collection.find_one({"_id": result.inserted_id})
+        import_doc = import_collection.find_one({FIELD_MONGODB_ID: result.inserted_id})
 
         assert import_doc["date"].replace(microsecond=0) == now.replace(microsecond=0)
         assert import_doc["centre_name"] == centre["name"]

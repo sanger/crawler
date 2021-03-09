@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Union
+from bson.objectid import ObjectId
 
 import dateutil.parser
 
@@ -16,6 +17,7 @@ from crawler.constants import (
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
+    FIELD_SAMPLE_ID,
     FILTERED_POSITIVE_FIELDS_SET_DATE,
     MLWH_COORDINATE,
     MLWH_FILTERED_POSITIVE,
@@ -30,39 +32,77 @@ from crawler.constants import (
     POSITIVE_RESULT_VALUE,
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
+    FIELD_MUST_SEQUENCE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
+    FIELD_PROCESSED,
 )
 
 TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
     {
         FIELD_COORDINATE: "A01",
-        FIELD_SOURCE: "test1",
+        FIELD_SOURCE: "Test Centre",
         FIELD_RESULT: "Positive",
         FIELD_PLATE_BARCODE: "123",
         "released": True,
+        FIELD_RNA_ID: "A01aaa",
         FIELD_ROOT_SAMPLE_ID: "MCM001",
+        FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa1"),
     },
     {
         FIELD_COORDINATE: "B01",
-        FIELD_SOURCE: "test1",
+        FIELD_SOURCE: "Test Centre",
         FIELD_RESULT: "Negative",
         FIELD_PLATE_BARCODE: "123",
         "released": False,
+        FIELD_RNA_ID: "B01aaa",
         FIELD_ROOT_SAMPLE_ID: "MCM002",
+        FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa2"),
     },
     {
         FIELD_COORDINATE: "C01",
-        FIELD_SOURCE: "test1",
+        FIELD_SOURCE: "Test Centre",
         FIELD_RESULT: "Void",
         FIELD_PLATE_BARCODE: "123",
         FIELD_ROOT_SAMPLE_ID: "MCM003",
+        FIELD_RNA_ID: "C01aaa",
+        FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa3"),
     },
     {
-        FIELD_COORDINATE: "A01",
-        FIELD_SOURCE: "test1",
+        FIELD_COORDINATE: "D01",
+        FIELD_SOURCE: "Test Centre",
         FIELD_RESULT: "Positive",
         FIELD_PLATE_BARCODE: "456",
         "released": True,
         FIELD_ROOT_SAMPLE_ID: "MCM004",
+        FIELD_RNA_ID: "D01aaa",
+        FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa4"),
+    },
+]
+
+TESTING_PRIORITY_SAMPLES: List[Dict[str, Union[str, bool]]] = [
+    {
+        FIELD_SAMPLE_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa1"),
+        FIELD_MUST_SEQUENCE: True,
+        FIELD_PREFERENTIALLY_SEQUENCE: False,
+        FIELD_PROCESSED: False,
+    },
+    {
+        FIELD_SAMPLE_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa2"),
+        FIELD_MUST_SEQUENCE: False,
+        FIELD_PREFERENTIALLY_SEQUENCE: True,
+        FIELD_PROCESSED: False,
+    },
+    {
+        FIELD_SAMPLE_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa3"),
+        FIELD_MUST_SEQUENCE: True,
+        FIELD_PREFERENTIALLY_SEQUENCE: False,
+        FIELD_PROCESSED: True,
+    },
+    {
+        FIELD_SAMPLE_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa4"),
+        FIELD_MUST_SEQUENCE: False,
+        FIELD_PREFERENTIALLY_SEQUENCE: False,
+        FIELD_PROCESSED: False,
     },
 ]
 

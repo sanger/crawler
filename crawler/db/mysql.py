@@ -1,4 +1,6 @@
 import logging
+from crawler.helpers.logging_helpers import LoggingCollection
+
 from typing import Any, Dict, List, cast
 
 import mysql.connector as mysql
@@ -6,8 +8,12 @@ import sqlalchemy
 from mysql.connector.connection_cext import CMySQLConnection
 from mysql.connector.cursor_cext import CMySQLCursor
 from sqlalchemy.engine.base import Engine
+from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
-from crawler.types import Config
+from crawler.types import Config, ModifiedRow
+from crawler.helpers.general_helpers import (
+    map_mongo_sample_to_mysql,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -199,3 +205,48 @@ def create_mysql_connection_engine(connection_string: str, database: str = "") -
         create_engine_string += f"/{database}"
 
     return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
+
+
+def insert_or_update_samples_in_mlwh(
+    samples: List[ModifiedRow],
+    config: Config,
+    priority_samples: bool,
+    logging_collection: LoggingCollection,
+    logging_messages: Dict,
+) -> bool:
+    """Insert or update sample records into the MLWH database from the given samples, including the corresponding
+    mongodb _id, must_seqequence, preferentially_sequence
+
+    Arguments:
+        samples {List[ModifiedRow]} -- List of sample information
+        config {Config} --
+        priority_samples {bool} --
+        logging_collection {LoggingCollection} --
+        logging_messages {Dict} --
+
+    Returns:
+        {bool} -- True if the insert was successful; otherwise False
+    """
+    values = list(map(map_mongo_sample_to_mysql, samples))
+    mysql_conn = create_mysql_connection(config, False)
+
+    if mysql_conn is not None and mysql_conn.is_connected():
+        try:
+            run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
+
+            logger.debug(logging_messages["success"]["msg"])
+            return True
+        except Exception as e:
+            logging_collection.add_error(
+                logging_messages["insert_failure"]["error_type"], logging_messages["insert_failure"]["msg"]
+            )
+            logger.critical(f"{logging_messages['insert_failure']['critical_msg']}: {e}")
+            logger.exception(e)
+    else:
+        logging_collection.add_error(
+            logging_messages["connection_failure"]["error_type"],
+            logging_messages["connection_failure"]["msg"],
+        )
+        logger.critical(logging_messages["connection_failure"]["critical_msg"])
+
+    return False

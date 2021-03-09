@@ -13,6 +13,7 @@ import pysftp
 from bson.decimal128 import Decimal128
 
 from crawler.constants import (
+    POSITIVE_RESULT_VALUE,
     DART_EMPTY_VALUE,
     DART_LAB_ID,
     DART_LH_SAMPLE_UUID,
@@ -49,6 +50,8 @@ from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
+    FIELD_MUST_SEQUENCE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
     MLWH_CH1_CQ,
     MLWH_CH1_RESULT,
     MLWH_CH1_TARGET,
@@ -77,6 +80,8 @@ from crawler.constants import (
     MLWH_ROOT_SAMPLE_ID,
     MLWH_SOURCE,
     MLWH_UPDATED_AT,
+    MLWH_MUST_SEQUENCE,
+    MLWH_PREFERENTIALLY_SEQUENCE,
 )
 from crawler.types import Config, DartWellProp, ModifiedRowValue, SampleDoc, SourcePlateDoc
 
@@ -186,6 +191,9 @@ def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:
         # UUID fields
         MLWH_LH_SAMPLE_UUID: sample.get(FIELD_LH_SAMPLE_UUID),
         MLWH_LH_SOURCE_PLATE_UUID: sample.get(FIELD_LH_SOURCE_PLATE_UUID),
+        # priority samples fields
+        MLWH_MUST_SEQUENCE: sample.get(FIELD_MUST_SEQUENCE),
+        MLWH_PREFERENTIALLY_SEQUENCE: sample.get(FIELD_PREFERENTIALLY_SEQUENCE),
     }
 
 
@@ -288,6 +296,24 @@ def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
     return None
 
 
+def is_sample_positive(sample):
+    return sample.get(FIELD_RESULT, False) is POSITIVE_RESULT_VALUE
+
+
+def is_sample_important_or_positive(sample):
+    return is_sample_positive(sample) or is_sample_important(sample)
+
+
+def is_sample_important(sample):
+    return (sample.get(FIELD_MUST_SEQUENCE, False) is True) or (
+        sample.get(FIELD_PREFERENTIALLY_SEQUENCE, False) is True
+    )
+
+
+def is_sample_pickable(sample):
+    return (sample.get(FIELD_FILTERED_POSITIVE, False) is True) or is_sample_important(sample)
+
+
 def map_mongo_doc_to_dart_well_props(sample: SampleDoc) -> DartWellProp:
     """Transform a mongo sample doc into DART well properties.
 
@@ -297,8 +323,9 @@ def map_mongo_doc_to_dart_well_props(sample: SampleDoc) -> DartWellProp:
     Returns:
         DartWellProp -- Dictionary of DART property names and values.
     """
+
     return {
-        DART_STATE: DART_STATE_PICKABLE if sample.get(FIELD_FILTERED_POSITIVE, False) else DART_EMPTY_VALUE,
+        DART_STATE: DART_STATE_PICKABLE if is_sample_pickable(sample) else DART_EMPTY_VALUE,
         DART_ROOT_SAMPLE_ID: str(sample[FIELD_ROOT_SAMPLE_ID]),
         DART_RNA_ID: str(sample[FIELD_RNA_ID]),
         DART_LAB_ID: str(sample.get(FIELD_LAB_ID, DART_EMPTY_VALUE)),

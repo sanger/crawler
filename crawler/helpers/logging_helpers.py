@@ -28,7 +28,7 @@ class AggregateTypeBase:
         return self.message
 
     def get_report_message(self):
-        return f"Total number of {self.short_display_description} errors ({self.type_str}): {self.count_errors}"
+        return f"Total number of '{self.short_display_description}' errors ({self.type_str}): {self.count_errors}"
 
 
 # See confluence for full table of aggregate types
@@ -322,9 +322,84 @@ class AggregateType27(AggregateTypeBase):
         self.short_display_description = "Unknown date format"
 
 
+class AggregateType28(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 28"
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = (
+            f"{self.error_level.name}: Priority samples where the MLWH database "
+            f"insert has failed. ({self.type_str})"
+        )
+        self.short_display_description = "Priority samples - Failed MLWH inserts"
+
+
+class AggregateType29(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 29"
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = (
+            f"{self.error_level.name}: Priority samples where the MLWH database connection "
+            f"could not be made. ({self.type_str})"
+        )
+        self.short_display_description = "Priority samples - Failed MLWH connection"
+
+
+class AggregateType30(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 30"
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = (
+            f"{self.error_level.name}: Priority samples where all DART database inserts have failed. ({self.type_str})"
+        )
+        self.short_display_description = "Priority samples - Failed DART inserts"
+
+
+class AggregateType31(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 31"
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = (
+            f"{self.error_level.name}: Priority samples where the DART database connection "
+            f"could not be made. ({self.type_str})"
+        )
+        self.short_display_description = "Priority samples - Failed priority DART connection"
+
+
+class AggregateType32(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 32"
+        self.error_level = ErrorLevel.CRITICAL
+        self.max_errors = 5
+        self.message = (
+            f"{self.error_level.name}: There are priority samples in Mongodb "
+            f"that are still unprocessed. ({self.type_str})"
+        )
+        self.short_display_description = "Priority samples - Validation failure"
+
+
+class AggregateType33(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 33"
+        self.error_level = ErrorLevel.ERROR
+        self.message = (
+            "{self.error_level.name}: Priority samples where the DART database inserts have failed for some plates. "
+            f"({self.type_str})"
+        )
+        self.short_display_description = "Priority samples - Failed DART plate inserts"
+
+
 # Class to handle logging of errors of the various types per file
 class LoggingCollection:
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.aggregator_types = {
             "TYPE 1": AggregateType1(),
             "TYPE 2": AggregateType2(),
@@ -351,6 +426,12 @@ class LoggingCollection:
             "TYPE 25": AggregateType25(),
             "TYPE 26": AggregateType26(),
             "TYPE 27": AggregateType27(),
+            "TYPE 28": AggregateType28(),
+            "TYPE 29": AggregateType29(),
+            "TYPE 30": AggregateType30(),
+            "TYPE 31": AggregateType31(),
+            "TYPE 32": AggregateType32(),
+            "TYPE 33": AggregateType33(),
         }
 
     def add_error(self, aggregate_error_type, message):
