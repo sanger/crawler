@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - master
+      - develop
 
 jobs:
   check:
@@ -18,18 +19,9 @@ jobs:
       uses: InsonusK/get-latest-release@v1.0.1
       with:
         myToken: ${{ github.token }}
-        exclude_types: "draft|prerelease"
         view_top: 1
 
-    - name: "Print release info"
+    - name: Compare release names
       run: |
-        echo "id: ${{ steps.last_release.outputs.id }}"
-        echo "name: ${{ steps.last_release.outputs.name }}"
-        echo "tag_name: ${{ steps.last_release.outputs.tag_name }}"
-        echo "created_at: ${{ steps.last_release.outputs.created_at }}"
-        echo "draft: ${{ steps.last_release.outputs.draft }}"
-        echo "prerelease: ${{ steps.last_release.outputs.prerelease }}"
-    
-    - name: "Compare release names"
-      run: |
-        if [ "${{ steps.last_release.outputs.tag_name }}" = "$(printf '%s\n' $(cat .release-version))" ]; then exit 1; fi
+        if [ "${{ steps.last_release.outputs.tag_name }}" = "$(printf '%s\n' $(cat .release-version)_develop)" ] ||
+        [ "${{ steps.last_release.outputs.tag_name }}" = "$(printf '%s\n' $(cat .release-version))" ]; then exit 1; fi
