@@ -12,7 +12,7 @@ from crawler.constants import (
     FIELD_COORDINATE,
     FIELD_RESULT,
     FIELD_ROOT_SAMPLE_ID,
-    POSITIVE_RESULT_VALUE,
+    RESULT_VALUE_POSITIVE,
 )
 from crawler.exceptions import DartStateError
 from crawler.helpers.general_helpers import get_dart_well_index, map_mongo_doc_to_dart_well_props
@@ -154,7 +154,7 @@ def add_dart_well_properties_if_positive(cursor: pyodbc.Cursor, sample: SampleDo
         sample {Sample} -- The sample for which to add well properties.
         plate_barcode {str} -- The barcode of the plate to which this sample belongs.
     """
-    if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
+    if sample[FIELD_RESULT] == RESULT_VALUE_POSITIVE:
         well_index = get_dart_well_index(str(sample.get(FIELD_COORDINATE)))
         if well_index is not None:
             dart_well_props = map_mongo_doc_to_dart_well_props(sample)

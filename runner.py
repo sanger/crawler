@@ -1,16 +1,18 @@
 import argparse
-import time
 import logging
 import logging.config
+import time
 
-import schedule  # type: ignore
+import schedule
 
 from crawler import main
 
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Store external samples in mongo.")
+    parser = argparse.ArgumentParser(
+        description="Parse CSV files from the Lighthouse Labs and store the sample information in MongoDB"
+    )
 
     parser.add_argument(
         "--scheduled",
@@ -28,13 +30,18 @@ if __name__ == "__main__":
         "--keep-files",
         dest="keep_files",
         action="store_true",
-        help="keeps centre csv files after runner has been executed",
+        help="keeps the CSV files after the runner has been executed",
     )
     parser.add_argument(
         "--add-to-dart",
         dest="add_to_dart",
         action="store_true",
         help="on processing samples, also add them to DART",
+    )
+    parser.add_argument(
+        "--centre_prefix",
+        choices=["ALDP"],
+        help="process only this centre's CSV files",
     )
 
     parser.set_defaults(once=True)
@@ -45,13 +52,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.once:
-        main.run(args.sftp, args.keep_files, args.add_to_dart)
+        main.run(
+            sftp=args.sftp, keep_files=args.keep_files, add_to_dart=args.add_to_dart, centre_prefix=args.centre_prefix
+        )
     else:
         print("Scheduled to run every 15 minutes")
 
-        # if a run misses its scheduled time, it queues up
-        #  if more than one run is queued up, they execute sequentially
-        # i.e. no parallel processing
+        # If a run misses its scheduled time, it queues up. If more than one run is queued up, they execute sequentially
+        # i.e. no parallel processing happens
         schedule.every(15).minutes.do(
             main.run, sftp=args.sftp, keep_files=args.keep_files, add_to_dart=args.add_to_dart
         )

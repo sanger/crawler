@@ -10,8 +10,9 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from hashlib import md5
 from logging import INFO, WARN
+from operator import attrgetter
 from pathlib import Path
-from typing import Any, Dict, Final, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, Final, List, NamedTuple, Optional, Set, Tuple, cast
 
 from bson.decimal128 import Decimal128
 from more_itertools import groupby_transform
@@ -61,9 +62,10 @@ from crawler.constants import (
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
+    IGNORED_HEADERS,
     MAX_CQ_VALUE,
     MIN_CQ_VALUE,
-    POSITIVE_RESULT_VALUE,
+    RESULT_VALUE_POSITIVE,
 )
 from crawler.db.dart import (
     add_dart_plate_if_doesnt_exist,
@@ -94,21 +96,28 @@ SUCCESSES_DIR = "successes"
 
 
 class Centre:
+    class FileInfo(NamedTuple):
+        file_name: str
+        is_consolidated: bool = False
+
     def __init__(self, config: Config, centre_config: CentreConf):
         self.config = config
         self.centre_config = centre_config
         self.is_download_dir_walkable = False
+        self._files: List[Centre.FileInfo] = []
 
         # create backup directories for files
         os.makedirs(f"{self.centre_config['backups_folder']}/{ERRORS_DIR}", exist_ok=True)
         os.makedirs(f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}", exist_ok=True)
 
-    def get_files_in_download_dir(self) -> List[str]:
-        """Get all the files in the download directory for this centre and filter the file names using the regex
-        described in the centre's `sftp_file_regex_heron` and (if present) `sftp_file_regex_eagle`.
+        self.get_files_in_download_dir()
 
-        Returns:
-            List[str] -- all the file names in the download directory after filtering
+    def files(self):
+        return sorted(self._files, key=attrgetter("file_name"))
+
+    def get_files_in_download_dir(self):
+        """Get all the files in the download directory for this centre and filter the file names using the regex
+        described in the centre's `sftp_file_regex` and (if present) `sftp_file_regex_consolidated`.
         """
         logger.info(f"Fetching files of centre {self.centre_config['name']}")
         # get a list of files in the download directory
@@ -118,31 +127,33 @@ class Centre:
             logger.debug(f"Attempting to walk {path_to_walk}")
             (_, _, files) = next(os.walk(path_to_walk))
 
-            def match_heron_and_eagle_files(file_name: str) -> bool:
-                pattern_heron = re.compile(self.centre_config["sftp_file_regex_heron"])
+            def match_heron_and_eagle_files(file_name: str) -> Optional[Centre.FileInfo]:
+                pattern_non_consolidated = re.compile(self.centre_config["sftp_file_regex"])
 
-                if pattern_heron.match(file_name):
-                    return True
+                if pattern_non_consolidated.match(file_name):
+                    return self.FileInfo(file_name)
 
-                if (sftp_file_regex_eagle := self.centre_config.get("sftp_file_regex_eagle")) is not None:
-                    pattern_eagle = re.compile(sftp_file_regex_eagle)
+                if (sftp_file_regex_consolidated := self.centre_config.get("sftp_file_regex_consolidated")) is not None:
+                    pattern_consolidated = re.compile(sftp_file_regex_consolidated)
 
-                    if pattern_eagle.match(file_name):
-                        return True
+                    if pattern_consolidated.match(file_name):
+                        return self.FileInfo(file_name, is_consolidated=True)
 
-                return False
+                return None
 
-            # filter the list of files to only those which match the pattern
-            centre_files = list(filter(match_heron_and_eagle_files, files))
+            centre_files = []
+            for file in files:
+                if (file_info := match_heron_and_eagle_files(file)) is not None:
+                    centre_files.append(file_info)
 
             self.is_download_dir_walkable = True
+            self._files = centre_files
 
-            return centre_files
-        except Exception:
+        except Exception as e:
             self.is_download_dir_walkable = False
 
             logger.error(f"Failed when reading files from {path_to_walk}")
-            return []
+            logger.exception(e)
 
     def clean_up(self) -> None:
         """Remove the files downloaded from the SFTP for the given centre."""
@@ -160,32 +171,33 @@ class Centre:
         Arguments:
             add_to_dart {bool} -- whether to add the samples to DART
         """
-        self.centre_files = sorted(self.get_files_in_download_dir())
+        centre_files_sorted = sorted(self._files, key=attrgetter("file_name"))
 
         # iterate through each file in the centre
-        for file_name in self.centre_files:
-            logger.debug(f"Checking file {file_name}")
+        for file in centre_files_sorted:
+            logger.debug(f"Checking file {file.file_name}")
+            logger.info(f"Consolidated file: {file.is_consolidated}")
 
             # create an instance of the file class to handle the file
-            centre_file = CentreFile(file_name, self)
+            centre_file = CentreFile(file.file_name, file.is_consolidated, self)
 
             centre_file.set_state_for_file()
             logger.debug(f"File state: {CentreFileState[centre_file.file_state.name]}")
 
             # Process depending on file state
             if centre_file.file_state == CentreFileState.FILE_IN_BLACKLIST:
-                logger.debug("File in blacklist, skipping")
+                logger.warning("File in blacklist, skipping")
                 # next file
                 continue
             elif centre_file.file_state == CentreFileState.FILE_NOT_PROCESSED_YET:
                 # process it
                 centre_file.process_samples(add_to_dart)
             elif centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_ERROR:
-                logger.debug("File already processed as errored, skipping")
+                logger.info("File already processed as errored, skipping")
                 # next file
                 continue
             elif centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_SUCCESS:
-                logger.debug("File already processed successfully, skipping")
+                logger.info("File already processed successfully, skipping")
                 # next file
                 continue
             else:
@@ -216,7 +228,7 @@ class Centre:
             logger.debug(f"ls: {sftp.listdir(self.centre_config['sftp_root_read'])}")
 
             # downloads all files
-            logger.info("Downloading CSV files...")
+            logger.info("Downloading CSV files")
             sftp.get_d(self.centre_config["sftp_root_read"], self.get_download_dir())
 
         return None
@@ -256,7 +268,7 @@ class CentreFile:
 
     filtered_positive_identifier = current_filtered_positive_identifier()
 
-    def __init__(self, file_name: str, centre: Centre):
+    def __init__(self, file_name: str, is_consolidated: bool, centre: Centre):
         """Initialiser for the class representing the file
 
         Arguments:
@@ -269,6 +281,7 @@ class CentreFile:
         self.config = centre.config
         self.centre_config = centre.centre_config
         self.file_name = file_name
+        self.is_consolidated = is_consolidated
         self.file_state = CentreFileState.FILE_UNCHECKED
 
         self.docs_inserted = 0
@@ -399,9 +412,7 @@ class CentreFile:
         # Internally traps TYPE 26 failed assigning source plate UUIDs error and returns []
         docs_to_insert = self.docs_to_insert_updated_with_source_plate_uuids(docs_to_insert)
 
-        if (num_docs_to_insert := len(docs_to_insert)) > 0:
-            logger.debug(f"{num_docs_to_insert} docs to insert")
-
+        if len(docs_to_insert) > 0:
             mongo_ids_of_inserted = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
 
             if len(mongo_ids_of_inserted) > 0:
@@ -519,7 +530,7 @@ class CentreFile:
             docs_to_insert {List[ModifiedRow]} -- the sample records to update
 
         Returns:
-            List[Sample] -- the updated, filtered samples
+            List[ModifiedRow] -- the updated, filtered samples
         """
         logger.debug("Attempting to update docs with source plate UUIDs")
 
@@ -528,13 +539,13 @@ class CentreFile:
         def update_doc_from_source_plate(
             row: ModifiedRow, existing_plate: SourcePlateDoc, skip_lab_check: bool = False
         ) -> None:
-            if skip_lab_check or row[FIELD_LAB_ID] == existing_plate[FIELD_LAB_ID]:
+            if skip_lab_check or self.is_consolidated or row[FIELD_LAB_ID] == existing_plate[FIELD_LAB_ID]:
                 row[FIELD_LH_SOURCE_PLATE_UUID] = existing_plate[FIELD_LH_SOURCE_PLATE_UUID]
                 updated_docs.append(row)
             else:
                 error_message = (
-                    f"Source plate barcode {row[FIELD_PLATE_BARCODE]} in file {self.file_name} "
-                    f"already exists with different lab_id {existing_plate[FIELD_LAB_ID]}",
+                    f"Source plate barcode '{row[FIELD_PLATE_BARCODE]}' in file '{self.file_name}' already exists "
+                    f"with a different lab_id: {existing_plate[FIELD_LAB_ID]}"
                 )
                 self.logging_collection.add_error("TYPE 25", error_message)
                 logger.error(error_message)
@@ -584,7 +595,7 @@ class CentreFile:
         Arguments:
             docs_to_insert {List[ModifiedRow]} -- list of filtered sample information extracted from CSV files
         """
-        logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
+        logger.debug(f"Attempting to insert {len(docs_to_insert)} docs into mongo")
 
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
         try:
@@ -594,6 +605,8 @@ class CentreFile:
             result = samples_collection.insert_many(docs_to_insert, ordered=False)
 
             self.docs_inserted = len(result.inserted_ids)
+
+            logger.info(f"{self.docs_inserted} documents inserted into mongo")
 
             # inserted_ids is in the same order as docs_to_insert, even if the query has ordered=False parameter
             return list(result.inserted_ids)
@@ -617,6 +630,8 @@ class CentreFile:
                 logger.info(filtered_errors[0])
 
             self.docs_inserted = e.details["nInserted"]
+
+            logger.info(f"{self.docs_inserted} documents inserted into mongo")
 
             self.add_duplication_errors(e)
 
@@ -885,13 +900,6 @@ class CentreFile:
 
         return tuple(signature)
 
-    def log_adding_default_lab_id(self, row, line_number):
-        logger.debug(f"Adding in missing Lab ID for row {line_number}")
-        self.logging_collection.add_error(
-            "TYPE 12",
-            f"No Lab ID, line: {line_number}, root_sample_id: {row.get(FIELD_ROOT_SAMPLE_ID)}",
-        )
-
     def filtered_row(self, row: CSVRow, line_number: int) -> ModifiedRow:
         """Filter unneeded columns and add `lab_id` if not present and config flag set.
 
@@ -901,30 +909,12 @@ class CentreFile:
         Returns:
             ModifiedRow - returns a modified version of the row
         """
+
         modified_row: ModifiedRow = {}
+        seen_headers: List[str] = []
 
         if self.config.ADD_LAB_ID:
-            # when we need to add the lab id if not present
-            if (lab_id := row.get(FIELD_LAB_ID)) is not None:
-                # if the lab id field is already present but it might be an empty string
-                if not lab_id:
-                    # if no value (empty string) we add the default value and log that it was missing
-                    modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
-
-                    self.log_adding_default_lab_id(row, line_number)
-                else:
-                    if lab_id != self.centre_config["lab_id_default"]:
-                        # if the lab id is different to what is configured for the lab
-                        logger.warning(f"Different lab id setting: {lab_id} != {self.centre_config['lab_id_default']}")
-
-                    # copy the lab id across
-                    modified_row[FIELD_LAB_ID] = lab_id
-            else:
-                # if the lab id field is not present we add the default and log it was missing
-                modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
-                self.log_adding_default_lab_id(row, line_number)
-
-        seen_headers: List[str] = []
+            self.determine_lab_id(row, line_number, modified_row)
 
         # next check the row for values for each of the accepted fields (except for the CT fields) and copy them across
         for key in self.ACCEPTED_FIELDS:
@@ -939,7 +929,7 @@ class CentreFile:
         modified_row = self.convert_channel_fields(row, modified_row)
 
         # now check if we still have any columns left in the file row that we do not recognise
-        unexpected_headers = list(row.keys() - seen_headers)
+        unexpected_headers = list(row.keys() - seen_headers - IGNORED_HEADERS)
 
         if len(unexpected_headers) > 0:
             self.logging_collection.add_error(
@@ -948,6 +938,33 @@ class CentreFile:
                 f"root_sample_id: {row.get(FIELD_ROOT_SAMPLE_ID)}, "
                 f"extra headers: {unexpected_headers}",
             )
+
+        return modified_row
+
+    def determine_lab_id(self, row: CSVRow, line_number: int, modified_row: ModifiedRow) -> ModifiedRow:
+        def log_adding_default_lab_id(row, line_number):
+            logger.debug(f"Adding in missing Lab ID for row {line_number}")
+            self.logging_collection.add_error(
+                "TYPE 12",
+                f"No Lab ID, line: {line_number}, root_sample_id: {row.get(FIELD_ROOT_SAMPLE_ID)}",
+            )
+
+        if (lab_id := row.get(FIELD_LAB_ID)) is not None:
+            # if the lab id field is already present but it might be an empty string
+            if not lab_id:
+                # if no value (empty string) we add the default value and log that it was missing
+                modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
+                log_adding_default_lab_id(row, line_number)
+            else:
+                if not self.is_consolidated and lab_id != self.centre_config["lab_id_default"]:
+                    # if the lab id is different to what is configured for the lab
+                    logger.warning(f"Different lab id setting: {lab_id} != {self.centre_config['lab_id_default']}")
+                # copy the lab id across
+                modified_row[FIELD_LAB_ID] = lab_id
+        else:
+            # if the lab id field is not present we add the default and log it was missing
+            modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
+            log_adding_default_lab_id(row, line_number)
 
         return modified_row
 
@@ -1027,11 +1044,11 @@ class CentreFile:
 
         logger.log(
             INFO if invalid_rows_count == 0 else WARN,
-            f"Rows with invalid structure in this file = {invalid_rows_count}",
+            f"Rows with invalid structure/data in this file: {invalid_rows_count}",
         )
         logger.log(
             INFO if failed_validation_count == 0 else WARN,
-            f"Rows that failed validation in this file = {failed_validation_count}",
+            f"Rows that failed validation in this file: {failed_validation_count}",
         )
 
         return verified_rows
@@ -1068,7 +1085,7 @@ class CentreFile:
             return None
 
         # ---- perform various validations on row values ----
-        if not self.is_valid_root_sample_id(modified_row, line_number):
+        if not self.is_valid_root_sample_id(modified_row):
             return None
 
         # Check that the date is a valid format and if so, convert it to a datetime before saving to mongo
@@ -1207,15 +1224,12 @@ class CentreFile:
 
         return date_time
 
-    def is_valid_root_sample_id(self, row: ModifiedRow, line_number: int) -> bool:
+    @staticmethod
+    def is_valid_root_sample_id(row: ModifiedRow) -> bool:
         pattern = re.compile(r"^empty$", re.IGNORECASE)
         root_sample_id = str(row.get(FIELD_ROOT_SAMPLE_ID)).strip()
 
         if pattern.match(root_sample_id):
-            self.logging_collection.add_error(
-                "TYPE 27",
-                f"{FIELD_ROOT_SAMPLE_ID} is invalid, line: {line_number}, value: {root_sample_id}",
-            )
             return False
 
         return True
@@ -1409,7 +1423,7 @@ class CentreFile:
             bool - whether the channel results complement the main results
         """
         # if the result is not positive we do not need to check any further
-        if row.get(FIELD_RESULT) != POSITIVE_RESULT_VALUE:
+        if row.get(FIELD_RESULT) != RESULT_VALUE_POSITIVE:
             return True
 
         ch_results_present = 0
@@ -1420,7 +1434,7 @@ class CentreFile:
             # check that a value is present and that it is not an empty string
             if (channel_result_val := row.get(channel_result_field)) is not None and channel_result_val:
                 ch_results_present += 1
-                if channel_result_val == POSITIVE_RESULT_VALUE:
+                if channel_result_val == RESULT_VALUE_POSITIVE:
                     ch_results_positive += 1
 
         # if there are no channel results present in the row we do not need to check further
@@ -1482,7 +1496,7 @@ class CentreFile:
 
         return True
 
-    def file_name_date(self) -> Any:
+    def file_name_date(self) -> Optional[datetime]:
         """Extracts date from the filename if it matches the expected format, otherwise returns None.
 
         Returns:

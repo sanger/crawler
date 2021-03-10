@@ -54,13 +54,13 @@ querying.
 
 ## Running
 
-Once all the required packages are installed, enter the virtual environment with:
+Once all the required packages are installed, enter the virtual environment with (this will also load the `.env` file):
 
     pipenv shell
 
 The following runtime flags are available:
 
-    SETTINGS_MODULE=crawler.config.development python runner.py --help
+    python runner.py --help
 
     usage: runner.py [-h] [--sftp] [--scheduled]
 
@@ -70,7 +70,7 @@ The following runtime flags are available:
     -h, --help    show this help message and exit
     --scheduled   start scheduled execution, defaults to running once
     --sftp        use SFTP to download CSV files, defaults to using local files
-    --keep-files  keeps centre csv files after runner has been executed
+    --keep-files  keeps the CSV files after the runner has been executed
     --add-to-dart add samples to DART, by default they are not
 
 ## Migrations

@@ -20,7 +20,7 @@ CENTRES.append(
         "prefix": "TEST",
         "lab_id_default": "TE",
         "backups_folder": "tmp/backups/TEST",
-        "sftp_file_regex_heron": f"^TEST_{CENTRE_REGEX_SFTP_FILE_HERON}",
+        "sftp_file_regex": f"^TEST_{CENTRE_REGEX_SFTP_FILE_HERON}",
         "sftp_root_read": "tests/files",
         "file_names_to_ignore": ["TEST_sanger_report_200518_2205.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
@@ -55,8 +55,8 @@ DART_DB_RW_PASSWORD = "MyS3cr3tPassw0rd"
 DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
 
 # logging config
-LOGGING["loggers"]["crawler"]["level"] = "DEBUG"  # type: ignore
-LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]  # type: ignore
+LOGGING["loggers"]["crawler"]["level"] = "DEBUG"
+LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream_dev"]
 
 # MLWH database details
 ML_WH_DB = "unified_warehouse_test"

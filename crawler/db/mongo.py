@@ -109,8 +109,6 @@ def create_import_record(
         InsertOneResult -- the result of inserting this document
     """
     logger.debug(f"Creating the import record for {centre['name']}")
-    logger.info(f"{docs_inserted} documents inserted into sample collection")
-    logger.debug(f"CSV file used: {file_name}")
 
     import_doc = {
         "date": datetime.utcnow(),  # https://pymongo.readthedocs.io/en/stable/examples/datetimes.html

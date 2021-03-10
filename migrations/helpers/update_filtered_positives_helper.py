@@ -16,7 +16,7 @@ from crawler.constants import (
     FIELD_RESULT,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
-    POSITIVE_RESULT_VALUE,
+    RESULT_VALUE_POSITIVE,
 )
 from crawler.db.dart import add_dart_plate_if_doesnt_exist, create_dart_sql_server_conn, set_dart_well_properties
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
@@ -78,7 +78,7 @@ def positive_result_samples_from_mongo(config: Config, plate_barcodes: Optional[
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-        pipeline = [{"$match": {FIELD_RESULT: {"$eq": POSITIVE_RESULT_VALUE}}}]
+        pipeline = [{"$match": {FIELD_RESULT: {"$eq": RESULT_VALUE_POSITIVE}}}]
 
         if plate_barcodes is not None:
             pipeline.append({"$match": {FIELD_PLATE_BARCODE: {"$in": plate_barcodes}}})  # type: ignore
@@ -250,7 +250,7 @@ def update_dart_fields(config: Config, samples: List[SampleDoc]) -> bool:
                 )
                 if plate_state == DART_STATE_PENDING:
                     for sample in samples_in_plate:
-                        if sample[FIELD_RESULT] == POSITIVE_RESULT_VALUE:
+                        if sample[FIELD_RESULT] == RESULT_VALUE_POSITIVE:
                             well_index = get_dart_well_index(sample.get(FIELD_COORDINATE, None))
                             if well_index is not None:
                                 well_props = map_mongo_doc_to_dart_well_props(sample)

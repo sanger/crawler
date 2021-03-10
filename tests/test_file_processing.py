@@ -76,7 +76,7 @@ from crawler.constants import (
     MLWH_SOURCE,
     MLWH_TABLE_NAME,
     MLWH_UPDATED_AT,
-    POSITIVE_RESULT_VALUE,
+    RESULT_VALUE_POSITIVE,
 )
 from crawler.db.mongo import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
@@ -87,7 +87,7 @@ from crawler.types import Config, ModifiedRow
 
 def centre_file_with_mocked_filtered_positive_identifier(config, file_name):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile(file_name, centre)
+    centre_file = CentreFile(file_name, False, centre)
     centre_file.filtered_positive_identifier.version = "v2.3"
     centre_file.filtered_positive_identifier.is_positive = MagicMock(return_value=True)  # type: ignore
     return centre_file
@@ -202,7 +202,7 @@ def test_checksum_not_match(config, tmpdir):
 
         try:
             centre = Centre(config, config.CENTRES[0])
-            centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
+            centre_file = CentreFile("AP_sanger_report_200503_2338.csv", False, centre)
 
             assert centre_file.checksum_match("successes") is False
         finally:
@@ -224,7 +224,7 @@ def test_checksum_match(config, tmpdir):
 
         try:
             centre = Centre(config, config.CENTRES[0])
-            centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
+            centre_file = CentreFile("AP_sanger_report_200503_2338.csv", False, centre)
             assert centre_file.checksum_match("successes") is True
         finally:
             for tmpfile_for_list in list_files:
@@ -250,7 +250,7 @@ def test_row_required_fields_present_fail(config: Config, centre_file: CentreFil
 
 def test_row_required_fields_present(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
+    centre_file = CentreFile("some file", False, centre)
 
     assert centre_file.row_required_fields_present(
         {"Root Sample ID": "asdf", "Result": "asdf", "RNA ID": "ASDF_A01", "Date tested": "asdf"}, 5
@@ -273,7 +273,7 @@ def test_row_required_fields_present(config):
 def test_extract_plate_barcode_and_coordinate(config):
     test_centre = config.CENTRES[0]
     centre = Centre(config, test_centre)
-    centre_file = CentreFile("some file", centre)
+    centre_file = CentreFile("some file", False, centre)
 
     barcode_field = test_centre["barcode_field"]
     barcode_regex = test_centre["barcode_regex"]
@@ -401,7 +401,7 @@ def test_parse_and_format_file_rows_with_invalid_rna_id(config):
 def test_filtered_row_with_extra_unrecognised_columns(config):
     # check have removed extra columns and created a warning error log
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some_file.csv", centre)
+    centre_file = CentreFile("some_file.csv", False, centre)
 
     with StringIO() as fake_csv_with_extra_columns:
         fake_csv_with_extra_columns.write(
@@ -498,7 +498,7 @@ def test_filtered_row_with_blank_lab_id(config):
     try:
         config.ADD_LAB_ID = True
         centre = Centre(config, config.CENTRES[0])
-        centre_file = CentreFile("some_file.csv", centre)
+        centre_file = CentreFile("some_file.csv", False, centre)
 
         with StringIO() as fake_csv_without_lab_id:
             fake_csv_without_lab_id.write(f"{FIELD_ROOT_SAMPLE_ID},{FIELD_RNA_ID},{FIELD_RESULT},{FIELD_DATE_TESTED}\n")
@@ -527,7 +527,7 @@ def test_filtered_row_with_lab_id_present(config):
     try:
         config.ADD_LAB_ID = True
         centre = Centre(config, config.CENTRES[0])
-        centre_file = CentreFile("some_file.csv", centre)
+        centre_file = CentreFile("some_file.csv", False, centre)
 
         with StringIO() as fake_csv_with_lab_id:
             fake_csv_with_lab_id.write(
@@ -556,7 +556,7 @@ def test_filtered_row_with_lab_id_present(config):
 def test_filtered_row_with_ct_channel_columns(config):
     # check can handle a row with the channel columns present
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some_file.csv", centre)
+    centre_file = CentreFile("some_file.csv", False, centre)
 
     with StringIO() as fake_csv_with_ct_columns:
         fake_csv_with_ct_columns.write(
@@ -747,7 +747,7 @@ def test_parse_and_format_file_rows_detects_duplicates(config, freezer):
 
 def test_where_result_has_unexpected_value(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some_file.csv", centre)
+    centre_file = CentreFile("some_file.csv", False, centre)
 
     with StringIO() as fake_csv:
         fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
@@ -778,7 +778,7 @@ def test_where_result_has_unexpected_value(config):
 
 def test_where_ct_channel_target_has_unexpected_value(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some_file.csv", centre)
+    centre_file = CentreFile("some_file.csv", False, centre)
 
     with StringIO() as fake_csv:
         fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Target\n")
@@ -803,7 +803,7 @@ def test_where_ct_channel_target_has_unexpected_value(config):
 
 def test_where_ct_channel_result_has_unexpected_value(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some_file.csv", centre)
+    centre_file = CentreFile("some_file.csv", False, centre)
 
     with StringIO() as fake_csv:
         fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Result\n")
@@ -843,7 +843,7 @@ def test_changes_ct_channel_cq_value_data_type(config: Config, centre_file: Cent
 
 def test_where_ct_channel_cq_value_is_not_numeric(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some_file.csv", centre)
+    centre_file = CentreFile("some_file.csv", False, centre)
 
     with StringIO() as fake_csv:
         fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Cq\n")
@@ -877,7 +877,7 @@ def test_is_within_cq_range():
 
 def test_where_ct_channel_cq_value_is_not_within_range(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some_file.csv", centre)
+    centre_file = CentreFile("some_file.csv", False, centre)
 
     with StringIO() as fake_csv:
         fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Cq\n")
@@ -905,7 +905,7 @@ def test_where_ct_channel_cq_value_is_not_within_range(config):
 
 def test_where_positive_result_does_not_align_with_ct_channel_results(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some_file.csv", centre)
+    centre_file = CentreFile("some_file.csv", False, centre)
 
     with StringIO() as fake_csv:
         fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH1-Result,CH2-Result,CH3-Result,CH4-Result\n")
@@ -1055,7 +1055,7 @@ def test_check_for_required_headers_with_missing_lab_id_and_lab_id_true(config):
     try:
         config.ADD_LAB_ID = True
         centre = Centre(config, config.CENTRES[0])
-        centre_file = CentreFile("some_file.csv", centre)
+        centre_file = CentreFile("some_file.csv", False, centre)
 
         with StringIO() as fake_csv_without_lab_id:
             fake_csv_without_lab_id.write(
@@ -1091,7 +1091,7 @@ def test_backup_good_file(config, tmpdir):
         filename = "AP_sanger_report_200503_2338.csv"
 
         # test the backup of the file to the successes folder
-        centre_file = CentreFile(filename, centre)
+        centre_file = CentreFile(filename, False, centre)
         centre_file.backup_file()
 
         assert len(success_folder.listdir()) == 1
@@ -1118,7 +1118,7 @@ def test_backup_bad_file(config, tmpdir):
         filename = "AP_sanger_report_200518_2132.csv"
 
         # test the backup of the file to the errors folder
-        centre_file = CentreFile(filename, centre)
+        centre_file = CentreFile(filename, False, centre)
         centre_file.logging_collection.add_error("TYPE 4", "Some error happened")
         centre_file.backup_file()
 
@@ -1132,14 +1132,17 @@ def test_backup_bad_file(config, tmpdir):
 # tests for parsing file name date
 def test_file_name_date_parses_right(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
-    assert centre_file.file_name_date().year == 2020
-    assert centre_file.file_name_date().month == 5
-    assert centre_file.file_name_date().day == 3
-    assert centre_file.file_name_date().hour == 23
-    assert centre_file.file_name_date().minute == 38
+    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", False, centre)
+    file_name_date = centre_file.file_name_date()
 
-    centre_file = CentreFile("AP_sanger_report_200503_2338 (2).csv", centre)
+    assert file_name_date is not None
+    assert file_name_date.year == 2020
+    assert file_name_date.month == 5
+    assert file_name_date.day == 3
+    assert file_name_date.hour == 23
+    assert file_name_date.minute == 38
+
+    centre_file = CentreFile("AP_sanger_report_200503_2338 (2).csv", False, centre)
     assert centre_file.file_name_date() is None
 
 
@@ -1169,21 +1172,21 @@ def test_insert_samples_from_docs_into_mlwh(
                 FIELD_RNA_ID: "TC-rna-00000029_H12",
                 FIELD_PLATE_BARCODE: "TC-rna-00000029",
                 FIELD_COORDINATE: "H12",
-                FIELD_RESULT: POSITIVE_RESULT_VALUE,
+                FIELD_RESULT: RESULT_VALUE_POSITIVE,
                 FIELD_DATE_TESTED: date_tested_2,
                 FIELD_SOURCE: "Test Centre",
                 FIELD_LAB_ID: "TC",
                 FIELD_CH1_TARGET: "ORF1ab",
-                FIELD_CH1_RESULT: POSITIVE_RESULT_VALUE,
+                FIELD_CH1_RESULT: RESULT_VALUE_POSITIVE,
                 FIELD_CH1_CQ: Decimal128("21.28726211"),
                 FIELD_CH2_TARGET: "N gene",
-                FIELD_CH2_RESULT: POSITIVE_RESULT_VALUE,
+                FIELD_CH2_RESULT: RESULT_VALUE_POSITIVE,
                 FIELD_CH2_CQ: Decimal128("18.12736661"),
                 FIELD_CH3_TARGET: "S gene",
-                FIELD_CH3_RESULT: POSITIVE_RESULT_VALUE,
+                FIELD_CH3_RESULT: RESULT_VALUE_POSITIVE,
                 FIELD_CH3_CQ: Decimal128("22.63616273"),
                 FIELD_CH4_TARGET: "MS2",
-                FIELD_CH4_RESULT: POSITIVE_RESULT_VALUE,
+                FIELD_CH4_RESULT: RESULT_VALUE_POSITIVE,
                 FIELD_CH4_CQ: Decimal128("26.25125612"),
                 FIELD_FILTERED_POSITIVE: True,
                 FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
@@ -1237,21 +1240,21 @@ def test_insert_samples_from_docs_into_mlwh(
         assert rows[1][MLWH_RNA_ID] == "TC-rna-00000029_H12"
         assert rows[1][MLWH_PLATE_BARCODE] == "TC-rna-00000029"
         assert rows[1][MLWH_COORDINATE] == "H12"
-        assert rows[1][MLWH_RESULT] == POSITIVE_RESULT_VALUE
+        assert rows[1][MLWH_RESULT] == RESULT_VALUE_POSITIVE
         assert rows[1][MLWH_DATE_TESTED] == date_tested_2
         assert rows[1][MLWH_SOURCE] == "Test Centre"
         assert rows[1][MLWH_LAB_ID] == "TC"
         assert rows[1][MLWH_CH1_TARGET] == "ORF1ab"
-        assert rows[1][MLWH_CH1_RESULT] == POSITIVE_RESULT_VALUE
+        assert rows[1][MLWH_CH1_RESULT] == RESULT_VALUE_POSITIVE
         assert rows[1][MLWH_CH1_CQ] == Decimal("21.28726211")
         assert rows[1][MLWH_CH2_TARGET] == "N gene"
-        assert rows[1][MLWH_CH2_RESULT] == POSITIVE_RESULT_VALUE
+        assert rows[1][MLWH_CH2_RESULT] == RESULT_VALUE_POSITIVE
         assert rows[1][MLWH_CH2_CQ] == Decimal("18.12736661")
         assert rows[1][MLWH_CH3_TARGET] == "S gene"
-        assert rows[1][MLWH_CH3_RESULT] == POSITIVE_RESULT_VALUE
+        assert rows[1][MLWH_CH3_RESULT] == RESULT_VALUE_POSITIVE
         assert rows[1][MLWH_CH3_CQ] == Decimal("22.63616273")
         assert rows[1][MLWH_CH4_TARGET] == "MS2"
-        assert rows[1][MLWH_CH4_RESULT] == POSITIVE_RESULT_VALUE
+        assert rows[1][MLWH_CH4_RESULT] == RESULT_VALUE_POSITIVE
         assert rows[1][MLWH_CH4_CQ] == Decimal("26.25125612")
         assert rows[1][MLWH_FILTERED_POSITIVE] == 1
         assert rows[1][MLWH_FILTERED_POSITIVE_VERSION] == "v2.3"
@@ -1263,7 +1266,7 @@ def test_insert_samples_from_docs_into_mlwh(
 def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_connection):
     with patch("crawler.db.mysql.create_mysql_connection", return_value="not none"):
         centre = Centre(config, config.CENTRES[0])
-        centre_file = CentreFile("some file", centre)
+        centre_file = CentreFile("some file", False, centre)
 
         docs = [
             {
@@ -1333,7 +1336,7 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_none(
 def test_insert_samples_from_docs_into_mlwh_returns_false_none_connection(config, mlwh_connection):
     with patch("crawler.file_processing.create_mysql_connection", return_value=None):
         centre = Centre(config, config.CENTRES[0])
-        centre_file = CentreFile("some file", centre)
+        centre_file = CentreFile("some file", False, centre)
 
         docs = [
             {
@@ -1357,7 +1360,7 @@ def test_insert_samples_from_docs_into_mlwh_returns_false_not_connected(config, 
     with patch("crawler.file_processing.create_mysql_connection") as mysql_conn:
         mysql_conn().is_connected.return_value = False
         centre = Centre(config, config.CENTRES[0])
-        centre_file = CentreFile("some file", centre)
+        centre_file = CentreFile("some file", False, centre)
 
         docs = [
             {
@@ -1381,7 +1384,7 @@ def test_insert_samples_from_docs_into_mlwh_returns_failure_executing(config, ml
     with patch("crawler.file_processing.create_mysql_connection"):
         with patch("crawler.file_processing.run_mysql_executemany_query", side_effect=Exception("Boom!")):
             centre = Centre(config, config.CENTRES[0])
-            centre_file = CentreFile("some file", centre)
+            centre_file = CentreFile("some file", False, centre)
 
             docs = [
                 {
@@ -1404,7 +1407,7 @@ def test_insert_samples_from_docs_into_mlwh_returns_failure_executing(config, ml
 # tests for inserting docs into DART
 def test_insert_plates_and_wells_from_docs_into_dart_none_connection(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
+    centre_file = CentreFile("some file", False, centre)
 
     with patch("crawler.file_processing.create_dart_sql_server_conn", return_value=None):
         centre_file.insert_plates_and_wells_from_docs_into_dart([])
@@ -1416,7 +1419,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_none_connection(config):
 
 def test_insert_plates_and_wells_from_docs_into_dart_failed_cursor(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
+    centre_file = CentreFile("some file", False, centre)
 
     with patch("crawler.file_processing.create_dart_sql_server_conn") as mock_conn:
         mock_conn().cursor = MagicMock(side_effect=Exception("Boom!"))
@@ -1430,7 +1433,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_failed_cursor(config):
 
 def test_insert_plates_and_wells_from_docs_into_dart_failure_adding_new_plate(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
+    centre_file = CentreFile("some file", False, centre)
     docs_to_insert = [
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1439,7 +1442,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_failure_adding_new_plate(co
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_LAB_ID: "AP",
             FIELD_COORDINATE: "H11",
-            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_RESULT: RESULT_VALUE_POSITIVE,
         }
     ]
 
@@ -1459,7 +1462,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_non_pending_plate_does_not_
     config,
 ):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
+    centre_file = CentreFile("some file", False, centre)
     docs_to_insert = [
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1468,7 +1471,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_non_pending_plate_does_not_
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_LAB_ID: "AP",
             FIELD_COORDINATE: "H11",
-            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_RESULT: RESULT_VALUE_POSITIVE,
         }
     ]
 
@@ -1484,7 +1487,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_non_pending_plate_does_not_
 
 def test_insert_plates_and_wells_from_docs_into_dart_none_well_index(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
+    centre_file = CentreFile("some file", False, centre)
     docs_to_insert = [
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1493,7 +1496,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_none_well_index(config):
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_LAB_ID: "AP",
             FIELD_COORDINATE: "H11",
-            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_RESULT: RESULT_VALUE_POSITIVE,
         }
     ]
 
@@ -1515,7 +1518,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_none_well_index(config):
 
 def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
+    centre_file = CentreFile("some file", False, centre)
     docs_to_insert = [
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1524,7 +1527,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_COORDINATE: "A01",
             FIELD_LAB_ID: "AP",
-            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_RESULT: RESULT_VALUE_POSITIVE,
         },
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1533,7 +1536,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
             FIELD_PLATE_BARCODE: "TC-rna-00000024",
             FIELD_COORDINATE: "B01",
             FIELD_LAB_ID: "AP",
-            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_RESULT: RESULT_VALUE_POSITIVE,
         },
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1591,7 +1594,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
 
 def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_wells(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
+    centre_file = CentreFile("some file", False, centre)
     plate_barcode = "TC-rna-00000029"
     docs_to_insert = [
         {
@@ -1601,7 +1604,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
             FIELD_PLATE_BARCODE: plate_barcode,
             FIELD_COORDINATE: "A01",
             FIELD_LAB_ID: "AP",
-            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_RESULT: RESULT_VALUE_POSITIVE,
         },
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1610,7 +1613,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
             FIELD_PLATE_BARCODE: plate_barcode,
             FIELD_COORDINATE: "A02",
             FIELD_LAB_ID: "AP",
-            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_RESULT: RESULT_VALUE_POSITIVE,
         },
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1666,7 +1669,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
 
 def test_docs_to_insert_updated_with_source_plate_uuids_handles_mongo_collection_error(config):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
+    centre_file = CentreFile("some file", False, centre)
     with patch("crawler.file_processing.get_mongo_collection", side_effect=ValueError("Boom!")):
         result = centre_file.docs_to_insert_updated_with_source_plate_uuids([])
 
@@ -1684,7 +1687,7 @@ def test_docs_to_insert_updated_with_source_plate_uuids_adds_new_plates(config, 
         {FIELD_PLATE_BARCODE: "789", FIELD_LAB_ID: "CB"},
     ]
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
+    centre_file = CentreFile("some file", False, centre)
     updated_docs = centre_file.docs_to_insert_updated_with_source_plate_uuids(docs_to_insert)
     assert len(updated_docs) == 4
 
@@ -1718,7 +1721,7 @@ def test_docs_to_insert_updated_with_source_plate_uuids_uses_existing_plates(con
         {FIELD_PLATE_BARCODE: "789", FIELD_LAB_ID: "CB"},
     ]
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
+    centre_file = CentreFile("some file", False, centre)
     updated_docs = centre_file.docs_to_insert_updated_with_source_plate_uuids(docs_to_insert)
     assert len(updated_docs) == 4
 
@@ -1746,7 +1749,7 @@ def test_docs_to_insert_updated_with_source_plate_handles_duplicate_new_barcodes
         {FIELD_PLATE_BARCODE: "789", FIELD_LAB_ID: "CB"},
     ]
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
+    centre_file = CentreFile("some file", False, centre)
     updated_docs = centre_file.docs_to_insert_updated_with_source_plate_uuids(docs)
     assert len(updated_docs) == 3
     assert sum(doc[FIELD_PLATE_BARCODE] == "123" and doc[FIELD_LAB_ID] == "AP" for doc in docs) == 1
@@ -1784,7 +1787,7 @@ def test_docs_to_insert_updated_with_source_plate_handles_duplicate_existing_bar
         {FIELD_PLATE_BARCODE: "789", FIELD_LAB_ID: "CB"},
     ]
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("some file", centre)
+    centre_file = CentreFile("some file", False, centre)
     updated_docs = centre_file.docs_to_insert_updated_with_source_plate_uuids(docs)
     assert len(updated_docs) == 2
     assert sum(doc[FIELD_PLATE_BARCODE] == "456" and doc[FIELD_LAB_ID] == "MK" for doc in docs) == 1

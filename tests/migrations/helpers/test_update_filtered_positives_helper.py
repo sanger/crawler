@@ -25,7 +25,7 @@ from crawler.constants import (
     MLWH_RESULT,
     MLWH_RNA_ID,
     MLWH_ROOT_SAMPLE_ID,
-    POSITIVE_RESULT_VALUE,
+    RESULT_VALUE_POSITIVE,
 )
 from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES
 from crawler.types import SampleDoc
@@ -289,7 +289,7 @@ def test_update_mlwh_filtered_positive_fields_calls_to_update_samples(config, ml
             MLWH_PLATE_BARCODE: "123",
             MLWH_ROOT_SAMPLE_ID: "MCM001",
             MLWH_RNA_ID: "AAA123",
-            MLWH_RESULT: POSITIVE_RESULT_VALUE,
+            MLWH_RESULT: RESULT_VALUE_POSITIVE,
             MLWH_FILTERED_POSITIVE: None,
             MLWH_FILTERED_POSITIVE_VERSION: None,
             MLWH_FILTERED_POSITIVE_TIMESTAMP: None,
@@ -300,7 +300,7 @@ def test_update_mlwh_filtered_positive_fields_calls_to_update_samples(config, ml
             MLWH_PLATE_BARCODE: "123",
             MLWH_ROOT_SAMPLE_ID: "MCM002",
             MLWH_RNA_ID: "BBB123",
-            MLWH_RESULT: POSITIVE_RESULT_VALUE,
+            MLWH_RESULT: RESULT_VALUE_POSITIVE,
             MLWH_FILTERED_POSITIVE: True,
             MLWH_FILTERED_POSITIVE_VERSION: "v1.0",
             MLWH_FILTERED_POSITIVE_TIMESTAMP: datetime(2020, 4, 23, 14, 40, 8),
@@ -520,19 +520,19 @@ def test_update_dart_fields_returns_true_multiple_new_plates(config, mock_dart_c
                             FIELD_PLATE_BARCODE: "123",
                             FIELD_SOURCE: test_centre_name,
                             FIELD_COORDINATE: "A01",
-                            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+                            FIELD_RESULT: RESULT_VALUE_POSITIVE,
                         },
                         {
                             FIELD_PLATE_BARCODE: "ABC",
                             FIELD_SOURCE: test_centre_name,
                             FIELD_COORDINATE: "B03",
-                            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+                            FIELD_RESULT: RESULT_VALUE_POSITIVE,
                         },
                         {
                             FIELD_PLATE_BARCODE: "XYZ",
                             FIELD_SOURCE: test_centre_name,
                             FIELD_COORDINATE: "E11",
-                            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+                            FIELD_RESULT: RESULT_VALUE_POSITIVE,
                         },
                     ]
 
@@ -583,19 +583,19 @@ def test_update_dart_fields_returns_true_single_new_plate_multiple_wells(config,
                             FIELD_PLATE_BARCODE: test_plate_barcode,
                             FIELD_SOURCE: test_centre_name,
                             FIELD_COORDINATE: "A01",
-                            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+                            FIELD_RESULT: RESULT_VALUE_POSITIVE,
                         },
                         {
                             FIELD_PLATE_BARCODE: test_plate_barcode,
                             FIELD_SOURCE: test_centre_name,
                             FIELD_COORDINATE: "B03",
-                            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+                            FIELD_RESULT: RESULT_VALUE_POSITIVE,
                         },
                         {
                             FIELD_PLATE_BARCODE: test_plate_barcode,
                             FIELD_SOURCE: test_centre_name,
                             FIELD_COORDINATE: "E11",
-                            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+                            FIELD_RESULT: RESULT_VALUE_POSITIVE,
                         },
                         {
                             FIELD_PLATE_BARCODE: test_plate_barcode,

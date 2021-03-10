@@ -47,7 +47,7 @@ def centre(config):
 
 @pytest.fixture
 def centre_file(centre):
-    yield CentreFile("some_file.csv", centre)
+    yield CentreFile("some_file.csv", False, centre)
 
 
 @pytest.fixture

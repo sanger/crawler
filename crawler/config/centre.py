@@ -18,8 +18,8 @@ from crawler.constants import BIOMEK_LABWARE_CLASS_BIO, BIOMEK_LABWARE_CLASS_KIN
 # merge_start_date: Used for centres which switch from full dumps to incremental
 #                   updates. Files before this date will be ignored. Please ensure
 #                   that at least one complete dump is included in the timeframe.
-# sftp_file_regex_heron: Regex to identify files to load from the sftp server for project Heron
-# sftp_file_regex_eagle: " " for project Eagle
+# sftp_file_regex: Regex to identify files to load from the sftp server for project Heron
+# sftp_file_regex_consolidated: " " for project Eagle
 # sftp_master_file_regex: Regexp to identify the master file for incremental updates
 # sftp_root_read: directory on sftp from which to load csv files.
 # sftp_root_write: directory on sftp in which to upload master files
@@ -36,8 +36,8 @@ CENTRES = [
         "prefix": "ALDP",
         "lab_id_default": "AP",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/ALDP",
-        "sftp_file_regex_heron": f"^AP_{CENTRE_REGEX_SFTP_FILE_HERON}",
-        "sftp_file_regex_eagle": r"^AP-rna-\d+$",
+        "sftp_file_regex": f"^AP_{CENTRE_REGEX_SFTP_FILE_HERON}",
+        "sftp_file_regex_consolidated": r"^(AP-rna-|APE)\d+\.csv$",
         "sftp_root_read": "project-heron_alderly-park",
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
     },
@@ -48,7 +48,7 @@ CENTRES = [
         "prefix": "MILK",
         "lab_id_default": "MK",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/MILK",
-        "sftp_file_regex_heron": f"^MK_{CENTRE_REGEX_SFTP_FILE_HERON}",
+        "sftp_file_regex": f"^MK_{CENTRE_REGEX_SFTP_FILE_HERON}",
         "sftp_root_read": "project-heron/UK-Biocenter/Sanger Reports",
         "file_names_to_ignore": ["MK_sanger_report_200715_2000_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
@@ -60,7 +60,7 @@ CENTRES = [
         "prefix": "QEUH",
         "lab_id_default": "GLS",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/QEUH",
-        "sftp_file_regex_heron": f"^GLS_{CENTRE_REGEX_SFTP_FILE_HERON}",
+        "sftp_file_regex": f"^GLS_{CENTRE_REGEX_SFTP_FILE_HERON}",
         "sftp_root_read": "project-heron_glasgow",
         "file_names_to_ignore": ["GLS_sanger_report_200713_0001_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
@@ -72,7 +72,7 @@ CENTRES = [
         "prefix": "CAMC",
         "lab_id_default": "CB",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/CAMC",
-        "sftp_file_regex_heron": f"^CB_{CENTRE_REGEX_SFTP_FILE_HERON}",
+        "sftp_file_regex": f"^CB_{CENTRE_REGEX_SFTP_FILE_HERON}",
         "sftp_root_read": "project-heron_cambridge-az",
         "file_names_to_ignore": ["CB_sanger_report_200714_0001_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_BIO,
@@ -84,7 +84,7 @@ CENTRES = [
         "prefix": "RAND",
         "lab_id_default": "Randox",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/RAND",
-        "sftp_file_regex_heron": r"^lw-randox-biocentre-box-.*\.csv$",
+        "sftp_file_regex": r"^lw-randox-biocentre-box-.*\.csv$",
         "sftp_root_read": "project-heron_randox",
         "file_names_to_ignore": [r"^lw-randox-biocentre-box-((\d)|(1\d)|20)-.*$"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
