@@ -3,18 +3,23 @@ from typing import Dict, Optional
 
 import pyodbc
 
-from crawler.constants import (DART_SET_PROP_STATUS_SUCCESS, DART_STATE,
-                               DART_STATE_NO_PLATE, DART_STATE_NO_PROP,
-                               DART_STATE_PENDING, FIELD_COORDINATE,
-                               FIELD_ROOT_SAMPLE_ID)
+from crawler.constants import (
+    DART_SET_PROP_STATUS_SUCCESS,
+    DART_STATE,
+    DART_STATE_NO_PLATE,
+    DART_STATE_NO_PROP,
+    DART_STATE_PENDING,
+    FIELD_COORDINATE,
+    FIELD_ROOT_SAMPLE_ID,
+)
 from crawler.exceptions import DartStateError
-from crawler.helpers.general_helpers import (get_dart_well_index,
-                                             is_sample_positive,
-                                             map_mongo_doc_to_dart_well_props)
-from crawler.sql_queries import (SQL_DART_ADD_PLATE,
-                                 SQL_DART_GET_PLATE_PROPERTY,
-                                 SQL_DART_SET_PLATE_PROPERTY,
-                                 SQL_DART_SET_WELL_PROPERTY)
+from crawler.helpers.general_helpers import get_dart_well_index, is_sample_positive, map_mongo_doc_to_dart_well_props
+from crawler.sql_queries import (
+    SQL_DART_ADD_PLATE,
+    SQL_DART_GET_PLATE_PROPERTY,
+    SQL_DART_SET_PLATE_PROPERTY,
+    SQL_DART_SET_WELL_PROPERTY,
+)
 from crawler.types import Config, SampleDoc
 
 logger = logging.getLogger(__name__)

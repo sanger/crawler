@@ -18,46 +18,76 @@ from more_itertools import groupby_transform
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
-from crawler.constants import (ALLOWED_CH_RESULT_VALUES,
-                               ALLOWED_CH_TARGET_VALUES, ALLOWED_RESULT_VALUES,
-                               COLLECTION_CENTRES, COLLECTION_IMPORTS,
-                               COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES,
-                               DART_STATE_PENDING, FIELD_BARCODE, FIELD_CH1_CQ,
-                               FIELD_CH1_RESULT, FIELD_CH1_TARGET,
-                               FIELD_CH2_CQ, FIELD_CH2_RESULT,
-                               FIELD_CH2_TARGET, FIELD_CH3_CQ,
-                               FIELD_CH3_RESULT, FIELD_CH3_TARGET,
-                               FIELD_CH4_CQ, FIELD_CH4_RESULT,
-                               FIELD_CH4_TARGET, FIELD_COORDINATE,
-                               FIELD_CREATED_AT, FIELD_DATE_TESTED,
-                               FIELD_FILE_NAME, FIELD_FILE_NAME_DATE,
-                               FIELD_FILTERED_POSITIVE,
-                               FIELD_FILTERED_POSITIVE_TIMESTAMP,
-                               FIELD_FILTERED_POSITIVE_VERSION, FIELD_LAB_ID,
-                               FIELD_LH_SAMPLE_UUID,
-                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_LINE_NUMBER,
-                               FIELD_MONGODB_ID, FIELD_PLATE_BARCODE,
-                               FIELD_RESULT, FIELD_RNA_ID, FIELD_RNA_PCR_ID,
-                               FIELD_ROOT_SAMPLE_ID, FIELD_SOURCE,
-                               FIELD_UPDATED_AT, FIELD_VIRAL_PREP_ID,
-                               IGNORED_HEADERS, MAX_CQ_VALUE, MIN_CQ_VALUE,
-                               RESULT_VALUE_POSITIVE)
-from crawler.db.dart import (add_dart_plate_if_doesnt_exist,
-                             add_dart_well_properties_if_positive,
-                             create_dart_sql_server_conn)
-from crawler.db.mongo import (create_import_record, create_mongo_client,
-                              get_mongo_collection, get_mongo_db)
+from crawler.constants import (
+    ALLOWED_CH_RESULT_VALUES,
+    ALLOWED_CH_TARGET_VALUES,
+    ALLOWED_RESULT_VALUES,
+    COLLECTION_CENTRES,
+    COLLECTION_IMPORTS,
+    COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
+    DART_STATE_PENDING,
+    FIELD_BARCODE,
+    FIELD_CH1_CQ,
+    FIELD_CH1_RESULT,
+    FIELD_CH1_TARGET,
+    FIELD_CH2_CQ,
+    FIELD_CH2_RESULT,
+    FIELD_CH2_TARGET,
+    FIELD_CH3_CQ,
+    FIELD_CH3_RESULT,
+    FIELD_CH3_TARGET,
+    FIELD_CH4_CQ,
+    FIELD_CH4_RESULT,
+    FIELD_CH4_TARGET,
+    FIELD_COORDINATE,
+    FIELD_CREATED_AT,
+    FIELD_DATE_TESTED,
+    FIELD_FILE_NAME,
+    FIELD_FILE_NAME_DATE,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_LAB_ID,
+    FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_LINE_NUMBER,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_RNA_PCR_ID,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_SOURCE,
+    FIELD_UPDATED_AT,
+    FIELD_VIRAL_PREP_ID,
+    IGNORED_HEADERS,
+    MAX_CQ_VALUE,
+    MIN_CQ_VALUE,
+    RESULT_VALUE_POSITIVE,
+)
+from crawler.db.dart import (
+    add_dart_plate_if_doesnt_exist,
+    add_dart_well_properties_if_positive,
+    create_dart_sql_server_conn,
+)
+from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import insert_or_update_samples_in_mlwh
-from crawler.filtered_positive_identifier import \
-    current_filtered_positive_identifier
+from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.enums import CentreFileState
-from crawler.helpers.general_helpers import (create_source_plate_doc,
-                                             current_time, get_sftp_connection,
-                                             pad_coordinate)
+from crawler.helpers.general_helpers import create_source_plate_doc, current_time, get_sftp_connection, pad_coordinate
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.types import (CentreConf, CentreDoc, Config, CSVRow, ModifiedRow,
-                           ModifiedRowValue, RowSignature, SampleDoc,
-                           SourcePlateDoc)
+from crawler.types import (
+    CentreConf,
+    CentreDoc,
+    Config,
+    CSVRow,
+    ModifiedRow,
+    ModifiedRowValue,
+    RowSignature,
+    SampleDoc,
+    SourcePlateDoc,
+)
 
 logger = logging.getLogger(__name__)
 
