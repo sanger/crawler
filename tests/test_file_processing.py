@@ -49,6 +49,8 @@ from crawler.constants import (
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
+    FIELD_MUST_SEQUENCE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
     MLWH_CH1_CQ,
     MLWH_CH1_RESULT,
     MLWH_CH1_TARGET,
@@ -76,6 +78,8 @@ from crawler.constants import (
     MLWH_SOURCE,
     MLWH_TABLE_NAME,
     MLWH_UPDATED_AT,
+    MLWH_MUST_SEQUENCE,
+    MLWH_PREFERENTIALLY_SEQUENCE,
     POSITIVE_RESULT_VALUE,
 )
 from crawler.db.mongo import get_mongo_collection
@@ -142,7 +146,7 @@ def test_process_files_dont_add_to_dart_flag_not_set(
 def test_process_files_dont_add_to_dart_mlwh_failed(
     mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn
 ):
-    with patch("crawler.file_processing.run_mysql_executemany_query", side_effect=Exception("Boom!")):
+    with patch("crawler.db.mysql.run_mysql_executemany_query", side_effect=Exception("Boom!")):
         _, mongo_database = mongo_database
 
         centre_config = config.CENTRES[0]
@@ -173,6 +177,42 @@ def test_process_files_one_wrong_format(mongo_database, config, testing_files_fo
     assert imports_collection.count_documents({"csv_file_used": "TEST_sanger_report_200518_2207.csv"}) == 1
     for i in imports_collection.find({"csv_file_used": "TEST_sanger_report_200518_2207.csv"}):
         assert "CRITICAL: File is unexpected type and cannot be processed. (TYPE 10)" in i["errors"]
+
+
+def test_process_files_with_whitespace(mongo_database, config, testing_files_for_process, testing_centres):
+    """Test using files in the files/TEST directory; they include a file with lots of whitespace."""
+    _, mongo_database = mongo_database
+
+    # get the TEST centre
+    centre_config = next(filter(lambda centre: centre["prefix"] == "TEST", config.CENTRES))
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+    centre.process_files(add_to_dart=False)
+
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+
+    date_time = datetime(year=2020, month=4, day=16, hour=14, minute=30, second=40)
+
+    # Testing file where values contain with whitespace
+    assert (
+        samples_collection.count_documents(
+            {
+                FIELD_ROOT_SAMPLE_ID: "3",
+                FIELD_VIRAL_PREP_ID: "1",
+                FIELD_RNA_ID: "AP456_B09",
+                FIELD_RNA_PCR_ID: "CF06CR9G_B03",
+                FIELD_RESULT: "Negative",
+                FIELD_SOURCE: "Test Centre",
+                FIELD_DATE_TESTED: date_time,
+            }
+        )
+        == 1
+    )
+    assert samples_collection.count_documents({FIELD_RNA_ID: "AP456_B08"}) == 1
+    assert (
+        imports_collection.count_documents({"csv_file_used": "TEST_sanger_report_200518_2208_with_whitespace.csv"}) == 1
+    )
 
 
 # ----- tests for class CentreFile -----
@@ -1150,188 +1190,195 @@ def test_insert_samples_from_docs_into_mlwh(
     date_tested_1 = datetime(2020, 4, 23, 14, 40, 0)
     date_tested_2 = datetime(2020, 4, 23, 14, 41, 0)
     filtered_positive_timestamp = datetime(2020, 4, 23, 14, 41, 0)
-    with patch("crawler.db.mysql.create_mysql_connection", return_value="not none"):
-        docs = [
-            {
-                "_id": ObjectId("5f562d9931d9959b92544728"),
-                FIELD_ROOT_SAMPLE_ID: "ABC00000004",
-                FIELD_RNA_ID: "TC-rna-00000029_H11",
-                FIELD_PLATE_BARCODE: "TC-rna-00000029",
-                FIELD_COORDINATE: "H11",
-                FIELD_RESULT: "Negative",
-                FIELD_DATE_TESTED: datetime(2020, 4, 23, 14, 40, 0),
-                FIELD_SOURCE: "Test Centre",
-                FIELD_LAB_ID: "TC",
-            },
-            {
-                "_id": ObjectId("5f562d9931d9959b92544729"),
-                FIELD_ROOT_SAMPLE_ID: "ABC00000005",
-                FIELD_RNA_ID: "TC-rna-00000029_H12",
-                FIELD_PLATE_BARCODE: "TC-rna-00000029",
-                FIELD_COORDINATE: "H12",
-                FIELD_RESULT: POSITIVE_RESULT_VALUE,
-                FIELD_DATE_TESTED: date_tested_2,
-                FIELD_SOURCE: "Test Centre",
-                FIELD_LAB_ID: "TC",
-                FIELD_CH1_TARGET: "ORF1ab",
-                FIELD_CH1_RESULT: POSITIVE_RESULT_VALUE,
-                FIELD_CH1_CQ: Decimal128("21.28726211"),
-                FIELD_CH2_TARGET: "N gene",
-                FIELD_CH2_RESULT: POSITIVE_RESULT_VALUE,
-                FIELD_CH2_CQ: Decimal128("18.12736661"),
-                FIELD_CH3_TARGET: "S gene",
-                FIELD_CH3_RESULT: POSITIVE_RESULT_VALUE,
-                FIELD_CH3_CQ: Decimal128("22.63616273"),
-                FIELD_CH4_TARGET: "MS2",
-                FIELD_CH4_RESULT: POSITIVE_RESULT_VALUE,
-                FIELD_CH4_CQ: Decimal128("26.25125612"),
-                FIELD_FILTERED_POSITIVE: True,
-                FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
-                FIELD_FILTERED_POSITIVE_TIMESTAMP: filtered_positive_timestamp,
-            },
-        ]
 
-        result = centre_file.insert_samples_from_docs_into_mlwh(docs)
+    docs = [
+        {
+            "_id": ObjectId("5f562d9931d9959b92544728"),
+            FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_RNA_ID: "TC-rna-00000029_H11",
+            FIELD_PLATE_BARCODE: "TC-rna-00000029",
+            FIELD_COORDINATE: "H11",
+            FIELD_RESULT: "Negative",
+            FIELD_DATE_TESTED: datetime(2020, 4, 23, 14, 40, 0),
+            FIELD_SOURCE: "Test Centre",
+            FIELD_LAB_ID: "TC",
+            FIELD_MUST_SEQUENCE: False,
+            FIELD_PREFERENTIALLY_SEQUENCE: True,
+        },
+        {
+            "_id": ObjectId("5f562d9931d9959b92544729"),
+            FIELD_ROOT_SAMPLE_ID: "ABC00000005",
+            FIELD_RNA_ID: "TC-rna-00000029_H12",
+            FIELD_PLATE_BARCODE: "TC-rna-00000029",
+            FIELD_COORDINATE: "H12",
+            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_DATE_TESTED: date_tested_2,
+            FIELD_SOURCE: "Test Centre",
+            FIELD_LAB_ID: "TC",
+            FIELD_CH1_TARGET: "ORF1ab",
+            FIELD_CH1_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_CH1_CQ: Decimal128("21.28726211"),
+            FIELD_CH2_TARGET: "N gene",
+            FIELD_CH2_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_CH2_CQ: Decimal128("18.12736661"),
+            FIELD_CH3_TARGET: "S gene",
+            FIELD_CH3_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_CH3_CQ: Decimal128("22.63616273"),
+            FIELD_CH4_TARGET: "MS2",
+            FIELD_CH4_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_CH4_CQ: Decimal128("26.25125612"),
+            FIELD_FILTERED_POSITIVE: True,
+            FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
+            FIELD_FILTERED_POSITIVE_TIMESTAMP: filtered_positive_timestamp,
+            FIELD_MUST_SEQUENCE: True,
+            FIELD_PREFERENTIALLY_SEQUENCE: False,
+        },
+    ]
 
-        assert result is True
-        error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
-        error_messages = centre_file.logging_collection.get_aggregate_messages()
-        assert (
-            error_count == 0
-        ), f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
+    result = centre_file.insert_samples_from_docs_into_mlwh(docs)
 
-        cursor = mlwh_connection.cursor(dictionary=True)
-        cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
-        rows = cursor.fetchall()
-        cursor.close()
+    assert result is True
+    error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
+    error_messages = centre_file.logging_collection.get_aggregate_messages()
+    assert (
+        error_count == 0
+    ), f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
 
-        assert rows[0][MLWH_MONGODB_ID] == "5f562d9931d9959b92544728"
-        assert rows[0][MLWH_ROOT_SAMPLE_ID] == "ABC00000004"
-        assert rows[0][MLWH_RNA_ID] == "TC-rna-00000029_H11"
-        assert rows[0][MLWH_PLATE_BARCODE] == "TC-rna-00000029"
-        assert rows[0][MLWH_COORDINATE] == "H11"
-        assert rows[0][MLWH_RESULT] == "Negative"
-        assert rows[0][MLWH_DATE_TESTED] == date_tested_1
-        assert rows[0][MLWH_SOURCE] == "Test Centre"
-        assert rows[0][MLWH_LAB_ID] == "TC"
-        assert rows[0][MLWH_CH1_TARGET] is None
-        assert rows[0][MLWH_CH1_RESULT] is None
-        assert rows[0][MLWH_CH1_CQ] is None
-        assert rows[0][MLWH_CH2_TARGET] is None
-        assert rows[0][MLWH_CH2_RESULT] is None
-        assert rows[0][MLWH_CH2_CQ] is None
-        assert rows[0][MLWH_CH3_TARGET] is None
-        assert rows[0][MLWH_CH3_RESULT] is None
-        assert rows[0][MLWH_CH3_CQ] is None
-        assert rows[0][MLWH_CH4_TARGET] is None
-        assert rows[0][MLWH_CH4_RESULT] is None
-        assert rows[0][MLWH_CH4_CQ] is None
-        assert rows[0][MLWH_FILTERED_POSITIVE] is None
-        assert rows[0][MLWH_FILTERED_POSITIVE_VERSION] is None
-        assert rows[0][MLWH_FILTERED_POSITIVE_TIMESTAMP] is None
-        assert rows[0][MLWH_CREATED_AT] is not None
-        assert rows[0][MLWH_UPDATED_AT] is not None
+    cursor = mlwh_connection.cursor(dictionary=True)
+    cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
+    rows = cursor.fetchall()
+    cursor.close()
 
-        assert rows[1][MLWH_MONGODB_ID] == "5f562d9931d9959b92544729"
-        assert rows[1][MLWH_ROOT_SAMPLE_ID] == "ABC00000005"
-        assert rows[1][MLWH_RNA_ID] == "TC-rna-00000029_H12"
-        assert rows[1][MLWH_PLATE_BARCODE] == "TC-rna-00000029"
-        assert rows[1][MLWH_COORDINATE] == "H12"
-        assert rows[1][MLWH_RESULT] == POSITIVE_RESULT_VALUE
-        assert rows[1][MLWH_DATE_TESTED] == date_tested_2
-        assert rows[1][MLWH_SOURCE] == "Test Centre"
-        assert rows[1][MLWH_LAB_ID] == "TC"
-        assert rows[1][MLWH_CH1_TARGET] == "ORF1ab"
-        assert rows[1][MLWH_CH1_RESULT] == POSITIVE_RESULT_VALUE
-        assert rows[1][MLWH_CH1_CQ] == Decimal("21.28726211")
-        assert rows[1][MLWH_CH2_TARGET] == "N gene"
-        assert rows[1][MLWH_CH2_RESULT] == POSITIVE_RESULT_VALUE
-        assert rows[1][MLWH_CH2_CQ] == Decimal("18.12736661")
-        assert rows[1][MLWH_CH3_TARGET] == "S gene"
-        assert rows[1][MLWH_CH3_RESULT] == POSITIVE_RESULT_VALUE
-        assert rows[1][MLWH_CH3_CQ] == Decimal("22.63616273")
-        assert rows[1][MLWH_CH4_TARGET] == "MS2"
-        assert rows[1][MLWH_CH4_RESULT] == POSITIVE_RESULT_VALUE
-        assert rows[1][MLWH_CH4_CQ] == Decimal("26.25125612")
-        assert rows[1][MLWH_FILTERED_POSITIVE] == 1
-        assert rows[1][MLWH_FILTERED_POSITIVE_VERSION] == "v2.3"
-        assert rows[1][MLWH_FILTERED_POSITIVE_TIMESTAMP] == filtered_positive_timestamp
-        assert rows[1][MLWH_CREATED_AT] is not None
-        assert rows[1][MLWH_UPDATED_AT] is not None
+    assert rows[0][MLWH_MONGODB_ID] == "5f562d9931d9959b92544728"
+    assert rows[0][MLWH_ROOT_SAMPLE_ID] == "ABC00000004"
+    assert rows[0][MLWH_RNA_ID] == "TC-rna-00000029_H11"
+    assert rows[0][MLWH_PLATE_BARCODE] == "TC-rna-00000029"
+    assert rows[0][MLWH_COORDINATE] == "H11"
+    assert rows[0][MLWH_RESULT] == "Negative"
+    assert rows[0][MLWH_DATE_TESTED] == date_tested_1
+    assert rows[0][MLWH_SOURCE] == "Test Centre"
+    assert rows[0][MLWH_LAB_ID] == "TC"
+    assert rows[0][MLWH_CH1_TARGET] is None
+    assert rows[0][MLWH_CH1_RESULT] is None
+    assert rows[0][MLWH_CH1_CQ] is None
+    assert rows[0][MLWH_CH2_TARGET] is None
+    assert rows[0][MLWH_CH2_RESULT] is None
+    assert rows[0][MLWH_CH2_CQ] is None
+    assert rows[0][MLWH_CH3_TARGET] is None
+    assert rows[0][MLWH_CH3_RESULT] is None
+    assert rows[0][MLWH_CH3_CQ] is None
+    assert rows[0][MLWH_CH4_TARGET] is None
+    assert rows[0][MLWH_CH4_RESULT] is None
+    assert rows[0][MLWH_CH4_CQ] is None
+    assert rows[0][MLWH_FILTERED_POSITIVE] is None
+    assert rows[0][MLWH_FILTERED_POSITIVE_VERSION] is None
+    assert rows[0][MLWH_FILTERED_POSITIVE_TIMESTAMP] is None
+    assert rows[0][MLWH_CREATED_AT] is not None
+    assert rows[0][MLWH_UPDATED_AT] is not None
+    assert rows[0][MLWH_MUST_SEQUENCE] == 0
+    assert rows[0][MLWH_PREFERENTIALLY_SEQUENCE] == 1
+
+    assert rows[1][MLWH_MONGODB_ID] == "5f562d9931d9959b92544729"
+    assert rows[1][MLWH_ROOT_SAMPLE_ID] == "ABC00000005"
+    assert rows[1][MLWH_RNA_ID] == "TC-rna-00000029_H12"
+    assert rows[1][MLWH_PLATE_BARCODE] == "TC-rna-00000029"
+    assert rows[1][MLWH_COORDINATE] == "H12"
+    assert rows[1][MLWH_RESULT] == POSITIVE_RESULT_VALUE
+    assert rows[1][MLWH_DATE_TESTED] == date_tested_2
+    assert rows[1][MLWH_SOURCE] == "Test Centre"
+    assert rows[1][MLWH_LAB_ID] == "TC"
+    assert rows[1][MLWH_CH1_TARGET] == "ORF1ab"
+    assert rows[1][MLWH_CH1_RESULT] == POSITIVE_RESULT_VALUE
+    assert rows[1][MLWH_CH1_CQ] == Decimal("21.28726211")
+    assert rows[1][MLWH_CH2_TARGET] == "N gene"
+    assert rows[1][MLWH_CH2_RESULT] == POSITIVE_RESULT_VALUE
+    assert rows[1][MLWH_CH2_CQ] == Decimal("18.12736661")
+    assert rows[1][MLWH_CH3_TARGET] == "S gene"
+    assert rows[1][MLWH_CH3_RESULT] == POSITIVE_RESULT_VALUE
+    assert rows[1][MLWH_CH3_CQ] == Decimal("22.63616273")
+    assert rows[1][MLWH_CH4_TARGET] == "MS2"
+    assert rows[1][MLWH_CH4_RESULT] == POSITIVE_RESULT_VALUE
+    assert rows[1][MLWH_CH4_CQ] == Decimal("26.25125612")
+    assert rows[1][MLWH_FILTERED_POSITIVE] == 1
+    assert rows[1][MLWH_FILTERED_POSITIVE_VERSION] == "v2.3"
+    assert rows[1][MLWH_FILTERED_POSITIVE_TIMESTAMP] == filtered_positive_timestamp
+    assert rows[1][MLWH_CREATED_AT] is not None
+    assert rows[1][MLWH_UPDATED_AT] is not None
+    assert rows[1][MLWH_MUST_SEQUENCE] == 1
+    assert rows[1][MLWH_PREFERENTIALLY_SEQUENCE] == 0
 
 
 def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_connection):
-    with patch("crawler.db.mysql.create_mysql_connection", return_value="not none"):
-        centre = Centre(config, config.CENTRES[0])
-        centre_file = CentreFile("some file", centre)
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some file", centre)
 
-        docs = [
-            {
-                "_id": ObjectId("5f562d9931d9959b92544728"),
-                FIELD_ROOT_SAMPLE_ID: "ABC00000004",
-                FIELD_RNA_ID: "TC-rna-00000029_H11",
-                FIELD_PLATE_BARCODE: "TC-rna-00000029",
-                FIELD_COORDINATE: "H11",
-                FIELD_RESULT: "Negative",
-                FIELD_SOURCE: "Test Centre",
-                FIELD_LAB_ID: "TC",
-            }
-        ]
+    docs = [
+        {
+            "_id": ObjectId("5f562d9931d9959b92544728"),
+            FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_RNA_ID: "TC-rna-00000029_H11",
+            FIELD_PLATE_BARCODE: "TC-rna-00000029",
+            FIELD_COORDINATE: "H11",
+            FIELD_RESULT: "Negative",
+            FIELD_SOURCE: "Test Centre",
+            FIELD_LAB_ID: "TC",
+        }
+    ]
 
-        result = centre_file.insert_samples_from_docs_into_mlwh(docs)
+    result = centre_file.insert_samples_from_docs_into_mlwh(docs)
 
-        assert result is True
-        error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
-        error_messages = centre_file.logging_collection.get_aggregate_messages()
-        assert (
-            error_count == 0
-        ), f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
+    assert result is True
+    error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
+    error_messages = centre_file.logging_collection.get_aggregate_messages()
+    assert (
+        error_count == 0
+    ), f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
 
-        cursor = mlwh_connection.cursor(dictionary=True)
-        cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
-        rows = cursor.fetchall()
-        cursor.close()
+    cursor = mlwh_connection.cursor(dictionary=True)
+    cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
+    rows = cursor.fetchall()
+    cursor.close()
 
-        assert rows[0][MLWH_DATE_TESTED] is None
+    assert rows[0][MLWH_DATE_TESTED] is None
 
 
 def test_insert_samples_from_docs_into_mlwh_date_tested_none(
     config: Config, mlwh_connection: CMySQLConnection, centre_file: CentreFile
 ) -> None:
-    with patch("crawler.db.mysql.create_mysql_connection", return_value="not none"):
-        docs = [
-            {
-                "_id": ObjectId("5f562d9931d9959b92544728"),
-                FIELD_ROOT_SAMPLE_ID: "ABC00000004",
-                FIELD_RNA_ID: "TC-rna-00000029_H11",
-                FIELD_PLATE_BARCODE: "TC-rna-00000029",
-                FIELD_COORDINATE: "H11",
-                FIELD_RESULT: "Negative",
-                FIELD_DATE_TESTED: None,
-                FIELD_SOURCE: "Test Centre",
-                FIELD_LAB_ID: "TC",
-            }
-        ]
 
-        result = centre_file.insert_samples_from_docs_into_mlwh(docs)
+    docs = [
+        {
+            "_id": ObjectId("5f562d9931d9959b92544728"),
+            FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_RNA_ID: "TC-rna-00000029_H11",
+            FIELD_PLATE_BARCODE: "TC-rna-00000029",
+            FIELD_COORDINATE: "H11",
+            FIELD_RESULT: "Negative",
+            FIELD_DATE_TESTED: None,
+            FIELD_SOURCE: "Test Centre",
+            FIELD_LAB_ID: "TC",
+        }
+    ]
 
-        assert result is True
-        error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
-        error_messages = centre_file.logging_collection.get_aggregate_messages()
-        assert (
-            error_count == 0
-        ), f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
+    result = centre_file.insert_samples_from_docs_into_mlwh(docs)
 
-        cursor = mlwh_connection.cursor(dictionary=True)
-        cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
-        rows = cursor.fetchall()
-        cursor.close()
+    assert result is True
+    error_count = centre_file.logging_collection.get_count_of_all_errors_and_criticals()
+    error_messages = centre_file.logging_collection.get_aggregate_messages()
+    assert (
+        error_count == 0
+    ), f"Should not be any errors. Actual number errors: {error_count}. Error details: {error_messages}"
 
-        assert rows[0][MLWH_DATE_TESTED] is None
+    cursor = mlwh_connection.cursor(dictionary=True)
+    cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
+    rows = cursor.fetchall()
+    cursor.close()
+
+    assert rows[0][MLWH_DATE_TESTED] is None
 
 
 def test_insert_samples_from_docs_into_mlwh_returns_false_none_connection(config, mlwh_connection):
-    with patch("crawler.file_processing.create_mysql_connection", return_value=None):
+    with patch("crawler.db.mysql.create_mysql_connection", return_value=None):
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
 
@@ -1354,7 +1401,7 @@ def test_insert_samples_from_docs_into_mlwh_returns_false_none_connection(config
 
 
 def test_insert_samples_from_docs_into_mlwh_returns_false_not_connected(config, mlwh_connection):
-    with patch("crawler.file_processing.create_mysql_connection") as mysql_conn:
+    with patch("crawler.db.mysql.create_mysql_connection") as mysql_conn:
         mysql_conn().is_connected.return_value = False
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
@@ -1378,8 +1425,8 @@ def test_insert_samples_from_docs_into_mlwh_returns_false_not_connected(config, 
 
 
 def test_insert_samples_from_docs_into_mlwh_returns_failure_executing(config, mlwh_connection):
-    with patch("crawler.file_processing.create_mysql_connection"):
-        with patch("crawler.file_processing.run_mysql_executemany_query", side_effect=Exception("Boom!")):
+    with patch("crawler.db.mysql.create_mysql_connection"):
+        with patch("crawler.db.mysql.run_mysql_executemany_query", side_effect=Exception("Boom!")):
             centre = Centre(config, config.CENTRES[0])
             centre_file = CentreFile("some file", centre)
 
@@ -1556,7 +1603,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
                     test_well_props = {"prop1": "value1", "test prop": "test value"}
                     mock_map.return_value = test_well_props
                     with patch("crawler.db.dart.set_dart_well_properties") as mock_set_well_props:
-                        centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
+                        result = centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
                         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
@@ -1587,6 +1634,8 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
                         mock_conn().cursor().rollback.assert_not_called()
                         assert mock_conn().cursor().commit.call_count == 3
                         mock_conn().close.assert_called_once()
+
+                        assert result is True
 
 
 def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_wells(config):
@@ -1620,6 +1669,16 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
             FIELD_COORDINATE: "A03",
             FIELD_LAB_ID: "AP",
             FIELD_RESULT: "Void",
+        },
+        {
+            "_id": ObjectId("5f562d9931d9959b92544728"),
+            FIELD_ROOT_SAMPLE_ID: "ABC00000009",
+            FIELD_RNA_ID: f"{plate_barcode}_A04",
+            FIELD_PLATE_BARCODE: plate_barcode,
+            FIELD_COORDINATE: "A04",
+            FIELD_LAB_ID: "AP",
+            FIELD_RESULT: "Void",
+            FIELD_MUST_SEQUENCE: True,
         },
     ]
 
