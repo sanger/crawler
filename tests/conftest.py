@@ -3,7 +3,6 @@ import logging
 import logging.config
 import shutil
 from unittest.mock import patch
-
 import pytest
 import sqlalchemy
 from sqlalchemy import MetaData
@@ -11,8 +10,10 @@ from sqlalchemy import MetaData
 from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_SAMPLES,
+    COLLECTION_PRIORITY_SAMPLES,
     COLLECTION_SAMPLES_HISTORY,
     FIELD_FILTERED_POSITIVE,
+    FIELD_MONGODB_ID,
     MLWH_TABLE_NAME,
 )
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
@@ -28,6 +29,7 @@ from tests.data.testing_objects import (
     MONGO_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS,
     MONGO_SAMPLES_WITHOUT_FILTERED_POSITIVE_FIELDS,
     TESTING_SAMPLES,
+    TESTING_PRIORITY_SAMPLES,
 )
 
 logger = logging.getLogger(__name__)
@@ -119,6 +121,11 @@ def samples_collection_accessor(mongo_database):
 
 
 @pytest.fixture
+def priority_samples_collection_accessor(mongo_database):
+    return get_mongo_collection(mongo_database[1], COLLECTION_PRIORITY_SAMPLES)
+
+
+@pytest.fixture
 def centres_collection_accessor(mongo_database):
     return get_mongo_collection(mongo_database[1], COLLECTION_CENTRES)
 
@@ -131,7 +138,7 @@ def samples_history_collection_accessor(mongo_database):
 @pytest.fixture
 def testing_samples(samples_collection_accessor):
     result = samples_collection_accessor.insert_many(TESTING_SAMPLES)
-    samples = list(samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
+    samples = list(samples_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
     try:
         yield samples
     finally:
@@ -139,9 +146,19 @@ def testing_samples(samples_collection_accessor):
 
 
 @pytest.fixture
+def testing_priority_samples(priority_samples_collection_accessor):
+    result = priority_samples_collection_accessor.insert_many(TESTING_PRIORITY_SAMPLES)
+    samples = list(priority_samples_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
+    try:
+        yield samples
+    finally:
+        priority_samples_collection_accessor.delete_many({})
+
+
+@pytest.fixture
 def filtered_positive_testing_samples(samples_collection_accessor):
     result = samples_collection_accessor.insert_many(FILTERED_POSITIVE_TESTING_SAMPLES)
-    samples = list(samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
+    samples = list(samples_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
     try:
         yield samples
     finally:
@@ -154,7 +171,7 @@ def filtered_positive_testing_samples_no_version_set(samples_collection_accessor
     del samples[3][FIELD_FILTERED_POSITIVE]
 
     result = samples_collection_accessor.insert_many(samples)
-    samples = list(samples_collection_accessor.find({"_id": {"$in": result.inserted_ids}}))
+    samples = list(samples_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
     try:
         yield samples
     finally:

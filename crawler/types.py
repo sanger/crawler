@@ -10,6 +10,7 @@ CSVRow = Dict[str, str]  # row of data from the CSV DictReader
 ModifiedRowValue = Optional[Union[str, datetime, bool, int, Decimal128]]
 ModifiedRow = Dict[str, ModifiedRowValue]
 SampleDoc = Dict[str, ModifiedRowValue]  # mongo document that represents a sample
+SamplePriorityDoc = Dict[str, ModifiedRowValue]  # mongo document that represents a sample priority
 RowSignature = Tuple[str, ...]
 CentreConf = Dict[str, str]  # config for a centre
 SourcePlateDoc = Dict[str, Union[str, datetime]]  # mongo document that represents a source plate

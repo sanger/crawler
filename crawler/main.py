@@ -24,6 +24,7 @@ from crawler.db.mongo import (
     populate_collection,
     samples_collection_accessor,
 )
+from crawler.priority_samples_process import update_priority_samples
 from crawler.file_processing import Centre
 from crawler.helpers.general_helpers import get_config
 
@@ -108,6 +109,9 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                     finally:
                         if not keep_files and centre_instance.is_download_dir_walkable:
                             centre_instance.clean_up()
+
+                # Prioritisation of samples
+                update_priority_samples(db, config, add_to_dart)
 
         logger.info(f"Import complete in {round(time.time() - start, 2)}s")
         logger.info("=" * 80)

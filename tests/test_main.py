@@ -129,7 +129,7 @@ def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_f
 
     # We expect errors to contain messages for type 5 duplicates, an aggregate total and a message
     # line
-    assert "Total number of Duplicates within file errors (TYPE 5): 1" in test_centre_imports["errors"][0]
+    assert "Total number of 'Duplicates within file' errors (TYPE 5): 1" in test_centre_imports["errors"][0]
     assert (
         "WARNING: Duplicates detected within the file. (TYPE 5) (e.g. Duplicated, line: 3, root_sample_id: 16)"
     ) in test_centre_imports["errors"][1]
@@ -159,7 +159,7 @@ def test_error_run_duplicates_plate_barcodes_from_different_labs_message(
     # We expect errors to contain messages for type 24 duplicates, an aggregate total and a message
     # line
     assert (
-        "Total number of Duplicate source plate barcodes from different labs errors (TYPE 25): 2"
+        "Total number of 'Duplicate source plate barcodes from different labs' errors (TYPE 25): 2"
         in test_centre_imports["errors"][0]
     )
     assert ("ERROR: Found duplicate source plate barcodes from different labs (TYPE 25)") in test_centre_imports[
