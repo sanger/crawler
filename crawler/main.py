@@ -4,15 +4,26 @@ import time
 
 import pymongo
 
-from crawler.constants import (COLLECTION_CENTRES, COLLECTION_SAMPLES,
-                               COLLECTION_SOURCE_PLATES, FIELD_BARCODE,
-                               FIELD_CENTRE_NAME, FIELD_LAB_ID,
-                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_PLATE_BARCODE,
-                               FIELD_RESULT, FIELD_RNA_ID,
-                               FIELD_ROOT_SAMPLE_ID)
-from crawler.db.mongo import (create_mongo_client, get_mongo_collection,
-                              get_mongo_db, populate_collection,
-                              samples_collection_accessor)
+from crawler.constants import (
+    COLLECTION_CENTRES,
+    COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
+    FIELD_BARCODE,
+    FIELD_CENTRE_NAME,
+    FIELD_LAB_ID,
+    FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_ROOT_SAMPLE_ID,
+)
+from crawler.db.mongo import (
+    create_mongo_client,
+    get_mongo_collection,
+    get_mongo_db,
+    populate_collection,
+    samples_collection_accessor,
+)
 from crawler.file_processing import Centre
 from crawler.helpers.general_helpers import get_config
 

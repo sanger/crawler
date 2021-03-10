@@ -10,58 +10,81 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from hashlib import md5
 from logging import INFO, WARN
-from operator import attrgetter
 from pathlib import Path
-from typing import (Any, Dict, Final, List, NamedTuple, Optional, Set, Tuple,
-                    cast)
+from typing import Any, Dict, Final, List, Optional, Set, Tuple, cast
 
 from bson.decimal128 import Decimal128
 from more_itertools import groupby_transform
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
-from crawler.constants import (ALLOWED_CH_RESULT_VALUES,
-                               ALLOWED_CH_TARGET_VALUES, ALLOWED_RESULT_VALUES,
-                               COLLECTION_CENTRES, COLLECTION_IMPORTS,
-                               COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES,
-                               DART_STATE_PENDING, FIELD_BARCODE, FIELD_CH1_CQ,
-                               FIELD_CH1_RESULT, FIELD_CH1_TARGET,
-                               FIELD_CH2_CQ, FIELD_CH2_RESULT,
-                               FIELD_CH2_TARGET, FIELD_CH3_CQ,
-                               FIELD_CH3_RESULT, FIELD_CH3_TARGET,
-                               FIELD_CH4_CQ, FIELD_CH4_RESULT,
-                               FIELD_CH4_TARGET, FIELD_COORDINATE,
-                               FIELD_CREATED_AT, FIELD_DATE_TESTED,
-                               FIELD_FILE_NAME, FIELD_FILE_NAME_DATE,
-                               FIELD_FILTERED_POSITIVE,
-                               FIELD_FILTERED_POSITIVE_TIMESTAMP,
-                               FIELD_FILTERED_POSITIVE_VERSION, FIELD_LAB_ID,
-                               FIELD_LH_SAMPLE_UUID,
-                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_LINE_NUMBER,
-                               FIELD_MONGODB_ID, FIELD_PLATE_BARCODE,
-                               FIELD_RESULT, FIELD_RNA_ID, FIELD_RNA_PCR_ID,
-                               FIELD_ROOT_SAMPLE_ID, FIELD_SOURCE,
-                               FIELD_UPDATED_AT, FIELD_VIRAL_PREP_ID,
-                               IGNORED_HEADERS, MAX_CQ_VALUE, MIN_CQ_VALUE,
-                               RESULT_VALUE_POSITIVE)
-from crawler.db.dart import (add_dart_plate_if_doesnt_exist,
-                             add_dart_well_properties_if_positive,
-                             create_dart_sql_server_conn)
-from crawler.db.mongo import (create_import_record, create_mongo_client,
-                              get_mongo_collection, get_mongo_db)
-from crawler.db.mysql import (create_mysql_connection,
-                              run_mysql_executemany_query)
-from crawler.filtered_positive_identifier import \
-    current_filtered_positive_identifier
+from crawler.constants import (
+    ALLOWED_CH_RESULT_VALUES,
+    ALLOWED_CH_TARGET_VALUES,
+    ALLOWED_RESULT_VALUES,
+    COLLECTION_CENTRES,
+    COLLECTION_IMPORTS,
+    COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
+    DART_STATE_PENDING,
+    FIELD_BARCODE,
+    FIELD_CH1_CQ,
+    FIELD_CH1_RESULT,
+    FIELD_CH1_TARGET,
+    FIELD_CH2_CQ,
+    FIELD_CH2_RESULT,
+    FIELD_CH2_TARGET,
+    FIELD_CH3_CQ,
+    FIELD_CH3_RESULT,
+    FIELD_CH3_TARGET,
+    FIELD_CH4_CQ,
+    FIELD_CH4_RESULT,
+    FIELD_CH4_TARGET,
+    FIELD_COORDINATE,
+    FIELD_CREATED_AT,
+    FIELD_DATE_TESTED,
+    FIELD_FILE_NAME,
+    FIELD_FILE_NAME_DATE,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_LAB_ID,
+    FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_LINE_NUMBER,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_RNA_PCR_ID,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_SOURCE,
+    FIELD_UPDATED_AT,
+    FIELD_VIRAL_PREP_ID,
+    IGNORED_HEADERS,
+    MAX_CQ_VALUE,
+    MIN_CQ_VALUE,
+    RESULT_VALUE_POSITIVE,
+)
+from crawler.db.dart import (
+    add_dart_plate_if_doesnt_exist,
+    add_dart_well_properties_if_positive,
+    create_dart_sql_server_conn,
+)
+from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
+from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.enums import CentreFileState
-from crawler.helpers.general_helpers import (create_source_plate_doc,
-                                             current_time, get_sftp_connection,
-                                             map_mongo_sample_to_mysql,
-                                             pad_coordinate)
+from crawler.helpers.general_helpers import (
+    create_source_plate_doc,
+    current_time,
+    get_sftp_connection,
+    map_mongo_sample_to_mysql,
+    pad_coordinate,
+)
 from crawler.helpers.logging_helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
-from crawler.types import (CentreConf, CentreDoc, Config, CSVRow, ModifiedRow,
-                           RowSignature, SourcePlateDoc)
+from crawler.types import CentreConf, CentreDoc, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +95,6 @@ SUCCESSES_DIR = "successes"
 
 
 class Centre:
-
     def __init__(self, config: Config, centre_config: CentreConf):
         self.config = config
         self.centre_config = centre_config
@@ -186,12 +208,11 @@ class Centre:
 
         return None
 
-
     def is_valid_filename(self, filename: str) -> bool:
         return self.is_eagle_filename(filename) or self.is_surveillance_filename(filename)
 
     def is_consolidated_filename(self, filename: str) -> bool:
-        return (self.is_eagle_filename(filename) or self.is_consolidated_surveillance_filename(filename))
+        return self.is_eagle_filename(filename) or self.is_consolidated_surveillance_filename(filename)
 
     def is_eagle_filename(self, filename: str) -> bool:
         eagle = re.compile(self.centre_config["sftp_file_regex_consolidated_eagle"])
@@ -203,7 +224,8 @@ class Centre:
 
     def is_surveillance_filename(self, filename: str) -> bool:
         unconsolidated_surveillance = re.compile(self.centre_config["sftp_file_regex_unconsolidated_surveillance"])
-        return (bool(unconsolidated_surveillance.match(filename)) or self.is_consolidated_surveillance_filename(filename))
+        return bool(unconsolidated_surveillance.match(filename)) or self.is_consolidated_surveillance_filename(filename)
+
 
 class CentreFile:
     """Class to process an individual file"""
@@ -1129,7 +1151,6 @@ class CentreFile:
         seen_rows.add(row_signature)
 
         return modified_row
-
 
     def convert_and_validate_cq_values(self, row: ModifiedRow, line_number: int) -> bool:
         """Convert and validate each of the four channel fields.

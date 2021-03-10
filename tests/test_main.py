@@ -3,8 +3,7 @@ import shutil
 from importlib import import_module, invalidate_caches
 from unittest.mock import patch
 
-from crawler.constants import (COLLECTION_CENTRES, COLLECTION_IMPORTS,
-                               COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES)
+from crawler.constants import COLLECTION_CENTRES, COLLECTION_IMPORTS, COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES
 from crawler.db.mongo import get_mongo_collection
 from crawler.main import run
 
@@ -235,8 +234,6 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
         # Run with a different config that does not blacklist one of the files
         with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
             run(False, False, False, "crawler.config.integration_with_blacklist_change")
-
-
 
         # We expect an additional import entry
         assert imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED + 1
