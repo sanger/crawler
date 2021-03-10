@@ -179,6 +179,42 @@ def test_process_files_one_wrong_format(mongo_database, config, testing_files_fo
         assert "CRITICAL: File is unexpected type and cannot be processed. (TYPE 10)" in i["errors"]
 
 
+def test_process_files_with_whitespace(mongo_database, config, testing_files_for_process, testing_centres):
+    """Test using files in the files/TEST directory; they include a file with lots of whitespace."""
+    _, mongo_database = mongo_database
+
+    # get the TEST centre
+    centre_config = next(filter(lambda centre: centre["prefix"] == "TEST", config.CENTRES))
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+    centre.process_files(add_to_dart=False)
+
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+
+    date_time = datetime(year=2020, month=4, day=16, hour=14, minute=30, second=40)
+
+    # Testing file where values contain with whitespace
+    assert (
+        samples_collection.count_documents(
+            {
+                FIELD_ROOT_SAMPLE_ID: "3",
+                FIELD_VIRAL_PREP_ID: "1",
+                FIELD_RNA_ID: "AP456_B09",
+                FIELD_RNA_PCR_ID: "CF06CR9G_B03",
+                FIELD_RESULT: "Negative",
+                FIELD_SOURCE: "Test Centre",
+                FIELD_DATE_TESTED: date_time,
+            }
+        )
+        == 1
+    )
+    assert samples_collection.count_documents({FIELD_RNA_ID: "AP456_B08"}) == 1
+    assert (
+        imports_collection.count_documents({"csv_file_used": "TEST_sanger_report_200518_2208_with_whitespace.csv"}) == 1
+    )
+
+
 # ----- tests for class CentreFile -----
 
 # tests for checksums

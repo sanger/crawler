@@ -808,10 +808,14 @@ class CentreFile:
 
         if csvreader.fieldnames:
             for i, fieldname in enumerate(csvreader.fieldnames):
+                stripped_fieldname = fieldname.strip()
+                csvreader.fieldnames[i] = stripped_fieldname  # type: ignore
+
+                # This is only for Root Sample -> Root Sample ID
                 for reg in self.header_regex_correction_dict.keys():
-                    if re.match(reg, fieldname.strip()):
+                    if re.match(reg, stripped_fieldname):
                         logger.warning(
-                            f"Found '{reg}' in field name '{fieldname}', "
+                            f"Found '{reg}' in field name '{stripped_fieldname}', "
                             f"correcting to '{self.header_regex_correction_dict[reg]}'"
                         )
                         csvreader.fieldnames[i] = self.header_regex_correction_dict[reg]  # type: ignore
@@ -939,7 +943,7 @@ class CentreFile:
         for key in self.ACCEPTED_FIELDS:
             if key in row:
                 seen_headers.append(key)
-                modified_row[key] = row[key]
+                modified_row[key] = row[key].strip() if type(row[key]) == str else row[key]
 
         # and check the row for values for any of the optional CT channel headers and copy them across
         seen_headers, modified_row = self.extract_channel_fields(seen_headers, row, modified_row)
