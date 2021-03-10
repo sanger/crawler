@@ -8,27 +8,20 @@ import pytest
 import sqlalchemy
 from sqlalchemy import MetaData
 
-from crawler.constants import (
-    COLLECTION_CENTRES,
-    COLLECTION_SAMPLES,
-    COLLECTION_SAMPLES_HISTORY,
-    FIELD_FILTERED_POSITIVE,
-    MLWH_TABLE_NAME,
-)
-from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.constants import (COLLECTION_CENTRES, COLLECTION_SAMPLES,
+                               COLLECTION_SAMPLES_HISTORY,
+                               FIELD_FILTERED_POSITIVE, MLWH_TABLE_NAME)
+from crawler.db.mongo import (create_mongo_client, get_mongo_collection,
+                              get_mongo_db)
 from crawler.db.mysql import create_mysql_connection
 from crawler.file_processing import Centre, CentreFile
 from crawler.helpers.general_helpers import get_config
 from tests.data.testing_objects import (
-    EVENT_WH_DATA,
-    FILTERED_POSITIVE_TESTING_SAMPLES,
-    MLWH_SAMPLE_LIGHTHOUSE_SAMPLE,
-    MLWH_SAMPLE_STOCK_RESOURCE,
+    EVENT_WH_DATA, FILTERED_POSITIVE_TESTING_SAMPLES,
+    MLWH_SAMPLE_LIGHTHOUSE_SAMPLE, MLWH_SAMPLE_STOCK_RESOURCE,
     MLWH_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS,
     MONGO_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS,
-    MONGO_SAMPLES_WITHOUT_FILTERED_POSITIVE_FIELDS,
-    TESTING_SAMPLES,
-)
+    MONGO_SAMPLES_WITHOUT_FILTERED_POSITIVE_FIELDS, TESTING_SAMPLES)
 
 logger = logging.getLogger(__name__)
 CONFIG, _ = get_config("crawler.config.test")
@@ -47,7 +40,7 @@ def centre(config):
 
 @pytest.fixture
 def centre_file(centre):
-    yield CentreFile("some_file.csv", False, centre)
+    yield CentreFile("some_file.csv", centre)
 
 
 @pytest.fixture

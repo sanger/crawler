@@ -4,33 +4,22 @@ import time
 
 import pymongo
 
-from crawler.constants import (
-    COLLECTION_CENTRES,
-    COLLECTION_SAMPLES,
-    COLLECTION_SOURCE_PLATES,
-    FIELD_BARCODE,
-    FIELD_CENTRE_NAME,
-    FIELD_LAB_ID,
-    FIELD_LH_SOURCE_PLATE_UUID,
-    FIELD_PLATE_BARCODE,
-    FIELD_RESULT,
-    FIELD_RNA_ID,
-    FIELD_ROOT_SAMPLE_ID,
-)
-from crawler.db.mongo import (
-    create_mongo_client,
-    get_mongo_collection,
-    get_mongo_db,
-    populate_collection,
-    samples_collection_accessor,
-)
+from crawler.constants import (COLLECTION_CENTRES, COLLECTION_SAMPLES,
+                               COLLECTION_SOURCE_PLATES, FIELD_BARCODE,
+                               FIELD_CENTRE_NAME, FIELD_LAB_ID,
+                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_PLATE_BARCODE,
+                               FIELD_RESULT, FIELD_RNA_ID,
+                               FIELD_ROOT_SAMPLE_ID)
+from crawler.db.mongo import (create_mongo_client, get_mongo_collection,
+                              get_mongo_db, populate_collection,
+                              samples_collection_accessor)
 from crawler.file_processing import Centre
 from crawler.helpers.general_helpers import get_config
 
 logger = logging.getLogger(__name__)
 
 
-def run(sftp: bool, keep_files: bool, add_to_dart: bool, centre_prefix: str = "", settings_module: str = "") -> None:
+def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = "", centre_prefix: str = "") -> None:
     try:
         start = time.time()
         config, settings_module = get_config(settings_module)

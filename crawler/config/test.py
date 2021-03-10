@@ -20,7 +20,11 @@ CENTRES.append(
         "prefix": "TEST",
         "lab_id_default": "TE",
         "backups_folder": "tmp/backups/TEST",
-        "sftp_file_regex": f"^TEST_{CENTRE_REGEX_SFTP_FILE_HERON}",
+        "sftp_file_regex_unconsolidated_surveillance": f"^TEST_{CENTRE_REGEX_SFTP_FILE_HERON}",
+        "sftp_file_regex_consolidated_surveillance": r"^TE-\d+\.csv$",
+        "sftp_file_regex_consolidated_eagle": r"^TE\d+\.csv$",
+
+        #"sftp_file_regex": f"^TEST_{CENTRE_REGEX_SFTP_FILE_HERON}",
         "sftp_root_read": "tests/files",
         "file_names_to_ignore": ["TEST_sanger_report_200518_2205.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,

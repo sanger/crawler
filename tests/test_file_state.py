@@ -6,7 +6,7 @@ from crawler.helpers.enums import CentreFileState
 
 def test_set_state_for_file_when_file_in_black_list(config, blacklist_for_centre, testing_centres):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", False, centre)
+    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
     centre_file.set_state_for_file()
 
     assert centre_file.file_state == CentreFileState.FILE_IN_BLACKLIST
@@ -14,7 +14,7 @@ def test_set_state_for_file_when_file_in_black_list(config, blacklist_for_centre
 
 def test_set_state_for_file_when_never_seen_before(config, testing_centres):
     centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", False, centre)
+    centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
     centre_file.set_state_for_file()
 
     assert centre_file.file_state == CentreFileState.FILE_NOT_PROCESSED_YET
@@ -29,7 +29,7 @@ def test_set_state_for_file_when_in_error_folder(config, tmpdir, testing_centres
 
         # create a backup of the file inside the errors directory as if previously processed there
         filename = "AP_sanger_report_200518_2132.csv"
-        centre_file = CentreFile(filename, False, centre)
+        centre_file = CentreFile(filename, centre)
         centre_file.logging_collection.add_error("TYPE 4", "Some error happened")
         centre_file.backup_file()
 
