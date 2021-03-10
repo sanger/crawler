@@ -12,73 +12,42 @@ from typing import Any, Dict, Optional, Tuple, cast
 import pysftp
 from bson.decimal128 import Decimal128
 
-from crawler.constants import (
-    DART_EMPTY_VALUE,
-    DART_LAB_ID,
-    DART_LH_SAMPLE_UUID,
-    DART_RNA_ID,
-    DART_ROOT_SAMPLE_ID,
-    DART_STATE,
-    DART_STATE_PICKABLE,
-    FIELD_BARCODE,
-    FIELD_CH1_CQ,
-    FIELD_CH1_RESULT,
-    FIELD_CH1_TARGET,
-    FIELD_CH2_CQ,
-    FIELD_CH2_RESULT,
-    FIELD_CH2_TARGET,
-    FIELD_CH3_CQ,
-    FIELD_CH3_RESULT,
-    FIELD_CH3_TARGET,
-    FIELD_CH4_CQ,
-    FIELD_CH4_RESULT,
-    FIELD_CH4_TARGET,
-    FIELD_COORDINATE,
-    FIELD_CREATED_AT,
-    FIELD_DATE_TESTED,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_LAB_ID,
-    FIELD_LH_SAMPLE_UUID,
-    FIELD_LH_SOURCE_PLATE_UUID,
-    FIELD_MONGODB_ID,
-    FIELD_PLATE_BARCODE,
-    FIELD_RESULT,
-    FIELD_RNA_ID,
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_SOURCE,
-    FIELD_UPDATED_AT,
-    MLWH_CH1_CQ,
-    MLWH_CH1_RESULT,
-    MLWH_CH1_TARGET,
-    MLWH_CH2_CQ,
-    MLWH_CH2_RESULT,
-    MLWH_CH2_TARGET,
-    MLWH_CH3_CQ,
-    MLWH_CH3_RESULT,
-    MLWH_CH3_TARGET,
-    MLWH_CH4_CQ,
-    MLWH_CH4_RESULT,
-    MLWH_CH4_TARGET,
-    MLWH_COORDINATE,
-    MLWH_CREATED_AT,
-    MLWH_DATE_TESTED,
-    MLWH_FILTERED_POSITIVE,
-    MLWH_FILTERED_POSITIVE_TIMESTAMP,
-    MLWH_FILTERED_POSITIVE_VERSION,
-    MLWH_LAB_ID,
-    MLWH_LH_SAMPLE_UUID,
-    MLWH_LH_SOURCE_PLATE_UUID,
-    MLWH_MONGODB_ID,
-    MLWH_PLATE_BARCODE,
-    MLWH_RESULT,
-    MLWH_RNA_ID,
-    MLWH_ROOT_SAMPLE_ID,
-    MLWH_SOURCE,
-    MLWH_UPDATED_AT,
-)
-from crawler.types import Config, DartWellProp, ModifiedRowValue, SampleDoc, SourcePlateDoc
+from crawler.constants import (DART_EMPTY_VALUE, DART_LAB_ID,
+                               DART_LH_SAMPLE_UUID, DART_RNA_ID,
+                               DART_ROOT_SAMPLE_ID, DART_STATE,
+                               DART_STATE_PICKABLE, FIELD_BARCODE,
+                               FIELD_CH1_CQ, FIELD_CH1_RESULT,
+                               FIELD_CH1_TARGET, FIELD_CH2_CQ,
+                               FIELD_CH2_RESULT, FIELD_CH2_TARGET,
+                               FIELD_CH3_CQ, FIELD_CH3_RESULT,
+                               FIELD_CH3_TARGET, FIELD_CH4_CQ,
+                               FIELD_CH4_RESULT, FIELD_CH4_TARGET,
+                               FIELD_COORDINATE, FIELD_CREATED_AT,
+                               FIELD_DATE_TESTED, FIELD_FILTERED_POSITIVE,
+                               FIELD_FILTERED_POSITIVE_TIMESTAMP,
+                               FIELD_FILTERED_POSITIVE_VERSION, FIELD_LAB_ID,
+                               FIELD_LH_SAMPLE_UUID,
+                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_MONGODB_ID,
+                               FIELD_MUST_SEQUENCE, FIELD_PLATE_BARCODE,
+                               FIELD_PREFERENTIALLY_SEQUENCE, FIELD_RESULT,
+                               FIELD_RNA_ID, FIELD_ROOT_SAMPLE_ID,
+                               FIELD_SOURCE, FIELD_UPDATED_AT, MLWH_CH1_CQ,
+                               MLWH_CH1_RESULT, MLWH_CH1_TARGET, MLWH_CH2_CQ,
+                               MLWH_CH2_RESULT, MLWH_CH2_TARGET, MLWH_CH3_CQ,
+                               MLWH_CH3_RESULT, MLWH_CH3_TARGET, MLWH_CH4_CQ,
+                               MLWH_CH4_RESULT, MLWH_CH4_TARGET,
+                               MLWH_COORDINATE, MLWH_CREATED_AT,
+                               MLWH_DATE_TESTED, MLWH_FILTERED_POSITIVE,
+                               MLWH_FILTERED_POSITIVE_TIMESTAMP,
+                               MLWH_FILTERED_POSITIVE_VERSION, MLWH_LAB_ID,
+                               MLWH_LH_SAMPLE_UUID, MLWH_LH_SOURCE_PLATE_UUID,
+                               MLWH_MONGODB_ID, MLWH_MUST_SEQUENCE,
+                               MLWH_PLATE_BARCODE,
+                               MLWH_PREFERENTIALLY_SEQUENCE, MLWH_RESULT,
+                               MLWH_RNA_ID, MLWH_ROOT_SAMPLE_ID, MLWH_SOURCE,
+                               MLWH_UPDATED_AT, RESULT_VALUE_POSITIVE)
+from crawler.types import (Config, DartWellProp, ModifiedRowValue, SampleDoc,
+                           SourcePlateDoc)
 
 logger = logging.getLogger(__name__)
 
@@ -186,6 +155,9 @@ def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:
         # UUID fields
         MLWH_LH_SAMPLE_UUID: sample.get(FIELD_LH_SAMPLE_UUID),
         MLWH_LH_SOURCE_PLATE_UUID: sample.get(FIELD_LH_SOURCE_PLATE_UUID),
+        # priority samples fields
+        MLWH_MUST_SEQUENCE: sample.get(FIELD_MUST_SEQUENCE),
+        MLWH_PREFERENTIALLY_SEQUENCE: sample.get(FIELD_PREFERENTIALLY_SEQUENCE),
     }
 
 
@@ -288,6 +260,24 @@ def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
     return None
 
 
+def is_sample_positive(sample):
+    return sample.get(FIELD_RESULT, False) is RESULT_VALUE_POSITIVE
+
+
+def is_sample_important_or_positive(sample):
+    return is_sample_positive(sample) or is_sample_important(sample)
+
+
+def is_sample_important(sample):
+    return (sample.get(FIELD_MUST_SEQUENCE, False) is True) or (
+        sample.get(FIELD_PREFERENTIALLY_SEQUENCE, False) is True
+    )
+
+
+def is_sample_pickable(sample):
+    return (sample.get(FIELD_FILTERED_POSITIVE, False) is True) or is_sample_important(sample)
+
+
 def map_mongo_doc_to_dart_well_props(sample: SampleDoc) -> DartWellProp:
     """Transform a mongo sample doc into DART well properties.
 
@@ -297,8 +287,9 @@ def map_mongo_doc_to_dart_well_props(sample: SampleDoc) -> DartWellProp:
     Returns:
         DartWellProp -- Dictionary of DART property names and values.
     """
+
     return {
-        DART_STATE: DART_STATE_PICKABLE if sample.get(FIELD_FILTERED_POSITIVE, False) else DART_EMPTY_VALUE,
+        DART_STATE: DART_STATE_PICKABLE if is_sample_pickable(sample) else DART_EMPTY_VALUE,
         DART_ROOT_SAMPLE_ID: str(sample[FIELD_ROOT_SAMPLE_ID]),
         DART_RNA_ID: str(sample[FIELD_RNA_ID]),
         DART_LAB_ID: str(sample.get(FIELD_LAB_ID, DART_EMPTY_VALUE)),

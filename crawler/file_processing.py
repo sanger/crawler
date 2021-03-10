@@ -11,80 +11,53 @@ from decimal import Decimal
 from hashlib import md5
 from logging import INFO, WARN
 from pathlib import Path
-from typing import Any, Dict, Final, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, Final, Iterator, List, Optional, Set, Tuple, cast
 
 from bson.decimal128 import Decimal128
 from more_itertools import groupby_transform
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
-from crawler.constants import (
-    ALLOWED_CH_RESULT_VALUES,
-    ALLOWED_CH_TARGET_VALUES,
-    ALLOWED_RESULT_VALUES,
-    COLLECTION_CENTRES,
-    COLLECTION_IMPORTS,
-    COLLECTION_SAMPLES,
-    COLLECTION_SOURCE_PLATES,
-    DART_STATE_PENDING,
-    FIELD_BARCODE,
-    FIELD_CH1_CQ,
-    FIELD_CH1_RESULT,
-    FIELD_CH1_TARGET,
-    FIELD_CH2_CQ,
-    FIELD_CH2_RESULT,
-    FIELD_CH2_TARGET,
-    FIELD_CH3_CQ,
-    FIELD_CH3_RESULT,
-    FIELD_CH3_TARGET,
-    FIELD_CH4_CQ,
-    FIELD_CH4_RESULT,
-    FIELD_CH4_TARGET,
-    FIELD_COORDINATE,
-    FIELD_CREATED_AT,
-    FIELD_DATE_TESTED,
-    FIELD_FILE_NAME,
-    FIELD_FILE_NAME_DATE,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_LAB_ID,
-    FIELD_LH_SAMPLE_UUID,
-    FIELD_LH_SOURCE_PLATE_UUID,
-    FIELD_LINE_NUMBER,
-    FIELD_MONGODB_ID,
-    FIELD_PLATE_BARCODE,
-    FIELD_RESULT,
-    FIELD_RNA_ID,
-    FIELD_RNA_PCR_ID,
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_SOURCE,
-    FIELD_UPDATED_AT,
-    FIELD_VIRAL_PREP_ID,
-    IGNORED_HEADERS,
-    MAX_CQ_VALUE,
-    MIN_CQ_VALUE,
-    RESULT_VALUE_POSITIVE,
-)
-from crawler.db.dart import (
-    add_dart_plate_if_doesnt_exist,
-    add_dart_well_properties_if_positive,
-    create_dart_sql_server_conn,
-)
-from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
-from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
-from crawler.filtered_positive_identifier import current_filtered_positive_identifier
+from crawler.constants import (ALLOWED_CH_RESULT_VALUES,
+                               ALLOWED_CH_TARGET_VALUES, ALLOWED_RESULT_VALUES,
+                               COLLECTION_CENTRES, COLLECTION_IMPORTS,
+                               COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES,
+                               DART_STATE_PENDING, FIELD_BARCODE, FIELD_CH1_CQ,
+                               FIELD_CH1_RESULT, FIELD_CH1_TARGET,
+                               FIELD_CH2_CQ, FIELD_CH2_RESULT,
+                               FIELD_CH2_TARGET, FIELD_CH3_CQ,
+                               FIELD_CH3_RESULT, FIELD_CH3_TARGET,
+                               FIELD_CH4_CQ, FIELD_CH4_RESULT,
+                               FIELD_CH4_TARGET, FIELD_COORDINATE,
+                               FIELD_CREATED_AT, FIELD_DATE_TESTED,
+                               FIELD_FILE_NAME, FIELD_FILE_NAME_DATE,
+                               FIELD_FILTERED_POSITIVE,
+                               FIELD_FILTERED_POSITIVE_TIMESTAMP,
+                               FIELD_FILTERED_POSITIVE_VERSION, FIELD_LAB_ID,
+                               FIELD_LH_SAMPLE_UUID,
+                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_LINE_NUMBER,
+                               FIELD_MONGODB_ID, FIELD_PLATE_BARCODE,
+                               FIELD_RESULT, FIELD_RNA_ID, FIELD_RNA_PCR_ID,
+                               FIELD_ROOT_SAMPLE_ID, FIELD_SOURCE,
+                               FIELD_UPDATED_AT, FIELD_VIRAL_PREP_ID,
+                               IGNORED_HEADERS, MAX_CQ_VALUE, MIN_CQ_VALUE,
+                               RESULT_VALUE_POSITIVE)
+from crawler.db.dart import (add_dart_plate_if_doesnt_exist,
+                             add_dart_well_properties_if_positive,
+                             create_dart_sql_server_conn)
+from crawler.db.mongo import (create_import_record, create_mongo_client,
+                              get_mongo_collection, get_mongo_db)
+from crawler.db.mysql import insert_or_update_samples_in_mlwh
+from crawler.filtered_positive_identifier import \
+    current_filtered_positive_identifier
 from crawler.helpers.enums import CentreFileState
-from crawler.helpers.general_helpers import (
-    create_source_plate_doc,
-    current_time,
-    get_sftp_connection,
-    map_mongo_sample_to_mysql,
-    pad_coordinate,
-)
+from crawler.helpers.general_helpers import (create_source_plate_doc,
+                                             current_time, get_sftp_connection,
+                                             pad_coordinate)
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
-from crawler.types import CentreConf, CentreDoc, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc
+from crawler.types import (CentreConf, CentreDoc, Config, CSVRow, ModifiedRow,
+                           ModifiedRowValue, RowSignature, SampleDoc,
+                           SourcePlateDoc)
 
 logger = logging.getLogger(__name__)
 
@@ -413,7 +386,11 @@ class CentreFile:
         # Internally traps TYPE 26 failed assigning source plate UUIDs error and returns []
         docs_to_insert = self.docs_to_insert_updated_with_source_plate_uuids(docs_to_insert)
 
-        if len(docs_to_insert) > 0:
+        if (num_docs_to_insert := len(docs_to_insert)) > 0:
+            # Mongodb, MLWH and DART will all be updated from the same memory object after parsing the files
+            logger.debug(f"{num_docs_to_insert} docs to insert")
+
+            # - Process files as is - insert data into mongo
             mongo_ids_of_inserted = self.insert_samples_from_docs_into_mongo_db(docs_to_insert)
 
             if len(mongo_ids_of_inserted) > 0:
@@ -422,6 +399,7 @@ class CentreFile:
                     filter(lambda x: x[FIELD_MONGODB_ID] in mongo_ids_of_inserted, docs_to_insert)
                 )
 
+                # Update MLWH
                 mlwh_success = self.insert_samples_from_docs_into_mlwh(docs_to_insert_mlwh)
 
                 # add to the DART database if the config flag is set and we have successfully updated the MLWH
@@ -429,6 +407,7 @@ class CentreFile:
                     logger.info("MLWH insert successful and adding to DART")
 
                     self.insert_plates_and_wells_from_docs_into_dart(docs_to_insert_mlwh)
+
         else:
             logger.info("No new docs to insert")
 
@@ -476,10 +455,11 @@ class CentreFile:
         Returns:
             Database -- a reference to the database in mongo
         """
-        client = create_mongo_client(self.config)
-        db = get_mongo_db(self.config, client)
+        if not hasattr(self, "db"):
+            client = create_mongo_client(self.config)
+            self.db = get_mongo_db(self.config, client)
 
-        return db
+        return self.db
 
     def add_duplication_errors(self, exception: BulkWriteError) -> None:
         """Add errors to the logging collection when we have the BulkWriteError exception.
@@ -659,9 +639,34 @@ class CentreFile:
             logger.exception(e)
             return []
 
+    def logging_message_object(self) -> Dict:
+        return {
+            "success": {
+                "msg": "MLWH database inserts completed successfully for file: {self.file_name}",
+            },
+            "insert_failure": {
+                "error_type": "TYPE 14",
+                "msg": f"MLWH database inserts failed for file {self.file_name}",
+                "critical_msg": f"Critical error while processing file '{self.file_name}'",
+            },
+            "connection_failure": {
+                "error_type": "TYPE 15",
+                "msg": f"MLWH database inserts failed, could not connect, for file {self.file_name}",
+                "critical_msg": f"Error writing to MLWH for file {self.file_name}, "
+                + "could not create Database connection",
+            },
+        }
+
     def insert_samples_from_docs_into_mlwh(self, docs_to_insert: List[ModifiedRow]) -> bool:
-        """Insert sample records into the MLWH database from the parsed file information, including the corresponding
-        mongodb _id
+        return insert_or_update_samples_in_mlwh(
+            docs_to_insert, self.config, False, self.logging_collection, self.logging_message_object()
+        )
+
+    # TODO: refactor duplicated function insert_plates_and_wells_into_dart in priority_samples_process.py
+    def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[ModifiedRow]) -> bool:
+        """Insert plates and wells into the DART database. New plates will be created if they didnt exist
+        previously. New wells will only be created if the plate they belong to is in state 'pending', and
+        the value for Result for that plate is 'positive'.
 
         Arguments:
             docs_to_insert {List[ModifiedRow]} -- List of filtered sample information extracted from CSV files.
@@ -669,55 +674,26 @@ class CentreFile:
         Returns:
             {bool} -- True if the insert was successful; otherwise False
         """
-        values: List[Dict[str, Any]] = []
 
-        for sample_doc in docs_to_insert:
-            values.append(map_mongo_sample_to_mysql(sample_doc))
+        def extract_plate_barcode(sample: SampleDoc) -> ModifiedRowValue:
+            return sample[FIELD_PLATE_BARCODE]
 
-        mysql_conn = create_mysql_connection(self.config, False)
+        logger.info("Adding to DART")
 
-        if mysql_conn is not None and mysql_conn.is_connected():
-            try:
-                run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_INSERT, values)
-
-                logger.debug(f"MLWH database inserts completed successfully for file {self.file_name}")
-                return True
-            except Exception as e:
-                self.logging_collection.add_error(
-                    "TYPE 14",
-                    f"MLWH database inserts failed for file {self.file_name}",
-                )
-                logger.critical(f"Critical error while processing file '{self.file_name}': {e}")
-                logger.exception(e)
-        else:
-            self.logging_collection.add_error(
-                "TYPE 15",
-                f"MLWH database inserts failed, could not connect, for file {self.file_name}",
-            )
-            logger.critical(f"Error writing to MLWH for file {self.file_name}, could not create Database connection")
-
-        return False
-
-    def insert_plates_and_wells_from_docs_into_dart(self, docs_to_insert: List[ModifiedRow]) -> None:
-        """Insert plates and wells into the DART database.
-
-        Arguments:
-            docs_to_insert {List[ModifiedRow]} -- List of filtered sample information extracted from CSV files.
-        """
         if (sql_server_connection := create_dart_sql_server_conn(self.config)) is not None:
             try:
                 cursor = sql_server_connection.cursor()
 
-                for plate_barcode, samples in groupby_transform(  # type: ignore
-                    docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE]
-                ):
+                group_iterator: Iterator[Tuple[Any, Any]] = groupby_transform(docs_to_insert, extract_plate_barcode)
+
+                for plate_barcode, samples in group_iterator:
                     try:
                         plate_state = add_dart_plate_if_doesnt_exist(
-                            cursor, plate_barcode, self.centre_config["biomek_labware_class"]  # type: ignore
+                            cursor, plate_barcode, self.centre_config["biomek_labware_class"]
                         )
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
-                                add_dart_well_properties_if_positive(cursor, sample, plate_barcode)  # type: ignore
+                                add_dart_well_properties_if_positive(cursor, sample, plate_barcode)
                         cursor.commit()
                     except Exception as e:
                         self.logging_collection.add_error(
@@ -727,8 +703,10 @@ class CentreFile:
                         logger.exception(e)
                         # rollback statements executed since previous commit/rollback
                         cursor.rollback()
+                        return False
 
                 logger.debug(f"DART database inserts completed successfully for file {self.file_name}")
+                return True
             except Exception as e:
                 self.logging_collection.add_error(
                     "TYPE 23",
@@ -736,6 +714,7 @@ class CentreFile:
                 )
                 logger.critical(f"Critical error in file {self.file_name}: {e}")
                 logger.exception(e)
+                return False
             finally:
                 sql_server_connection.close()
         else:
@@ -744,6 +723,7 @@ class CentreFile:
                 f"DART database inserts failed, could not connect, for file {self.file_name}",
             )
             logger.critical(f"Error writing to DART for file {self.file_name}, could not create Database connection")
+            return False
 
     def process_csv(self) -> List[ModifiedRow]:
         """Parses and processes the CSV file of the centre.

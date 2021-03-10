@@ -7,58 +7,40 @@ import pytest
 from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
 
-from crawler.constants import (
-    DART_EMPTY_VALUE,
-    DART_LAB_ID,
-    DART_LH_SAMPLE_UUID,
-    DART_RNA_ID,
-    DART_ROOT_SAMPLE_ID,
-    DART_STATE,
-    DART_STATE_PICKABLE,
-    FIELD_BARCODE,
-    FIELD_COORDINATE,
-    FIELD_CREATED_AT,
-    FIELD_DATE_TESTED,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_LAB_ID,
-    FIELD_LH_SAMPLE_UUID,
-    FIELD_LH_SOURCE_PLATE_UUID,
-    FIELD_MONGODB_ID,
-    FIELD_PLATE_BARCODE,
-    FIELD_RESULT,
-    FIELD_RNA_ID,
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_SOURCE,
-    FIELD_UPDATED_AT,
-    MLWH_COORDINATE,
-    MLWH_CREATED_AT,
-    MLWH_DATE_TESTED,
-    MLWH_FILTERED_POSITIVE,
-    MLWH_FILTERED_POSITIVE_TIMESTAMP,
-    MLWH_FILTERED_POSITIVE_VERSION,
-    MLWH_LAB_ID,
-    MLWH_LH_SAMPLE_UUID,
-    MLWH_LH_SOURCE_PLATE_UUID,
-    MLWH_MONGODB_ID,
-    MLWH_PLATE_BARCODE,
-    MLWH_RESULT,
-    MLWH_RNA_ID,
-    MLWH_ROOT_SAMPLE_ID,
-    MLWH_SOURCE,
-    MLWH_UPDATED_AT,
-)
-from crawler.helpers.general_helpers import (
-    create_source_plate_doc,
-    get_config,
-    get_dart_well_index,
-    map_mongo_doc_to_dart_well_props,
-    map_mongo_sample_to_mysql,
-    parse_decimal128,
-    unpad_coordinate,
-    pad_coordinate,
-)
+from crawler.constants import (DART_EMPTY_VALUE, DART_LAB_ID,
+                               DART_LH_SAMPLE_UUID, DART_RNA_ID,
+                               DART_ROOT_SAMPLE_ID, DART_STATE,
+                               DART_STATE_PICKABLE, FIELD_BARCODE,
+                               FIELD_COORDINATE, FIELD_CREATED_AT,
+                               FIELD_DATE_TESTED, FIELD_FILTERED_POSITIVE,
+                               FIELD_FILTERED_POSITIVE_TIMESTAMP,
+                               FIELD_FILTERED_POSITIVE_VERSION, FIELD_LAB_ID,
+                               FIELD_LH_SAMPLE_UUID,
+                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_MONGODB_ID,
+                               FIELD_MUST_SEQUENCE, FIELD_PLATE_BARCODE,
+                               FIELD_PREFERENTIALLY_SEQUENCE, FIELD_RESULT,
+                               FIELD_RNA_ID, FIELD_ROOT_SAMPLE_ID,
+                               FIELD_SOURCE, FIELD_UPDATED_AT, MLWH_COORDINATE,
+                               MLWH_CREATED_AT, MLWH_DATE_TESTED,
+                               MLWH_FILTERED_POSITIVE,
+                               MLWH_FILTERED_POSITIVE_TIMESTAMP,
+                               MLWH_FILTERED_POSITIVE_VERSION, MLWH_LAB_ID,
+                               MLWH_LH_SAMPLE_UUID, MLWH_LH_SOURCE_PLATE_UUID,
+                               MLWH_MONGODB_ID, MLWH_MUST_SEQUENCE,
+                               MLWH_PLATE_BARCODE,
+                               MLWH_PREFERENTIALLY_SEQUENCE, MLWH_RESULT,
+                               MLWH_RNA_ID, MLWH_ROOT_SAMPLE_ID, MLWH_SOURCE,
+                               MLWH_UPDATED_AT, RESULT_VALUE_POSITIVE)
+from crawler.helpers.general_helpers import (create_source_plate_doc,
+                                             get_config, get_dart_well_index,
+                                             is_sample_important,
+                                             is_sample_important_or_positive,
+                                             is_sample_pickable,
+                                             is_sample_positive,
+                                             map_mongo_doc_to_dart_well_props,
+                                             map_mongo_sample_to_mysql,
+                                             pad_coordinate, parse_decimal128,
+                                             unpad_coordinate)
 from crawler.types import SampleDoc
 
 
@@ -118,6 +100,8 @@ def test_map_mongo_sample_to_mysql(config):
         FIELD_FILTERED_POSITIVE_TIMESTAMP: filtered_positive_timestamp,
         FIELD_LH_SAMPLE_UUID: "7512638d-f25e-4ef0-85f0-d921d5263449",
         FIELD_LH_SOURCE_PLATE_UUID: "88ed5139-9e0c-4118-8cc8-20413b9ffa01",
+        FIELD_MUST_SEQUENCE: True,
+        FIELD_PREFERENTIALLY_SEQUENCE: False,
     }
 
     result = map_mongo_sample_to_mysql(doc_to_transform)
@@ -138,6 +122,8 @@ def test_map_mongo_sample_to_mysql(config):
     assert result[MLWH_LH_SOURCE_PLATE_UUID] == "88ed5139-9e0c-4118-8cc8-20413b9ffa01"
     assert result.get(MLWH_CREATED_AT) is not None
     assert result.get(MLWH_UPDATED_AT) is not None
+    assert result[MLWH_MUST_SEQUENCE] is True
+    assert result[MLWH_PREFERENTIALLY_SEQUENCE] is False
 
 
 def test_map_mongo_sample_to_mysql_with_copy(config):
@@ -255,6 +241,34 @@ def test_map_mongo_doc_to_dart_well_props(config):
 
     assert result[DART_STATE] == DART_EMPTY_VALUE
 
+    # is pickabile as filtered positive is false, but must sequence is true
+    doc_to_transform = {
+        FIELD_FILTERED_POSITIVE: False,
+        FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+        FIELD_MUST_SEQUENCE: True,
+        FIELD_RNA_ID: "TC-rna-00000029_H01",
+    }
+
+    result = map_mongo_doc_to_dart_well_props(doc_to_transform)
+
+    assert result[DART_STATE] == DART_STATE_PICKABLE
+    assert result[DART_ROOT_SAMPLE_ID] == "ABC00000004"
+    assert result[DART_RNA_ID] == "TC-rna-00000029_H01"
+
+    # is pickabile as filtered positive is false, but preferentially sequence is true
+    doc_to_transform = {
+        FIELD_FILTERED_POSITIVE: False,
+        FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+        FIELD_PREFERENTIALLY_SEQUENCE: True,
+        FIELD_RNA_ID: "TC-rna-00000029_H01",
+    }
+
+    result = map_mongo_doc_to_dart_well_props(doc_to_transform)
+
+    assert result[DART_STATE] == DART_STATE_PICKABLE
+    assert result[DART_ROOT_SAMPLE_ID] == "ABC00000004"
+    assert result[DART_RNA_ID] == "TC-rna-00000029_H01"
+
 
 def test_create_source_plate_doc(freezer):
     """Tests for updating docs with source plate UUIDs."""
@@ -271,3 +285,103 @@ def test_create_source_plate_doc(freezer):
         assert source_plate[FIELD_LAB_ID] == lab_id
         assert source_plate[FIELD_UPDATED_AT] == now
         assert source_plate[FIELD_CREATED_AT] == now
+
+
+def test_is_sample_positive():
+    negative = "negative"
+    assert is_sample_positive({FIELD_RESULT: negative}) is False
+    assert is_sample_positive({FIELD_RESULT: RESULT_VALUE_POSITIVE}) is True
+
+
+def test_is_sample_important_or_positive():
+    negative = "negative"
+    assert (
+        is_sample_important_or_positive(
+            {FIELD_RESULT: negative, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}
+        )
+        is False
+    )
+    assert is_sample_important_or_positive({FIELD_RESULT: negative}) is False
+    assert (
+        is_sample_important_or_positive(
+            {FIELD_RESULT: RESULT_VALUE_POSITIVE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}
+        )
+        is True
+    )
+    assert is_sample_important_or_positive({FIELD_RESULT: RESULT_VALUE_POSITIVE}) is True
+    assert (
+        is_sample_important_or_positive(
+            {FIELD_RESULT: negative, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}
+        )
+        is True
+    )
+    assert (
+        is_sample_important_or_positive(
+            {FIELD_RESULT: RESULT_VALUE_POSITIVE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}
+        )
+        is True
+    )
+    assert (
+        is_sample_important_or_positive(
+            {FIELD_RESULT: RESULT_VALUE_POSITIVE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}
+        )
+        is True
+    )
+    assert (
+        is_sample_important_or_positive(
+            {FIELD_RESULT: RESULT_VALUE_POSITIVE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}
+        )
+        is True
+    )
+
+
+def test_is_sample_important():
+    assert is_sample_important({FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}) is True
+    assert is_sample_important({FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) is True
+    assert is_sample_important({FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) is False
+    assert is_sample_important({FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}) is True
+    assert is_sample_important({FIELD_PREFERENTIALLY_SEQUENCE: True}) is True
+    assert is_sample_important({FIELD_MUST_SEQUENCE: True}) is True
+    assert is_sample_important({}) is False
+
+
+def test_is_sample_pickable():
+    assert (
+        is_sample_pickable(
+            {FIELD_FILTERED_POSITIVE: True, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}
+        )
+        is True
+    )
+    assert (
+        is_sample_pickable(
+            {FIELD_FILTERED_POSITIVE: True, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}
+        )
+        is True
+    )
+    assert (
+        is_sample_pickable(
+            {FIELD_FILTERED_POSITIVE: True, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}
+        )
+        is True
+    )
+    assert (
+        is_sample_pickable(
+            {FIELD_FILTERED_POSITIVE: False, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}
+        )
+        is True
+    )
+    assert (
+        is_sample_pickable(
+            {FIELD_FILTERED_POSITIVE: False, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}
+        )
+        is True
+    )
+    assert (
+        is_sample_pickable(
+            {FIELD_FILTERED_POSITIVE: False, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}
+        )
+        is False
+    )
+    assert is_sample_pickable({FIELD_FILTERED_POSITIVE: True}) is True
+    assert is_sample_pickable({FIELD_MUST_SEQUENCE: True}) is True
+    assert is_sample_pickable({FIELD_PREFERENTIALLY_SEQUENCE: True}) is True
