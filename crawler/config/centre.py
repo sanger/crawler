@@ -101,11 +101,11 @@ CENTRES = [
         "lab_id_default": "Randox",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/RAND",
         #"sftp_file_regex": r"^lw-randox-biocentre-box-.*\.csv$",
-        "sftp_file_regex_unconsolidated_surveillance": f"^lw-randox-biocentre-box-{CENTRE_REGEX_SFTP_FILE_HERON}",
+        "sftp_file_regex_unconsolidated_surveillance": f"^lw-randox-biocentre-box-.*\.csv$",
         "sftp_file_regex_consolidated_surveillance": r"^RAND-\d+\.csv$",
         "sftp_file_regex_consolidated_eagle": r"^RXE\d+\.csv$",
         "sftp_root_read": "project-heron_randox",
-        "file_names_to_ignore": [r"^lw-randox-biocentre-box-((\d)|(1\d)|20)-.*$"],
+        #"file_names_to_ignore": [r"^lw-randox-biocentre-box-((\d)|(1\d)|20)-.*$"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
     },
 ]

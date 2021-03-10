@@ -1871,7 +1871,42 @@ def test_docs_to_insert_updated_with_source_plate_uuids_uses_existing_plates(con
     assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
-def test_docs_to_insert_updated_with_source_plate_handles_duplicate_new_barcodes_from_different_lab(
+@mark.parametrize("filename, expected_type25_errors_count",[
+    [UNCONSOLIDATED_SURVEILLANCE_FILENAME, 1],[CONSOLIDATED_EAGLE_FILENAME, 0],
+    [CONSOLIDATED_SURVEILLANCE_FILENAME, 0],["some file", 1]])
+def test_docs_to_insert_updated_with_source_plate_handles_duplicate_new_barcodes_from_different_lab_when_not_consolidated(
+    config, mongo_database, filename, expected_type25_errors_count
+):
+    # set up input sample docs to have duplicate plate barcodes from different labs
+    _, mongo_database = mongo_database
+    docs: List[ModifiedRow] = [
+        {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "AP"},
+        {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "MK"},  # we expect this one to be rejected
+        {FIELD_PLATE_BARCODE: "456", FIELD_LAB_ID: "MK"},
+        {FIELD_PLATE_BARCODE: "789", FIELD_LAB_ID: "CB"},
+    ]
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile(filename, centre)
+    updated_docs = centre_file.docs_to_insert_updated_with_source_plate_uuids(docs)
+    assert len(updated_docs) == 4 - expected_type25_errors_count
+    assert sum(doc[FIELD_PLATE_BARCODE] == "123" and doc[FIELD_LAB_ID] == "AP" for doc in docs) == 1
+    assert sum(doc[FIELD_PLATE_BARCODE] == "456" and doc[FIELD_LAB_ID] == "MK" for doc in docs) == 1
+    assert sum(doc[FIELD_PLATE_BARCODE] == "789" and doc[FIELD_LAB_ID] == "CB" for doc in docs) == 1
+
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+    assert source_plates_collection.count_documents({}) == 3
+
+    for doc in updated_docs:
+        source_plate = source_plates_collection.find_one({FIELD_BARCODE: doc[FIELD_PLATE_BARCODE]})
+        assert source_plate is not None
+        assert source_plate[FIELD_LH_SOURCE_PLATE_UUID] is not None
+        assert doc[FIELD_LH_SOURCE_PLATE_UUID] == source_plate[FIELD_LH_SOURCE_PLATE_UUID]
+
+    assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == expected_type25_errors_count
+    assert centre_file.logging_collection.aggregator_types["TYPE 25"].count_errors == expected_type25_errors_count
+
+
+def test_docs_to_insert_updated_with_source_plate_does_not_log_error_when_different_lab_and_consolidated_file(
     config, mongo_database
 ):
     # set up input sample docs to have duplicate plate barcodes from different labs
