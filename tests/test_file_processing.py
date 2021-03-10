@@ -5,81 +5,47 @@ from datetime import datetime
 from decimal import Decimal
 from io import StringIO
 from typing import List
+from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
 from mysql.connector.connection_cext import CMySQLConnection
 
-from crawler.constants import (
-    COLLECTION_IMPORTS,
-    COLLECTION_SAMPLES,
-    COLLECTION_SOURCE_PLATES,
-    DART_STATE_PENDING,
-    FIELD_BARCODE,
-    FIELD_CH1_CQ,
-    FIELD_CH1_RESULT,
-    FIELD_CH1_TARGET,
-    FIELD_CH2_CQ,
-    FIELD_CH2_RESULT,
-    FIELD_CH2_TARGET,
-    FIELD_CH3_CQ,
-    FIELD_CH3_RESULT,
-    FIELD_CH3_TARGET,
-    FIELD_CH4_CQ,
-    FIELD_CH4_RESULT,
-    FIELD_CH4_TARGET,
-    FIELD_COORDINATE,
-    FIELD_CREATED_AT,
-    FIELD_DATE_TESTED,
-    FIELD_FILE_NAME,
-    FIELD_FILE_NAME_DATE,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_LAB_ID,
-    FIELD_LH_SAMPLE_UUID,
-    FIELD_LH_SOURCE_PLATE_UUID,
-    FIELD_LINE_NUMBER,
-    FIELD_PLATE_BARCODE,
-    FIELD_RESULT,
-    FIELD_RNA_ID,
-    FIELD_RNA_PCR_ID,
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_SOURCE,
-    FIELD_UPDATED_AT,
-    FIELD_VIRAL_PREP_ID,
-    MLWH_CH1_CQ,
-    MLWH_CH1_RESULT,
-    MLWH_CH1_TARGET,
-    MLWH_CH2_CQ,
-    MLWH_CH2_RESULT,
-    MLWH_CH2_TARGET,
-    MLWH_CH3_CQ,
-    MLWH_CH3_RESULT,
-    MLWH_CH3_TARGET,
-    MLWH_CH4_CQ,
-    MLWH_CH4_RESULT,
-    MLWH_CH4_TARGET,
-    MLWH_COORDINATE,
-    MLWH_CREATED_AT,
-    MLWH_DATE_TESTED,
-    MLWH_FILTERED_POSITIVE,
-    MLWH_FILTERED_POSITIVE_TIMESTAMP,
-    MLWH_FILTERED_POSITIVE_VERSION,
-    MLWH_LAB_ID,
-    MLWH_MONGODB_ID,
-    MLWH_PLATE_BARCODE,
-    MLWH_RESULT,
-    MLWH_RNA_ID,
-    MLWH_ROOT_SAMPLE_ID,
-    MLWH_SOURCE,
-    MLWH_TABLE_NAME,
-    MLWH_UPDATED_AT,
-    RESULT_VALUE_POSITIVE,
-)
+from crawler.constants import (COLLECTION_IMPORTS, COLLECTION_SAMPLES,
+                               COLLECTION_SOURCE_PLATES, DART_STATE_PENDING,
+                               FIELD_BARCODE, FIELD_CH1_CQ, FIELD_CH1_RESULT,
+                               FIELD_CH1_TARGET, FIELD_CH2_CQ,
+                               FIELD_CH2_RESULT, FIELD_CH2_TARGET,
+                               FIELD_CH3_CQ, FIELD_CH3_RESULT,
+                               FIELD_CH3_TARGET, FIELD_CH4_CQ,
+                               FIELD_CH4_RESULT, FIELD_CH4_TARGET,
+                               FIELD_COORDINATE, FIELD_CREATED_AT,
+                               FIELD_DATE_TESTED, FIELD_FILE_NAME,
+                               FIELD_FILE_NAME_DATE, FIELD_FILTERED_POSITIVE,
+                               FIELD_FILTERED_POSITIVE_TIMESTAMP,
+                               FIELD_FILTERED_POSITIVE_VERSION, FIELD_LAB_ID,
+                               FIELD_LH_SAMPLE_UUID,
+                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_LINE_NUMBER,
+                               FIELD_PLATE_BARCODE, FIELD_RESULT, FIELD_RNA_ID,
+                               FIELD_RNA_PCR_ID, FIELD_ROOT_SAMPLE_ID,
+                               FIELD_SOURCE, FIELD_UPDATED_AT,
+                               FIELD_VIRAL_PREP_ID, MLWH_CH1_CQ,
+                               MLWH_CH1_RESULT, MLWH_CH1_TARGET, MLWH_CH2_CQ,
+                               MLWH_CH2_RESULT, MLWH_CH2_TARGET, MLWH_CH3_CQ,
+                               MLWH_CH3_RESULT, MLWH_CH3_TARGET, MLWH_CH4_CQ,
+                               MLWH_CH4_RESULT, MLWH_CH4_TARGET,
+                               MLWH_COORDINATE, MLWH_CREATED_AT,
+                               MLWH_DATE_TESTED, MLWH_FILTERED_POSITIVE,
+                               MLWH_FILTERED_POSITIVE_TIMESTAMP,
+                               MLWH_FILTERED_POSITIVE_VERSION, MLWH_LAB_ID,
+                               MLWH_MONGODB_ID, MLWH_PLATE_BARCODE,
+                               MLWH_RESULT, MLWH_RNA_ID, MLWH_ROOT_SAMPLE_ID,
+                               MLWH_SOURCE, MLWH_TABLE_NAME, MLWH_UPDATED_AT,
+                               RESULT_VALUE_POSITIVE)
 from crawler.db.mongo import get_mongo_collection
-from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
+from crawler.file_processing import (ERRORS_DIR, SUCCESSES_DIR, Centre,
+                                     CentreFile)
 from crawler.types import Config, ModifiedRow
 
 # ----- tests helpers -----
@@ -745,6 +711,32 @@ def test_parse_and_format_file_rows_detects_duplicates(config, freezer):
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
+def test_parse_and_format_file_rows_can_parse_empty_root_sample_id(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some_file.csv", False, centre)
+
+    with StringIO() as fake_csv:
+        fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
+
+        # where row has valid value - should pass
+        fake_csv.write("1,RNA_0043_H06,Positive,Val\n")
+
+        # where row has empty - should error
+        fake_csv.write(",RNA_0043_H08,limit of detection,Val\n")
+
+        # where row has Empty - should ignore
+        fake_csv.write("Empty,RNA_0043_H09,Void,Val\n")
+        fake_csv.seek(0)
+
+        csv_to_test_reader = DictReader(fake_csv)
+        read_rows = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+
+        assert len(read_rows) == 1
+        assert read_rows[0][FIELD_ROOT_SAMPLE_ID] == '1'
+
+        # should create a specific error type for the row
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+
 def test_where_result_has_unexpected_value(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", False, centre)
@@ -785,6 +777,8 @@ def test_where_ct_channel_target_has_unexpected_value(config):
 
         # where row has valid value - should pass
         fake_csv.write("1,RNA_0043_H09,Positive,Val,S gene\n")
+        fake_csv.write("1,RNA_0043_H09,Positive,Val,RNaseP\n")
+        fake_csv.write("1,RNA_0043_H09,Positive,Val,IEC\n")
 
         # where row is empty - should pass
         fake_csv.write("2,RNA_0043_H10,Positive,Val,\n")
