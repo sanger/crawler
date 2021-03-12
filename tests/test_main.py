@@ -3,15 +3,16 @@ import shutil
 from importlib import import_module, invalidate_caches
 from unittest.mock import patch
 
-from crawler.constants import COLLECTION_CENTRES, COLLECTION_IMPORTS, COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES
+from crawler.constants import (COLLECTION_CENTRES, COLLECTION_IMPORTS,
+                               COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES)
 from crawler.db.mongo import get_mongo_collection
 from crawler.main import run
 
 NUMBER_CENTRES = 6
-NUMBER_VALID_SAMPLES = 19
+NUMBER_VALID_SAMPLES = 21
 NUMBER_SAMPLES_ON_PARTIAL_IMPORT = 10
-NUMBER_OF_FILES_PROCESSED = 11
-NUMBER_SOURCE_PLATES = 8
+NUMBER_OF_FILES_PROCESSED = 12
+NUMBER_SOURCE_PLATES = 9
 
 
 # The run method encompasses the main actions of the crawler
@@ -214,7 +215,7 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     assert 0 == len(files)
 
     (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
-    assert 0 == len(files), "Fail success TEST"
+    assert 1 == len(files), "Fail success TEST"
 
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
     assert 2 == len(files)
@@ -240,8 +241,8 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
 
         # We expect the previously blacklisted file to now be processed
         (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
-        assert 1 == len(files), (
-            f"Wrong number of success files. Expected: 1, actual: {len(files)}. Previously "
+        assert 2 == len(files), (
+            f"Wrong number of success files. Expected: 2, actual: {len(files)}. Previously "
             "blacklisted file should have been processed."
         )
 

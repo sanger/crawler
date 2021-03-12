@@ -12,79 +12,43 @@ from bson.objectid import ObjectId
 from mysql.connector.connection_cext import CMySQLConnection
 from pytest import mark
 
-from crawler.constants import (
-    COLLECTION_IMPORTS,
-    COLLECTION_SAMPLES,
-    COLLECTION_SOURCE_PLATES,
-    DART_STATE_PENDING,
-    FIELD_BARCODE,
-    FIELD_CH1_CQ,
-    FIELD_CH1_RESULT,
-    FIELD_CH1_TARGET,
-    FIELD_CH2_CQ,
-    FIELD_CH2_RESULT,
-    FIELD_CH2_TARGET,
-    FIELD_CH3_CQ,
-    FIELD_CH3_RESULT,
-    FIELD_CH3_TARGET,
-    FIELD_CH4_CQ,
-    FIELD_CH4_RESULT,
-    FIELD_CH4_TARGET,
-    FIELD_COORDINATE,
-    FIELD_CREATED_AT,
-    FIELD_DATE_TESTED,
-    FIELD_FILE_NAME,
-    FIELD_FILE_NAME_DATE,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_LAB_ID,
-    FIELD_LH_SAMPLE_UUID,
-    FIELD_LH_SOURCE_PLATE_UUID,
-    FIELD_LINE_NUMBER,
-    FIELD_MUST_SEQUENCE,
-    FIELD_PLATE_BARCODE,
-    FIELD_PREFERENTIALLY_SEQUENCE,
-    FIELD_RESULT,
-    FIELD_RNA_ID,
-    FIELD_RNA_PCR_ID,
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_SOURCE,
-    FIELD_UPDATED_AT,
-    FIELD_VIRAL_PREP_ID,
-    MLWH_CH1_CQ,
-    MLWH_CH1_RESULT,
-    MLWH_CH1_TARGET,
-    MLWH_CH2_CQ,
-    MLWH_CH2_RESULT,
-    MLWH_CH2_TARGET,
-    MLWH_CH3_CQ,
-    MLWH_CH3_RESULT,
-    MLWH_CH3_TARGET,
-    MLWH_CH4_CQ,
-    MLWH_CH4_RESULT,
-    MLWH_CH4_TARGET,
-    MLWH_COORDINATE,
-    MLWH_CREATED_AT,
-    MLWH_DATE_TESTED,
-    MLWH_FILTERED_POSITIVE,
-    MLWH_FILTERED_POSITIVE_TIMESTAMP,
-    MLWH_FILTERED_POSITIVE_VERSION,
-    MLWH_LAB_ID,
-    MLWH_MONGODB_ID,
-    MLWH_MUST_SEQUENCE,
-    MLWH_PLATE_BARCODE,
-    MLWH_PREFERENTIALLY_SEQUENCE,
-    MLWH_RESULT,
-    MLWH_RNA_ID,
-    MLWH_ROOT_SAMPLE_ID,
-    MLWH_SOURCE,
-    MLWH_TABLE_NAME,
-    MLWH_UPDATED_AT,
-    RESULT_VALUE_POSITIVE,
-)
+from crawler.constants import (COLLECTION_IMPORTS, COLLECTION_SAMPLES,
+                               COLLECTION_SOURCE_PLATES, DART_STATE_PENDING,
+                               FIELD_BARCODE, FIELD_CH1_CQ, FIELD_CH1_RESULT,
+                               FIELD_CH1_TARGET, FIELD_CH2_CQ,
+                               FIELD_CH2_RESULT, FIELD_CH2_TARGET,
+                               FIELD_CH3_CQ, FIELD_CH3_RESULT,
+                               FIELD_CH3_TARGET, FIELD_CH4_CQ,
+                               FIELD_CH4_RESULT, FIELD_CH4_TARGET,
+                               FIELD_COORDINATE, FIELD_CREATED_AT,
+                               FIELD_DATE_TESTED, FIELD_FILE_NAME,
+                               FIELD_FILE_NAME_DATE, FIELD_FILTERED_POSITIVE,
+                               FIELD_FILTERED_POSITIVE_TIMESTAMP,
+                               FIELD_FILTERED_POSITIVE_VERSION, FIELD_LAB_ID,
+                               FIELD_LH_SAMPLE_UUID,
+                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_LINE_NUMBER,
+                               FIELD_MUST_SEQUENCE, FIELD_PLATE_BARCODE,
+                               FIELD_PREFERENTIALLY_SEQUENCE, FIELD_RESULT,
+                               FIELD_RNA_ID, FIELD_RNA_PCR_ID,
+                               FIELD_ROOT_SAMPLE_ID, FIELD_SOURCE,
+                               FIELD_UPDATED_AT, FIELD_VIRAL_PREP_ID,
+                               MLWH_CH1_CQ, MLWH_CH1_RESULT, MLWH_CH1_TARGET,
+                               MLWH_CH2_CQ, MLWH_CH2_RESULT, MLWH_CH2_TARGET,
+                               MLWH_CH3_CQ, MLWH_CH3_RESULT, MLWH_CH3_TARGET,
+                               MLWH_CH4_CQ, MLWH_CH4_RESULT, MLWH_CH4_TARGET,
+                               MLWH_COORDINATE, MLWH_CREATED_AT,
+                               MLWH_DATE_TESTED, MLWH_FILTERED_POSITIVE,
+                               MLWH_FILTERED_POSITIVE_TIMESTAMP,
+                               MLWH_FILTERED_POSITIVE_VERSION, MLWH_LAB_ID,
+                               MLWH_MONGODB_ID, MLWH_MUST_SEQUENCE,
+                               MLWH_PLATE_BARCODE,
+                               MLWH_PREFERENTIALLY_SEQUENCE, MLWH_RESULT,
+                               MLWH_RNA_ID, MLWH_ROOT_SAMPLE_ID, MLWH_SOURCE,
+                               MLWH_TABLE_NAME, MLWH_UPDATED_AT,
+                               RESULT_VALUE_POSITIVE)
 from crawler.db.mongo import get_mongo_collection
-from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
+from crawler.file_processing import (ERRORS_DIR, SUCCESSES_DIR, Centre,
+                                     CentreFile)
 from crawler.types import Config, ModifiedRow
 
 # ----- tests helpers -----
@@ -249,6 +213,41 @@ def test_can_identify_consolidated_surveillance_filename(config, filename, expec
 def test_can_identify_surveillance_filename(config, filename, expected_value):
     centre = Centre(config, config.CENTRES[0])
     assert centre.is_surveillance_filename(filename) is expected_value
+
+def test_process_files_with_whitespace(mongo_database, config, testing_files_for_process, testing_centres):
+    """Test using files in the files/TEST directory; they include a file with lots of whitespace."""
+    _, mongo_database = mongo_database
+
+    # get the TEST centre
+    centre_config = next(filter(lambda centre: centre["prefix"] == "TEST", config.CENTRES))
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+    centre.process_files(add_to_dart=False)
+
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+
+    date_time = datetime(year=2020, month=4, day=16, hour=14, minute=30, second=40)
+
+    # Testing file where values contain with whitespace
+    assert (
+        samples_collection.count_documents(
+            {
+                FIELD_ROOT_SAMPLE_ID: "3",
+                FIELD_VIRAL_PREP_ID: "1",
+                FIELD_RNA_ID: "AP456_B09",
+                FIELD_RNA_PCR_ID: "CF06CR9G_B03",
+                FIELD_RESULT: "Negative",
+                FIELD_SOURCE: "Test Centre",
+                FIELD_DATE_TESTED: date_time,
+            }
+        )
+        == 1
+    )
+    assert samples_collection.count_documents({FIELD_RNA_ID: "AP456_B08"}) == 1
+    assert (
+        imports_collection.count_documents({"csv_file_used": "TEST_sanger_report_200518_2208_with_whitespace.csv"}) == 1
+    )
 
 
 # ----- tests for class CentreFile -----
