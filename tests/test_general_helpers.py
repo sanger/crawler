@@ -71,6 +71,21 @@ from crawler.helpers.general_helpers import (
 from crawler.types import SampleDoc
 
 
+#
+# For checking bug on comparing strings with 'is'
+# (Pdb) sample.get('Result', False) is 'Positive'
+# <stdin>:1: SyntaxWarning: "is" with a literal. Did you mean "=="?
+# False
+# (Pdb) sample2.get('Result', False) is 'Positive'
+# <stdin>:1: SyntaxWarning: "is" with a literal. Did you mean "=="?
+# True
+def generate_new_object_for_string(original_str):
+    part1 = original_str[0:2]
+    part2 = original_str[2:]
+    new_str = part1 + part2
+    return new_str
+
+
 def test_get_config():
     with pytest.raises(ModuleNotFoundError):
         get_config("x.y.z")
@@ -315,9 +330,9 @@ def test_create_source_plate_doc(freezer):
 
 
 def test_is_sample_positive():
-    negative = "negative"
-    assert is_sample_positive({FIELD_RESULT: negative}) is False
+    assert is_sample_positive({FIELD_RESULT: "negative"}) is False
     assert is_sample_positive({FIELD_RESULT: POSITIVE_RESULT_VALUE}) is True
+    assert is_sample_positive({FIELD_RESULT: generate_new_object_for_string(POSITIVE_RESULT_VALUE)}) is True
 
 
 def test_is_sample_important_or_positive():
