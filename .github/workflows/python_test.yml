@@ -1,21 +1,14 @@
-name: CI python
+name: Python - test
 
 on:
-  # Trigger the workflow on push or pull request,
   push:
     branches:
       - develop
       - master
-    tags:
-      - uat-*
-    paths-ignore:
-      - "README.md"
   pull_request:
     branches:
       - develop
       - master
-    paths-ignore:
-      - "README.md"
 
 jobs:
   test:
@@ -25,6 +18,7 @@ jobs:
         image: mongo:4.2.5
         ports:
           - 27017:27017
+
       mysql:
         image: mysql:5.7
         ports:
@@ -35,39 +29,34 @@ jobs:
           MYSQL_DATABASE: unified_warehouse_test
     steps:
       - uses: actions/checkout@v2
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
+
       - uses: actions/cache@v1
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/Pipfile') }}
           restore-keys: |
             ${{ runner.os }}-pip-
+
       - name: Install pipenv
         run: |
-          python -m pip install --upgrade pip
           pip install pipenv
+
       - name: Install dependencies
         run: |
-          pipenv install --dev --ignore-pipfile --system --deploy
-      - name: Check format with black
+          pipenv sync --dev --system
+
+      - name: Setup the test MLWH and Events databases
         run: |
-          # stop the build if there are black formatting errors
-          python -m black --check .
-      - name: Lint with flake8
-        run: |
-          # stop the build if there are Python syntax errors or undefined names
-          flake8
-      - name: Run mypy
-        run: |
-          python -m mypy .
-      - name: Create mysql test warehouse database and table
-        run: >-
           python setup_test_db.py
+
       - name: Test with pytest
         run: |
-          python -m pytest -x
+          python -m pytest -vx
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1

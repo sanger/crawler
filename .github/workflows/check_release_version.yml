@@ -1,0 +1,28 @@
+# Checks that the .release_version file has been updated
+name: Check release version
+
+on:
+  pull_request:
+    branches:
+      - master
+      - develop
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get the latest release
+        id: last_release
+        uses: InsonusK/get-latest-release@v1.0.1
+        with:
+          myToken: ${{ github.token }}
+          view_top: 1
+
+      - name: Compare releases
+        run: >-
+          if [ "${{ steps.last_release.outputs.tag_name }}" = "$(printf 'v%s-develop\n' $(cat .release_version))" ] ||
+          [ "${{ steps.last_release.outputs.tag_name }}" = "$(printf 'v%s\n' $(cat .release_version))" ]; then
+            exit 1;
+          fi
