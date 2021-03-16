@@ -70,6 +70,8 @@ from crawler.helpers.general_helpers import (
 )
 from crawler.types import SampleDoc
 
+from tests.conftest import generate_new_object_for_string
+
 
 def test_get_config():
     with pytest.raises(ModuleNotFoundError):
@@ -315,9 +317,9 @@ def test_create_source_plate_doc(freezer):
 
 
 def test_is_sample_positive():
-    negative = "negative"
-    assert is_sample_positive({FIELD_RESULT: negative}) is False
+    assert is_sample_positive({FIELD_RESULT: "negative"}) is False
     assert is_sample_positive({FIELD_RESULT: POSITIVE_RESULT_VALUE}) is True
+    assert is_sample_positive({FIELD_RESULT: generate_new_object_for_string(POSITIVE_RESULT_VALUE)}) is True
 
 
 def test_is_sample_important_or_positive():

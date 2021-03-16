@@ -297,7 +297,7 @@ def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
 
 
 def is_sample_positive(sample):
-    return sample.get(FIELD_RESULT, False) is POSITIVE_RESULT_VALUE
+    return sample.get(FIELD_RESULT, False) == POSITIVE_RESULT_VALUE
 
 
 def is_sample_important_or_positive(sample):
