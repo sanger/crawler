@@ -1,28 +1,23 @@
-name: CI docker
+name: Automated build, test, release and push
 
 on:
   push:
     branches:
       - develop
       - master
-    paths-ignore:
-      - "README.md"
-    tags:
-      - uat-*
-      - release-*
-      - v*
 
 env:
   IMAGE_NAME: ${{ github.repository }}/${{ github.event.repository.name }}
 
 jobs:
-  build_and_test_job:
+  build_test_release_push:
     runs-on: ubuntu-18.04
     services:
       mongodb:
         image: mongo:4.2.5
         ports:
           - 27017:27017
+
       mysql:
         image: mysql:5.7
         ports:
@@ -33,30 +28,56 @@ jobs:
           MYSQL_DATABASE: unified_warehouse_test
     steps:
       - uses: actions/checkout@v2
-      - name: Build the Docker image
+
+      - name: Build and tag the image for testing and release
         run: >-
           docker build .
           --file Dockerfile
           --tag docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
+
       - name: Create mysql test warehouse database and table
         run: >-
           docker run
           --network host
           docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
           python setup_test_db.py
+
       - name: Run tests against the image
         run: >-
           docker run
           --network host
           docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
-          python -m pytest -x
+          python -m pytest --no-cov -vx
+
+      - name: Set release tag
+        # https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable
+        run: echo "RELEASE_VERSION=$([ ${GITHUB_REF##*/} = "develop" ] && printf '%s\n' $(cat .release_version)-develop || printf '%s\n' $(cat .release_version))" >> $GITHUB_ENV
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.RELEASE_VERSION }}
+          release_name: ${{ env.RELEASE_VERSION }}
+          draft: false
+          prerelease: ${{ !(github.ref == 'refs/heads/master') }}
+
       - name: Login to registry
         run: >-
           docker login
           -u ${{ github.actor }}
           -p ${{ secrets.GITHUB_TOKEN }}
           docker.pkg.github.com
-      - name: Publish image with image tag being either develop/master/<tag_name>
+
+      - name: Tag image with release version
         run: >-
-          docker push
+          docker tag
           docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
+          docker.pkg.github.com/${IMAGE_NAME}:${{ env.RELEASE_VERSION }}
+
+      - name: Push all tagged images in the repository
+        run: >-
+          docker push --all-tags
+          docker.pkg.github.com/${IMAGE_NAME}
