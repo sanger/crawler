@@ -50,6 +50,7 @@ from crawler.db.mongo import get_mongo_collection
 from crawler.file_processing import (ERRORS_DIR, SUCCESSES_DIR, Centre,
                                      CentreFile)
 from crawler.types import Config, ModifiedRow
+from tests.conftest import generate_new_object_for_string
 
 # ----- tests helpers -----
 
@@ -1757,7 +1758,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_COORDINATE: "A01",
             FIELD_LAB_ID: "AP",
-            FIELD_RESULT: RESULT_VALUE_POSITIVE,
+            FIELD_RESULT: generate_new_object_for_string(RESULT_VALUE_POSITIVE),
         },
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1766,7 +1767,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
             FIELD_PLATE_BARCODE: "TC-rna-00000024",
             FIELD_COORDINATE: "B01",
             FIELD_LAB_ID: "AP",
-            FIELD_RESULT: RESULT_VALUE_POSITIVE,
+            FIELD_RESULT: generate_new_object_for_string(RESULT_VALUE_POSITIVE),
         },
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1836,7 +1837,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
             FIELD_PLATE_BARCODE: plate_barcode,
             FIELD_COORDINATE: "A01",
             FIELD_LAB_ID: "AP",
-            FIELD_RESULT: RESULT_VALUE_POSITIVE,
+            FIELD_RESULT: generate_new_object_for_string(RESULT_VALUE_POSITIVE),
         },
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1845,7 +1846,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
             FIELD_PLATE_BARCODE: plate_barcode,
             FIELD_COORDINATE: "A02",
             FIELD_LAB_ID: "AP",
-            FIELD_RESULT: RESULT_VALUE_POSITIVE,
+            FIELD_RESULT: generate_new_object_for_string(RESULT_VALUE_POSITIVE),
         },
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
