@@ -376,14 +376,17 @@ def blacklist_for_centre(config):
         config.CENTRES[0]["file_names_to_ignore"] = []
 
 
-# For checking bug on comparing strings with 'is'
-# (Pdb) sample.get('Result', False) is 'Positive'
-# <stdin>:1: SyntaxWarning: "is" with a literal. Did you mean "=="?
-# False
-# (Pdb) sample2.get('Result', False) is 'Positive'
-# <stdin>:1: SyntaxWarning: "is" with a literal. Did you mean "=="?
-# True
+
 def generate_new_object_for_string(original_str):
+    """
+    For checking bug on comparing strings with 'is'
+    (Pdb) sample.get('Result', False) is 'Positive'
+    <stdin>:1: SyntaxWarning: "is" with a literal. Did you mean "=="?
+    False
+    (Pdb) sample2.get('Result', False) is 'Positive'
+    <stdin>:1: SyntaxWarning: "is" with a literal. Did you mean "=="?
+    True
+    """
     part1 = original_str[0:2]
     part2 = original_str[2:]
     new_str = part1 + part2
