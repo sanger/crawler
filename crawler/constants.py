@@ -126,12 +126,18 @@ ALLOWED_CH_TARGET_VALUES: Final[Tuple[str, ...]] = (
     "S gene",
 )
 
+
+CH_RESULT_INCONCLUSIVE = "Inconclusive"
+CH_RESULT_NEGATIVE = "Negative"
+CH_RESULT_POSITIVE = "Positive"
+CH_RESULT_VOID = "Void"
+
 # allowed CT channel CHn-Result field values (or can be null)
 ALLOWED_CH_RESULT_VALUES: Final[Tuple[str, str, str, str]] = (
-    "Inconclusive",
-    RESULT_VALUE_NEGATIVE,
-    RESULT_VALUE_POSITIVE,
-    RESULT_VALUE_VOID,
+    CH_RESULT_INCONCLUSIVE,
+    CH_RESULT_NEGATIVE,
+    CH_RESULT_POSITIVE,
+    CH_RESULT_VOID,
 )
 
 # range of allowed cq values (0 .. 100, set as strings for conversion to decimals in code)
