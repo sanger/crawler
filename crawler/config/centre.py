@@ -1,5 +1,6 @@
 # flake8: noqa
-from crawler.constants import BIOMEK_LABWARE_CLASS_BIO, BIOMEK_LABWARE_CLASS_KINGFISHER, FIELD_RNA_ID
+from crawler.constants import (BIOMEK_LABWARE_CLASS_BIO,
+                               BIOMEK_LABWARE_CLASS_KINGFISHER, FIELD_RNA_ID)
 
 # centre details
 # This information will also be persisted in the mongo database
@@ -40,8 +41,6 @@ CENTRES = [
         "sftp_file_regex_unconsolidated_surveillance": f"^AP_{CENTRE_REGEX_SFTP_FILE_HERON}",
         "sftp_file_regex_consolidated_surveillance": r"^AP-rna-\d+\.csv$",
         "sftp_file_regex_consolidated_eagle": r"^APE\d+\.csv$",
-        # "sftp_file_regex": f"^AP_{CENTRE_REGEX_SFTP_FILE_HERON}",
-        # "sftp_file_regex_consolidated": r"^(AP-rna-|APE)\d+\.csv$",
         "sftp_root_read": "project-heron_alderly-park",
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
     },
@@ -53,9 +52,8 @@ CENTRES = [
         "lab_id_default": "MK",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/MILK",
         "sftp_file_regex_unconsolidated_surveillance": f"^MK_{CENTRE_REGEX_SFTP_FILE_HERON}",
-        "sftp_file_regex_consolidated_surveillance": r"^MK-\d+\.csv$",
-        "sftp_file_regex_consolidated_eagle": r"^EMK\d+\.csv$",
-        # "sftp_file_regex": f"^MK_{CENTRE_REGEX_SFTP_FILE_HERON}",
+        "sftp_file_regex_consolidated_surveillance": r"^RNA\d+\.csv$",
+        "sftp_file_regex_consolidated_eagle": r"^EGL\d+\.csv$",
         "sftp_root_read": "project-heron/UK-Biocenter/Sanger Reports",
         "file_names_to_ignore": ["MK_sanger_report_200715_2000_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
@@ -67,10 +65,9 @@ CENTRES = [
         "prefix": "QEUH",
         "lab_id_default": "GLS",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/QEUH",
-        # "sftp_file_regex": f"^GLS_{CENTRE_REGEX_SFTP_FILE_HERON}",
         "sftp_file_regex_unconsolidated_surveillance": f"^GLS_{CENTRE_REGEX_SFTP_FILE_HERON}",
-        "sftp_file_regex_consolidated_surveillance": r"^GLA-\d+\.csv$",
-        "sftp_file_regex_consolidated_eagle": r"^GLS\d+\.csv$",
+        "sftp_file_regex_consolidated_surveillance": r"^GLA\d+\.csv$",
+        "sftp_file_regex_consolidated_eagle": r"^(EGG|GLS)\d+\.csv$",
         "sftp_root_read": "project-heron_glasgow",
         "file_names_to_ignore": ["GLS_sanger_report_200713_0001_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
@@ -82,10 +79,9 @@ CENTRES = [
         "prefix": "CAMC",
         "lab_id_default": "CB",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/CAMC",
-        # "sftp_file_regex": f"^CB_{CENTRE_REGEX_SFTP_FILE_HERON}",
         "sftp_file_regex_unconsolidated_surveillance": f"^CB_{CENTRE_REGEX_SFTP_FILE_HERON}",
-        "sftp_file_regex_consolidated_surveillance": r"^CB-\d+\.csv$",
-        "sftp_file_regex_consolidated_eagle": r"^CBE\d+\.csv$",
+        "sftp_file_regex_consolidated_surveillance": r"^\d{9}\.csv$",
+        "sftp_file_regex_consolidated_eagle": r"^(EGC|CBE)\d+\.csv$",
         "sftp_root_read": "project-heron_cambridge-az",
         "file_names_to_ignore": ["CB_sanger_report_200714_0001_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_BIO,
@@ -97,12 +93,10 @@ CENTRES = [
         "prefix": "RAND",
         "lab_id_default": "Randox",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/RAND",
-        # "sftp_file_regex": r"^lw-randox-biocentre-box-.*\.csv$",
         "sftp_file_regex_unconsolidated_surveillance": f"^lw-randox-biocentre-box-.*\.csv$",
-        "sftp_file_regex_consolidated_surveillance": r"^RAND-\d+\.csv$",
+        "sftp_file_regex_consolidated_surveillance": r"^RDX-[a-z0-9]{2}-\d+\.csv$",
         "sftp_file_regex_consolidated_eagle": r"^RXE\d+\.csv$",
         "sftp_root_read": "project-heron_randox",
-        # "file_names_to_ignore": [r"^lw-randox-biocentre-box-((\d)|(1\d)|20)-.*$"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
     },
 ]
