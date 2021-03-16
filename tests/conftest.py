@@ -376,7 +376,6 @@ def blacklist_for_centre(config):
         config.CENTRES[0]["file_names_to_ignore"] = []
 
 
-
 def generate_new_object_for_string(original_str):
     """
     For checking bug on comparing strings with 'is'
