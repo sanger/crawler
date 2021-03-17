@@ -108,9 +108,7 @@ class Centre:
         os.makedirs(f"{self.centre_config['backups_folder']}/{ERRORS_DIR}", exist_ok=True)
         os.makedirs(f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}", exist_ok=True)
 
-        self.get_files_in_download_dir()
-
-    def files(self):
+    def sorted_files(self):
         return sorted(self._files)
 
     def get_files_in_download_dir(self):
@@ -150,9 +148,10 @@ class Centre:
         Arguments:
             add_to_dart {bool} -- whether to add the samples to DART
         """
+        self.get_files_in_download_dir()
 
         # iterate through each file in the centre
-        for filename in self.files():
+        for filename in self.sorted_files():
             logger.debug(f"Checking file {filename}")
 
             # create an instance of the file class to handle the file
