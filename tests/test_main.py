@@ -3,8 +3,7 @@ import shutil
 from importlib import import_module, invalidate_caches
 from unittest.mock import patch
 
-from crawler.constants import (COLLECTION_CENTRES, COLLECTION_IMPORTS,
-                               COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES)
+from crawler.constants import COLLECTION_CENTRES, COLLECTION_IMPORTS, COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES
 from crawler.db.mongo import get_mongo_collection
 from crawler.main import run
 

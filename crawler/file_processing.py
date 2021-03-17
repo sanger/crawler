@@ -18,46 +18,76 @@ from more_itertools import groupby_transform
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
-from crawler.constants import (ALLOWED_CH_RESULT_VALUES,
-                               ALLOWED_CH_TARGET_VALUES, ALLOWED_RESULT_VALUES,
-                               COLLECTION_CENTRES, COLLECTION_IMPORTS,
-                               COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES,
-                               DART_STATE_PENDING, FIELD_BARCODE, FIELD_CH1_CQ,
-                               FIELD_CH1_RESULT, FIELD_CH1_TARGET,
-                               FIELD_CH2_CQ, FIELD_CH2_RESULT,
-                               FIELD_CH2_TARGET, FIELD_CH3_CQ,
-                               FIELD_CH3_RESULT, FIELD_CH3_TARGET,
-                               FIELD_CH4_CQ, FIELD_CH4_RESULT,
-                               FIELD_CH4_TARGET, FIELD_COORDINATE,
-                               FIELD_CREATED_AT, FIELD_DATE_TESTED,
-                               FIELD_FILE_NAME, FIELD_FILE_NAME_DATE,
-                               FIELD_FILTERED_POSITIVE,
-                               FIELD_FILTERED_POSITIVE_TIMESTAMP,
-                               FIELD_FILTERED_POSITIVE_VERSION, FIELD_LAB_ID,
-                               FIELD_LH_SAMPLE_UUID,
-                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_LINE_NUMBER,
-                               FIELD_MONGODB_ID, FIELD_PLATE_BARCODE,
-                               FIELD_RESULT, FIELD_RNA_ID, FIELD_RNA_PCR_ID,
-                               FIELD_ROOT_SAMPLE_ID, FIELD_SOURCE,
-                               FIELD_UPDATED_AT, FIELD_VIRAL_PREP_ID,
-                               IGNORED_HEADERS, MAX_CQ_VALUE, MIN_CQ_VALUE,
-                               RESULT_VALUE_POSITIVE)
-from crawler.db.dart import (add_dart_plate_if_doesnt_exist,
-                             add_dart_well_properties_if_positive,
-                             create_dart_sql_server_conn)
-from crawler.db.mongo import (create_import_record, create_mongo_client,
-                              get_mongo_collection, get_mongo_db)
+from crawler.constants import (
+    ALLOWED_CH_RESULT_VALUES,
+    ALLOWED_CH_TARGET_VALUES,
+    ALLOWED_RESULT_VALUES,
+    COLLECTION_CENTRES,
+    COLLECTION_IMPORTS,
+    COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
+    DART_STATE_PENDING,
+    FIELD_BARCODE,
+    FIELD_CH1_CQ,
+    FIELD_CH1_RESULT,
+    FIELD_CH1_TARGET,
+    FIELD_CH2_CQ,
+    FIELD_CH2_RESULT,
+    FIELD_CH2_TARGET,
+    FIELD_CH3_CQ,
+    FIELD_CH3_RESULT,
+    FIELD_CH3_TARGET,
+    FIELD_CH4_CQ,
+    FIELD_CH4_RESULT,
+    FIELD_CH4_TARGET,
+    FIELD_COORDINATE,
+    FIELD_CREATED_AT,
+    FIELD_DATE_TESTED,
+    FIELD_FILE_NAME,
+    FIELD_FILE_NAME_DATE,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_LAB_ID,
+    FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_LINE_NUMBER,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_RNA_PCR_ID,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_SOURCE,
+    FIELD_UPDATED_AT,
+    FIELD_VIRAL_PREP_ID,
+    IGNORED_HEADERS,
+    MAX_CQ_VALUE,
+    MIN_CQ_VALUE,
+    RESULT_VALUE_POSITIVE,
+)
+from crawler.db.dart import (
+    add_dart_plate_if_doesnt_exist,
+    add_dart_well_properties_if_positive,
+    create_dart_sql_server_conn,
+)
+from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import insert_or_update_samples_in_mlwh
-from crawler.filtered_positive_identifier import \
-    current_filtered_positive_identifier
+from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.enums import CentreFileState
-from crawler.helpers.general_helpers import (create_source_plate_doc,
-                                             current_time, get_sftp_connection,
-                                             pad_coordinate)
+from crawler.helpers.general_helpers import create_source_plate_doc, current_time, get_sftp_connection, pad_coordinate
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.types import (CentreConf, CentreDoc, Config, CSVRow, ModifiedRow,
-                           ModifiedRowValue, RowSignature, SampleDoc,
-                           SourcePlateDoc)
+from crawler.types import (
+    CentreConf,
+    CentreDoc,
+    Config,
+    CSVRow,
+    ModifiedRow,
+    ModifiedRowValue,
+    RowSignature,
+    SampleDoc,
+    SourcePlateDoc,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -265,16 +295,7 @@ class CentreFile:
         # These are to allow some variability in headers, due to receiving inconsistent file formats
         self.header_regex_correction_dict = {r"^Root Sample$": FIELD_ROOT_SAMPLE_ID}
 
-    # TODO!
-    # Do you mean "a centre file should know after being created what type of file it is.."?
-    def is_consolidated(self) -> bool:
-        return self.centre.is_consolidated_filename(self.file_name)
-
-    def is_eagle(self) -> bool:
-        return self.centre.is_eagle_filename(self.file_name)
-
-    def is_surveillance(self) -> bool:
-        return self.centre.is_surveillance_filename(self.file_name)
+        self.is_consolidated = centre.is_consolidated_filename(file_name)
 
     def filepath(self) -> Path:
         """Returns the filepath for the file
@@ -525,7 +546,7 @@ class CentreFile:
         def update_doc_from_source_plate(
             row: ModifiedRow, existing_plate: SourcePlateDoc, skip_lab_check: bool = False
         ) -> None:
-            if skip_lab_check or self.is_consolidated() or row[FIELD_LAB_ID] == existing_plate[FIELD_LAB_ID]:
+            if skip_lab_check or self.is_consolidated or row[FIELD_LAB_ID] == existing_plate[FIELD_LAB_ID]:
                 row[FIELD_LH_SOURCE_PLATE_UUID] = existing_plate[FIELD_LH_SOURCE_PLATE_UUID]
                 updated_docs.append(row)
             else:
@@ -946,8 +967,7 @@ class CentreFile:
                 modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
                 log_adding_default_lab_id(row, line_number)
             else:
-                # TODO!!!
-                if not self.is_consolidated() and lab_id != self.centre_config["lab_id_default"]:
+                if not self.is_consolidated and lab_id != self.centre_config["lab_id_default"]:
                     # if the lab id is different to what is configured for the lab
                     logger.warning(f"Different lab id setting: {lab_id} != {self.centre_config['lab_id_default']}")
                 # copy the lab id across
@@ -1035,7 +1055,7 @@ class CentreFile:
 
         logger.log(
             INFO if invalid_rows_count == 0 else WARN,
-            f"Rows with invalid structure/ data in this file: {invalid_rows_count}",
+            f"Rows with invalid structure/data in this file: {invalid_rows_count}",
         )
         logger.log(
             INFO if failed_validation_count == 0 else WARN,

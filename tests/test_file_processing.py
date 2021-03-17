@@ -12,43 +12,79 @@ from bson.objectid import ObjectId
 from mysql.connector.connection_cext import CMySQLConnection
 from pytest import mark
 
-from crawler.constants import (COLLECTION_IMPORTS, COLLECTION_SAMPLES,
-                               COLLECTION_SOURCE_PLATES, DART_STATE_PENDING,
-                               FIELD_BARCODE, FIELD_CH1_CQ, FIELD_CH1_RESULT,
-                               FIELD_CH1_TARGET, FIELD_CH2_CQ,
-                               FIELD_CH2_RESULT, FIELD_CH2_TARGET,
-                               FIELD_CH3_CQ, FIELD_CH3_RESULT,
-                               FIELD_CH3_TARGET, FIELD_CH4_CQ,
-                               FIELD_CH4_RESULT, FIELD_CH4_TARGET,
-                               FIELD_COORDINATE, FIELD_CREATED_AT,
-                               FIELD_DATE_TESTED, FIELD_FILE_NAME,
-                               FIELD_FILE_NAME_DATE, FIELD_FILTERED_POSITIVE,
-                               FIELD_FILTERED_POSITIVE_TIMESTAMP,
-                               FIELD_FILTERED_POSITIVE_VERSION, FIELD_LAB_ID,
-                               FIELD_LH_SAMPLE_UUID,
-                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_LINE_NUMBER,
-                               FIELD_MUST_SEQUENCE, FIELD_PLATE_BARCODE,
-                               FIELD_PREFERENTIALLY_SEQUENCE, FIELD_RESULT,
-                               FIELD_RNA_ID, FIELD_RNA_PCR_ID,
-                               FIELD_ROOT_SAMPLE_ID, FIELD_SOURCE,
-                               FIELD_UPDATED_AT, FIELD_VIRAL_PREP_ID,
-                               MLWH_CH1_CQ, MLWH_CH1_RESULT, MLWH_CH1_TARGET,
-                               MLWH_CH2_CQ, MLWH_CH2_RESULT, MLWH_CH2_TARGET,
-                               MLWH_CH3_CQ, MLWH_CH3_RESULT, MLWH_CH3_TARGET,
-                               MLWH_CH4_CQ, MLWH_CH4_RESULT, MLWH_CH4_TARGET,
-                               MLWH_COORDINATE, MLWH_CREATED_AT,
-                               MLWH_DATE_TESTED, MLWH_FILTERED_POSITIVE,
-                               MLWH_FILTERED_POSITIVE_TIMESTAMP,
-                               MLWH_FILTERED_POSITIVE_VERSION, MLWH_LAB_ID,
-                               MLWH_MONGODB_ID, MLWH_MUST_SEQUENCE,
-                               MLWH_PLATE_BARCODE,
-                               MLWH_PREFERENTIALLY_SEQUENCE, MLWH_RESULT,
-                               MLWH_RNA_ID, MLWH_ROOT_SAMPLE_ID, MLWH_SOURCE,
-                               MLWH_TABLE_NAME, MLWH_UPDATED_AT,
-                               RESULT_VALUE_POSITIVE)
+from crawler.constants import (
+    COLLECTION_IMPORTS,
+    COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
+    DART_STATE_PENDING,
+    FIELD_BARCODE,
+    FIELD_CH1_CQ,
+    FIELD_CH1_RESULT,
+    FIELD_CH1_TARGET,
+    FIELD_CH2_CQ,
+    FIELD_CH2_RESULT,
+    FIELD_CH2_TARGET,
+    FIELD_CH3_CQ,
+    FIELD_CH3_RESULT,
+    FIELD_CH3_TARGET,
+    FIELD_CH4_CQ,
+    FIELD_CH4_RESULT,
+    FIELD_CH4_TARGET,
+    FIELD_COORDINATE,
+    FIELD_CREATED_AT,
+    FIELD_DATE_TESTED,
+    FIELD_FILE_NAME,
+    FIELD_FILE_NAME_DATE,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_LAB_ID,
+    FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_LINE_NUMBER,
+    FIELD_MUST_SEQUENCE,
+    FIELD_PLATE_BARCODE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_RNA_PCR_ID,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_SOURCE,
+    FIELD_UPDATED_AT,
+    FIELD_VIRAL_PREP_ID,
+    MLWH_CH1_CQ,
+    MLWH_CH1_RESULT,
+    MLWH_CH1_TARGET,
+    MLWH_CH2_CQ,
+    MLWH_CH2_RESULT,
+    MLWH_CH2_TARGET,
+    MLWH_CH3_CQ,
+    MLWH_CH3_RESULT,
+    MLWH_CH3_TARGET,
+    MLWH_CH4_CQ,
+    MLWH_CH4_RESULT,
+    MLWH_CH4_TARGET,
+    MLWH_COORDINATE,
+    MLWH_CREATED_AT,
+    MLWH_DATE_TESTED,
+    MLWH_FILTERED_POSITIVE,
+    MLWH_FILTERED_POSITIVE_TIMESTAMP,
+    MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_LAB_ID,
+    MLWH_MONGODB_ID,
+    MLWH_MUST_SEQUENCE,
+    MLWH_PLATE_BARCODE,
+    MLWH_PREFERENTIALLY_SEQUENCE,
+    MLWH_RESULT,
+    MLWH_RNA_ID,
+    MLWH_ROOT_SAMPLE_ID,
+    MLWH_SOURCE,
+    MLWH_TABLE_NAME,
+    MLWH_UPDATED_AT,
+    RESULT_VALUE_POSITIVE,
+)
 from crawler.db.mongo import get_mongo_collection
-from crawler.file_processing import (ERRORS_DIR, SUCCESSES_DIR, Centre,
-                                     CentreFile)
+from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
 from crawler.types import Config, ModifiedRow
 from tests.conftest import generate_new_object_for_string
 
@@ -215,6 +251,7 @@ def test_can_identify_surveillance_filename(config, filename, expected_value):
     centre = Centre(config, config.CENTRES[0])
     assert centre.is_surveillance_filename(filename) is expected_value
 
+
 def test_process_files_with_whitespace(mongo_database, config, testing_files_for_process, testing_centres):
     """Test using files in the files/TEST directory; they include a file with lots of whitespace."""
     _, mongo_database = mongo_database
@@ -259,36 +296,6 @@ def test_process_files_with_whitespace(mongo_database, config, testing_files_for
     [
         [UNCONSOLIDATED_SURVEILLANCE_FILENAME, False],
         [CONSOLIDATED_EAGLE_FILENAME, True],
-        [CONSOLIDATED_SURVEILLANCE_FILENAME, False],
-    ],
-)
-def test_can_identify_eagle_file(config, filename, expected_value):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile(filename, centre)
-
-    assert centre_file.is_eagle() is expected_value
-
-
-@mark.parametrize(
-    "filename, expected_value",
-    [
-        [UNCONSOLIDATED_SURVEILLANCE_FILENAME, True],
-        [CONSOLIDATED_EAGLE_FILENAME, False],
-        [CONSOLIDATED_SURVEILLANCE_FILENAME, True],
-    ],
-)
-def test_can_identify_surveillance_file(config, filename, expected_value):
-    centre = Centre(config, config.CENTRES[0])
-    centre_file = CentreFile(filename, centre)
-
-    assert centre_file.is_surveillance() is expected_value
-
-
-@mark.parametrize(
-    "filename, expected_value",
-    [
-        [UNCONSOLIDATED_SURVEILLANCE_FILENAME, False],
-        [CONSOLIDATED_EAGLE_FILENAME, True],
         [CONSOLIDATED_SURVEILLANCE_FILENAME, True],
     ],
 )
@@ -296,7 +303,7 @@ def test_can_identify_consolidated_file(config, filename, expected_value):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile(filename, centre)
 
-    assert centre_file.is_consolidated() is expected_value
+    assert centre_file.is_consolidated is expected_value
 
 
 # tests for checksums
@@ -1998,18 +2005,21 @@ def test_docs_to_insert_updated_with_source_plate_handles_duplicate_new_barcodes
     # set up input sample docs to have duplicate plate barcodes from different labs
     _, mongo_database = mongo_database
     docs: List[ModifiedRow] = [
-        {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "AP"},
-        {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "MK"},  # we expect this one to be rejected
-        {FIELD_PLATE_BARCODE: "456", FIELD_LAB_ID: "MK"},
-        {FIELD_PLATE_BARCODE: "789", FIELD_LAB_ID: "CB"},
+        {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "AP", FIELD_RNA_ID: "123_A01"},
+        {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "MK", FIELD_RNA_ID: "123_A02"},  # we expect this one to be rejected
+        {FIELD_PLATE_BARCODE: "456", FIELD_LAB_ID: "MK", FIELD_RNA_ID: "456_A03"},
+        {FIELD_PLATE_BARCODE: "789", FIELD_LAB_ID: "CB", FIELD_RNA_ID: "789_A04"},
     ]
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile(filename, centre)
     updated_docs = centre_file.docs_to_insert_updated_with_source_plate_uuids(docs)
     assert len(updated_docs) == 4 - expected_type25_errors_count
-    assert sum(doc[FIELD_PLATE_BARCODE] == "123" and doc[FIELD_LAB_ID] == "AP" for doc in docs) == 1
-    assert sum(doc[FIELD_PLATE_BARCODE] == "456" and doc[FIELD_LAB_ID] == "MK" for doc in docs) == 1
-    assert sum(doc[FIELD_PLATE_BARCODE] == "789" and doc[FIELD_LAB_ID] == "CB" for doc in docs) == 1
+    assert sum(doc[FIELD_PLATE_BARCODE] == "123" and doc[FIELD_LAB_ID] == "AP" for doc in updated_docs) == 1
+    assert sum(doc[FIELD_PLATE_BARCODE] == "456" and doc[FIELD_LAB_ID] == "MK" for doc in updated_docs) == 1
+    assert sum(doc[FIELD_PLATE_BARCODE] == "789" and doc[FIELD_LAB_ID] == "CB" for doc in updated_docs) == 1
+
+    if expected_type25_errors_count == 0:
+        assert sum(doc[FIELD_PLATE_BARCODE] == "123" and doc[FIELD_LAB_ID] == "MK" for doc in updated_docs) == 1
 
     source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
     assert source_plates_collection.count_documents({}) == 3

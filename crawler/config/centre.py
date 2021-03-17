@@ -1,6 +1,5 @@
 # flake8: noqa
-from crawler.constants import (BIOMEK_LABWARE_CLASS_BIO,
-                               BIOMEK_LABWARE_CLASS_KINGFISHER, FIELD_RNA_ID)
+from crawler.constants import BIOMEK_LABWARE_CLASS_BIO, BIOMEK_LABWARE_CLASS_KINGFISHER, FIELD_RNA_ID
 
 # centre details
 # This information will also be persisted in the mongo database
