@@ -883,6 +883,9 @@ def test_parse_and_format_file_rows_can_parse_empty_root_sample_id(config):
         # where row has Empty - should ignore
         fake_csv.write("Empty  ,RNA_0043_H09,Void,Val\n")
 
+        # where row has empty - should ignore
+        fake_csv.write("empty  ,RNA_0043_H09,Void,Val\n")
+
         # another valid sample
         fake_csv.write("2,RNA_0043_H10,Positive,Val\n")
         fake_csv.seek(0)
@@ -975,7 +978,7 @@ def test_parse_and_format_file_rows_where_predefined_unknown_headers_are_not_sto
         assert len(centre_file.logging_collection.get_messages_for_import()) == 0
 
 
-def test_parse_and_format_file_rows_where_not_predefined_unknown_headers_are_stored_but_they_are_in_the_imports_record(
+def test_parse_and_format_file_rows_where_not_predefined_unknown_headers_are_stored_and_they_are_in_the_imports_record(
     config,
 ):
     centre = Centre(config, config.CENTRES[0])

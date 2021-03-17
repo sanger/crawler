@@ -84,8 +84,8 @@ class Centre:
         return sorted(self._files)
 
     def get_files_in_download_dir(self):
-        """Get all the files in the download directory for this centre and filter the file names using the regex
-        described in the centre's `sftp_file_regex` and (if present) `sftp_file_regex_consolidated`.
+        """Get all the files in the download directory for this centre and filter the file names using the
+        sftp_file_regex_* described in the centre's config
         """
         logger.info(f"Fetching files of centre {self.centre_config['name']}")
         # get a list of files in the download directory
@@ -127,7 +127,6 @@ class Centre:
 
             # create an instance of the file class to handle the file
             centre_file = CentreFile(filename, self)
-            logger.info(f"Consolidated file: {centre_file.is_consolidated()}")
 
             centre_file.set_state_for_file()
             logger.debug(f"File state: {CentreFileState[centre_file.file_state.name]}")
@@ -266,6 +265,8 @@ class CentreFile:
         # These are to allow some variability in headers, due to receiving inconsistent file formats
         self.header_regex_correction_dict = {r"^Root Sample$": FIELD_ROOT_SAMPLE_ID}
 
+    # TODO!
+    # Do you mean "a centre file should know after being created what type of file it is.."?
     def is_consolidated(self) -> bool:
         return self.centre.is_consolidated_filename(self.file_name)
 
@@ -945,6 +946,7 @@ class CentreFile:
                 modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
                 log_adding_default_lab_id(row, line_number)
             else:
+                # TODO!!!
                 if not self.is_consolidated() and lab_id != self.centre_config["lab_id_default"]:
                     # if the lab id is different to what is configured for the lab
                     logger.warning(f"Different lab id setting: {lab_id} != {self.centre_config['lab_id_default']}")
@@ -1033,7 +1035,7 @@ class CentreFile:
 
         logger.log(
             INFO if invalid_rows_count == 0 else WARN,
-            f"Rows with invalid structure/data in this file: {invalid_rows_count}",
+            f"Rows with invalid structure/ data in this file: {invalid_rows_count}",
         )
         logger.log(
             INFO if failed_validation_count == 0 else WARN,

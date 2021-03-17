@@ -97,6 +97,7 @@ CENTRES = [
         "sftp_file_regex_consolidated_surveillance": r"^RDX-[a-zA-Z0-9]{2}-\d+\.csv$",
         "sftp_file_regex_consolidated_eagle": r"^RXE\d+\.csv$",
         "sftp_root_read": "project-heron_randox",
+        "file_names_to_ignore": [r"^lw-randox-biocentre-box-((\d)|(1\d)|20)-.*$"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
     },
 ]
