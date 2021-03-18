@@ -31,7 +31,7 @@ from crawler.helpers.general_helpers import get_config
 logger = logging.getLogger(__name__)
 
 
-def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = "") -> None:
+def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = "", centre_prefix: str = "") -> None:
     try:
         start = time.time()
         config, settings_module = get_config(settings_module)
@@ -92,7 +92,12 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                 logger.debug(f"Creating index '{FIELD_LH_SOURCE_PLATE_UUID}' on '{samples_collection.full_name}'")
                 samples_collection.create_index(FIELD_LH_SOURCE_PLATE_UUID)
 
+                # If we are only interested in a certain centre
+                if centre_prefix:
+                    centres = filter(lambda config: config.get("prefix") == centre_prefix, centres)  # type: ignore
+
                 centres_instances = [Centre(config, centre_config) for centre_config in centres]
+
                 for centre_instance in centres_instances:
                     logger.info("*" * 80)
                     logger.info(f"Processing {centre_instance.centre_config['name']}")

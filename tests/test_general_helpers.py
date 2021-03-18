@@ -8,7 +8,6 @@ from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
 
 from crawler.constants import (
-    POSITIVE_RESULT_VALUE,
     DART_EMPTY_VALUE,
     DART_LAB_ID,
     DART_LH_SAMPLE_UUID,
@@ -27,14 +26,14 @@ from crawler.constants import (
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_MONGODB_ID,
+    FIELD_MUST_SEQUENCE,
     FIELD_PLATE_BARCODE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
-    FIELD_MUST_SEQUENCE,
-    FIELD_PREFERENTIALLY_SEQUENCE,
     MLWH_COORDINATE,
     MLWH_CREATED_AT,
     MLWH_DATE_TESTED,
@@ -45,31 +44,31 @@ from crawler.constants import (
     MLWH_LH_SAMPLE_UUID,
     MLWH_LH_SOURCE_PLATE_UUID,
     MLWH_MONGODB_ID,
+    MLWH_MUST_SEQUENCE,
     MLWH_PLATE_BARCODE,
+    MLWH_PREFERENTIALLY_SEQUENCE,
     MLWH_RESULT,
     MLWH_RNA_ID,
     MLWH_ROOT_SAMPLE_ID,
     MLWH_SOURCE,
     MLWH_UPDATED_AT,
-    MLWH_MUST_SEQUENCE,
-    MLWH_PREFERENTIALLY_SEQUENCE,
+    RESULT_VALUE_POSITIVE,
 )
 from crawler.helpers.general_helpers import (
     create_source_plate_doc,
     get_config,
     get_dart_well_index,
+    is_sample_important,
+    is_sample_important_or_positive,
+    is_sample_pickable,
+    is_sample_positive,
     map_mongo_doc_to_dart_well_props,
     map_mongo_sample_to_mysql,
+    pad_coordinate,
     parse_decimal128,
     unpad_coordinate,
-    pad_coordinate,
-    is_sample_positive,
-    is_sample_important_or_positive,
-    is_sample_important,
-    is_sample_pickable,
 )
 from crawler.types import SampleDoc
-
 from tests.conftest import generate_new_object_for_string
 
 
@@ -318,8 +317,8 @@ def test_create_source_plate_doc(freezer):
 
 def test_is_sample_positive():
     assert is_sample_positive({FIELD_RESULT: "negative"}) is False
-    assert is_sample_positive({FIELD_RESULT: POSITIVE_RESULT_VALUE}) is True
-    assert is_sample_positive({FIELD_RESULT: generate_new_object_for_string(POSITIVE_RESULT_VALUE)}) is True
+    assert is_sample_positive({FIELD_RESULT: RESULT_VALUE_POSITIVE}) is True
+    assert is_sample_positive({FIELD_RESULT: generate_new_object_for_string(RESULT_VALUE_POSITIVE)}) is True
 
 
 def test_is_sample_important_or_positive():
@@ -333,11 +332,11 @@ def test_is_sample_important_or_positive():
     assert is_sample_important_or_positive({FIELD_RESULT: negative}) is False
     assert (
         is_sample_important_or_positive(
-            {FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}
+            {FIELD_RESULT: RESULT_VALUE_POSITIVE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}
         )
         is True
     )
-    assert is_sample_important_or_positive({FIELD_RESULT: POSITIVE_RESULT_VALUE}) is True
+    assert is_sample_important_or_positive({FIELD_RESULT: RESULT_VALUE_POSITIVE}) is True
     assert (
         is_sample_important_or_positive(
             {FIELD_RESULT: negative, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}
@@ -346,19 +345,19 @@ def test_is_sample_important_or_positive():
     )
     assert (
         is_sample_important_or_positive(
-            {FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}
+            {FIELD_RESULT: RESULT_VALUE_POSITIVE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}
         )
         is True
     )
     assert (
         is_sample_important_or_positive(
-            {FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}
+            {FIELD_RESULT: RESULT_VALUE_POSITIVE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}
         )
         is True
     )
     assert (
         is_sample_important_or_positive(
-            {FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}
+            {FIELD_RESULT: RESULT_VALUE_POSITIVE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}
         )
         is True
     )

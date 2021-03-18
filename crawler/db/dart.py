@@ -13,11 +13,7 @@ from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
 )
 from crawler.exceptions import DartStateError
-from crawler.helpers.general_helpers import (
-    get_dart_well_index,
-    map_mongo_doc_to_dart_well_props,
-    is_sample_positive,
-)
+from crawler.helpers.general_helpers import get_dart_well_index, is_sample_positive, map_mongo_doc_to_dart_well_props
 from crawler.sql_queries import (
     SQL_DART_ADD_PLATE,
     SQL_DART_GET_PLATE_PROPERTY,

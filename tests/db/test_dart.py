@@ -9,7 +9,7 @@ from crawler.constants import (
     DART_STATE_NO_PROP,
     DART_STATE_PENDING,
     FIELD_RESULT,
-    POSITIVE_RESULT_VALUE,
+    RESULT_VALUE_POSITIVE,
 )
 from crawler.db.dart import (
     add_dart_plate_if_doesnt_exist,
@@ -33,7 +33,7 @@ from tests.conftest import generate_new_object_for_string
 def test_add_dart_well_properties_if_positive(mlwh_connection):
     with patch("crawler.db.dart.add_dart_well_properties") as mock_add_dart_well_properties:
         cursor = mlwh_connection.cursor(dictionary=True)
-        sample = {FIELD_RESULT: generate_new_object_for_string(POSITIVE_RESULT_VALUE)}
+        sample = {FIELD_RESULT: generate_new_object_for_string(RESULT_VALUE_POSITIVE)}
         plate_barcode = "aBarcode"
         add_dart_well_properties_if_positive(cursor, sample, plate_barcode)
         mock_add_dart_well_properties.assert_called_with(cursor, sample, plate_barcode)

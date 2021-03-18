@@ -11,7 +11,7 @@ from crawler.constants import (
     FIELD_CH3_CQ,
     FIELD_RESULT,
     FIELD_ROOT_SAMPLE_ID,
-    POSITIVE_RESULT_VALUE,
+    RESULT_VALUE_POSITIVE,
 )
 from crawler.types import SampleDoc
 
@@ -26,7 +26,7 @@ class FilteredPositiveIdentifier(ABC):
         self.version: str = ""
         self.ct_value_limit = decimal.Decimal(30)
         self.d128_context = create_decimal128_context()
-        self.result_regex = re.compile(f"^{POSITIVE_RESULT_VALUE}", re.IGNORECASE)
+        self.result_regex = re.compile(f"^{RESULT_VALUE_POSITIVE}", re.IGNORECASE)
         self.root_sample_id_control_regex: Optional[Pattern[str]] = None
         self.evaluate_ct_values = False
 

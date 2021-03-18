@@ -1,0 +1,33 @@
+name: Docker - on dispatch; build and publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Image Tag
+        required: true
+        default: x.y.z-uat.1
+
+env:
+  IMAGE_NAME: ${{ github.repository }}/${{ github.event.repository.name }}
+
+jobs:
+  build_and_publish:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build the Docker image
+        run: >-
+          docker build .
+          --file Dockerfile
+          --tag docker.pkg.github.com/${IMAGE_NAME}:${{ github.event.inputs.image_tag }}
+      - name: Login to registry
+        run: >-
+          docker login
+          -u ${{ github.actor }}
+          -p ${{ secrets.GITHUB_TOKEN }}
+          docker.pkg.github.com
+      - name: Publish image with image tag being either develop/master/<tag_name>
+        run: >-
+          docker push
+          docker.pkg.github.com/${IMAGE_NAME}:${{ github.event.inputs.image_tag }}
