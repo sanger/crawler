@@ -1,5 +1,6 @@
 import os
 import shutil
+from importlib import import_module, invalidate_caches
 from unittest.mock import patch
 
 from crawler.constants import COLLECTION_CENTRES, COLLECTION_IMPORTS, COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES
@@ -176,6 +177,7 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     subsequent tests.
 
     I was not able to get to the bottom of it... :(
+
     """
     _, mongo_database = mongo_database
     # First copy the test files to a new directory, as we expect run
@@ -225,24 +227,31 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     # First copy full set of files as before.
     _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
 
-    # Run with a different config that does not blacklist one of the files
-    with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
-        run(False, False, False, "crawler.config.integration_with_blacklist_change")
+    # Invalidate old copy of config
+    invalidate_caches()
 
-    # We expect an additional import entry
-    assert imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED + 1
+    try:
+        # Run with a different config that does not blacklist one of the files
+        with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
+            run(False, False, False, "crawler.config.integration_with_blacklist_change")
 
-    # We expect the previously blacklisted file to now be processed
-    (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
-    assert 2 == len(files), (
-        f"Wrong number of success files. Expected: 2, actual: {len(files)}. Previously "
-        "blacklisted file should have been processed."
-    )
+        # We expect an additional import entry
+        assert imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED + 1
 
-    # We expect the previous blacklisted file to still be in the errors directory as well
-    (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
-    assert 2 == len(files)
+        # We expect the previously blacklisted file to now be processed
+        (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
+        assert 2 == len(files), (
+            f"Wrong number of success files. Expected: 2, actual: {len(files)}. Previously "
+            "blacklisted file should have been processed."
+        )
 
-    # check the code cleaned up the temporary files
-    (_, subfolders, files) = next(os.walk("tmp/files/"))
-    assert 0 == len(subfolders)
+        # We expect the previous blacklisted file to still be in the errors directory as well
+        (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
+        assert 2 == len(files)
+
+        # check the code cleaned up the temporary files
+        (_, subfolders, files) = next(os.walk("tmp/files/"))
+        assert 0 == len(subfolders)
+    finally:
+        invalidate_caches()
+        import_module("crawler.config.integration")
