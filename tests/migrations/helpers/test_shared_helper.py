@@ -5,14 +5,23 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pandas as pd
 
-from crawler.constants import (FIELD_COORDINATE, FIELD_CREATED_AT,
-                               FIELD_LAB_ID, FIELD_MONGODB_ID,
-                               FIELD_PLATE_BARCODE, FIELD_RESULT, FIELD_RNA_ID,
-                               FIELD_ROOT_SAMPLE_ID, FIELD_UPDATED_AT)
-from migrations.helpers.shared_helper import (extract_required_cp_info,
-                                              get_cherrypicked_samples,
-                                              remove_cherrypicked_samples,
-                                              valid_datetime_string)
+from crawler.constants import (
+    FIELD_COORDINATE,
+    FIELD_CREATED_AT,
+    FIELD_LAB_ID,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_UPDATED_AT,
+)
+from migrations.helpers.shared_helper import (
+    extract_required_cp_info,
+    get_cherrypicked_samples,
+    remove_cherrypicked_samples,
+    valid_datetime_string,
+)
 
 # ----- test helpers -----
 
@@ -179,7 +188,6 @@ def test_get_cherrypicked_samples_repeat_tests_no_beckman(config, mlwh_sentinel_
     pd.testing.assert_frame_equal(expected, returned_samples)
 
 
-
 # Test Scenario
 # - Mocking database responses
 # - Only the Beckman query returns matches (No Sentinel)
@@ -249,7 +257,6 @@ def test_get_cherrypicked_samples_repeat_tests_no_sentinel(config, mlwh_beckman_
     pd.testing.assert_frame_equal(expected, returned_samples)
 
 
-
 # Test Scenario
 # - Mocking database responses
 # - Both Sentinel and Beckman queries return matches
@@ -296,28 +303,28 @@ def test_get_cherrypicked_samples_chunking_sentinel_and_beckman(config):
     query_results = [
         pd.DataFrame(
             [
-                "MCM001",  # Sentinel
-                "MCM001",  # Beckman
-                "MCM002",  # Beckman
-            ],
+                "MCM001",
+                "MCM001",
+                "MCM002",
+            ],  # Sentinel  # Beckman  # Beckman
             columns=[FIELD_ROOT_SAMPLE_ID],
             index=[0, 1, 2],
         ),
         pd.DataFrame(
             [
-                "MCM003",  # Sentinel
-                "MCM003",  # Beckman
-                "MCM004",  # Beckman
-            ],
+                "MCM003",
+                "MCM003",
+                "MCM004",
+            ],  # Sentinel  # Beckman  # Beckman
             columns=[FIELD_ROOT_SAMPLE_ID],
             index=[0, 1, 2],
         ),
         pd.DataFrame(
             [
-                "MCM005",  # Sentinel
-                "MCM005",  # Beckman
-                "MCM006",  # Beckman
-            ],
+                "MCM005",
+                "MCM005",
+                "MCM006",
+            ],  # Sentinel  # Beckman  # Beckman
             columns=[FIELD_ROOT_SAMPLE_ID],
             index=[0, 1, 2],
         ),
