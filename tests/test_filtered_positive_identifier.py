@@ -1,23 +1,24 @@
 import pytest
 from bson.decimal128 import Decimal128
+
 from crawler.constants import (
     FIELD_CH1_CQ,
     FIELD_CH2_CQ,
     FIELD_CH3_CQ,
     FIELD_RESULT,
     FIELD_ROOT_SAMPLE_ID,
-    POSITIVE_RESULT_VALUE,
-    LIMIT_OF_DETECTION_RESULT_VALUE,
+    RESULT_VALUE_LIMIT_OF_DETECTION,
+    RESULT_VALUE_POSITIVE,
 )
 from crawler.filtered_positive_identifier import (
-    current_filtered_positive_identifier,
-    filtered_positive_identifier_by_version,
     FILTERED_POSITIVE_VERSION_0,
     FILTERED_POSITIVE_VERSION_1,
     FILTERED_POSITIVE_VERSION_2,
     FilteredPositiveIdentifierV0,
     FilteredPositiveIdentifierV1,
     FilteredPositiveIdentifierV2,
+    current_filtered_positive_identifier,
+    filtered_positive_identifier_by_version,
 )
 
 # ----- test helpers -----
@@ -25,7 +26,7 @@ from crawler.filtered_positive_identifier import (
 
 def positive_sample():
     return {
-        FIELD_RESULT: POSITIVE_RESULT_VALUE,
+        FIELD_RESULT: RESULT_VALUE_POSITIVE,
         FIELD_ROOT_SAMPLE_ID: "MCM001",
         FIELD_CH1_CQ: Decimal128("5.12345678"),
         FIELD_CH2_CQ: Decimal128("6.12345678"),
@@ -105,7 +106,7 @@ def test_v0_is_positive_returns_false_result_not_positive():
 
     # 'limit of detection' result
     sample = positive_sample()
-    sample[FIELD_RESULT] = LIMIT_OF_DETECTION_RESULT_VALUE
+    sample[FIELD_RESULT] = RESULT_VALUE_LIMIT_OF_DETECTION
     assert identifier.is_positive(sample) is False
 
 
@@ -153,7 +154,7 @@ def test_v1_is_positive_returns_true_matching_criteria():
     assert identifier.is_positive(sample) is True
 
     # no FIELD_CHX_CQ fields
-    sample = {FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_ROOT_SAMPLE_ID: "MCM001"}
+    sample = {FIELD_RESULT: RESULT_VALUE_POSITIVE, FIELD_ROOT_SAMPLE_ID: "MCM001"}
     assert identifier.is_positive(sample) is True
 
 
@@ -177,7 +178,7 @@ def test_v1_is_positive_returns_false_result_not_positive():
 
     # 'limit of detection' result
     sample = positive_sample()
-    sample[FIELD_RESULT] = LIMIT_OF_DETECTION_RESULT_VALUE
+    sample[FIELD_RESULT] = RESULT_VALUE_LIMIT_OF_DETECTION
     assert identifier.is_positive(sample) is False
 
 
@@ -243,7 +244,7 @@ def test_v2_is_positive_returns_true_matching_criteria():
     assert identifier.is_positive(sample) is True
 
     # no FIELD_CHX_CQ fields
-    sample = {FIELD_RESULT: POSITIVE_RESULT_VALUE, FIELD_ROOT_SAMPLE_ID: "MCM001"}
+    sample = {FIELD_RESULT: RESULT_VALUE_POSITIVE, FIELD_ROOT_SAMPLE_ID: "MCM001"}
     assert identifier.is_positive(sample) is True
 
 
@@ -267,12 +268,12 @@ def test_v2_is_positive_returns_false_result_not_positive():
 
     # 'limit of detection' result
     sample = positive_sample()
-    sample[FIELD_RESULT] = LIMIT_OF_DETECTION_RESULT_VALUE
+    sample[FIELD_RESULT] = RESULT_VALUE_LIMIT_OF_DETECTION
     assert identifier.is_positive(sample) is False
 
     # case invariant 'limit of detection' result
     sample = positive_sample()
-    sample[FIELD_RESULT] = "LIMIT OF DETECTION"
+    sample[FIELD_RESULT] = RESULT_VALUE_LIMIT_OF_DETECTION.upper()
     assert identifier.is_positive(sample) is False
 
 

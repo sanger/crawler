@@ -11,7 +11,7 @@ from decimal import Decimal
 from hashlib import md5
 from logging import INFO, WARN
 from pathlib import Path
-from typing import Any, Dict, Final, List, Optional, Set, Tuple, cast, Iterator
+from typing import Any, Dict, Final, Iterator, List, Optional, Set, Tuple, cast
 
 from bson.decimal128 import Decimal128
 from more_itertools import groupby_transform
@@ -61,49 +61,38 @@ from crawler.constants import (
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
+    IGNORED_HEADERS,
     MAX_CQ_VALUE,
     MIN_CQ_VALUE,
-    POSITIVE_RESULT_VALUE,
+    RESULT_VALUE_POSITIVE,
 )
-
 from crawler.db.dart import (
-    create_dart_sql_server_conn,
     add_dart_plate_if_doesnt_exist,
     add_dart_well_properties_if_positive,
+    create_dart_sql_server_conn,
 )
 from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
-
-from crawler.db.mysql import (
-    insert_or_update_samples_in_mlwh,
-)
-
+from crawler.db.mysql import insert_or_update_samples_in_mlwh
 from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.enums import CentreFileState
-from crawler.helpers.general_helpers import (
-    create_source_plate_doc,
-    current_time,
-    get_sftp_connection,
-    pad_coordinate,
-)
+from crawler.helpers.general_helpers import create_source_plate_doc, current_time, get_sftp_connection, pad_coordinate
 from crawler.helpers.logging_helpers import LoggingCollection
-
 from crawler.types import (
     CentreConf,
     CentreDoc,
     Config,
     CSVRow,
     ModifiedRow,
-    RowSignature,
-    SourcePlateDoc,
-    SampleDoc,
     ModifiedRowValue,
+    RowSignature,
+    SampleDoc,
+    SourcePlateDoc,
 )
 
 logger = logging.getLogger(__name__)
 
 
 PROJECT_ROOT = pathlib.Path(__file__).parent.parent
-REGEX_FIELD = "sftp_file_regex"
 ERRORS_DIR = "errors"
 SUCCESSES_DIR = "successes"
 
@@ -113,17 +102,18 @@ class Centre:
         self.config = config
         self.centre_config = centre_config
         self.is_download_dir_walkable = False
+        self._files: List[str] = []
 
         # create backup directories for files
         os.makedirs(f"{self.centre_config['backups_folder']}/{ERRORS_DIR}", exist_ok=True)
         os.makedirs(f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}", exist_ok=True)
 
-    def get_files_in_download_dir(self) -> List[str]:
-        """Get all the files in the download directory for this centre and filter the file names using the regex
-        described in the centre's 'regex_field'.
+    def sorted_files(self):
+        return sorted(self._files)
 
-        Returns:
-            List[str] -- all the file names in the download directory after filtering
+    def get_files_in_download_dir(self):
+        """Get all the files in the download directory for this centre and filter the file names using the
+        sftp_file_regex_* described in the centre's config
         """
         logger.info(f"Fetching files of centre {self.centre_config['name']}")
         # get a list of files in the download directory
@@ -133,19 +123,14 @@ class Centre:
             logger.debug(f"Attempting to walk {path_to_walk}")
             (_, _, files) = next(os.walk(path_to_walk))
 
-            pattern = re.compile(self.centre_config[REGEX_FIELD])
-
-            # filter the list of files to only those which match the pattern
-            centre_files = list(filter(pattern.match, files))
-
             self.is_download_dir_walkable = True
+            self._files = [file for file in files if self.is_valid_filename(file)]
 
-            return centre_files
-        except Exception:
+        except Exception as e:
             self.is_download_dir_walkable = False
 
             logger.error(f"Failed when reading files from {path_to_walk}")
-            return []
+            logger.exception(e)
 
     def clean_up(self) -> None:
         """Remove the files downloaded from the SFTP for the given centre."""
@@ -163,32 +148,32 @@ class Centre:
         Arguments:
             add_to_dart {bool} -- whether to add the samples to DART
         """
-        self.centre_files = sorted(self.get_files_in_download_dir())
+        self.get_files_in_download_dir()
 
         # iterate through each file in the centre
-        for file_name in self.centre_files:
-            logger.debug(f"Checking file {file_name}")
+        for filename in self.sorted_files():
+            logger.debug(f"Checking file {filename}")
 
             # create an instance of the file class to handle the file
-            centre_file = CentreFile(file_name, self)
+            centre_file = CentreFile(filename, self)
 
             centre_file.set_state_for_file()
             logger.debug(f"File state: {CentreFileState[centre_file.file_state.name]}")
 
             # Process depending on file state
             if centre_file.file_state == CentreFileState.FILE_IN_BLACKLIST:
-                logger.debug("File in blacklist, skipping")
+                logger.warning("File in blacklist, skipping")
                 # next file
                 continue
             elif centre_file.file_state == CentreFileState.FILE_NOT_PROCESSED_YET:
                 # process it
                 centre_file.process_samples(add_to_dart)
             elif centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_ERROR:
-                logger.debug("File already processed as errored, skipping")
+                logger.info("File already processed as errored, skipping")
                 # next file
                 continue
             elif centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_SUCCESS:
-                logger.debug("File already processed successfully, skipping")
+                logger.info("File already processed successfully, skipping")
                 # next file
                 continue
             else:
@@ -219,10 +204,32 @@ class Centre:
             logger.debug(f"ls: {sftp.listdir(self.centre_config['sftp_root_read'])}")
 
             # downloads all files
-            logger.info("Downloading CSV files...")
+            logger.info("Downloading CSV files")
             sftp.get_d(self.centre_config["sftp_root_read"], self.get_download_dir())
 
         return None
+
+    def is_valid_filename(self, filename: str) -> bool:
+        return self.is_eagle_filename(filename) or self.is_surveillance_filename(filename)
+
+    def is_consolidated_filename(self, filename: str) -> bool:
+        return self.is_eagle_filename(filename) or self.is_consolidated_surveillance_filename(filename)
+
+    def is_eagle_filename(self, filename: str) -> bool:
+        eagle = re.compile(self.centre_config["sftp_file_regex_consolidated_eagle"])
+        return bool(eagle.match(filename))
+
+    # This method should not be used with a not() in front of it as it can
+    # led to incorrect understanding of what is a filename
+    # Eg:
+    #    not(consolidated_surveillance) != unconsolidated_surveillance
+    def is_consolidated_surveillance_filename(self, filename: str) -> bool:
+        consolidated_surveillance = re.compile(self.centre_config["sftp_file_regex_consolidated_surveillance"])
+        return bool(consolidated_surveillance.match(filename))
+
+    def is_surveillance_filename(self, filename: str) -> bool:
+        unconsolidated_surveillance = re.compile(self.centre_config["sftp_file_regex_unconsolidated_surveillance"])
+        return bool(unconsolidated_surveillance.match(filename)) or self.is_consolidated_surveillance_filename(filename)
 
 
 class CentreFile:
@@ -284,9 +291,10 @@ class CentreFile:
             FIELD_DATE_TESTED,
         }
 
-        # These are to allow some variability in headers,
-        # due to receiving inconsistent file formats
+        # These are to allow some variability in headers, due to receiving inconsistent file formats
         self.header_regex_correction_dict = {r"^Root Sample$": FIELD_ROOT_SAMPLE_ID}
+
+        self.is_consolidated = centre.is_consolidated_filename(file_name)
 
     def filepath(self) -> Path:
         """Returns the filepath for the file
@@ -528,7 +536,7 @@ class CentreFile:
             docs_to_insert {List[ModifiedRow]} -- the sample records to update
 
         Returns:
-            List[Sample] -- the updated, filtered samples
+            List[ModifiedRow] -- the updated, filtered samples
         """
         logger.debug("Attempting to update docs with source plate UUIDs")
 
@@ -537,13 +545,13 @@ class CentreFile:
         def update_doc_from_source_plate(
             row: ModifiedRow, existing_plate: SourcePlateDoc, skip_lab_check: bool = False
         ) -> None:
-            if skip_lab_check or row[FIELD_LAB_ID] == existing_plate[FIELD_LAB_ID]:
+            if skip_lab_check or self.is_consolidated or row[FIELD_LAB_ID] == existing_plate[FIELD_LAB_ID]:
                 row[FIELD_LH_SOURCE_PLATE_UUID] = existing_plate[FIELD_LH_SOURCE_PLATE_UUID]
                 updated_docs.append(row)
             else:
                 error_message = (
-                    f"Source plate barcode {row[FIELD_PLATE_BARCODE]} in file {self.file_name} "
-                    f"already exists with different lab_id {existing_plate[FIELD_LAB_ID]}",
+                    f"Source plate barcode '{row[FIELD_PLATE_BARCODE]}' in file '{self.file_name}' already exists "
+                    f"with a different lab_id: {existing_plate[FIELD_LAB_ID]}"
                 )
                 self.logging_collection.add_error("TYPE 25", error_message)
                 logger.error(error_message)
@@ -593,7 +601,7 @@ class CentreFile:
         Arguments:
             docs_to_insert {List[ModifiedRow]} -- list of filtered sample information extracted from CSV files
         """
-        logger.debug(f"Attempting to insert {len(docs_to_insert)} docs")
+        logger.debug(f"Attempting to insert {len(docs_to_insert)} docs into mongo")
 
         samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
         try:
@@ -603,6 +611,8 @@ class CentreFile:
             result = samples_collection.insert_many(docs_to_insert, ordered=False)
 
             self.docs_inserted = len(result.inserted_ids)
+
+            logger.info(f"{self.docs_inserted} documents inserted into mongo")
 
             # inserted_ids is in the same order as docs_to_insert, even if the query has ordered=False parameter
             return list(result.inserted_ids)
@@ -626,6 +636,8 @@ class CentreFile:
                 logger.info(filtered_errors[0])
 
             self.docs_inserted = e.details["nInserted"]
+
+            logger.info(f"{self.docs_inserted} documents inserted into mongo")
 
             self.add_duplication_errors(e)
 
@@ -808,10 +820,14 @@ class CentreFile:
 
         if csvreader.fieldnames:
             for i, fieldname in enumerate(csvreader.fieldnames):
+                stripped_fieldname = fieldname.strip()
+                csvreader.fieldnames[i] = stripped_fieldname  # type: ignore
+
+                # This is only for Root Sample -> Root Sample ID
                 for reg in self.header_regex_correction_dict.keys():
-                    if re.match(reg, fieldname.strip()):
+                    if re.match(reg, stripped_fieldname):
                         logger.warning(
-                            f"Found '{reg}' in field name '{fieldname}', "
+                            f"Found '{reg}' in field name '{stripped_fieldname}', "
                             f"correcting to '{self.header_regex_correction_dict[reg]}'"
                         )
                         csvreader.fieldnames[i] = self.header_regex_correction_dict[reg]  # type: ignore
@@ -894,15 +910,8 @@ class CentreFile:
 
         return tuple(signature)
 
-    def log_adding_default_lab_id(self, row, line_number):
-        logger.debug(f"Adding in missing Lab ID for row {line_number}")
-        self.logging_collection.add_error(
-            "TYPE 12",
-            f"No Lab ID, line: {line_number}, root_sample_id: {row.get(FIELD_ROOT_SAMPLE_ID)}",
-        )
-
     def filtered_row(self, row: CSVRow, line_number: int) -> ModifiedRow:
-        """Filter unneeded columns and add lab id if not present and config flag set.
+        """Filter unneeded columns and add `lab_id` if not present and config flag set.
 
         Arguments:
             row {CSVRow} - sample row read from file
@@ -910,42 +919,27 @@ class CentreFile:
         Returns:
             ModifiedRow - returns a modified version of the row
         """
+
         modified_row: ModifiedRow = {}
+        seen_headers: List[str] = []
 
         if self.config.ADD_LAB_ID:
-            # when we need to add the lab id if not present
-            if (lab_id := row.get(FIELD_LAB_ID)) is not None:
-                # if the lab id field is already present but it might be an empty string
-                if not lab_id:
-                    # if no value (empty string) we add the default value and log that it was missing
-                    modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
-
-                    self.log_adding_default_lab_id(row, line_number)
-                else:
-                    if lab_id != self.centre_config["lab_id_default"]:
-                        # if the lab id is different to what is configured for the lab
-                        logger.warning(f"Different lab id setting: {lab_id} != {self.centre_config['lab_id_default']}")
-
-                    # copy the lab id across
-                    modified_row[FIELD_LAB_ID] = lab_id
-            else:
-                # if the lab id field is not present we add the default and log it was missing
-                modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
-                self.log_adding_default_lab_id(row, line_number)
-
-        seen_headers: List[str] = []
+            self.determine_lab_id(row, line_number, modified_row)
 
         # next check the row for values for each of the accepted fields (except for the CT fields) and copy them across
         for key in self.ACCEPTED_FIELDS:
             if key in row:
                 seen_headers.append(key)
-                modified_row[key] = row[key]
+                modified_row[key] = row[key].strip() if type(row[key]) == str else row[key]
 
         # and check the row for values for any of the optional CT channel headers and copy them across
         seen_headers, modified_row = self.extract_channel_fields(seen_headers, row, modified_row)
 
+        # convert None-like fields to None
+        modified_row = self.convert_channel_fields(row, modified_row)
+
         # now check if we still have any columns left in the file row that we do not recognise
-        unexpected_headers = list(row.keys() - seen_headers)
+        unexpected_headers = list(row.keys() - seen_headers - IGNORED_HEADERS)
 
         if len(unexpected_headers) > 0:
             self.logging_collection.add_error(
@@ -954,6 +948,33 @@ class CentreFile:
                 f"root_sample_id: {row.get(FIELD_ROOT_SAMPLE_ID)}, "
                 f"extra headers: {unexpected_headers}",
             )
+
+        return modified_row
+
+    def determine_lab_id(self, row: CSVRow, line_number: int, modified_row: ModifiedRow) -> ModifiedRow:
+        def log_adding_default_lab_id(row, line_number):
+            logger.debug(f"Adding in missing Lab ID for row {line_number}")
+            self.logging_collection.add_error(
+                "TYPE 12",
+                f"No Lab ID, line: {line_number}, root_sample_id: {row.get(FIELD_ROOT_SAMPLE_ID)}",
+            )
+
+        if (lab_id := row.get(FIELD_LAB_ID)) is not None:
+            # if the lab id field is already present but it might be an empty string
+            if not lab_id:
+                # if no value (empty string) we add the default value and log that it was missing
+                modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
+                log_adding_default_lab_id(row, line_number)
+            else:
+                if not self.is_consolidated and lab_id != self.centre_config["lab_id_default"]:
+                    # if the lab id is different to what is configured for the lab
+                    logger.warning(f"Different lab id setting: {lab_id} != {self.centre_config['lab_id_default']}")
+                # copy the lab id across
+                modified_row[FIELD_LAB_ID] = lab_id
+        else:
+            # if the lab id field is not present we add the default and log it was missing
+            modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
+            log_adding_default_lab_id(row, line_number)
 
         return modified_row
 
@@ -985,12 +1006,21 @@ class CentreFile:
 
         return seen_headers, modified_row
 
+    def convert_channel_fields(self, csv_row: CSVRow, modified_row: ModifiedRow) -> ModifiedRow:
+        pattern = re.compile(r"^unknown$", re.IGNORECASE)
+
+        for channel_field_header in self.get_channel_headers_mapping():
+            if pattern.match(str(csv_row.get(channel_field_header))):
+                modified_row[channel_field_header] = None
+
+        return modified_row
+
     def parse_and_format_file_rows(self, csvreader: DictReader) -> List[ModifiedRow]:
         """Attempts to parse and format the file rows
-           Adds additional derived and calculated fields to the imported rows that will aid querying
-           later. Filters out blank rows, duplicated rows, and rows with values failing various
-           rules on content. Creates error records for rows that do not pass checks, that will get
-           written to the import logs for display in the Lighthouse-UI imports screen.
+           Adds additional derived and calculated fields to the imported rows that will aid querying later. Filters out
+           blank rows, duplicated rows, and rows with values failing various rules on content. Creates error records for
+           rows that do not pass checks, that will get written to the import logs for display in the Lighthouse-UI
+           imports page.
 
         Arguments:
             csvreader {DictReader} -- CSV file reader to iterate over
@@ -1024,11 +1054,11 @@ class CentreFile:
 
         logger.log(
             INFO if invalid_rows_count == 0 else WARN,
-            f"Rows with invalid structure in this file = {invalid_rows_count}",
+            f"Rows with invalid structure/data in this file: {invalid_rows_count}",
         )
         logger.log(
             INFO if failed_validation_count == 0 else WARN,
-            f"Rows that failed validation in this file = {failed_validation_count}",
+            f"Rows that failed validation in this file: {failed_validation_count}",
         )
 
         return verified_rows
@@ -1036,7 +1066,7 @@ class CentreFile:
     def parse_and_format_row(
         self, row: CSVRow, line_number: int, seen_rows: Set[RowSignature]
     ) -> Optional[ModifiedRow]:
-        """Parses a single row and runs validations on content.
+        """Parses a single row and runs validations on the content.
 
         Arguments:
             row {CSVRow} - row object from csv.DictReader
@@ -1065,6 +1095,9 @@ class CentreFile:
             return None
 
         # ---- perform various validations on row values ----
+        if not self.is_valid_root_sample_id(modified_row):
+            return None
+
         # Check that the date is a valid format and if so, convert it to a datetime before saving to mongo
         date_format_valid, date_string_dict = self.is_valid_date_format(modified_row, line_number, FIELD_DATE_TESTED)
         if date_format_valid:
@@ -1200,6 +1233,16 @@ class CentreFile:
             date_time = date_time.replace(tzinfo=timezone.utc)
 
         return date_time
+
+    @staticmethod
+    def is_valid_root_sample_id(row: ModifiedRow) -> bool:
+        pattern = re.compile(r"^empty$", re.IGNORECASE)
+        root_sample_id = str(row.get(FIELD_ROOT_SAMPLE_ID)).strip()
+
+        if pattern.match(root_sample_id):
+            return False
+
+        return True
 
     def is_valid_date_format(self, row: ModifiedRow, line_number: int, date_field: str) -> Tuple[bool, Dict[str, str]]:
         """The possible values for the date are:
@@ -1390,7 +1433,7 @@ class CentreFile:
             bool - whether the channel results complement the main results
         """
         # if the result is not positive we do not need to check any further
-        if row.get(FIELD_RESULT) != POSITIVE_RESULT_VALUE:
+        if row.get(FIELD_RESULT) != RESULT_VALUE_POSITIVE:
             return True
 
         ch_results_present = 0
@@ -1401,7 +1444,7 @@ class CentreFile:
             # check that a value is present and that it is not an empty string
             if (channel_result_val := row.get(channel_result_field)) is not None and channel_result_val:
                 ch_results_present += 1
-                if channel_result_val == POSITIVE_RESULT_VALUE:
+                if channel_result_val == RESULT_VALUE_POSITIVE:
                     ch_results_positive += 1
 
         # if there are no channel results present in the row we do not need to check further
@@ -1421,12 +1464,12 @@ class CentreFile:
     def row_required_fields_present(self, row: CSVRow, line_number: int) -> bool:
         """Checks whether the row has the expected structure. Checks for:
         - blank rows
-        - root sample id
-        - result
-        - barcode
+        - 'Root Sample ID'
+        - 'Result'
+        - barcode: usually 'RNA ID'
 
         Arguments:
-            row {CSVRow} - row object from the csvreader
+            row {CSVRow} - row object from the CSVDictReader
             line_number {int} - line number within the file
 
         Returns:
@@ -1463,7 +1506,7 @@ class CentreFile:
 
         return True
 
-    def file_name_date(self) -> Any:
+    def file_name_date(self) -> Optional[datetime]:
         """Extracts date from the filename if it matches the expected format, otherwise returns None.
 
         Returns:

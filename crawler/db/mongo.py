@@ -109,8 +109,6 @@ def create_import_record(
         InsertOneResult -- the result of inserting this document
     """
     logger.debug(f"Creating the import record for {centre['name']}")
-    logger.info(f"{docs_inserted} documents inserted into sample collection")
-    logger.debug(f"CSV file used: {file_name}")
 
     import_doc = {
         "date": datetime.utcnow(),  # https://pymongo.readthedocs.io/en/stable/examples/datetimes.html
@@ -133,6 +131,5 @@ def populate_collection(collection: Collection, documents: List[Dict[str, Any]],
         filter_field {str} -- filter to search for matching documents
     """
     logger.debug(f"Populating/updating '{collection.full_name}' using '{filter_field}' as the filter")
-
     for document in documents:
         _ = collection.find_one_and_update({filter_field: document[filter_field]}, {"$set": document}, upsert=True)

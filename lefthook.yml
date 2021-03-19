@@ -1,0 +1,19 @@
+# https://github.com/Arkweid/lefthook/blob/master/docs/full_guide.md
+pre-push:
+  commands:
+    packages-check:
+      tags: security
+      run: pipenv check
+
+pre-commit:
+  parallel: true
+  commands:
+    black:
+      glob: "*.{py}"
+      run: pipenv run black {staged_files}
+    flake8:
+      glob: "*.{py}"
+      run: pipenv run flake8 {staged_files}
+    mypy:
+      glob: "*.{py}"
+      run: pipenv run mypy {staged_files}

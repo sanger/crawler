@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
 from mysql.connector.connection_cext import CMySQLConnection
+from pytest import mark
 
 from crawler.constants import (
     COLLECTION_IMPORTS,
@@ -41,7 +42,9 @@ from crawler.constants import (
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_LINE_NUMBER,
+    FIELD_MUST_SEQUENCE,
     FIELD_PLATE_BARCODE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_RNA_PCR_ID,
@@ -49,8 +52,6 @@ from crawler.constants import (
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
-    FIELD_MUST_SEQUENCE,
-    FIELD_PREFERENTIALLY_SEQUENCE,
     MLWH_CH1_CQ,
     MLWH_CH1_RESULT,
     MLWH_CH1_TARGET,
@@ -71,20 +72,21 @@ from crawler.constants import (
     MLWH_FILTERED_POSITIVE_VERSION,
     MLWH_LAB_ID,
     MLWH_MONGODB_ID,
+    MLWH_MUST_SEQUENCE,
     MLWH_PLATE_BARCODE,
+    MLWH_PREFERENTIALLY_SEQUENCE,
     MLWH_RESULT,
     MLWH_RNA_ID,
     MLWH_ROOT_SAMPLE_ID,
     MLWH_SOURCE,
     MLWH_TABLE_NAME,
     MLWH_UPDATED_AT,
-    MLWH_MUST_SEQUENCE,
-    MLWH_PREFERENTIALLY_SEQUENCE,
-    POSITIVE_RESULT_VALUE,
+    RESULT_VALUE_POSITIVE,
 )
 from crawler.db.mongo import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
 from crawler.types import Config, ModifiedRow
+from tests.conftest import generate_new_object_for_string
 
 # ----- tests helpers -----
 
@@ -179,7 +181,130 @@ def test_process_files_one_wrong_format(mongo_database, config, testing_files_fo
         assert "CRITICAL: File is unexpected type and cannot be processed. (TYPE 10)" in i["errors"]
 
 
+UNCONSOLIDATED_SURVEILLANCE_FILENAME = "AP_sanger_report_200503_2338.csv"
+CONSOLIDATED_EAGLE_FILENAME = "APE200503.csv"
+CONSOLIDATED_SURVEILLANCE_FILENAME = "AP-rna-200503.csv"
+
+
+@mark.parametrize(
+    "filename, expected_value",
+    [
+        [UNCONSOLIDATED_SURVEILLANCE_FILENAME, True],
+        [CONSOLIDATED_EAGLE_FILENAME, True],
+        [CONSOLIDATED_SURVEILLANCE_FILENAME, True],
+        ["MK-200503.csv", False],
+    ],
+)
+def test_can_identify_valid_filename(config, filename, expected_value):
+    centre = Centre(config, config.CENTRES[0])
+    assert centre.is_valid_filename(filename) is expected_value
+
+
+@mark.parametrize(
+    "filename, expected_value",
+    [
+        [UNCONSOLIDATED_SURVEILLANCE_FILENAME, False],
+        [CONSOLIDATED_EAGLE_FILENAME, True],
+        [CONSOLIDATED_SURVEILLANCE_FILENAME, True],
+    ],
+)
+def test_can_identify_consolidated_filename(config, filename, expected_value):
+    centre = Centre(config, config.CENTRES[0])
+    assert centre.is_consolidated_filename(filename) is expected_value
+
+
+@mark.parametrize(
+    "filename, expected_value",
+    [
+        [UNCONSOLIDATED_SURVEILLANCE_FILENAME, False],
+        [CONSOLIDATED_EAGLE_FILENAME, True],
+        [CONSOLIDATED_SURVEILLANCE_FILENAME, False],
+    ],
+)
+def test_can_identify_eagle_filename(config, filename, expected_value):
+    centre = Centre(config, config.CENTRES[0])
+    assert centre.is_eagle_filename(filename) is expected_value
+
+
+@mark.parametrize(
+    "filename, expected_value",
+    [
+        [UNCONSOLIDATED_SURVEILLANCE_FILENAME, False],
+        [CONSOLIDATED_EAGLE_FILENAME, False],
+        [CONSOLIDATED_SURVEILLANCE_FILENAME, True],
+    ],
+)
+def test_can_identify_consolidated_surveillance_filename(config, filename, expected_value):
+    centre = Centre(config, config.CENTRES[0])
+    assert centre.is_consolidated_surveillance_filename(filename) is expected_value
+
+
+@mark.parametrize(
+    "filename, expected_value",
+    [
+        [UNCONSOLIDATED_SURVEILLANCE_FILENAME, True],
+        [CONSOLIDATED_EAGLE_FILENAME, False],
+        [CONSOLIDATED_SURVEILLANCE_FILENAME, True],
+    ],
+)
+def test_can_identify_surveillance_filename(config, filename, expected_value):
+    centre = Centre(config, config.CENTRES[0])
+    assert centre.is_surveillance_filename(filename) is expected_value
+
+
+def test_process_files_with_whitespace(mongo_database, config, testing_files_for_process, testing_centres):
+    """Test using files in the files/TEST directory; they include a file with lots of whitespace."""
+    _, mongo_database = mongo_database
+
+    # get the TEST centre
+    centre_config = next(filter(lambda centre: centre["prefix"] == "TEST", config.CENTRES))
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+    centre.process_files(add_to_dart=False)
+
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+
+    date_time = datetime(year=2020, month=4, day=16, hour=14, minute=30, second=40)
+
+    # Testing file where values contain with whitespace
+    assert (
+        samples_collection.count_documents(
+            {
+                FIELD_ROOT_SAMPLE_ID: "3",
+                FIELD_VIRAL_PREP_ID: "1",
+                FIELD_RNA_ID: "AP456_B09",
+                FIELD_RNA_PCR_ID: "CF06CR9G_B03",
+                FIELD_RESULT: "Negative",
+                FIELD_SOURCE: "Test Centre",
+                FIELD_DATE_TESTED: date_time,
+            }
+        )
+        == 1
+    )
+    assert samples_collection.count_documents({FIELD_RNA_ID: "AP456_B08"}) == 1
+    assert (
+        imports_collection.count_documents({"csv_file_used": "TEST_sanger_report_200518_2208_with_whitespace.csv"}) == 1
+    )
+
+
 # ----- tests for class CentreFile -----
+
+
+@mark.parametrize(
+    "filename, expected_value",
+    [
+        [UNCONSOLIDATED_SURVEILLANCE_FILENAME, False],
+        [CONSOLIDATED_EAGLE_FILENAME, True],
+        [CONSOLIDATED_SURVEILLANCE_FILENAME, True],
+    ],
+)
+def test_can_identify_consolidated_file(config, filename, expected_value):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile(filename, centre)
+
+    assert centre_file.is_consolidated is expected_value
+
 
 # tests for checksums
 def create_checksum_files_for(filepath, filename, checksums, timestamp):
@@ -749,6 +874,40 @@ def test_parse_and_format_file_rows_detects_duplicates(config, freezer):
             assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
+def test_parse_and_format_file_rows_can_parse_empty_root_sample_id(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some_file.csv", centre)
+
+    with StringIO() as fake_csv:
+        fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID\n")
+
+        # where row has valid value - should pass
+        fake_csv.write("1,RNA_0043_H06,Positive,Val\n")
+
+        # where row has empty - should error
+        fake_csv.write(",RNA_0043_H08,limit of detection,Val\n")
+
+        # where row has Empty - should ignore
+        fake_csv.write("Empty  ,RNA_0043_H09,Void,Val\n")
+
+        # where row has empty - should ignore
+        fake_csv.write("empty  ,RNA_0043_H09,Void,Val\n")
+
+        # another valid sample
+        fake_csv.write("2,RNA_0043_H10,Positive,Val\n")
+        fake_csv.seek(0)
+
+        csv_to_test_reader = DictReader(fake_csv)
+        read_rows = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+
+        assert len(read_rows) == 2
+        assert read_rows[0][FIELD_ROOT_SAMPLE_ID] == "1"
+        assert read_rows[1][FIELD_ROOT_SAMPLE_ID] == "2"
+
+        # should not have any errors (Ignore empty and no values)
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+
+
 def test_where_result_has_unexpected_value(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
@@ -780,6 +939,75 @@ def test_where_result_has_unexpected_value(config):
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
 
+def test_where_ct_channel_fields_can_have_unknown(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some_file.csv", centre)
+
+    with StringIO() as fake_csv:
+        fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,CH2-Target,CH2-Result\n")
+
+        # where row has valid value - should pass
+        fake_csv.write("1,RNA_0043_H09,Positive,Val,Unknown,Unknown\n")
+        fake_csv.seek(0)
+
+        csv_to_test_reader = DictReader(fake_csv)
+        read = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+
+        # should create a specific error type for the row
+        assert len(read) == 1
+        assert read[0][FIELD_ROOT_SAMPLE_ID] == "1"
+        assert read[0][FIELD_CH2_TARGET] is None
+        assert read[0][FIELD_CH2_RESULT] is None
+        assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
+
+
+def test_parse_and_format_file_rows_where_predefined_unknown_headers_are_not_stored_or_logged_in_imports_record(config):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some_file.csv", centre)
+
+    with StringIO() as fake_csv:
+        fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,PickResult,testKit\n")
+
+        # where row has valid value - should pass
+        fake_csv.write("1,RNA_0043_H09,Positive,Val,Good pick,Mytest\n")
+        fake_csv.seek(0)
+
+        csv_to_test_reader = DictReader(fake_csv)
+        read = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+
+        # should create a specific error type for the row
+        assert len(read) == 1
+        assert read[0][FIELD_ROOT_SAMPLE_ID] == "1"
+        assert not ("PickResult" in read[0])
+        assert not ("testKit" in read[0])
+
+        assert centre_file.logging_collection.aggregator_types["TYPE 13"].count_errors == 0
+        assert len(centre_file.logging_collection.get_messages_for_import()) == 0
+
+
+def test_parse_and_format_file_rows_where_not_predefined_unknown_headers_are_stored_and_they_are_in_the_imports_record(
+    config,
+):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some_file.csv", centre)
+
+    with StringIO() as fake_csv:
+        fake_csv.write("Root Sample ID,RNA ID,Result,Lab ID,NewHeader\n")
+
+        # where row has valid value - should pass
+        fake_csv.write("1,RNA_0043_H09,Positive,Val,Good pick\n")
+        fake_csv.seek(0)
+
+        csv_to_test_reader = DictReader(fake_csv)
+        read = centre_file.parse_and_format_file_rows(csv_to_test_reader)
+
+        # should create a specific error type for the row
+        assert len(read) == 1
+        assert read[0][FIELD_ROOT_SAMPLE_ID] == "1"
+        assert not ("NewHeader" in read[0])
+        assert centre_file.logging_collection.aggregator_types["TYPE 13"].count_errors == 1
+
+
 def test_where_ct_channel_target_has_unexpected_value(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
@@ -789,6 +1017,8 @@ def test_where_ct_channel_target_has_unexpected_value(config):
 
         # where row has valid value - should pass
         fake_csv.write("1,RNA_0043_H09,Positive,Val,S gene\n")
+        fake_csv.write("1,RNA_0043_H09,Positive,Val,RNaseP\n")
+        fake_csv.write("1,RNA_0043_H09,Positive,Val,IEC\n")
 
         # where row is empty - should pass
         fake_csv.write("2,RNA_0043_H10,Positive,Val,\n")
@@ -1137,11 +1367,14 @@ def test_backup_bad_file(config, tmpdir):
 def test_file_name_date_parses_right(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
-    assert centre_file.file_name_date().year == 2020
-    assert centre_file.file_name_date().month == 5
-    assert centre_file.file_name_date().day == 3
-    assert centre_file.file_name_date().hour == 23
-    assert centre_file.file_name_date().minute == 38
+    file_name_date = centre_file.file_name_date()
+
+    assert file_name_date is not None
+    assert file_name_date.year == 2020
+    assert file_name_date.month == 5
+    assert file_name_date.day == 3
+    assert file_name_date.hour == 23
+    assert file_name_date.minute == 38
 
     centre_file = CentreFile("AP_sanger_report_200503_2338 (2).csv", centre)
     assert centre_file.file_name_date() is None
@@ -1175,21 +1408,21 @@ def test_insert_samples_from_docs_into_mlwh(
             FIELD_RNA_ID: "TC-rna-00000029_H12",
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_COORDINATE: "H12",
-            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_RESULT: RESULT_VALUE_POSITIVE,
             FIELD_DATE_TESTED: date_tested_2,
             FIELD_SOURCE: "Test Centre",
             FIELD_LAB_ID: "TC",
             FIELD_CH1_TARGET: "ORF1ab",
-            FIELD_CH1_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_CH1_RESULT: RESULT_VALUE_POSITIVE,
             FIELD_CH1_CQ: Decimal128("21.28726211"),
             FIELD_CH2_TARGET: "N gene",
-            FIELD_CH2_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_CH2_RESULT: RESULT_VALUE_POSITIVE,
             FIELD_CH2_CQ: Decimal128("18.12736661"),
             FIELD_CH3_TARGET: "S gene",
-            FIELD_CH3_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_CH3_RESULT: RESULT_VALUE_POSITIVE,
             FIELD_CH3_CQ: Decimal128("22.63616273"),
             FIELD_CH4_TARGET: "MS2",
-            FIELD_CH4_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_CH4_RESULT: RESULT_VALUE_POSITIVE,
             FIELD_CH4_CQ: Decimal128("26.25125612"),
             FIELD_FILTERED_POSITIVE: True,
             FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
@@ -1247,21 +1480,21 @@ def test_insert_samples_from_docs_into_mlwh(
     assert rows[1][MLWH_RNA_ID] == "TC-rna-00000029_H12"
     assert rows[1][MLWH_PLATE_BARCODE] == "TC-rna-00000029"
     assert rows[1][MLWH_COORDINATE] == "H12"
-    assert rows[1][MLWH_RESULT] == POSITIVE_RESULT_VALUE
+    assert rows[1][MLWH_RESULT] == RESULT_VALUE_POSITIVE
     assert rows[1][MLWH_DATE_TESTED] == date_tested_2
     assert rows[1][MLWH_SOURCE] == "Test Centre"
     assert rows[1][MLWH_LAB_ID] == "TC"
     assert rows[1][MLWH_CH1_TARGET] == "ORF1ab"
-    assert rows[1][MLWH_CH1_RESULT] == POSITIVE_RESULT_VALUE
+    assert rows[1][MLWH_CH1_RESULT] == RESULT_VALUE_POSITIVE
     assert rows[1][MLWH_CH1_CQ] == Decimal("21.28726211")
     assert rows[1][MLWH_CH2_TARGET] == "N gene"
-    assert rows[1][MLWH_CH2_RESULT] == POSITIVE_RESULT_VALUE
+    assert rows[1][MLWH_CH2_RESULT] == RESULT_VALUE_POSITIVE
     assert rows[1][MLWH_CH2_CQ] == Decimal("18.12736661")
     assert rows[1][MLWH_CH3_TARGET] == "S gene"
-    assert rows[1][MLWH_CH3_RESULT] == POSITIVE_RESULT_VALUE
+    assert rows[1][MLWH_CH3_RESULT] == RESULT_VALUE_POSITIVE
     assert rows[1][MLWH_CH3_CQ] == Decimal("22.63616273")
     assert rows[1][MLWH_CH4_TARGET] == "MS2"
-    assert rows[1][MLWH_CH4_RESULT] == POSITIVE_RESULT_VALUE
+    assert rows[1][MLWH_CH4_RESULT] == RESULT_VALUE_POSITIVE
     assert rows[1][MLWH_CH4_CQ] == Decimal("26.25125612")
     assert rows[1][MLWH_FILTERED_POSITIVE] == 1
     assert rows[1][MLWH_FILTERED_POSITIVE_VERSION] == "v2.3"
@@ -1450,7 +1683,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_failure_adding_new_plate(co
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_LAB_ID: "AP",
             FIELD_COORDINATE: "H11",
-            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_RESULT: RESULT_VALUE_POSITIVE,
         }
     ]
 
@@ -1479,7 +1712,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_non_pending_plate_does_not_
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_LAB_ID: "AP",
             FIELD_COORDINATE: "H11",
-            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_RESULT: RESULT_VALUE_POSITIVE,
         }
     ]
 
@@ -1504,7 +1737,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_none_well_index(config):
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_LAB_ID: "AP",
             FIELD_COORDINATE: "H11",
-            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_RESULT: RESULT_VALUE_POSITIVE,
         }
     ]
 
@@ -1535,7 +1768,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_COORDINATE: "A01",
             FIELD_LAB_ID: "AP",
-            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_RESULT: generate_new_object_for_string(RESULT_VALUE_POSITIVE),
         },
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1544,7 +1777,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
             FIELD_PLATE_BARCODE: "TC-rna-00000024",
             FIELD_COORDINATE: "B01",
             FIELD_LAB_ID: "AP",
-            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_RESULT: generate_new_object_for_string(RESULT_VALUE_POSITIVE),
         },
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1614,7 +1847,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
             FIELD_PLATE_BARCODE: plate_barcode,
             FIELD_COORDINATE: "A01",
             FIELD_LAB_ID: "AP",
-            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_RESULT: generate_new_object_for_string(RESULT_VALUE_POSITIVE),
         },
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1623,7 +1856,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
             FIELD_PLATE_BARCODE: plate_barcode,
             FIELD_COORDINATE: "A02",
             FIELD_LAB_ID: "AP",
-            FIELD_RESULT: POSITIVE_RESULT_VALUE,
+            FIELD_RESULT: generate_new_object_for_string(RESULT_VALUE_POSITIVE),
         },
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
@@ -1757,7 +1990,51 @@ def test_docs_to_insert_updated_with_source_plate_uuids_uses_existing_plates(con
     assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
-def test_docs_to_insert_updated_with_source_plate_handles_duplicate_new_barcodes_from_different_lab(
+@mark.parametrize(
+    "filename, expected_type25_errors_count",
+    [
+        [UNCONSOLIDATED_SURVEILLANCE_FILENAME, 1],
+        [CONSOLIDATED_EAGLE_FILENAME, 0],
+        [CONSOLIDATED_SURVEILLANCE_FILENAME, 0],
+        ["some file", 1],
+    ],
+)
+def test_docs_to_insert_updated_with_source_plate_handles_duplicate_new_barcodes_from_diff_lab_when_not_consolidated(
+    config, mongo_database, filename, expected_type25_errors_count
+):
+    # set up input sample docs to have duplicate plate barcodes from different labs
+    _, mongo_database = mongo_database
+    docs: List[ModifiedRow] = [
+        {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "AP", FIELD_RNA_ID: "123_A01"},
+        {FIELD_PLATE_BARCODE: "123", FIELD_LAB_ID: "MK", FIELD_RNA_ID: "123_A02"},  # we expect this one to be rejected
+        {FIELD_PLATE_BARCODE: "456", FIELD_LAB_ID: "MK", FIELD_RNA_ID: "456_A03"},
+        {FIELD_PLATE_BARCODE: "789", FIELD_LAB_ID: "CB", FIELD_RNA_ID: "789_A04"},
+    ]
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile(filename, centre)
+    updated_docs = centre_file.docs_to_insert_updated_with_source_plate_uuids(docs)
+    assert len(updated_docs) == 4 - expected_type25_errors_count
+    assert sum(doc[FIELD_PLATE_BARCODE] == "123" and doc[FIELD_LAB_ID] == "AP" for doc in updated_docs) == 1
+    assert sum(doc[FIELD_PLATE_BARCODE] == "456" and doc[FIELD_LAB_ID] == "MK" for doc in updated_docs) == 1
+    assert sum(doc[FIELD_PLATE_BARCODE] == "789" and doc[FIELD_LAB_ID] == "CB" for doc in updated_docs) == 1
+
+    if expected_type25_errors_count == 0:
+        assert sum(doc[FIELD_PLATE_BARCODE] == "123" and doc[FIELD_LAB_ID] == "MK" for doc in updated_docs) == 1
+
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+    assert source_plates_collection.count_documents({}) == 3
+
+    for doc in updated_docs:
+        source_plate = source_plates_collection.find_one({FIELD_BARCODE: doc[FIELD_PLATE_BARCODE]})
+        assert source_plate is not None
+        assert source_plate[FIELD_LH_SOURCE_PLATE_UUID] is not None
+        assert doc[FIELD_LH_SOURCE_PLATE_UUID] == source_plate[FIELD_LH_SOURCE_PLATE_UUID]
+
+    assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == expected_type25_errors_count
+    assert centre_file.logging_collection.aggregator_types["TYPE 25"].count_errors == expected_type25_errors_count
+
+
+def test_docs_to_insert_updated_with_source_plate_not_log_error_when_different_lab_and_consolidated(
     config, mongo_database
 ):
     # set up input sample docs to have duplicate plate barcodes from different labs

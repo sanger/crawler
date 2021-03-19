@@ -3,13 +3,21 @@ from unittest.mock import patch
 import pyodbc
 import pytest
 
-from crawler.constants import DART_STATE, DART_STATE_NO_PLATE, DART_STATE_NO_PROP, DART_STATE_PENDING
+from crawler.constants import (
+    DART_STATE,
+    DART_STATE_NO_PLATE,
+    DART_STATE_NO_PROP,
+    DART_STATE_PENDING,
+    FIELD_RESULT,
+    RESULT_VALUE_POSITIVE,
+)
 from crawler.db.dart import (
     add_dart_plate_if_doesnt_exist,
     create_dart_sql_server_conn,
     get_dart_plate_state,
     set_dart_plate_state_pending,
     set_dart_well_properties,
+    add_dart_well_properties_if_positive,
 )
 from crawler.exceptions import DartStateError
 from crawler.sql_queries import (
@@ -18,6 +26,17 @@ from crawler.sql_queries import (
     SQL_DART_SET_PLATE_PROPERTY,
     SQL_DART_SET_WELL_PROPERTY,
 )
+
+from tests.conftest import generate_new_object_for_string
+
+
+def test_add_dart_well_properties_if_positive(mlwh_connection):
+    with patch("crawler.db.dart.add_dart_well_properties") as mock_add_dart_well_properties:
+        cursor = mlwh_connection.cursor(dictionary=True)
+        sample = {FIELD_RESULT: generate_new_object_for_string(RESULT_VALUE_POSITIVE)}
+        plate_barcode = "aBarcode"
+        add_dart_well_properties_if_positive(cursor, sample, plate_barcode)
+        mock_add_dart_well_properties.assert_called_with(cursor, sample, plate_barcode)
 
 
 def test_create_dart_sql_server_conn(config):

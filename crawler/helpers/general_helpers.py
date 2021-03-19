@@ -13,7 +13,6 @@ import pysftp
 from bson.decimal128 import Decimal128
 
 from crawler.constants import (
-    POSITIVE_RESULT_VALUE,
     DART_EMPTY_VALUE,
     DART_LAB_ID,
     DART_LH_SAMPLE_UUID,
@@ -44,14 +43,14 @@ from crawler.constants import (
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_MONGODB_ID,
+    FIELD_MUST_SEQUENCE,
     FIELD_PLATE_BARCODE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
-    FIELD_MUST_SEQUENCE,
-    FIELD_PREFERENTIALLY_SEQUENCE,
     MLWH_CH1_CQ,
     MLWH_CH1_RESULT,
     MLWH_CH1_TARGET,
@@ -74,14 +73,15 @@ from crawler.constants import (
     MLWH_LH_SAMPLE_UUID,
     MLWH_LH_SOURCE_PLATE_UUID,
     MLWH_MONGODB_ID,
+    MLWH_MUST_SEQUENCE,
     MLWH_PLATE_BARCODE,
+    MLWH_PREFERENTIALLY_SEQUENCE,
     MLWH_RESULT,
     MLWH_RNA_ID,
     MLWH_ROOT_SAMPLE_ID,
     MLWH_SOURCE,
     MLWH_UPDATED_AT,
-    MLWH_MUST_SEQUENCE,
-    MLWH_PREFERENTIALLY_SEQUENCE,
+    RESULT_VALUE_POSITIVE,
 )
 from crawler.types import Config, DartWellProp, ModifiedRowValue, SampleDoc, SourcePlateDoc
 
@@ -297,7 +297,7 @@ def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
 
 
 def is_sample_positive(sample):
-    return sample.get(FIELD_RESULT, False) is POSITIVE_RESULT_VALUE
+    return sample.get(FIELD_RESULT, False) == RESULT_VALUE_POSITIVE
 
 
 def is_sample_important_or_positive(sample):
