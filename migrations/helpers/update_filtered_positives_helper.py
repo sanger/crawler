@@ -4,33 +4,29 @@ from typing import Dict, List, Optional
 
 from more_itertools import groupby_transform
 
-from crawler.constants import (
-    COLLECTION_SAMPLES,
-    DART_STATE_PENDING,
-    FIELD_COORDINATE,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_MONGODB_ID,
-    FIELD_PLATE_BARCODE,
-    FIELD_RESULT,
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_SOURCE,
-    RESULT_VALUE_POSITIVE,
-)
-from crawler.db.dart import add_dart_plate_if_doesnt_exist, create_dart_sql_server_conn, set_dart_well_properties
-from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
-from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
+from crawler.constants import (COLLECTION_SAMPLES, DART_STATE_PENDING,
+                               FIELD_COORDINATE, FIELD_FILTERED_POSITIVE,
+                               FIELD_FILTERED_POSITIVE_TIMESTAMP,
+                               FIELD_FILTERED_POSITIVE_VERSION,
+                               FIELD_MONGODB_ID, FIELD_PLATE_BARCODE,
+                               FIELD_RESULT, FIELD_ROOT_SAMPLE_ID,
+                               FIELD_SOURCE, RESULT_VALUE_POSITIVE)
+from crawler.db.dart import (add_dart_plate_if_doesnt_exist,
+                             create_dart_sql_server_conn,
+                             set_dart_well_properties)
+from crawler.db.mongo import (create_mongo_client, get_mongo_collection,
+                              get_mongo_db)
+from crawler.db.mysql import (create_mysql_connection,
+                              run_mysql_executemany_query)
 from crawler.filtered_positive_identifier import FilteredPositiveIdentifier
-from crawler.helpers.general_helpers import (
-    get_dart_well_index,
-    map_mongo_doc_to_dart_well_props,
-    map_mongo_to_sql_common,
-)
-from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE
+from crawler.helpers.cherrypicked_samples import (extract_required_cp_info,
+                                                  get_cherrypicked_samples)
+from crawler.helpers.general_helpers import (get_dart_well_index,
+                                             map_mongo_doc_to_dart_well_props,
+                                             map_mongo_to_sql_common)
+from crawler.sql_queries import (SQL_DART_GET_PLATE_BARCODES,
+                                 SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE)
 from crawler.types import Config, SampleDoc
-from migrations.helpers.shared_helper import extract_required_cp_info, get_cherrypicked_samples
-from migrations.helpers.shared_helper import remove_cherrypicked_samples as remove_cp_samples
 
 logger = logging.getLogger(__name__)
 
@@ -88,27 +84,6 @@ def positive_result_samples_from_mongo(config: Config, plate_barcodes: Optional[
         # should we project to an object that has fewer fields?
         return list(samples_collection.aggregate(pipeline))
 
-
-def remove_cherrypicked_samples(config: Config, samples: List[SampleDoc]) -> List[SampleDoc]:
-    """Filters an input list of samples for those that have not been cherrypicked.
-
-    Arguments:
-        config {Config} -- application config specifying database details
-        samples {List[Sample]} -- the list of samples to filter
-
-    Returns:
-        List[Sample] -- non-cherrypicked samples
-    """
-    root_sample_ids, plate_barcodes = extract_required_cp_info(samples)
-    cp_samples_df = get_cherrypicked_samples(config, list(root_sample_ids), list(plate_barcodes))
-
-    if cp_samples_df is None:
-        raise Exception("Unable to determine cherry-picked samples - potentially error connecting to MySQL")
-    elif not cp_samples_df.empty:
-        cp_samples = cp_samples_df[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()
-        return remove_cp_samples(samples, cp_samples)
-    else:
-        return samples
 
 
 def update_filtered_positive_fields(

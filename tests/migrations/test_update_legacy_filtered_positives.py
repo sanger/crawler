@@ -4,14 +4,12 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from crawler.filtered_positive_identifier import (
-    FILTERED_POSITIVE_VERSION_0,
-    FILTERED_POSITIVE_VERSION_1,
-    FILTERED_POSITIVE_VERSION_2,
-    FilteredPositiveIdentifierV0,
-    FilteredPositiveIdentifierV1,
-    FilteredPositiveIdentifierV2,
-)
+from crawler.filtered_positive_identifier import (FILTERED_POSITIVE_VERSION_0,
+                                                  FILTERED_POSITIVE_VERSION_1,
+                                                  FILTERED_POSITIVE_VERSION_2,
+                                                  FilteredPositiveIdentifierV0,
+                                                  FilteredPositiveIdentifierV1,
+                                                  FilteredPositiveIdentifierV2)
 from migrations import update_legacy_filtered_positives
 
 start_date_input = "201209_0000"

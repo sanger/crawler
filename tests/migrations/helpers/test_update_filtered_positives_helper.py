@@ -4,41 +4,25 @@ from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
-from crawler.constants import (
-    DART_STATE_PENDING,
-    FIELD_COORDINATE,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_MONGODB_ID,
-    FIELD_PLATE_BARCODE,
-    FIELD_RESULT,
-    FIELD_RNA_ID,
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_SOURCE,
-    MLWH_COORDINATE,
-    MLWH_FILTERED_POSITIVE,
-    MLWH_FILTERED_POSITIVE_TIMESTAMP,
-    MLWH_FILTERED_POSITIVE_VERSION,
-    MLWH_MONGODB_ID,
-    MLWH_PLATE_BARCODE,
-    MLWH_RESULT,
-    MLWH_RNA_ID,
-    MLWH_ROOT_SAMPLE_ID,
-    RESULT_VALUE_POSITIVE,
-)
+from crawler.constants import (DART_STATE_PENDING, FIELD_COORDINATE,
+                               FIELD_FILTERED_POSITIVE,
+                               FIELD_FILTERED_POSITIVE_TIMESTAMP,
+                               FIELD_FILTERED_POSITIVE_VERSION,
+                               FIELD_MONGODB_ID, FIELD_PLATE_BARCODE,
+                               FIELD_RESULT, FIELD_RNA_ID,
+                               FIELD_ROOT_SAMPLE_ID, FIELD_SOURCE,
+                               MLWH_COORDINATE, MLWH_FILTERED_POSITIVE,
+                               MLWH_FILTERED_POSITIVE_TIMESTAMP,
+                               MLWH_FILTERED_POSITIVE_VERSION, MLWH_MONGODB_ID,
+                               MLWH_PLATE_BARCODE, MLWH_RESULT, MLWH_RNA_ID,
+                               MLWH_ROOT_SAMPLE_ID, RESULT_VALUE_POSITIVE)
 from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES
 from crawler.types import SampleDoc
 from migrations.helpers.update_filtered_positives_helper import (
-    biomek_labclass_by_centre_name,
-    pending_plate_barcodes_from_dart,
-    positive_result_samples_from_mongo,
-    remove_cherrypicked_samples,
-    update_dart_fields,
-    update_filtered_positive_fields,
-    update_mlwh_filtered_positive_fields,
-    update_mongo_filtered_positive_fields,
-)
+    biomek_labclass_by_centre_name, pending_plate_barcodes_from_dart,
+    positive_result_samples_from_mongo, update_dart_fields,
+    update_filtered_positive_fields, update_mlwh_filtered_positive_fields,
+    update_mongo_filtered_positive_fields)
 
 # ----- test fixture helpers -----
 
@@ -137,65 +121,6 @@ def test_positive_result_samples_from_mongo_returns_expected_samples_no_plate_ba
     assert result == expected_samples
 
 
-# ----- test remove_cherrypicked_samples method -----
-
-
-def test_remove_cherrypicked_samples_throws_for_error_extracting_required_cp_info(config, testing_samples):
-    with patch(
-        "migrations.helpers.update_filtered_positives_helper.extract_required_cp_info", side_effect=Exception("Boom!")
-    ):
-        with pytest.raises(Exception):
-            remove_cherrypicked_samples(config, testing_samples)
-
-
-def test_remove_cherrypicked_samples_throws_for_error_getting_cherrypicked_samples(config, testing_samples):
-    with patch(
-        "migrations.helpers.update_filtered_positives_helper.get_cherrypicked_samples", side_effect=Exception("Boom!")
-    ):
-        with pytest.raises(Exception):
-            remove_cherrypicked_samples(config, testing_samples)
-
-
-def test_remove_cherrypicked_samples_returns_input_samples_with_none_cp_samples_df(config, testing_samples):
-    with patch("migrations.helpers.update_filtered_positives_helper.get_cherrypicked_samples", return_value=None):
-        with pytest.raises(Exception):
-            remove_cherrypicked_samples(config, testing_samples)
-
-
-def test_remove_cherrypicked_samples_returns_input_samples_with_empty_cp_samples_df(config, testing_samples):
-    cp_samples_df = MagicMock()
-    type(cp_samples_df).empty = PropertyMock(return_value=True)
-    with patch(
-        "migrations.helpers.update_filtered_positives_helper.get_cherrypicked_samples", return_value=cp_samples_df
-    ):
-        result = remove_cherrypicked_samples(config, testing_samples)
-        assert result == testing_samples
-
-
-def test_remove_cherrypicked_samples_throws_for_error_removing_cp_samples(config, testing_samples):
-    cp_samples_df = MagicMock()
-    type(cp_samples_df).empty = PropertyMock(return_value=False)
-    with patch(
-        "migrations.helpers.update_filtered_positives_helper.get_cherrypicked_samples", return_value=cp_samples_df
-    ):
-        with patch(
-            "migrations.helpers.update_filtered_positives_helper.remove_cp_samples", side_effect=Exception("Boom!")
-        ):
-            with pytest.raises(Exception):
-                remove_cherrypicked_samples(config, testing_samples)
-
-
-def test_remove_cherrypicked_samples_returns_non_cp_samples(config, testing_samples):
-    cp_samples_df = MagicMock()
-    type(cp_samples_df).empty = PropertyMock(return_value=False)
-    with patch(
-        "migrations.helpers.update_filtered_positives_helper.get_cherrypicked_samples", return_value=cp_samples_df
-    ):
-        with patch(
-            "migrations.helpers.update_filtered_positives_helper.remove_cp_samples", return_value=testing_samples
-        ):
-            result = remove_cherrypicked_samples(config, [])
-            assert result == testing_samples
 
 
 # ----- test update_filtered_positive_fields method -----
