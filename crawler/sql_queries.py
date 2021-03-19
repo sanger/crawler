@@ -1,4 +1,7 @@
 # flake8: noqa
+
+from crawler.constants import FIELD_COORDINATE, FIELD_PLATE_BARCODE, FIELD_ROOT_SAMPLE_ID, MONGO_DATETIME_FORMAT
+
 # SQL query to insert multiple rows into the MLWH
 SQL_MLWH_MULTIPLE_INSERT = """
 INSERT INTO lighthouse_sample (
@@ -120,3 +123,20 @@ SELECT DISTINCT [Labware LIMS BARCODE] FROM dbo.view_plate_maps WHERE [Labware s
 SQL_DART_SET_WELL_PROPERTY = "{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}"
 
 SQL_DART_ADD_PLATE = "{CALL dbo.plDART_PlateCreate (?,?,?)}"
+
+SQL_MLWH_GET_CP_SAMPLES = f"""
+    SELECT root_sample_id AS `{FIELD_ROOT_SAMPLE_ID}`, `{FIELD_PLATE_BARCODE}`,
+     phenotype AS `Result_lower`, `{FIELD_COORDINATE}`
+    FROM cherrypicked_samples
+    WHERE root_sample_id IN %(root_sample_ids)s
+    AND `{FIELD_PLATE_BARCODE}` IN %(plate_barcodes)s
+"""
+
+SQL_MLWH_GET_CP_SAMPLES_BY_DATE = f"""
+    SELECT root_sample_id AS `{FIELD_ROOT_SAMPLE_ID}`, `{FIELD_PLATE_BARCODE}`
+    FROM cherrypicked_samples
+    WHERE root_sample_id IN %(root_sample_ids)s
+    AND `{FIELD_PLATE_BARCODE}` IN %(plate_barcodes)s
+    AND created >= %(start_date)s
+    AND created < %(end_date)s
+"""

@@ -1,26 +1,28 @@
-import pandas as pd
-import pytest
-import numpy as np
 from datetime import datetime
 from unittest.mock import patch
-from migrations.helpers.update_legacy_filtered_positives_helper import (
-    filtered_positive_fields_set,
-    mongo_samples_by_date,
-    get_cherrypicked_samples_by_date,
-    split_mongo_samples_by_version,
-    update_mlwh_filtered_positive_fields_batched,
-)
+
+import numpy as np
+import pandas as pd
+import pytest
+
 from crawler.constants import (
     FIELD_PLATE_BARCODE,
     FIELD_ROOT_SAMPLE_ID,
+    MONGO_DATETIME_FORMAT,
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
-    MONGO_DATETIME_FORMAT,
 )
 from crawler.filtered_positive_identifier import (
     FILTERED_POSITIVE_VERSION_0,
     FILTERED_POSITIVE_VERSION_1,
     FILTERED_POSITIVE_VERSION_2,
+)
+from migrations.helpers.shared_helper import get_cherrypicked_samples_by_date
+from migrations.helpers.update_legacy_filtered_positives_helper import (
+    filtered_positive_fields_set,
+    mongo_samples_by_date,
+    split_mongo_samples_by_version,
+    update_mlwh_filtered_positive_fields_batched,
 )
 
 start_datetime = datetime.strptime("201209_0000", MONGO_DATETIME_FORMAT)
@@ -65,23 +67,19 @@ def test_filtered_positive_fields_set_returns_false_with_no_fields_set(
 # ----- get_cherrypicked_samples_by_date tests -----
 
 
-def test_get_cherrypicked_samples_by_date_raises_with_error_creating_engine(config):
+def test_get_cherrypicked_samples_by_date_not_raises_with_error_creating_engine(config):
     with patch(
-        "migrations.helpers.update_legacy_filtered_positives_helper.sqlalchemy.create_engine",
+        "migrations.helpers.shared_helper.sqlalchemy.create_engine",
         side_effect=ValueError("Boom!"),
     ):
-        with pytest.raises(ValueError):
-            get_cherrypicked_samples_by_date(config, [], [], "1970-01-01 00:00:01", V0_V1_CUTOFF_TIMESTAMP)
+        assert get_cherrypicked_samples_by_date(config, [], [], "1970-01-01 00:00:01", V0_V1_CUTOFF_TIMESTAMP) is None
 
 
-def test_get_cherrypicked_samples_by_date_raises_with_error_connecting(config):
-    with patch(
-        "migrations.helpers.update_legacy_filtered_positives_helper.sqlalchemy.create_engine"
-    ) as mock_sql_engine:
+def test_get_cherrypicked_samples_by_date_not_raises_with_error_connecting(config):
+    with patch("migrations.helpers.shared_helper.sqlalchemy.create_engine") as mock_sql_engine:
         mock_sql_engine().connect.side_effect = ValueError("Boom!")
 
-        with pytest.raises(ValueError):
-            get_cherrypicked_samples_by_date(config, [], [], "1970-01-01 00:00:01", V0_V1_CUTOFF_TIMESTAMP)
+        assert get_cherrypicked_samples_by_date(config, [], [], "1970-01-01 00:00:01", V0_V1_CUTOFF_TIMESTAMP) is None
 
 
 def test_get_cherrypicked_samples_by_date_v0_returns_expected(config, event_wh_data, mlwh_sentinel_cherrypicked):
