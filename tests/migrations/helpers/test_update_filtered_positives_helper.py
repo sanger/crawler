@@ -1,28 +1,43 @@
 from datetime import datetime
 from typing import List
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from crawler.constants import (DART_STATE_PENDING, FIELD_COORDINATE,
-                               FIELD_FILTERED_POSITIVE,
-                               FIELD_FILTERED_POSITIVE_TIMESTAMP,
-                               FIELD_FILTERED_POSITIVE_VERSION,
-                               FIELD_MONGODB_ID, FIELD_PLATE_BARCODE,
-                               FIELD_RESULT, FIELD_RNA_ID,
-                               FIELD_ROOT_SAMPLE_ID, FIELD_SOURCE,
-                               MLWH_COORDINATE, MLWH_FILTERED_POSITIVE,
-                               MLWH_FILTERED_POSITIVE_TIMESTAMP,
-                               MLWH_FILTERED_POSITIVE_VERSION, MLWH_MONGODB_ID,
-                               MLWH_PLATE_BARCODE, MLWH_RESULT, MLWH_RNA_ID,
-                               MLWH_ROOT_SAMPLE_ID, RESULT_VALUE_POSITIVE)
+from crawler.constants import (
+    DART_STATE_PENDING,
+    FIELD_COORDINATE,
+    FIELD_FILTERED_POSITIVE,
+    FIELD_FILTERED_POSITIVE_TIMESTAMP,
+    FIELD_FILTERED_POSITIVE_VERSION,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_SOURCE,
+    MLWH_COORDINATE,
+    MLWH_FILTERED_POSITIVE,
+    MLWH_FILTERED_POSITIVE_TIMESTAMP,
+    MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_MONGODB_ID,
+    MLWH_PLATE_BARCODE,
+    MLWH_RESULT,
+    MLWH_RNA_ID,
+    MLWH_ROOT_SAMPLE_ID,
+    RESULT_VALUE_POSITIVE,
+)
 from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES
 from crawler.types import SampleDoc
 from migrations.helpers.update_filtered_positives_helper import (
-    biomek_labclass_by_centre_name, pending_plate_barcodes_from_dart,
-    positive_result_samples_from_mongo, update_dart_fields,
-    update_filtered_positive_fields, update_mlwh_filtered_positive_fields,
-    update_mongo_filtered_positive_fields)
+    biomek_labclass_by_centre_name,
+    pending_plate_barcodes_from_dart,
+    positive_result_samples_from_mongo,
+    update_dart_fields,
+    update_filtered_positive_fields,
+    update_mlwh_filtered_positive_fields,
+    update_mongo_filtered_positive_fields,
+)
 
 # ----- test fixture helpers -----
 
@@ -119,8 +134,6 @@ def test_positive_result_samples_from_mongo_returns_expected_samples_no_plate_ba
     expected_samples = [testing_samples[0], testing_samples[-1]]  # only the first and last samples are positive
     result = positive_result_samples_from_mongo(config)
     assert result == expected_samples
-
-
 
 
 # ----- test update_filtered_positive_fields method -----

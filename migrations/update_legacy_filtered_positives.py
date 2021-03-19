@@ -3,22 +3,31 @@ import logging.config
 import time
 from datetime import datetime
 
-from crawler.constants import (FILTERED_POSITIVE_FIELDS_SET_DATE,
-                               MONGO_DATETIME_FORMAT, V0_V1_CUTOFF_TIMESTAMP,
-                               V1_V2_CUTOFF_TIMESTAMP)
+from crawler.constants import (
+    FILTERED_POSITIVE_FIELDS_SET_DATE,
+    MONGO_DATETIME_FORMAT,
+    V0_V1_CUTOFF_TIMESTAMP,
+    V1_V2_CUTOFF_TIMESTAMP,
+)
 from crawler.filtered_positive_identifier import (
-    FILTERED_POSITIVE_VERSION_0, FILTERED_POSITIVE_VERSION_1,
-    FILTERED_POSITIVE_VERSION_2, filtered_positive_identifier_by_version)
-from crawler.helpers.cherrypicked_samples import (
-    extract_required_cp_info, get_cherrypicked_samples_by_date)
+    FILTERED_POSITIVE_VERSION_0,
+    FILTERED_POSITIVE_VERSION_1,
+    FILTERED_POSITIVE_VERSION_2,
+    filtered_positive_identifier_by_version,
+)
+from crawler.helpers.cherrypicked_samples import extract_required_cp_info, get_cherrypicked_samples_by_date
 from crawler.helpers.general_helpers import get_config
 from migrations.helpers.shared_helper import valid_datetime_string
 from migrations.helpers.update_filtered_positives_helper import (
-    update_filtered_positive_fields, update_mongo_filtered_positive_fields)
+    update_filtered_positive_fields,
+    update_mongo_filtered_positive_fields,
+)
 from migrations.helpers.update_legacy_filtered_positives_helper import (
-    filtered_positive_fields_set, mongo_samples_by_date,
+    filtered_positive_fields_set,
+    mongo_samples_by_date,
     split_mongo_samples_by_version,
-    update_mlwh_filtered_positive_fields_batched)
+    update_mlwh_filtered_positive_fields_batched,
+)
 
 logger = logging.getLogger(__name__)
 

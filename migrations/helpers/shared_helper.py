@@ -4,9 +4,9 @@ import traceback
 from datetime import datetime
 from typing import Optional
 
-logger = logging.getLogger(__name__)
-
 from crawler.constants import MONGO_DATETIME_FORMAT
+
+logger = logging.getLogger(__name__)
 
 
 def print_exception() -> None:
@@ -36,5 +36,3 @@ def valid_datetime_string(s_datetime: Optional[str]) -> bool:
     except Exception:
         print_exception()
         return False
-
-

@@ -5,16 +5,18 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from crawler.constants import (FIELD_PLATE_BARCODE, FIELD_ROOT_SAMPLE_ID,
-                               MONGO_DATETIME_FORMAT, V0_V1_CUTOFF_TIMESTAMP,
-                               V1_V2_CUTOFF_TIMESTAMP)
-from crawler.filtered_positive_identifier import (FILTERED_POSITIVE_VERSION_0,
-                                                  FILTERED_POSITIVE_VERSION_1,
-                                                  FILTERED_POSITIVE_VERSION_2)
+from crawler.constants import FIELD_PLATE_BARCODE, FIELD_ROOT_SAMPLE_ID, MONGO_DATETIME_FORMAT
+from crawler.filtered_positive_identifier import (
+    FILTERED_POSITIVE_VERSION_0,
+    FILTERED_POSITIVE_VERSION_1,
+    FILTERED_POSITIVE_VERSION_2,
+)
 from migrations.helpers.update_legacy_filtered_positives_helper import (
-    filtered_positive_fields_set, mongo_samples_by_date,
+    filtered_positive_fields_set,
+    mongo_samples_by_date,
     split_mongo_samples_by_version,
-    update_mlwh_filtered_positive_fields_batched)
+    update_mlwh_filtered_positive_fields_batched,
+)
 
 start_datetime = datetime.strptime("201209_0000", MONGO_DATETIME_FORMAT)
 end_datetime = datetime.strptime("201217_0000", MONGO_DATETIME_FORMAT)
@@ -53,8 +55,6 @@ def test_filtered_positive_fields_set_returns_false_with_no_fields_set(
     filtered_positive_testing_samples_no_version_set,
 ):
     assert filtered_positive_fields_set(config, start_datetime, end_datetime) is False
-
-
 
 
 # ----- split_mongo_samples_by_version tests -----

@@ -7,25 +7,32 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.operations import UpdateOne
 
-from crawler.constants import (COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES,
-                               FIELD_BARCODE, FIELD_CREATED_AT, FIELD_LAB_ID,
-                               FIELD_LH_SAMPLE_UUID,
-                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_MONGODB_ID,
-                               FIELD_PLATE_BARCODE, FIELD_ROOT_SAMPLE_ID,
-                               FIELD_UPDATED_AT, MONGO_DATETIME_FORMAT)
-from crawler.db.mongo import (create_mongo_client, get_mongo_collection,
-                              get_mongo_db)
-from crawler.db.mysql import (create_mysql_connection,
-                              run_mysql_executemany_query)
-from crawler.helpers.cherrypicked_samples import (extract_required_cp_info,
-                                                  get_cherrypicked_samples,
-                                                  remove_cherrypicked_samples)
+from crawler.constants import (
+    COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
+    FIELD_BARCODE,
+    FIELD_CREATED_AT,
+    FIELD_LAB_ID,
+    FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_UPDATED_AT,
+    MONGO_DATETIME_FORMAT,
+)
+from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
+from crawler.helpers.cherrypicked_samples import (
+    extract_required_cp_info,
+    get_cherrypicked_samples,
+    remove_cherrypicked_samples,
+)
 from crawler.helpers.general_helpers import map_mongo_sample_to_mysql
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from crawler.types import Config, SampleDoc, SourcePlateDoc
 from migrations.helpers.shared_helper import valid_datetime_string
-from migrations.helpers.update_filtered_positives_helper import \
-    update_dart_fields
+from migrations.helpers.update_filtered_positives_helper import update_dart_fields
 
 ##
 # Requirements:

@@ -6,16 +6,26 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from crawler.constants import (FIELD_COORDINATE, FIELD_CREATED_AT,
-                               FIELD_LAB_ID, FIELD_MONGODB_ID,
-                               FIELD_PLATE_BARCODE, FIELD_RESULT, FIELD_RNA_ID,
-                               FIELD_ROOT_SAMPLE_ID, FIELD_UPDATED_AT,
-                               MONGO_DATETIME_FORMAT, V0_V1_CUTOFF_TIMESTAMP,
-                               V1_V2_CUTOFF_TIMESTAMP)
+from crawler.constants import (
+    FIELD_COORDINATE,
+    FIELD_CREATED_AT,
+    FIELD_LAB_ID,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_UPDATED_AT,
+    V0_V1_CUTOFF_TIMESTAMP,
+    V1_V2_CUTOFF_TIMESTAMP,
+)
 from crawler.helpers.cherrypicked_samples import (
-    extract_required_cp_info, filter_out_cherrypicked_samples,
-    get_cherrypicked_samples, get_cherrypicked_samples_by_date,
-    remove_cherrypicked_samples)
+    extract_required_cp_info,
+    filter_out_cherrypicked_samples,
+    get_cherrypicked_samples,
+    get_cherrypicked_samples_by_date,
+    remove_cherrypicked_samples,
+)
 
 
 def generate_example_samples(range, start_datetime):
@@ -404,23 +414,17 @@ def test_get_cherrypicked_samples_by_date_v1_returns_expected(config, event_wh_d
     pd.testing.assert_frame_equal(expected, returned_samples)
 
 
-
-
 # ----- test filter_out_cherrypicked_samples method -----
 
 
 def test_filter_out_cherrypicked_samples_throws_for_error_extracting_required_cp_info(config, testing_samples):
-    with patch(
-        "crawler.helpers.cherrypicked_samples.extract_required_cp_info", side_effect=Exception("Boom!")
-    ):
+    with patch("crawler.helpers.cherrypicked_samples.extract_required_cp_info", side_effect=Exception("Boom!")):
         with pytest.raises(Exception):
             filter_out_cherrypicked_samples(config, testing_samples)
 
 
 def test_filter_out_cherrypicked_samples_throws_for_error_getting_cherrypicked_samples(config, testing_samples):
-    with patch(
-        "crawler.helpers.cherrypicked_samples.get_cherrypicked_samples", side_effect=Exception("Boom!")
-    ):
+    with patch("crawler.helpers.cherrypicked_samples.get_cherrypicked_samples", side_effect=Exception("Boom!")):
         with pytest.raises(Exception):
             filter_out_cherrypicked_samples(config, testing_samples)
 
@@ -434,9 +438,7 @@ def test_filter_out_cherrypicked_samples_returns_input_samples_with_none_cp_samp
 def test_filter_out_cherrypicked_samples_returns_input_samples_with_empty_cp_samples_df(config, testing_samples):
     cp_samples_df = MagicMock()
     type(cp_samples_df).empty = PropertyMock(return_value=True)
-    with patch(
-        "crawler.helpers.cherrypicked_samples.get_cherrypicked_samples", return_value=cp_samples_df
-    ):
+    with patch("crawler.helpers.cherrypicked_samples.get_cherrypicked_samples", return_value=cp_samples_df):
         result = filter_out_cherrypicked_samples(config, testing_samples)
         assert result == testing_samples
 
@@ -444,12 +446,8 @@ def test_filter_out_cherrypicked_samples_returns_input_samples_with_empty_cp_sam
 def test_filter_out_cherrypicked_samples_throws_for_error_removing_cp_samples(config, testing_samples):
     cp_samples_df = MagicMock()
     type(cp_samples_df).empty = PropertyMock(return_value=False)
-    with patch(
-        "crawler.helpers.cherrypicked_samples.get_cherrypicked_samples", return_value=cp_samples_df
-    ):
-        with patch(
-            "crawler.helpers.cherrypicked_samples.remove_cherrypicked_samples", side_effect=Exception("Boom!")
-        ):
+    with patch("crawler.helpers.cherrypicked_samples.get_cherrypicked_samples", return_value=cp_samples_df):
+        with patch("crawler.helpers.cherrypicked_samples.remove_cherrypicked_samples", side_effect=Exception("Boom!")):
             with pytest.raises(Exception):
                 filter_out_cherrypicked_samples(config, testing_samples)
 
@@ -457,14 +455,7 @@ def test_filter_out_cherrypicked_samples_throws_for_error_removing_cp_samples(co
 def test_filter_out_cherrypicked_samples_returns_non_cp_samples(config, testing_samples):
     cp_samples_df = MagicMock()
     type(cp_samples_df).empty = PropertyMock(return_value=False)
-    with patch(
-        "crawler.helpers.cherrypicked_samples.get_cherrypicked_samples", return_value=cp_samples_df
-    ):
-        with patch(
-            "crawler.helpers.cherrypicked_samples.remove_cherrypicked_samples", return_value=testing_samples
-        ):
+    with patch("crawler.helpers.cherrypicked_samples.get_cherrypicked_samples", return_value=cp_samples_df):
+        with patch("crawler.helpers.cherrypicked_samples.remove_cherrypicked_samples", return_value=testing_samples):
             result = filter_out_cherrypicked_samples(config, [])
             assert result == testing_samples
-
-
-

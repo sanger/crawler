@@ -5,13 +5,12 @@ import pandas as pd
 import sqlalchemy
 from pandas import DataFrame
 
-from crawler.constants import (FIELD_PLATE_BARCODE, FIELD_ROOT_SAMPLE_ID,
-                               MONGO_DATETIME_FORMAT)
-from crawler.sql_queries import (SQL_MLWH_GET_CP_SAMPLES,
-                                 SQL_MLWH_GET_CP_SAMPLES_BY_DATE)
+from crawler.constants import FIELD_PLATE_BARCODE, FIELD_ROOT_SAMPLE_ID
+from crawler.sql_queries import SQL_MLWH_GET_CP_SAMPLES, SQL_MLWH_GET_CP_SAMPLES_BY_DATE
 from crawler.types import Config, SampleDoc
 
 logger = logging.getLogger(__name__)
+
 
 def extract_required_cp_info(samples: List[SampleDoc]) -> Tuple[Set[str], Set[str]]:
     root_sample_ids = set()
@@ -44,6 +43,7 @@ def filter_out_cherrypicked_samples(config: Config, samples: List[SampleDoc]) ->
         return remove_cherrypicked_samples(samples, cp_samples)
     else:
         return samples
+
 
 def get_cherrypicked_samples(
     config: Config,
@@ -129,8 +129,6 @@ def remove_cherrypicked_samples(samples: List[SampleDoc], cherry_picked_samples:
             samples,
         )
     )
-
-
 
 
 def params_for_cherrypicked_samples_query(
