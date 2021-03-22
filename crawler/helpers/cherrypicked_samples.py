@@ -149,6 +149,7 @@ def params_for_cherrypicked_samples_by_date_query(
     end_date: str,
     chunk_size: int = 50000,
 ) -> Iterator[Dict]:
+    # TODO: Use [dictionary union](https://www.python.org/dev/peps/pep-0584/) when upgrading to Python 3.9
     for params in params_for_cherrypicked_samples_query(root_sample_ids, plate_barcodes, chunk_size):
         yield {
             **params,

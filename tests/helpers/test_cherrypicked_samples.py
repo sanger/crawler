@@ -107,12 +107,15 @@ def test_remove_cherrypicked_samples():
 
 # ----- get_cherrypicked_samples tests -----
 
-# Test Scenario
-# - Mocking database responses
-# - Only the Sentinel query returns matches (No Beckman)
-# - No chunking: a single query is made in which all matches are returned
-# - No duplication of returned matches
+
 def test_get_cherrypicked_samples_no_beckman(config):
+    """
+    Test Scenario
+    - Mocking database responses
+    - Only the Sentinel query returns matches (No Beckman)
+    - No chunking: a single query is made in which all matches are returned
+    - No duplication of returned matches
+    """
     expected = [
         # Cherrypicking query response
         pd.DataFrame(["MCM001", "MCM003", "MCM005"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0, 1, 2]),
@@ -128,12 +131,14 @@ def test_get_cherrypicked_samples_no_beckman(config):
             assert returned_samples.at[2, FIELD_ROOT_SAMPLE_ID] == "MCM005"  # type: ignore
 
 
-# Test Scenario
-# - Mocking database responses
-# - Only the Sentinel queries return matches (No Beckman)
-# - Chunking: multiple queries are made, with all matches contained in the sum of these queries
-# - No duplication of returned matches
 def test_get_cherrypicked_samples_chunking_no_beckman(config):
+    """
+    Test Scenario
+    - Mocking database responses
+    - Only the Sentinel queries return matches (No Beckman)
+    - Chunking: multiple queries are made, with all matches contained in the sum of these queries
+    - No duplication of returned matches
+    """
     # Note: This represents the results of three different (Sentinel, Beckman) sets of
     # database queries, each Sentinel query getting indexed from 0. Do not change the
     # indices here unless you have modified the behaviour of the query.
@@ -153,12 +158,15 @@ def test_get_cherrypicked_samples_chunking_no_beckman(config):
             pd.testing.assert_frame_equal(expected, returned_samples)
 
 
-# Test Scenario
-# - Actual database responses
-# - Only the Sentinel queries return matches (No Beckman)
-# - Chunking: multiple queries are made, with all matches contained in the sum of these queries
-# - Duplication of returned matches across different chunks: duplicates should be filtered out
 def test_get_cherrypicked_samples_repeat_tests_no_beckman(config, mlwh_sentinel_cherrypicked, event_wh_data):
+    """
+    Test Scenario
+    - Actual database responses
+    - Only the Sentinel queries return matches (No Beckman)
+    - Chunking: multiple queries are made, with all matches contained in the sum of these queries
+    - Duplication of returned matches across different chunks: duplicates should be filtered out
+    """
+
     # the following come from MLWH_SAMPLE_STOCK_RESOURCE in test data
     root_sample_ids = ["root_1", "root_2", "root_3", "root_1"]
     plate_barcodes = ["pb_1", "pb_2", "pb_3"]
@@ -180,12 +188,15 @@ def test_get_cherrypicked_samples_repeat_tests_no_beckman(config, mlwh_sentinel_
     pd.testing.assert_frame_equal(expected, returned_samples)
 
 
-# Test Scenario
-# - Mocking database responses
-# - Only the Beckman query returns matches (No Sentinel)
-# - No chunking: a single query is made in which all matches are returned
-# - No duplication of returned matches
 def test_get_cherrypicked_samples_no_sentinel(config):
+    """
+    Test Scenario
+    - Mocking database responses
+    - Only the Beckman query returns matches (No Sentinel)
+    - No chunking: a single query is made in which all matches are returned
+    - No duplication of returned matches
+    """
+
     expected = [
         # Cherrypicking query response
         pd.DataFrame(["MCM001", "MCM003", "MCM005"], columns=[FIELD_ROOT_SAMPLE_ID], index=[0, 1, 2]),
@@ -201,12 +212,15 @@ def test_get_cherrypicked_samples_no_sentinel(config):
             assert returned_samples.at[2, FIELD_ROOT_SAMPLE_ID] == "MCM005"  # type: ignore
 
 
-# Test Scenario
-# - Mocking database responses
-# - Only the Beckman queries return matches (No Sentinel)
-# - Chunking: multiple queries are made, with all matches contained in the sum of these queries
-# - No duplication of returned matches
 def test_get_cherrypicked_samples_chunking_no_sentinel(config):
+    """
+    Test Scenario
+    - Mocking database responses
+    - Only the Beckman queries return matches (No Sentinel)
+    - Chunking: multiple queries are made, with all matches contained in the sum of these queries
+    - No duplication of returned matches
+    """
+
     # Note: This represents the results of three different (Sentinel, Beckman) sets of
     # database queries, each Beckman query getting indexed from 0. Do not change the
     # indices here unless you have modified the behaviour of the query.
@@ -226,12 +240,15 @@ def test_get_cherrypicked_samples_chunking_no_sentinel(config):
             pd.testing.assert_frame_equal(expected, returned_samples)
 
 
-# Test Scenario
-# - Actual database responses
-# - Only the Beckman queries return matches (No Sentinel)
-# - Chunking: multiple queries are made, with all matches contained in the sum of these queries
-# - Duplication of returned matches across different chunks: duplicates should be filtered out
 def test_get_cherrypicked_samples_repeat_tests_no_sentinel(config, mlwh_beckman_cherrypicked, event_wh_data):
+    """
+    Test Scenario
+    - Actual database responses
+    - Only the Beckman queries return matches (No Sentinel)
+    - Chunking: multiple queries are made, with all matches contained in the sum of these queries
+    - Duplication of returned matches across different chunks: duplicates should be filtered out
+    """
+
     # the following come from MLWH_SAMPLE_LIGHTHOUSE_SAMPLE in test data
     root_sample_ids = ["root_5", "root_6", "root_5"]
     plate_barcodes = ["pb_4", "pb_5", "pb_6"]
@@ -249,12 +266,15 @@ def test_get_cherrypicked_samples_repeat_tests_no_sentinel(config, mlwh_beckman_
     pd.testing.assert_frame_equal(expected, returned_samples)
 
 
-# Test Scenario
-# - Mocking database responses
-# - Both Sentinel and Beckman queries return matches
-# - No chunking: a single query is made (per workflow) in which all matches are returned
-# - Duplication of returned matches across different workflows: duplicates should be filtered out
 def test_get_cherrypicked_samples_sentinel_and_beckman(config):
+    """
+    Test Scenario
+    - Mocking database responses
+    - Both Sentinel and Beckman queries return matches
+    - No chunking: a single query is made (per workflow) in which all matches are returned
+    - Duplication of returned matches across different workflows: duplicates should be filtered out
+    """
+
     expected = [
         # Cherrypicking query response
         pd.DataFrame(
@@ -282,12 +302,15 @@ def test_get_cherrypicked_samples_sentinel_and_beckman(config):
             assert returned_samples.at[3, FIELD_ROOT_SAMPLE_ID] == "MCM005"
 
 
-# Test Scenario
-# - Mocking database responses
-# - Both Sentinel and Beckman queries return matches
-# - Chunking: multiple queries are made (per workflow), with all matches contained in the sum
-# - Duplication of returned matches across different workflows: duplicates should be filtered out
 def test_get_cherrypicked_samples_chunking_sentinel_and_beckman(config):
+    """
+    Test Scenario
+    - Mocking database responses
+    - Both Sentinel and Beckman queries return matches
+    - Chunking: multiple queries are made (per workflow), with all matches contained in the sum
+    - Duplication of returned matches across different workflows: duplicates should be filtered out
+    """
+
     # Note: This represents the results of three different (Sentinel, Beckman) sets of
     # database queries, each query getting indexed from 0. Do not change the
     # indices here unless you have modified the behaviour of the query.
@@ -336,12 +359,15 @@ def test_get_cherrypicked_samples_chunking_sentinel_and_beckman(config):
             pd.testing.assert_frame_equal(expected, returned_samples)
 
 
-# Test Scenario
-# - Actual database responses
-# - cherrypicked_samples query returns matches
-# - Chunking: multiple queries are made, with all matches contained in the sum of these queries
-# - Duplication of returned matches across different chunks: duplicates should be filtered out
 def test_get_cherrypicked_samples_repeat_tests_sentinel_and_beckman(config, mlwh_cherrypicked_samples, event_wh_data):
+    """
+    Test Scenario
+    - Actual database responses
+    - cherrypicked_samples query returns matches
+    - Chunking: multiple queries are made, with all matches contained in the sum of these queries
+    - Duplication of returned matches across different chunks: duplicates should be filtered out
+    """
+
     # the following come from MLWH_SAMPLE_STOCK_RESOURCE and MLWH_SAMPLE_LIGHTHOUSE_SAMPLE in test data
     root_sample_ids = ["root_1", "root_2", "root_3", "root_4", "root_5", "root_6", "root_1"]
     plate_barcodes = ["pb_1", "pb_3", "pb_4", "pb_5", "pb_6"]
