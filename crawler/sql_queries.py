@@ -124,19 +124,19 @@ SQL_DART_SET_WELL_PROPERTY = "{CALL dbo.plDART_PlateUpdateWell (?,?,?,?)}"
 
 SQL_DART_ADD_PLATE = "{CALL dbo.plDART_PlateCreate (?,?,?)}"
 
-SQL_MLWH_GET_CP_SAMPLES = f"""
-    SELECT root_sample_id AS `{FIELD_ROOT_SAMPLE_ID}`, `{FIELD_PLATE_BARCODE}`,
-     phenotype AS `Result_lower`, `{FIELD_COORDINATE}`
-    FROM cherrypicked_samples
-    WHERE root_sample_id IN %(root_sample_ids)s
-    AND `{FIELD_PLATE_BARCODE}` IN %(plate_barcodes)s
-"""
+SQL_MLWH_GET_CP_SAMPLES = (
+    f"SELECT root_sample_id AS `{FIELD_ROOT_SAMPLE_ID}`, `{FIELD_PLATE_BARCODE}`,"
+    f" phenotype AS `Result_lower`, `{FIELD_COORDINATE}`"
+    f" FROM cherrypicked_samples"
+    f" WHERE root_sample_id IN %(root_sample_ids)s"
+    f" AND `{FIELD_PLATE_BARCODE}` IN %(plate_barcodes)s"
+)
 
-SQL_MLWH_GET_CP_SAMPLES_BY_DATE = f"""
-    SELECT root_sample_id AS `{FIELD_ROOT_SAMPLE_ID}`, `{FIELD_PLATE_BARCODE}`
-    FROM cherrypicked_samples
-    WHERE root_sample_id IN %(root_sample_ids)s
-    AND `{FIELD_PLATE_BARCODE}` IN %(plate_barcodes)s
-    AND created >= %(start_date)s
-    AND created < %(end_date)s
-"""
+SQL_MLWH_GET_CP_SAMPLES_BY_DATE = (
+    f"SELECT root_sample_id AS `{FIELD_ROOT_SAMPLE_ID}`, `{FIELD_PLATE_BARCODE}`"
+    f" FROM cherrypicked_samples"
+    f" WHERE root_sample_id IN %(root_sample_ids)s"
+    f" AND `{FIELD_PLATE_BARCODE}` IN %(plate_barcodes)s"
+    f" AND created >= %(start_date)s"
+    f" AND created < %(end_date)s"
+)

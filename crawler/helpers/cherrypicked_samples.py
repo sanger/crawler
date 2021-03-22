@@ -123,12 +123,11 @@ def remove_cherrypicked_samples(samples: List[SampleDoc], cherry_picked_samples:
         List[Sample]: The original list of samples minus the cherry-picked samples.
     """
     cherry_picked_sets = [{cp_sample[0], cp_sample[1]} for cp_sample in cherry_picked_samples]
-    return list(
-        filter(
-            lambda sample: {sample[FIELD_ROOT_SAMPLE_ID], sample[FIELD_PLATE_BARCODE]} not in cherry_picked_sets,
-            samples,
-        )
+    filtered = filter(
+        lambda sample: {sample[FIELD_ROOT_SAMPLE_ID], sample[FIELD_PLATE_BARCODE]} not in cherry_picked_sets,
+        samples,
     )
+    return list(filtered)
 
 
 def params_for_cherrypicked_samples_query(

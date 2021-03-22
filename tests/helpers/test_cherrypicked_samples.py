@@ -298,7 +298,7 @@ def test_get_cherrypicked_samples_chunking_sentinel_and_beckman(config):
                 "MCM001",
                 "MCM001",
                 "MCM002",
-            ],  # Sentinel  # Beckman  # Beckman
+            ],  # Sentinel, Beckman, Beckman
             columns=[FIELD_ROOT_SAMPLE_ID],
             index=[0, 1, 2],
         ),
@@ -307,7 +307,7 @@ def test_get_cherrypicked_samples_chunking_sentinel_and_beckman(config):
                 "MCM003",
                 "MCM003",
                 "MCM004",
-            ],  # Sentinel  # Beckman  # Beckman
+            ],  # Sentinel, Beckman, Beckman
             columns=[FIELD_ROOT_SAMPLE_ID],
             index=[0, 1, 2],
         ),
@@ -316,7 +316,7 @@ def test_get_cherrypicked_samples_chunking_sentinel_and_beckman(config):
                 "MCM005",
                 "MCM005",
                 "MCM006",
-            ],  # Sentinel  # Beckman  # Beckman
+            ],  # Sentinel, Beckman, Beckman
             columns=[FIELD_ROOT_SAMPLE_ID],
             index=[0, 1, 2],
         ),
