@@ -18,8 +18,7 @@ config.LOGGING["loggers"]["crawler"]["level"] = "DEBUG"
 config.LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]
 config.LOGGING["formatters"]["colored"][
     "format"
-] = "%(asctime)-15s %(name)-60s:%(lineno)-3s %(log_color)s%(levelname)-7s %(message)s"
-
+] = "{asctime:<15} {name:<60}:{lineno:<3} {log_color}{levelname:<7} {message}"
 logging.config.dictConfig(config.LOGGING)
 
 ##
