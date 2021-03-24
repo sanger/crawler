@@ -19,8 +19,8 @@ def mock_helper_imports():
 
 
 @pytest.fixture
-def mock_remove_cherrypicked():
-    with patch("migrations.update_filtered_positives.remove_cherrypicked_samples") as mock_remove_cp:
+def mock_filter_out_cherrypicked_samples():
+    with patch("migrations.update_filtered_positives.filter_out_cherrypicked_samples") as mock_remove_cp:
         yield mock_remove_cp
 
 
@@ -152,7 +152,7 @@ def test_update_filtered_positives_omitting_dart_aborts_with_no_positive_samples
 
 
 def test_update_filtered_positives_catches_error_removing_cherrypicked_samples(
-    mock_helper_imports, mock_remove_cherrypicked, mock_helper_database_updates
+    mock_helper_imports, mock_filter_out_cherrypicked_samples, mock_helper_database_updates
 ):
     mock_get_plate_barcodes, mock_get_positive_samples = mock_helper_imports
     mock_update_mongo, mock_update_mlwh, mock_update_dart = mock_helper_database_updates
@@ -160,7 +160,7 @@ def test_update_filtered_positives_catches_error_removing_cherrypicked_samples(
     # mock removing cherrypicked samples to throw
     mock_get_plate_barcodes.return_value = ["123", "456"]
     mock_get_positive_samples.return_value = [{"plate_barcode": "123"}, {"plate_barcode": "456"}]
-    mock_remove_cherrypicked.side_effect = NotImplementedError("Boom!")
+    mock_filter_out_cherrypicked_samples.side_effect = NotImplementedError("Boom!")
 
     # call the migration
     update_filtered_positives.run("crawler.config.integration")
@@ -172,7 +172,7 @@ def test_update_filtered_positives_catches_error_removing_cherrypicked_samples(
 
 
 def test_update_filtered_positives_aborts_with_no_non_cherrypicked_samples(
-    mock_helper_imports, mock_remove_cherrypicked, mock_helper_database_updates
+    mock_helper_imports, mock_filter_out_cherrypicked_samples, mock_helper_database_updates
 ):
     mock_get_plate_barcodes, mock_get_positive_samples = mock_helper_imports
     mock_update_mongo, mock_update_mlwh, mock_update_dart = mock_helper_database_updates
@@ -180,7 +180,7 @@ def test_update_filtered_positives_aborts_with_no_non_cherrypicked_samples(
     # mock removing cherrypicked samples to throw
     mock_get_plate_barcodes.return_value = ["123", "456"]
     mock_get_positive_samples.return_value = [{"plate_barcode": "123"}, {"plate_barcode": "456"}]
-    mock_remove_cherrypicked.return_value = []
+    mock_filter_out_cherrypicked_samples.return_value = []
 
     # call the migration
     update_filtered_positives.run("crawler.config.integration")
@@ -192,7 +192,7 @@ def test_update_filtered_positives_aborts_with_no_non_cherrypicked_samples(
 
 
 def test_update_filtered_positives_catches_error_determining_filtered_positive_results(
-    mock_helper_imports, mock_remove_cherrypicked, mock_update_positives, mock_helper_database_updates
+    mock_helper_imports, mock_filter_out_cherrypicked_samples, mock_update_positives, mock_helper_database_updates
 ):
     mock_get_plate_barcodes, mock_get_positive_samples = mock_helper_imports
     mock_update_mongo, mock_update_mlwh, mock_update_dart = mock_helper_database_updates
@@ -200,7 +200,7 @@ def test_update_filtered_positives_catches_error_determining_filtered_positive_r
     # mock determining the filtered positive fields to throw
     mock_get_plate_barcodes.return_value = ["123", "456"]
     mock_get_positive_samples.return_value = [{"plate_barcode": "123"}, {"plate_barcode": "456"}]
-    mock_remove_cherrypicked.return_value = [{"plate_barcode": "123"}]
+    mock_filter_out_cherrypicked_samples.return_value = [{"plate_barcode": "123"}]
     mock_update_positives.side_effect = NotImplementedError("Boom!")
 
     # call the migration
@@ -213,7 +213,7 @@ def test_update_filtered_positives_catches_error_determining_filtered_positive_r
 
 
 def test_update_filtered_positives_catches_error_updating_samples_in_mongo(
-    mock_helper_imports, mock_remove_cherrypicked, mock_update_positives, mock_helper_database_updates
+    mock_helper_imports, mock_filter_out_cherrypicked_samples, mock_update_positives, mock_helper_database_updates
 ):
     mock_get_plate_barcodes, mock_get_positive_samples = mock_helper_imports
     mock_update_mongo, mock_update_mlwh, mock_update_dart = mock_helper_database_updates
@@ -221,7 +221,7 @@ def test_update_filtered_positives_catches_error_updating_samples_in_mongo(
     # mock updating the samples in mongo to throw
     mock_get_plate_barcodes.return_value = ["123", "456"]
     mock_get_positive_samples.return_value = [{"plate_barcode": "123"}, {"plate_barcode": "456"}]
-    mock_remove_cherrypicked.return_value = [{"plate_barcode": "123"}]
+    mock_filter_out_cherrypicked_samples.return_value = [{"plate_barcode": "123"}]
     mock_update_mongo.side_effect = NotImplementedError("Boom!")
 
     # call the migration
@@ -234,7 +234,7 @@ def test_update_filtered_positives_catches_error_updating_samples_in_mongo(
 
 
 def test_update_filtered_positives_aborts_failing_updating_samples_in_mongo(
-    mock_helper_imports, mock_remove_cherrypicked, mock_update_positives, mock_helper_database_updates
+    mock_helper_imports, mock_filter_out_cherrypicked_samples, mock_update_positives, mock_helper_database_updates
 ):
     mock_get_plate_barcodes, mock_get_positive_samples = mock_helper_imports
     mock_update_mongo, mock_update_mlwh, mock_update_dart = mock_helper_database_updates
@@ -242,7 +242,7 @@ def test_update_filtered_positives_aborts_failing_updating_samples_in_mongo(
     # mock updating the samples in mongo to fail
     mock_get_plate_barcodes.return_value = ["123", "456"]
     mock_get_positive_samples.return_value = [{"plate_barcode": "123"}, {"plate_barcode": "456"}]
-    mock_remove_cherrypicked.return_value = [{"plate_barcode": "123"}]
+    mock_filter_out_cherrypicked_samples.return_value = [{"plate_barcode": "123"}]
     mock_update_mongo.return_value = False
 
     # call the migration
@@ -255,7 +255,7 @@ def test_update_filtered_positives_aborts_failing_updating_samples_in_mongo(
 
 
 def test_update_filtered_positives_catched_error_updating_samples_in_mlwh(
-    mock_helper_imports, mock_remove_cherrypicked, mock_update_positives, mock_helper_database_updates
+    mock_helper_imports, mock_filter_out_cherrypicked_samples, mock_update_positives, mock_helper_database_updates
 ):
     mock_get_plate_barcodes, mock_get_positive_samples = mock_helper_imports
     mock_update_mongo, mock_update_mlwh, mock_update_dart = mock_helper_database_updates
@@ -263,7 +263,7 @@ def test_update_filtered_positives_catched_error_updating_samples_in_mlwh(
     # mock updating the samples in mlwh to throw
     mock_get_plate_barcodes.return_value = ["123", "456"]
     mock_get_positive_samples.return_value = [{"plate_barcode": "123"}, {"plate_barcode": "456"}]
-    mock_remove_cherrypicked.return_value = [{"plate_barcode": "123"}]
+    mock_filter_out_cherrypicked_samples.return_value = [{"plate_barcode": "123"}]
     mock_update_mongo.return_value = True
     mock_update_mlwh.side_effect = NotImplementedError("Boom!")
 
@@ -277,7 +277,7 @@ def test_update_filtered_positives_catched_error_updating_samples_in_mlwh(
 
 
 def test_update_filtered_positives_aborts_failing_updating_samples_in_mlwh(
-    mock_helper_imports, mock_remove_cherrypicked, mock_update_positives, mock_helper_database_updates
+    mock_helper_imports, mock_filter_out_cherrypicked_samples, mock_update_positives, mock_helper_database_updates
 ):
     mock_get_plate_barcodes, mock_get_positive_samples = mock_helper_imports
     mock_update_mongo, mock_update_mlwh, mock_update_dart = mock_helper_database_updates
@@ -285,7 +285,7 @@ def test_update_filtered_positives_aborts_failing_updating_samples_in_mlwh(
     # mock updating the samples in mlwh to fail
     mock_get_plate_barcodes.return_value = ["123", "456"]
     mock_get_positive_samples.return_value = [{"plate_barcode": "123"}, {"plate_barcode": "456"}]
-    mock_remove_cherrypicked.return_value = [{"plate_barcode": "123"}]
+    mock_filter_out_cherrypicked_samples.return_value = [{"plate_barcode": "123"}]
     mock_update_mongo.return_value = True
     mock_update_mlwh.return_value = False
 
@@ -299,7 +299,7 @@ def test_update_filtered_positives_aborts_failing_updating_samples_in_mlwh(
 
 
 def test_update_filtered_positives_catches_error_updating_samples_in_dart(
-    mock_helper_imports, mock_remove_cherrypicked, mock_update_positives, mock_helper_database_updates
+    mock_helper_imports, mock_filter_out_cherrypicked_samples, mock_update_positives, mock_helper_database_updates
 ):
     mock_get_plate_barcodes, mock_get_positive_samples = mock_helper_imports
     mock_update_mongo, mock_update_mlwh, mock_update_dart = mock_helper_database_updates
@@ -307,7 +307,7 @@ def test_update_filtered_positives_catches_error_updating_samples_in_dart(
     # mock updating the samples in dart to throw
     mock_get_plate_barcodes.return_value = ["123", "456"]
     mock_get_positive_samples.return_value = [{"plate_barcode": "123"}, {"plate_barcode": "456"}]
-    mock_remove_cherrypicked.return_value = [{"plate_barcode": "123"}]
+    mock_filter_out_cherrypicked_samples.return_value = [{"plate_barcode": "123"}]
     mock_update_mongo.return_value = True
     mock_update_mlwh.return_value = True
     mock_update_dart.side_effect = NotImplementedError("Boom!")
@@ -322,7 +322,7 @@ def test_update_filtered_positives_catches_error_updating_samples_in_dart(
 
 
 def test_update_filtered_positives_catches_aborts_failing_updating_samples_in_dart(
-    mock_helper_imports, mock_remove_cherrypicked, mock_update_positives, mock_helper_database_updates
+    mock_helper_imports, mock_filter_out_cherrypicked_samples, mock_update_positives, mock_helper_database_updates
 ):
     mock_get_plate_barcodes, mock_get_positive_samples = mock_helper_imports
     mock_update_mongo, mock_update_mlwh, mock_update_dart = mock_helper_database_updates
@@ -330,7 +330,7 @@ def test_update_filtered_positives_catches_aborts_failing_updating_samples_in_da
     # mock updating the samples in dart to fail
     mock_get_plate_barcodes.return_value = ["123", "456"]
     mock_get_positive_samples.return_value = [{"plate_barcode": "123"}, {"plate_barcode": "456"}]
-    mock_remove_cherrypicked.return_value = [{"plate_barcode": "123"}]
+    mock_filter_out_cherrypicked_samples.return_value = [{"plate_barcode": "123"}]
     mock_update_mongo.return_value = True
     mock_update_mlwh.return_value = True
     mock_update_dart.return_value = False
@@ -345,7 +345,7 @@ def test_update_filtered_positives_catches_aborts_failing_updating_samples_in_da
 
 
 def test_update_filtered_positives_outputs_success(
-    mock_helper_imports, mock_remove_cherrypicked, mock_update_positives, mock_helper_database_updates
+    mock_helper_imports, mock_filter_out_cherrypicked_samples, mock_update_positives, mock_helper_database_updates
 ):
     mock_get_plate_barcodes, mock_get_positive_samples = mock_helper_imports
     mock_update_mongo, mock_update_mlwh, mock_update_dart = mock_helper_database_updates
@@ -354,7 +354,7 @@ def test_update_filtered_positives_outputs_success(
     mock_get_plate_barcodes.return_value = ["123", "456"]
     mock_get_positive_samples.return_value = [{"plate_barcode": "123"}, {"plate_barcode": "456"}]
     non_cp_samples = [{"plate_barcode": "123"}]
-    mock_remove_cherrypicked.return_value = non_cp_samples
+    mock_filter_out_cherrypicked_samples.return_value = non_cp_samples
     mock_update_mongo.return_value = True
     mock_update_mlwh.return_value = True
     mock_update_dart.return_value = True
@@ -381,7 +381,7 @@ def test_update_filtered_positives_outputs_success(
 
 
 def test_update_filtered_positives_omitting_dart_outputs_success(
-    mock_helper_imports, mock_remove_cherrypicked, mock_update_positives, mock_helper_database_updates
+    mock_helper_imports, mock_filter_out_cherrypicked_samples, mock_update_positives, mock_helper_database_updates
 ):
     _, mock_get_positive_samples = mock_helper_imports
     mock_update_mongo, mock_update_mlwh, mock_update_dart = mock_helper_database_updates
@@ -389,7 +389,7 @@ def test_update_filtered_positives_omitting_dart_outputs_success(
     # mock a successful update
     mock_get_positive_samples.return_value = [{"plate_barcode": "123"}, {"plate_barcode": "456"}]
     non_cp_samples = [{"plate_barcode": "123"}]
-    mock_remove_cherrypicked.return_value = non_cp_samples
+    mock_filter_out_cherrypicked_samples.return_value = non_cp_samples
     mock_update_mongo.return_value = True
     mock_update_mlwh.return_value = True
     mock_update_dart.return_value = True

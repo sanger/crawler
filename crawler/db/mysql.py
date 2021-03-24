@@ -11,9 +11,7 @@ from sqlalchemy.engine.base import Engine
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 
 from crawler.types import Config, ModifiedRow
-from crawler.helpers.general_helpers import (
-    map_mongo_sample_to_mysql,
-)
+from crawler.helpers.general_helpers import map_mongo_sample_to_mysql
 
 logger = logging.getLogger(__name__)
 
