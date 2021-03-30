@@ -54,7 +54,7 @@ CENTRES = [
         "lab_id_default": "MK",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/MILK",
         "sftp_file_regex_unconsolidated_surveillance": f"^MK_{CENTRE_REGEX_SFTP_FILE_HERON}",
-        "sftp_file_regex_consolidated_surveillance": r"^(RNA|cpRNA)\d+\.csv$",
+        "sftp_file_regex_consolidated_surveillance": r"^(cp)?RNA\d+\.csv$",
         "sftp_file_regex_consolidated_eagle": r"^(EGL|EMK)\d+\.csv$",
         "sftp_root_read": "project-heron/UK-Biocenter/Sanger Reports",
         "file_names_to_ignore": ["MK_sanger_report_200715_2000_master.csv"],
