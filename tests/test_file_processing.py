@@ -184,19 +184,32 @@ def test_process_files_one_wrong_format(mongo_database, config, testing_files_fo
 UNCONSOLIDATED_SURVEILLANCE_FILENAME = "AP_sanger_report_200503_2338.csv"
 CONSOLIDATED_EAGLE_FILENAME = "APE200503.csv"
 CONSOLIDATED_SURVEILLANCE_FILENAME = "AP-rna-200503.csv"
+MK_CONSOLIDATED_SURVEILLANCE_FILENAME1 = "RNA123456.csv"
+MK_CONSOLIDATED_SURVEILLANCE_FILENAME2 = "cpRNA123456.csv"
+AP_CONSOLIDATED_SURVEILLANCE_FILENAME1 = "AP-chp-12345678.csv"
+AP_CONSOLIDATED_SURVEILLANCE_FILENAME2 = "AP-rna-123456.csv"
+GLASGOW_CONSOLIDATED_SURVEILLANCE_FILENAME1 = "GLA123456a.csv"
+GLASGOW_CONSOLIDATED_SURVEILLANCE_FILENAME2 = "GLS-GP-123456.csv"
 
 
 @mark.parametrize(
-    "filename, expected_value",
+    "filename, centre_config_index, expected_value",
     [
-        [UNCONSOLIDATED_SURVEILLANCE_FILENAME, True],
-        [CONSOLIDATED_EAGLE_FILENAME, True],
-        [CONSOLIDATED_SURVEILLANCE_FILENAME, True],
-        ["MK-200503.csv", False],
+        [UNCONSOLIDATED_SURVEILLANCE_FILENAME, 0, True],
+        [CONSOLIDATED_EAGLE_FILENAME, 0, True],
+        [AP_CONSOLIDATED_SURVEILLANCE_FILENAME1, 0, True],
+        [AP_CONSOLIDATED_SURVEILLANCE_FILENAME2, 0, True],
+        ["AP-123456.csv", 1, False],
+        [MK_CONSOLIDATED_SURVEILLANCE_FILENAME1, 1, True],
+        [MK_CONSOLIDATED_SURVEILLANCE_FILENAME2, 1, True],
+        ["MK-200503.csv", 1, False],
+        [GLASGOW_CONSOLIDATED_SURVEILLANCE_FILENAME1, 2, True],
+        [GLASGOW_CONSOLIDATED_SURVEILLANCE_FILENAME2, 2, True],
+        ["GLS-123456.csv", 2, False],
     ],
 )
-def test_can_identify_valid_filename(config, filename, expected_value):
-    centre = Centre(config, config.CENTRES[0])
+def test_can_identify_valid_filename(config, filename, centre_config_index, expected_value):
+    centre = Centre(config, config.CENTRES[centre_config_index])
     assert centre.is_valid_filename(filename) is expected_value
 
 
