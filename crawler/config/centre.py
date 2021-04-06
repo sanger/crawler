@@ -29,6 +29,9 @@ from crawler.constants import BIOMEK_LABWARE_CLASS_BIO, BIOMEK_LABWARE_CLASS_KIN
 CENTRE_REGEX_BARCODE = r"^[\W_]*([\w-]*)_([A-Z]\d{0,1}\d)[\W_]*$"
 CENTRE_DIR_BACKUPS = "data/backups"
 CENTRE_REGEX_SFTP_FILE_HERON = r"sanger_report_(\d{6}_\d{4}).*\.csv$"
+REGEX_SURVEILLANCE_GLS_1 = r"^GLA\d+[A-Za-z]\.csv$"
+REGEX_SURVEILLANCE_GLS_2 = r"^[a-zA-Z]{3}-[a-zA-Z]{2}-\d+\.csv$"
+
 CENTRES = [
     {
         "barcode_field": FIELD_RNA_ID,
@@ -38,7 +41,7 @@ CENTRES = [
         "lab_id_default": "AP",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/ALDP",
         "sftp_file_regex_unconsolidated_surveillance": f"^AP_{CENTRE_REGEX_SFTP_FILE_HERON}",
-        "sftp_file_regex_consolidated_surveillance": r"^AP-rna-\d+\.csv$",
+        "sftp_file_regex_consolidated_surveillance": r"^[a-zA-Z]{2}-[a-zA-Z]{3}-\d+\.csv$",
         "sftp_file_regex_consolidated_eagle": r"^APE\d+\.csv$",
         "sftp_root_read": "project-heron_alderly-park",
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
@@ -51,8 +54,8 @@ CENTRES = [
         "lab_id_default": "MK",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/MILK",
         "sftp_file_regex_unconsolidated_surveillance": f"^MK_{CENTRE_REGEX_SFTP_FILE_HERON}",
-        "sftp_file_regex_consolidated_surveillance": r"^RNA\d+\.csv$",
-        "sftp_file_regex_consolidated_eagle": r"^EGL\d+\.csv$",
+        "sftp_file_regex_consolidated_surveillance": r"^(cp)?RNA\d+\.csv$",
+        "sftp_file_regex_consolidated_eagle": r"^(EGL|EMK)\d+\.csv$",
         "sftp_root_read": "project-heron/UK-Biocenter/Sanger Reports",
         "file_names_to_ignore": ["MK_sanger_report_200715_2000_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
@@ -65,7 +68,7 @@ CENTRES = [
         "lab_id_default": "GLS",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/QEUH",
         "sftp_file_regex_unconsolidated_surveillance": f"^GLS_{CENTRE_REGEX_SFTP_FILE_HERON}",
-        "sftp_file_regex_consolidated_surveillance": r"^GLA\d+[A-Za-z]\.csv$",
+        "sftp_file_regex_consolidated_surveillance": f"({REGEX_SURVEILLANCE_GLS_1}|{REGEX_SURVEILLANCE_GLS_2})",
         "sftp_file_regex_consolidated_eagle": r"^(EGG|GLS)\d+\.csv$",
         "sftp_root_read": "project-heron_glasgow",
         "file_names_to_ignore": ["GLS_sanger_report_200713_0001_master.csv"],
