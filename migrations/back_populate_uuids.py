@@ -18,7 +18,6 @@ from crawler.constants import (
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import create_mysql_connection
 from crawler.helpers.cherrypicked_samples import extract_required_cp_info
-from crawler.helpers.general_helpers import get_config
 from crawler.types import Config, SampleDoc
 from migrations.helpers.shared_helper import valid_datetime_string
 from migrations.helpers.update_filtered_positives_helper import update_dart_fields
