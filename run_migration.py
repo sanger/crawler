@@ -4,7 +4,7 @@ import sys
 
 from crawler.helpers.general_helpers import get_config
 from migrations import (
-    sample_timestamps,
+    back_populate_uuids,
     update_dart,
     update_filtered_positives,
     update_legacy_filtered_positives,
@@ -30,16 +30,11 @@ logging.config.dictConfig(config.LOGGING)
 ##
 
 print("Migration names:")
-print("* sample_timestamps")
 print("* update_mlwh_with_legacy_samples")
 print("* update_mlwh_and_dart_with_legacy_samples")
 print("* update_filtered_positives")
 print("* update_legacy_filtered_positives")
-
-
-def migration_sample_timestamps():
-    print("Running sample_timestamps migration")
-    sample_timestamps.run()
+print("* back_populate_uuids")
 
 
 def migration_update_mlwh_with_legacy_samples():
@@ -76,6 +71,20 @@ def migration_update_filtered_positives():
     update_filtered_positives.run(omit_dart=omit_dart)
 
 
+def migration_back_populate_uuids():
+    if not len(sys.argv) == 4:
+        print(
+            "Please add both start and end datetime range arguments for this migration "
+            "(format YYMMDD_HHmm e.g. 200115_1200, inclusive), aborting"
+        )
+        return
+
+    s_start_datetime = sys.argv[2]
+    s_end_datetime = sys.argv[3]
+    print("Running back_populate_uuids")
+    back_populate_uuids.run(config, s_start_datetime=s_start_datetime, s_end_datetime=s_end_datetime)
+
+
 def migration_update_legacy_filtered_positives():
     if not len(sys.argv) == 4:
         print(
@@ -92,11 +101,11 @@ def migration_update_legacy_filtered_positives():
 
 def migration_by_name(migration_name):
     switcher = {
-        "sample_timestamps": migration_sample_timestamps,
         "update_mlwh_with_legacy_samples": migration_update_mlwh_with_legacy_samples,
         "update_mlwh_and_dart_with_legacy_samples": migration_update_mlwh_and_dart_with_legacy_samples,
         "update_filtered_positives": migration_update_filtered_positives,
         "update_legacy_filtered_positives": migration_update_legacy_filtered_positives,
+        "back_populate_uuids": migration_back_populate_uuids,
     }
     # Get the function from switcher dictionary
     func = switcher.get(migration_name, lambda: print("Invalid migration name, aborting"))
