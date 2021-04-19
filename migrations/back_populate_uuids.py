@@ -1,6 +1,6 @@
 import logging
 import logging.config
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Dict, Iterator, List, Tuple
 
 from bson.objectid import ObjectId
@@ -27,17 +27,17 @@ logger = logging.getLogger(__name__)
 UUID_UPDATED = "uuid_updated"
 
 """
-1. get list of all samples from lighthouse_sample table
+1. get list of all samples from lighthouse_sample table where updated_at is a known timestamp
 2. iterate through 1. by matching the `_id` with `mongodb_id`; if the `sample_uuid` is different, overwrite and add a
-flag that the UUID has been update
+flag that the UUID has been updated
 3. get all the mongo samples that have had their UUID updated
 4. run the DART migration over these samples for the same date which was used when populating DART
 """
 
 
-def run(config: Config, s_start_datetime: str = "", s_end_datetime: str = "") -> None:
-    start_datetime, end_datetime = validate_args(
-        config=config, s_start_datetime=s_start_datetime, s_end_datetime=s_end_datetime
+def run(config: Config, s_start_datetime: str, s_end_datetime: str, updated_at: str) -> None:
+    start_datetime, end_datetime, updated_at_datetime = validate_args(
+        config=config, s_start_datetime=s_start_datetime, s_end_datetime=s_end_datetime, updated_at=updated_at
     )
 
     logger.info("-" * 80)
@@ -46,12 +46,14 @@ def run(config: Config, s_start_datetime: str = "", s_end_datetime: str = "") ->
 
     logger.info(f"Starting update process with Start datetime {start_datetime} and End datetime {end_datetime}")
 
-    update_mongo(config=config)
+    update_mongo(config=config, updated_at=updated_at_datetime)
 
     update_dart(config=config, start_datetime=start_datetime, end_datetime=end_datetime)
 
 
-def validate_args(config: Config, s_start_datetime: str = "", s_end_datetime: str = "") -> Tuple[datetime, datetime]:
+def validate_args(
+    config: Config, s_start_datetime: str, s_end_datetime: str, updated_at: str
+) -> Tuple[datetime, datetime, datetime]:
     base_msg = "Aborting run: "
     if not config:
         msg = f"{base_msg} Config required"
@@ -68,25 +70,34 @@ def validate_args(config: Config, s_start_datetime: str = "", s_end_datetime: st
         logger.error(msg)
         raise Exception(msg)
 
+    if not valid_datetime_string(updated_at):
+        msg = f"{base_msg} Expected format of updated_at datetime is YYMMDD_HHmm"
+        logger.error(msg)
+        raise Exception(msg)
+
     start_datetime = datetime.strptime(s_start_datetime, MONGO_DATETIME_FORMAT)
     end_datetime = datetime.strptime(s_end_datetime, MONGO_DATETIME_FORMAT)
+    updated_at_datetime = datetime.strptime(updated_at, MONGO_DATETIME_FORMAT)
 
     if start_datetime > end_datetime:
         msg = f"{base_msg} End datetime must be greater than Start datetime"
         logger.error(msg)
         raise Exception(msg)
 
-    return start_datetime, end_datetime
+    return start_datetime, end_datetime, updated_at_datetime
 
 
-def update_mongo(config: Config) -> None:
+def update_mongo(config: Config, updated_at: datetime) -> None:
     with create_mongo_client(config) as client:
         mongo_db = get_mongo_db(config, client)
 
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
         counter = 0
-        for mysql_sample in mysql_sample_generator(config=config):
+        for mysql_sample in mysql_sample_generator(
+            config=config,
+            query=f"SELECT * FROM lighthouse_sample WHERE updated_at > '{updated_at.strftime('%Y-%m-%d %H:%M')}'",
+        ):
             mlwh_sample_uuid = mysql_sample.get(MLWH_LH_SAMPLE_UUID)
 
             if mlwh_sample_uuid is None:
@@ -107,20 +118,20 @@ def update_mongo(config: Config) -> None:
                     }
                 },
             )
-            # print(mongo_sample)
+
             if mongo_sample is not None:
                 counter += 1
 
             if (counter % 5000) == 0:
-                print(f"{counter = }")
+                logger.debug(f"{counter = }")
 
-        print(f"{counter = }")
+        logger.debug(f"{counter} samples updated in mongo")
 
 
-def mysql_sample_generator(config: Config) -> Iterator[Dict[str, Any]]:
+def mysql_sample_generator(config: Config, query: str) -> Iterator[Dict[str, Any]]:
     with create_mysql_connection(config=config, readonly=True) as connection:
         with connection.cursor(dictionary=True, buffered=False) as cursor:
-            cursor.execute("SELECT * FROM lighthouse_sample ORDER BY id DESC;")
+            cursor.execute(query)
             for row in cursor:
                 yield row
 
@@ -145,8 +156,6 @@ def update_dart(config: Config, start_datetime: datetime, end_datetime: datetime
 
         logger.debug(f"{len(plate_barcodes)} unique plate barcodes")
 
-        # add all the plates with non-cherrypicked samples (determined in step 2) to DART, as well as any
-        #       positive samples in these plates
         update_dart_fields(config, samples)
     except Exception as e:
         logger.error("Error while attempting to migrate all DBs")

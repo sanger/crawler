@@ -72,17 +72,22 @@ def migration_update_filtered_positives():
 
 
 def migration_back_populate_uuids():
-    if not len(sys.argv) == 4:
+    if not len(sys.argv) == 5:
         print(
-            "Please add both start and end datetime range arguments for this migration "
-            "(format YYMMDD_HHmm e.g. 200115_1200, inclusive), aborting"
+            "Please add start and end datetime range arguments and the updated_at timestamp for this migration "
+            "(start, end and updated_at datetime format YYMMDD_HHmm e.g. 200115_1200, inclusive), aborting"
         )
         return
 
     s_start_datetime = sys.argv[2]
     s_end_datetime = sys.argv[3]
+    updated_at = sys.argv[4]
+
     print("Running back_populate_uuids")
-    back_populate_uuids.run(config, s_start_datetime=s_start_datetime, s_end_datetime=s_end_datetime)
+
+    back_populate_uuids.run(
+        config, s_start_datetime=s_start_datetime, s_end_datetime=s_end_datetime, updated_at=updated_at
+    )
 
 
 def migration_update_legacy_filtered_positives():
@@ -113,9 +118,10 @@ def migration_by_name(migration_name):
     func()
 
 
-if len(sys.argv) > 1:
-    migration_name = sys.argv[1]
-    print(f"Migration name selected = {migration_name}")
-    migration_by_name(migration_name)
-else:
-    print("You must include a migration name as an argument after the command, aborting")
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        migration_name = sys.argv[1]
+        print(f"Migration name selected = {migration_name}")
+        migration_by_name(migration_name)
+    else:
+        print("You must include a migration name as an argument after the command, aborting")
