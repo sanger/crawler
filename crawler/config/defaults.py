@@ -19,7 +19,7 @@ LOCALHOST = os.environ.get("LOCALHOST", "127.0.0.1")
 ROOT_PASSWORD = os.environ.get("ROOT_PASSWORD", "")
 
 # mongo details
-MONGO_DB = "crawlerDevelopmentDB"
+MONGO_DB = "lighthouseDevelopmentDB"
 MONGO_HOST = LOCALHOST
 MONGO_PASSWORD = ""
 MONGO_PORT = 27017

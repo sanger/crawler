@@ -9,7 +9,6 @@ COLLECTION_CENTRES: Final[str] = "centres"
 COLLECTION_IMPORTS: Final[str] = "imports"
 COLLECTION_SAMPLES: Final[str] = "samples"
 COLLECTION_PRIORITY_SAMPLES: Final[str] = "priority_samples"
-COLLECTION_SAMPLES_HISTORY: Final[str] = "samples_history"
 COLLECTION_SOURCE_PLATES: Final[str] = "source_plates"
 
 ###

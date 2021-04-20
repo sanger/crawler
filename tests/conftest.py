@@ -3,15 +3,15 @@ import logging
 import logging.config
 import shutil
 from unittest.mock import patch
+
 import pytest
 import sqlalchemy
 from sqlalchemy import MetaData
 
 from crawler.constants import (
     COLLECTION_CENTRES,
-    COLLECTION_SAMPLES,
     COLLECTION_PRIORITY_SAMPLES,
-    COLLECTION_SAMPLES_HISTORY,
+    COLLECTION_SAMPLES,
     FIELD_FILTERED_POSITIVE,
     FIELD_MONGODB_ID,
     MLWH_TABLE_NAME,
@@ -28,8 +28,8 @@ from tests.data.testing_objects import (
     MLWH_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS,
     MONGO_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS,
     MONGO_SAMPLES_WITHOUT_FILTERED_POSITIVE_FIELDS,
-    TESTING_SAMPLES,
     TESTING_PRIORITY_SAMPLES,
+    TESTING_SAMPLES,
 )
 
 logger = logging.getLogger(__name__)
@@ -128,11 +128,6 @@ def priority_samples_collection_accessor(mongo_database):
 @pytest.fixture
 def centres_collection_accessor(mongo_database):
     return get_mongo_collection(mongo_database[1], COLLECTION_CENTRES)
-
-
-@pytest.fixture
-def samples_history_collection_accessor(mongo_database):
-    return get_mongo_collection(mongo_database[1], COLLECTION_SAMPLES_HISTORY)
 
 
 @pytest.fixture
