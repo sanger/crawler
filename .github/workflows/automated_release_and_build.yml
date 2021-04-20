@@ -51,7 +51,7 @@ jobs:
 
       - name: Set release tag
         # https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable
-        run: echo "RELEASE_VERSION=$([ ${GITHUB_REF##*/} = "develop" ] && printf '%s\n' $(cat .release_version)-develop || printf '%s\n' $(cat .release_version))" >> $GITHUB_ENV
+        run: echo "RELEASE_VERSION=$([ ${GITHUB_REF##*/} = "develop" ] && printf '%s\n' $(cat .release-version)-develop || printf '%s\n' $(cat .release-version))" >> $GITHUB_ENV
 
       - name: Create release
         id: create_release
