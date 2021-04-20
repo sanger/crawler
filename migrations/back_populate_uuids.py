@@ -122,7 +122,7 @@ def update_mongo(config: Config, updated_at: datetime) -> None:
             if mongo_sample is not None:
                 counter += 1
 
-            if (counter % 5000) == 0:
+            if counter > 0 and (counter % 5000) == 0:
                 logger.debug(f"{counter = }")
 
         logger.debug(f"{counter} samples updated in mongo")
