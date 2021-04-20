@@ -1,6 +1,6 @@
 import logging
 import logging.config
-from datetime import date, datetime
+from datetime import datetime
 from typing import Any, Dict, Iterator, List, Tuple
 
 from bson.objectid import ObjectId
