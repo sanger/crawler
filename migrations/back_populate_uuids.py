@@ -8,6 +8,7 @@ from pymongo.collection import Collection
 
 from crawler.constants import (
     COLLECTION_SAMPLES,
+    FIELD_CREATED_AT,
     FIELD_LH_SAMPLE_UUID,
     FIELD_MONGODB_ID,
     FIELD_UPDATED_AT,
@@ -168,7 +169,7 @@ def get_samples(samples_collection: Collection, start_datetime: datetime, end_da
     match = {
         "$match": {
             # Filter by the start and end dates and UUID updated
-            FIELD_UPDATED_AT: {"$gte": start_datetime, "$lte": end_datetime},
+            FIELD_CREATED_AT: {"$gte": start_datetime, "$lte": end_datetime},
             UUID_UPDATED: True,
         }
     }
