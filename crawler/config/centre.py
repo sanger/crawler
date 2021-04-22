@@ -106,7 +106,7 @@ CENTRES = [
         "barcode_field": FIELD_RNA_ID,
         "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Health Services Laboratories",
-        "prefix": "HSL",
+        "prefix": "HSLL",
         "lab_id_default": "HSLL",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/HSL",
         "sftp_file_regex_unconsolidated_surveillance": r"^$",
