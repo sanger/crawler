@@ -102,4 +102,18 @@ CENTRES = [
         "file_names_to_ignore": [r"^lw-randox-biocentre-box-((\d)|(1\d)|20)-.*$"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
     },
+    {
+        "barcode_field": FIELD_RNA_ID,
+        "barcode_regex": CENTRE_REGEX_BARCODE,
+        "name": "Health Services Laboratories",
+        "prefix": "HSLL",
+        "lab_id_default": "HSLL",
+        "backups_folder": f"{CENTRE_DIR_BACKUPS}/HSL",
+        "sftp_file_regex_unconsolidated_surveillance": r"^$",
+        "sftp_file_regex_consolidated_surveillance": r"^HSL\d+\.csv$",
+        "sftp_file_regex_consolidated_eagle": r"^$",
+        "sftp_root_read": "project-heron_hsl",
+        "file_names_to_ignore": [],
+        "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+    },
 ]
