@@ -1,4 +1,4 @@
-name: Python - check format, lint and type check
+name: Python - test
 
 on:
   push:
@@ -12,90 +12,114 @@ on:
 
 jobs:
   black:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
-
       - uses: actions/cache@v1
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/Pipfile') }}
           restore-keys: |
             ${{ runner.os }}-pip-
-
       - name: Install pipenv
         run: |
           pip install pipenv
-
       - name: Install dependencies
         run: |
           pipenv sync --dev --system
-
       - name: Check format with black
         run: |
           # stop the build if there are black formatting errors
           python -m black --check .
-
   flake8:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
-
       - uses: actions/cache@v1
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/Pipfile') }}
           restore-keys: |
             ${{ runner.os }}-pip-
-
       - name: Install pipenv
         run: |
           pip install pipenv
-
       - name: Install dependencies
         run: |
           pipenv sync --dev --system
-
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
           flake8
-
   mypy:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
-
       - uses: actions/cache@v1
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/Pipfile') }}
           restore-keys: |
             ${{ runner.os }}-pip-
-
       - name: Install pipenv
         run: |
           pip install pipenv
-
       - name: Install dependencies
         run: |
           pipenv sync --dev --system
-
       - name: Run mypy
         run: |
           python -m mypy .
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:4.2.5
+        ports:
+          - 27017:27017
+      mysql:
+        image: mysql:5.7
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_ROOT_PASSWORD: "null"
+          MYSQL_DATABASE: unified_warehouse_test
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - uses: actions/cache@v1
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/Pipfile') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      - name: Install pipenv
+        run: |
+          pip install pipenv
+      - name: Install dependencies
+        run: |
+          pipenv sync --dev --system
+      - name: Setup the test MLWH and Events databases
+        run: |
+          python setup_test_db.py
+      - name: Test with pytest
+        run: |
+          python -m pytest -vx
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
