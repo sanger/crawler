@@ -12,7 +12,6 @@ pytest = "*"
 pytest-cov = "*"
 pytest-freezegun = "*"
 black = "*"
-monkeytype = "*"
 
 [packages]
 pymongo = "~=3.10"
