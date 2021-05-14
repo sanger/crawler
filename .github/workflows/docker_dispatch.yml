@@ -13,7 +13,7 @@ env:
 
 jobs:
   build_and_publish:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Build the Docker image
