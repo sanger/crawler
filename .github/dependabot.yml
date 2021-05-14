@@ -1,0 +1,86 @@
+version: 2
+updates:
+- package-ecosystem: pip
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "07:00"
+    timezone: Europe/London
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: black
+    versions:
+    - 21.4b0
+    - 21.4b1
+    - 21.4b2
+    - 21.5b0
+    - 21.5b1
+  - dependency-name: mysql-connector-python
+    versions:
+    - 8.0.24
+    - 8.0.25
+  - dependency-name: sqlalchemy
+    versions:
+    - 1.4.1
+    - 1.4.11
+    - 1.4.12
+    - 1.4.13
+    - 1.4.14
+    - 1.4.15
+    - 1.4.2
+    - 1.4.3
+    - 1.4.4
+    - 1.4.5
+    - 1.4.6
+    - 1.4.7
+    - 1.4.8
+    - 1.4.9
+  - dependency-name: flake8
+    versions:
+    - 3.9.0
+    - 3.9.1
+    - 3.9.2
+  - dependency-name: pytest
+    versions:
+    - 6.2.3
+    - 6.2.4
+  - dependency-name: pymongo
+    versions:
+    - 3.11.3
+    - 3.11.4
+  - dependency-name: schedule
+    versions:
+    - 1.0.0
+    - 1.1.0
+  - dependency-name: colorlog
+    versions:
+    - 4.8.0
+    - 5.0.1
+  - dependency-name: pandas
+    versions:
+    - 1.2.2
+    - 1.2.3
+    - 1.2.4
+  - dependency-name: flake8-bugbear
+    versions:
+    - 21.3.1
+    - 21.3.2
+    - 21.4.3
+  - dependency-name: coverage
+    versions:
+    - "5.5"
+  - dependency-name: aiohttp
+    versions:
+    - 3.7.4
+  - dependency-name: mypy
+    versions:
+    - "0.812"
+  - dependency-name: cryptography
+    versions:
+    - 3.3.2
+  - dependency-name: pymysql
+    versions:
+    - 1.0.2
+  - dependency-name: more-itertools
+    versions:
+    - 8.7.0
