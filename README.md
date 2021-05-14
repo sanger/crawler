@@ -1,57 +1,73 @@
 # Crawler
 
-![CI python](https://github.com/sanger/crawler/workflows/CI%20python/badge.svg?branch=develop)
-![CI docker](https://github.com/sanger/crawler/workflows/CI%20docker/badge.svg?branch=develop)
+![CI](https://github.com/sanger/crawler/workflows/CI/badge.svg?branch=develop)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![codecov](https://codecov.io/gh/sanger/crawler/branch/develop/graph/badge.svg)](https://codecov.io/gh/sanger/crawler)
 
-This micro service saves sample information from external LIMS into a mongodb instance for easy
-querying.
+A microservice which parses CSV files of COVID-19 sample information, validated the information and
+saves valid data to MongoDB.
 
-## Table of contents
+## Table of Contents
 
 <!-- toc -->
 
-- [Requirements](#requirements)
+- [Requirements for Development](#requirements-for-development)
+- [Getting Started](#getting-started)
+  * [Configuring Environment](#configuring-environment)
+  * [Setup Steps](#setup-steps)
 - [Running](#running)
 - [Migrations](#migrations)
-  * [Updating the MLWH lighthouse_sample table](#updating-the-mlwh-lighthouse_sample-table)
+  * [Updating the MLWH `lighthouse_sample` Table](#updating-the-mlwh-lighthouse_sample-table)
+  * [Migrating Legacy Data to DART](#migrating-legacy-data-to-dart)
+- [Priority Samples](#priority-samples)
+  * [Glossary](#glossary)
   * [Filtered Positive Rules](#filtered-positive-rules)
     + [Version 0 `v0`](#version-0-v0)
     + [Version 1 `v1`](#version-1-v1)
     + [Version 2 `v2` - **Current Version**](#version-2-v2---current-version)
-    + [Propagating Filtered Positive version changes to MongoDB, MLWH and (optional) DART](#propagating-filtered-positive-version-changes-to-mongodb-mlwh-and-optional-dart)
-  * [Migrating legacy data to DART](#migrating-legacy-data-to-dart)
-- [Priority Samples](#priority-samples)
+    + [Propagating Filtered Positive version changes to MongoDB, MLWH and (optionally) DART](#propagating-filtered-positive-version-changes-to-mongodb-mlwh-and-optionally-dart)
 - [Testing](#testing)
-  * [Testing requirements](#testing-requirements)
-  * [Running tests](#running-tests)
-- [Formatting, type checking and linting](#formatting-type-checking-and-linting)
+  * [Testing Requirements](#testing-requirements)
+  * [Running Tests](#running-tests)
+- [Formatting, Type Checking and Linting](#formatting-type-checking-and-linting)
 - [Miscellaneous](#miscellaneous)
-  * [Naming conventions](#naming-conventions)
-  * [Updating the table of contents](#updating-the-table-of-contents)
+  * [Docker](#docker)
+  * [Troubleshooting](#troubleshooting)
+  * [Microsoft ODBC Driver for SQL Server](#microsoft-odbc-driver-for-sql-server)
+  * [Mongo Naming Conventions](#mongo-naming-conventions)
+  * [Updating the Table of Contents](#updating-the-table-of-contents)
 
 <!-- tocstop -->
 
-## Requirements
+## Requirements for Development
 
-- python - install the required version specified in `Pipfile`:
+The following tools are required for development:
 
-        [requires]
-        python_version = "<version>"
-
+- python (use `pyenv` or something similar to install the python version specified in the `Pipfile`)
 - install the required packages using [pipenv](https://github.com/pypa/pipenv):
 
         brew install pipenv
-        pipenv install --dev
 
 - Optionally, to test SFTP, [this](https://hub.docker.com/r/atmoz/sftp/) Docker image is helpful.
-
-- mongodb
+- mongodb (currently 4.2 is running in production)
 
         brew tap mongodb/brew
         brew install mongodb-community@4.2
         brew services start mongodb-community@4.2
+
+## Getting Started
+
+### Configuring Environment
+
+Create a `.env` file (or copy and rename the `.env.example`) file with the following values:
+
+    SETTINGS_MODULE=crawler.config.development
+
+### Setup Steps
+
+Install the require dependencies:
+
+    pipenv install --dev
 
 ## Running
 
@@ -74,10 +90,9 @@ The following runtime flags are available:
     --keep-files  keeps the CSV files after the runner has been executed
     --add-to-dart add samples to DART, by default they are not
 
-
 ## Migrations
 
-### Updating the MLWH lighthouse_sample table
+### Updating the MLWH `lighthouse_sample` Table
 
 When the crawler process runs nightly it should be updating the MLWH lighthouse_sample table as it goes with records for
 all rows that are inserted into MongoDB. If that MLWH insert process fails you should see a critical exception for the
@@ -99,9 +114,35 @@ Where the time format is YYMMDD_HHmm. Both start and end timestamps must be pres
 The process should not duplicate rows that are already present in MLWH, so you can be generous with your timestamp
 range.
 
+### Migrating Legacy Data to DART
+
+When the Beckman robots come online, we need to populate the DART database with the filtered positive samples that are
+available physically. This can be achieved using the 'update_dart' migration.
+
+This can also be used similarly to the existing MLWH migration: if a DART insert process fails, you will see a critical
+exception for the file in the Lighthouse-UI. After addressing reason for failure, run between relevant timestamps to
+re-insert/update data into DART.
+
+In short, this migration performs the following steps:
+
+1. Get the `RESULT = positive` samples (which are not controls) from mongo between a start and end date
+1. Removes samples from this list which have already been cherrypicked by inspecting the events in the MLWH
+1. Determining whether they are filtered positive samples using the latest rule
+1. Determining the plate barcode UUID
+1. Update mongo with the filtered positive and UUID values
+1. Update MLWH with the same filtered positive and UUID values
+1. Create/update the DART database with all the positive samples and setting the filtered positive samples as 'pickable'
+
+To run the migration:
+
+    python run_migration.py update_mlwh_and_dart_with_legacy_samples 200115_1200 200116_1600
+
+Where the time format is YYMMDD_HHmm. Both start and end timestamps must be present.
+
 ## Priority Samples
 
-### Glossary:
+### Glossary
+
 - **Important**: refers to samples that have must_sequence or preferentially_sequence set to True
 - **Positive**: refers to samples that have a _Positive_ Result
 - **Pickable**: samples that have _Filtered Positive_ set to True **or** are Important in a plate with state 'pending'
@@ -109,20 +150,21 @@ range.
 If a sample is prioritised it will be treated the same as a fit_to_pick sample.
 
 During the prioritisation run (after the file centres processing), any existing priority samples flagged as unprocessed will be:
-   - Updated in MLWH lighthouse_sample with the values of the priority (must_sequence and preferentially_sequence) added to it
-   - Inserted in DART as pickable if the plate is in state 'pending'
-   - Updated as 'processed' in mongo so it won't be processed again unless there is a change for it
+
+- Updated in MLWH lighthouse_sample with the values of the priority (must_sequence and preferentially_sequence) added to it
+- Inserted in DART as pickable if the plate is in state 'pending'
+- Updated as 'processed' in mongo so it won't be processed again unless there is a change for it
 
 This will be applied with the following set of rules:
-   - All records in mongodb from the priority_samples collection where **processed** is true will be ignored
-   - All new updates of prioritisation will be updated in MLWH
-   - If the sample is in a plate that does not have state 'pending' **no updates wiil be performed in DART for this sample**
-   even if there is any new prioritisation set for it.
-   - If the sample has filtered positive set to True, the sample will be flagged as **pickable** in DART
-   - If the sample has any priority setting (must_sequence or preferentially_sequence), the sample will be flagged as **pickable** in DART
-   - If the sample change its prioritisation to False, the setting for **pickable** will be removed in DART
-   - After a record from priority_samples in mongodb has been processed, it will be flagged as **processed** set to True
 
+- All records in mongodb from the priority_samples collection where **processed** is true will be ignored
+- All new updates of prioritisation will be updated in MLWH
+- If the sample is in a plate that does not have state 'pending' **no updates wiil be performed in DART for this sample**
+even if there is any new prioritisation set for it.
+- If the sample has filtered positive set to True, the sample will be flagged as **pickable** in DART
+- If the sample has any priority setting (must_sequence or preferentially_sequence), the sample will be flagged as **pickable** in DART
+- If the sample change its prioritisation to False, the setting for **pickable** will be removed in DART
+- After a record from priority_samples in mongodb has been processed, it will be flagged as **processed** set to True
 
 ### Filtered Positive Rules
 
@@ -163,7 +205,7 @@ A sample is filtered positive if:
 More information on this version can be found on [this](https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/Fit+to+pick+-+v2)
 Confluence page.
 
-#### Propagating Filtered Positive version changes to MongoDB, MLWH and (optional) DART
+#### Propagating Filtered Positive version changes to MongoDB, MLWH and (optionally) DART
 
 On changing the positive filtering version/definition, all unpicked samples stored in MongoDB, MLWH and DART need
 updating to determine whether they are still filtered positive under the new rules, and can therefore be cherrypicked.
@@ -183,34 +225,11 @@ By default, the migration will attempt to use DART, as it will safely fail if DA
 the user to reconsider what they are doing. However, using DART can be omitted by including the `omit_dart` flag.
 Neither process duplicates any data, instead updating existing entries.
 
-### Migrating legacy data to DART
 
-When the Beckman robots come online, we need to populate the DART database with the filtered positive samples that are
-available physically. This can be achieved using the 'update_dart' migration.
-
-This can also be used similarly to the existing MLWH migration: if a DART insert process fails, you will see a critical
-exception for the file in the Lighthouse-UI. After addressing reason for failure, run between relevant timestamps to
-re-insert/update data into DART.
-
-In short, this migration performs the following steps:
-
-1. Get the `RESULT = positive` samples (which are not controls) from mongo between a start and end date
-1. Removes samples from this list which have already been cherrypicked by inspecting the events in the MLWH
-1. Determining whether they are filtered positive samples using the latest rule
-1. Determining the plate barcode UUID
-1. Update mongo with the filtered positive and UUID values
-1. Update MLWH with the same filtered positive and UUID values
-1. Create/update the DART database with all the positive samples and setting the filtered positive samples as 'pickable'
-
-To run the migration:
-
-    python run_migration.py update_mlwh_and_dart_with_legacy_samples 200115_1200 200116_1600
-
-Where the time format is YYMMDD_HHmm. Both start and end timestamps must be present.
 
 ## Testing
 
-### Testing requirements
+### Testing Requirements
 
 The tests require a connection to the 'lighthouse_sample' table in the Multi-LIMS Warehouse (MLWH). The credentials for
 connecting to the MLWH are configured in the `defaults.py` file, or in the relevant environment file, for example
@@ -220,13 +239,13 @@ level folder (this is what it does in the CI):
 
     python setup_test_db.py
 
-### Running tests
+### Running Tests
 
 To run the tests, execute:
 
     python -m pytest -vs
 
-## Formatting, type checking and linting
+## Formatting, Type Checking and Linting
 
 Black is used as a formatter, to format code before commiting:
 
@@ -244,7 +263,9 @@ A little convenience script can be used to run the formatting, type checking and
 
     ./forlint.sh
 
-## Docker
+## Miscellaneous
+
+### Docker
 
 If you do not have root access pyodbc will not work if you use brew
 Using the docker compose you can set up the full stack and it will also set the correct environment variables
@@ -261,18 +282,17 @@ You will need to find the id of the container with image name crawler_runner
 
 There is now a volume for the runner so there is hot reloading i.e. changes in the code and tests will be updated when you rerun tests.
 
-## Miscellaneous
+### Troubleshooting
 
-### Mongo naming conventions
+### Microsoft ODBC Driver for SQL Server
+
+To make use of the ODBC driver on macOS, follow [this](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/install-microsoft-odbc-driver-sql-server-macos?view=sql-server-ver15#microsoft-odbc-17) guide by Microsoft.
+
+### Mongo Naming Conventions
 
 [This](https://stackoverflow.com/a/45335909) post was used for the naming conventions within mongo.
 
-### MonkeyType
-
-[MonkeyType](https://github.com/Instagram/MonkeyType) is useful to automatically create type annotations. View it's
-README for updated instructions on how to use it.
-
-### Updating the table of contents
+### Updating the Table of Contents
 
 Node is required to run npx:
 
