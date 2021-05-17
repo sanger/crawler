@@ -1,7 +1,7 @@
 # flake8: noqa
 import os
 
-from crawler.config.centre import *
+from crawler.config.centres import *
 from crawler.config.logging import *
 
 # setting here will overwrite those in 'centre.py'

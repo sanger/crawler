@@ -116,4 +116,18 @@ CENTRES = [
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
     },
+    {
+        "barcode_field": FIELD_RNA_ID,
+        "barcode_regex": CENTRE_REGEX_BARCODE,
+        "name": "Plymouth",
+        "prefix": "PLYM",
+        "lab_id_default": "PLYM",
+        "backups_folder": f"{CENTRE_DIR_BACKUPS}/PLYM",
+        "sftp_file_regex_unconsolidated_surveillance": f"^PLYM_{CENTRE_REGEX_SFTP_FILE_HERON}",
+        "sftp_file_regex_consolidated_surveillance": r"^PLY-chp-\d+\.csv$",
+        "sftp_file_regex_consolidated_eagle": r"^$",
+        "sftp_root_read": "project-heron_plym",
+        "file_names_to_ignore": [],
+        "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+    },
 ]
