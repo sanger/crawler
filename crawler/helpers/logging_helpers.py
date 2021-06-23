@@ -394,6 +394,18 @@ class AggregateType33(AggregateTypeBase):
         self.short_display_description = "Priority samples - Failed DART plate inserts"
 
 
+class AggregateType34(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 34"
+        self.error_level = ErrorLevel.ERROR
+        self.message = (
+            "{self.error_level.name}: Unconsolidated samples file provided by a centre that does not support them. "
+            f"({self.type_str})"
+        )
+        self.short_display_description = "File provided by unsupported centre"
+
+
 # Class to handle logging of errors of the various types per file
 class LoggingCollection:
     def __init__(self):
@@ -432,6 +444,7 @@ class LoggingCollection:
             "TYPE 31": AggregateType31(),
             "TYPE 32": AggregateType32(),
             "TYPE 33": AggregateType33(),
+            "TYPE 34": AggregateType34(),
         }
 
     def add_error(self, aggregate_error_type, message):
