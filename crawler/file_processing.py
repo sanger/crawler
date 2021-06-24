@@ -468,7 +468,9 @@ class CentreFile:
             "TYPE 34",
             f"File '{self.file_name}' is not being processed because unconsolidated "
             "sample files are unsupported by this centre.")
+
         self.backup_file()
+        self.create_import_record_for_file()
 
     def backup_filename(self) -> str:
         """Backup the file.

@@ -388,7 +388,7 @@ class AggregateType33(AggregateTypeBase):
         self.type_str = "TYPE 33"
         self.error_level = ErrorLevel.ERROR
         self.message = (
-            "{self.error_level.name}: Priority samples where the DART database inserts have failed for some plates. "
+            f"{self.error_level.name}: Priority samples where the DART database inserts have failed for some plates. "
             f"({self.type_str})"
         )
         self.short_display_description = "Priority samples - Failed DART plate inserts"
@@ -400,7 +400,7 @@ class AggregateType34(AggregateTypeBase):
         self.type_str = "TYPE 34"
         self.error_level = ErrorLevel.ERROR
         self.message = (
-            "{self.error_level.name}: Unconsolidated samples file provided by a centre that does not support them. "
+            f"{self.error_level.name}: Unconsolidated samples file provided by a centre that does not support them. "
             f"({self.type_str})"
         )
         self.short_display_description = "File provided by unsupported centre"
