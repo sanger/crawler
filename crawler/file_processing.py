@@ -89,6 +89,8 @@ from crawler.types import (
     SourcePlateDoc,
 )
 
+from crawler.config.centres import CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES
+
 logger = logging.getLogger(__name__)
 
 
@@ -161,21 +163,17 @@ class Centre:
             logger.debug(f"File state: {CentreFileState[centre_file.file_state.name]}")
 
             # Process depending on file state
-            if centre_file.file_state == CentreFileState.FILE_IN_BLACKLIST:
-                logger.warning("File in blacklist, skipping")
-                # next file
-                continue
-            elif centre_file.file_state == CentreFileState.FILE_NOT_PROCESSED_YET:
+            if centre_file.file_state == CentreFileState.FILE_NOT_PROCESSED_YET:
                 # process it
                 centre_file.process_samples(add_to_dart)
+            elif centre_file.file_state == CentreFileState.FILE_SHOULD_NOT_BE_PROCESSED:
+                centre_file.log_unprocessed()
+            elif centre_file.file_state == CentreFileState.FILE_IN_BLACKLIST:
+                logger.warning("File in blacklist, skipping")
             elif centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_ERROR:
                 logger.info("File already processed as errored, skipping")
-                # next file
-                continue
             elif centre_file.file_state == CentreFileState.FILE_PROCESSED_WITH_SUCCESS:
                 logger.info("File already processed successfully, skipping")
-                # next file
-                continue
             else:
                 # error unrecognised
                 logger.error(f"Unrecognised file state: {centre_file.file_state.name}")
@@ -365,6 +363,17 @@ class CentreFile:
 
         raise Exception("Unable to find the centre in the centre collection.")
 
+    def is_unconsolidated_surveillance_file(self) -> bool:
+        """Identifies whether this file is from the batch of unconsolidated surveillance files for the centre that uploaded it.
+
+        Returns:
+            bool: True if the filename matches the unconsolidated surveillance regex specified in the centre's configuration.
+                  False otherwise.
+        """
+        centre = self.get_centre_from_db()
+        compiled_regex = re.compile(centre["sftp_file_regex_unconsolidated_surveillance"])
+        return bool(compiled_regex.match(self.file_name))
+
     def set_state_for_file(self) -> CentreFileState:
         """Determines what state the file is in and whether it needs to be processed.
 
@@ -385,6 +394,14 @@ class CentreFile:
         # successfully
         elif self.checksum_match(SUCCESSES_DIR):
             self.file_state = CentreFileState.FILE_PROCESSED_WITH_SUCCESS
+
+        # check for this being an unconsolidated samples file where the centre doesn't support those
+        elif (
+                CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES in centre and
+                centre[CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES] and
+                self.is_unconsolidated_surveillance_file()
+             ):
+            self.file_state = CentreFileState.FILE_SHOULD_NOT_BE_PROCESSED
 
         # if checksum(s) differs or if the file was not present in success directory, process it
         else:
@@ -438,6 +455,20 @@ class CentreFile:
 
         self.backup_file()
         self.create_import_record_for_file()
+
+    def log_unprocessed(self) -> None:
+        """Log the file as unprocessed and ensure it won't be processed in future.
+
+        In this implementation, we assume the reason the file shouldn't be processed is that
+        the centre does not support processing of unconsolidated sample files.  If this reason
+        changes in future, either there should be a different method to handle that or an argument
+        added to this method to indicate the expected behaviour.
+        """
+        self.logging_collection.add_error(
+            "TYPE 34",
+            f"File '{self.file_name}' is not being processed because unconsolidated "
+            "sample files are unsupported by this centre.")
+        self.backup_file()
 
     def backup_filename(self) -> str:
         """Backup the file.
