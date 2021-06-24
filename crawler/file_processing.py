@@ -220,7 +220,7 @@ class Centre:
         return bool(eagle.match(filename))
 
     # This method should not be used with a not() in front of it as it can
-    # led to incorrect understanding of what is a filename
+    # lead to incorrect understanding of what is a filename
     # Eg:
     #    not(consolidated_surveillance) != unconsolidated_surveillance
     def is_consolidated_surveillance_filename(self, filename: str) -> bool:
