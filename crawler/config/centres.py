@@ -32,6 +32,8 @@ CENTRE_REGEX_SFTP_FILE_HERON = r"sanger_report_(\d{6}_\d{4}).*\.csv$"
 REGEX_SURVEILLANCE_GLS_1 = r"^GLA\d+[A-Za-z]\.csv$"
 REGEX_SURVEILLANCE_GLS_2 = r"^[a-zA-Z]{3}-[a-zA-Z]{2}-\d+\.csv$"
 
+CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES = "skip_unconsolidated_surveillance_files"
+
 CENTRES = [
     {
         "barcode_field": FIELD_RNA_ID,
@@ -45,6 +47,7 @@ CENTRES = [
         "sftp_file_regex_consolidated_eagle": r"^APE\d+\.csv$",
         "sftp_root_read": "project-heron_alderly-park",
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -59,6 +62,7 @@ CENTRES = [
         "sftp_root_read": "project-heron/UK-Biocenter/Sanger Reports",
         "file_names_to_ignore": ["MK_sanger_report_200715_2000_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -73,6 +77,7 @@ CENTRES = [
         "sftp_root_read": "project-heron_glasgow",
         "file_names_to_ignore": ["GLS_sanger_report_200713_0001_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -87,6 +92,7 @@ CENTRES = [
         "sftp_root_read": "project-heron_cambridge-az",
         "file_names_to_ignore": ["CB_sanger_report_200714_0001_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_BIO,
+        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -101,6 +107,7 @@ CENTRES = [
         "sftp_root_read": "project-heron_randox",
         "file_names_to_ignore": [r"^lw-randox-biocentre-box-((\d)|(1\d)|20)-.*$"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -115,6 +122,7 @@ CENTRES = [
         "sftp_root_read": "project-heron_hsl",
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -129,5 +137,6 @@ CENTRES = [
         "sftp_root_read": "project-heron_plym",
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,
     },
 ]
