@@ -112,7 +112,7 @@ def test_get_download_dir(config):
 def test_process_files(mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn):
     _, mongo_database = mongo_database
 
-    centre_config = config.CENTRES[0]
+    centre_config = config.CENTRES[3]
     centre_config["sftp_root_read"] = "tmp/files"
     centre = Centre(config, centre_config)
     centre.process_files(True)
@@ -125,10 +125,10 @@ def test_process_files(mongo_database, config, testing_files_for_process, testin
     # We record *all* our samples
     date_time = datetime(year=2020, month=4, day=16, hour=14, minute=30, second=40)
     assert (
-        samples_collection.count_documents({"RNA ID": "AP123_B09", "source": "Alderley", FIELD_DATE_TESTED: date_time})
+        samples_collection.count_documents({"RNA ID": "CB123_A09", "source": "Cambridge-az", FIELD_DATE_TESTED: date_time})
         == 1
     )
-    assert source_plates_collection.count_documents({"barcode": "AP123"}) == 1
+    assert source_plates_collection.count_documents({"barcode": "CB123"}) == 1
 
 
 def test_process_files_dont_add_to_dart_flag_not_set(
