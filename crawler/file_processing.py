@@ -397,8 +397,7 @@ class CentreFile:
 
         # check for this being an unconsolidated samples file where the centre doesn't support those
         elif (
-                CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES in centre and
-                centre[CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES] and
+                centre.get(CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES, False) and
                 self.is_unconsolidated_surveillance_file()
              ):
             self.file_state = CentreFileState.FILE_SHOULD_NOT_BE_PROCESSED
