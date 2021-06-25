@@ -8,4 +8,4 @@ DIR_DOWNLOADED_DATA = "tmp/files/"
 
 # test with no black-listed files
 for centre in CENTRES:
-    centre["file_names_to_ignore"] = []  # type: ignore
+    centre["file_names_to_ignore"] = []
