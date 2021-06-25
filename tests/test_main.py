@@ -8,10 +8,10 @@ from crawler.db.mongo import get_mongo_collection
 from crawler.main import run
 
 NUMBER_CENTRES = 8
-NUMBER_VALID_SAMPLES = 21
+NUMBER_VALID_SAMPLES = 7
 NUMBER_SAMPLES_ON_PARTIAL_IMPORT = 10
 NUMBER_OF_FILES_PROCESSED = 12
-NUMBER_SOURCE_PLATES = 9
+NUMBER_ACCEPTED_SOURCE_PLATES = 4
 
 
 # The run method encompasses the main actions of the crawler
@@ -38,22 +38,24 @@ def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
     assert centres_collection.count_documents({"name": "Test Centre"}) == 1
 
     # We record all our source plates
-    assert source_plates_collection.count_documents({}) == NUMBER_SOURCE_PLATES
-    assert source_plates_collection.count_documents({"barcode": "AP123"}) == 1
+    assert source_plates_collection.count_documents({}) == NUMBER_ACCEPTED_SOURCE_PLATES
+    # Centres that don't process unconsolidated files
+    assert source_plates_collection.count_documents({"barcode": "AP123"}) == 0
+    assert source_plates_collection.count_documents({"barcode": "MK123"}) == 0
+    assert source_plates_collection.count_documents({"barcode": "MK456"}) == 0
+    assert source_plates_collection.count_documents({"barcode": "GLS123"}) == 0
+    assert source_plates_collection.count_documents({"barcode": "GLS789"}) == 0
+    # Centres that do process all files
     assert source_plates_collection.count_documents({"barcode": "CB123"}) == 1
-    assert source_plates_collection.count_documents({"barcode": "MK123"}) == 1
-    assert source_plates_collection.count_documents({"barcode": "MK456"}) == 1
     assert source_plates_collection.count_documents({"barcode": "TS789"}) == 1
-    assert source_plates_collection.count_documents({"barcode": "GLS123"}) == 1
-    assert source_plates_collection.count_documents({"barcode": "GLS789"}) == 1
 
     # We record *all* our samples
     assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES, (
         f"Wrong number of samples inserted. Expected: {NUMBER_VALID_SAMPLES}, Actual: "
         f"{samples_collection.count_documents({})}"
     )
-    assert samples_collection.count_documents({"RNA ID": "AP123_B09", "source": "Alderley"}) == 1
-    assert samples_collection.count_documents({"RNA ID": "MK123_H09", "source": "UK Biocentre"}) == 1
+    assert samples_collection.count_documents({"RNA ID": "CB123_A09", "source": "Cambridge-az"}) == 1
+    assert samples_collection.count_documents({"RNA ID": "23JAN21-0001Q_A11", "source": "Randox"}) == 1
 
     # We get one import per centre
     assert imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED, (
@@ -61,12 +63,17 @@ def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
         f"{imports_collection.count_documents({})}"
     )
 
-    # check number of success files
+    # check number of success/error files for Alderley
     (_, _, files) = next(os.walk("tmp/backups/ALDP/successes"))
-    assert 3 == len(files), f"Wrong number of success files. Expected: 3, Actual: {len(files)}"
-
+    assert len(files) == 0, f"Wrong number of success files. Expected: 0, Actual: {len(files)}"
     (_, _, files) = next(os.walk("tmp/backups/ALDP/errors"))
-    assert 0 == len(files), f"Wrong number of error files. Expected: 0, Actual: {len(files)}"
+    assert len(files) == 3, f"Wrong number of error files. Expected: 3, Actual: {len(files)}"
+
+    # check number of success/error files for Randox
+    (_, _, files) = next(os.walk("tmp/backups/RAND/successes"))
+    assert len(files) == 1, f"Wrong number of success files. Expected: 1, Actual: {len(files)}"
+    (_, _, files) = next(os.walk("tmp/backups/RAND/errors"))
+    assert len(files) == 0, f"Wrong number of error files. Expected: 0, Actual: {len(files)}"
 
     # check the code cleaned up the temporary files
     (_, subfolders, files) = next(os.walk("tmp/files/"))
@@ -97,7 +104,7 @@ def test_error_run(mongo_database, testing_files_for_process, pyodbc_conn):
     # The number of centres should be the same as before
     assert centres_collection.count_documents({}) == NUMBER_CENTRES
     # The source plates count should be the same as before
-    assert source_plates_collection.count_documents({}) == NUMBER_SOURCE_PLATES
+    assert source_plates_collection.count_documents({}) == NUMBER_ACCEPTED_SOURCE_PLATES
     # The samples count should be the same as before
     assert samples_collection.count_documents({}) == NUMBER_VALID_SAMPLES
 
