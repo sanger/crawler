@@ -195,12 +195,12 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
         run(False, False, False, "crawler.config.integration")
 
-    # check number of success files after first run
+    # check number of success/error files after first run
     (_, _, files) = next(os.walk("tmp/backups/ALDP/successes"))
-    assert 3 == len(files)
+    assert 0 == len(files)
 
     (_, _, files) = next(os.walk("tmp/backups/ALDP/errors"))
-    assert 0 == len(files)
+    assert 3 == len(files)
 
     (_, _, files) = next(os.walk("tmp/backups/CAMC/successes"))
     assert 1 == len(files), "Fail success CAMC"
@@ -209,16 +209,16 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     assert 0 == len(files)
 
     (_, _, files) = next(os.walk("tmp/backups/MILK/successes"))
-    assert 2 == len(files)
+    assert 0 == len(files)
 
     (_, _, files) = next(os.walk("tmp/backups/MILK/errors"))
-    assert 0 == len(files)
-
-    (_, _, files) = next(os.walk("tmp/backups/QEUH/successes"))
     assert 2 == len(files)
 
-    (_, _, files) = next(os.walk("tmp/backups/QEUH/errors"))
+    (_, _, files) = next(os.walk("tmp/backups/QEUH/successes"))
     assert 0 == len(files)
+
+    (_, _, files) = next(os.walk("tmp/backups/QEUH/errors"))
+    assert 2 == len(files)
 
     (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
     assert 1 == len(files), "Fail success TEST"
