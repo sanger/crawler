@@ -400,10 +400,10 @@ class AggregateType34(AggregateTypeBase):
         self.type_str = "TYPE 34"
         self.error_level = ErrorLevel.ERROR
         self.message = (
-            f"{self.error_level.name}: Unconsolidated samples file provided by a centre that does not support them. "
-            f"({self.type_str})"
+            f"{self.error_level.name}: Unconsolidated samples file provided for "
+            f"a centre that is configured to ignore them. ({self.type_str})"
         )
-        self.short_display_description = "File provided by unsupported centre"
+        self.short_display_description = "Ignorable file provided"
 
 
 # Class to handle logging of errors of the various types per file

@@ -459,14 +459,14 @@ class CentreFile:
         """Log the file as unprocessed and ensure it won't be processed in future.
 
         In this implementation, we assume the reason the file shouldn't be processed is that
-        the centre does not support processing of unconsolidated sample files.  If this reason
-        changes in future, either there should be a different method to handle that or an argument
-        added to this method to indicate the expected behaviour.
+        Sanger doesn't want to process unconsolidated sample files for this centre.
+        If this reason changes in future, either there should be a different method
+        to handle that or an argument added to this method to indicate the expected behaviour.
         """
         self.logging_collection.add_error(
             "TYPE 34",
             f"File '{self.file_name}' is not being processed because unconsolidated "
-            "sample files are unsupported by this centre.")
+            "sample files are no longer needed from this centre.")
 
         self.backup_file()
         self.create_import_record_for_file()

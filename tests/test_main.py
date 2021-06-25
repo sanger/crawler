@@ -39,13 +39,13 @@ def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
 
     # We record all our source plates
     assert source_plates_collection.count_documents({}) == NUMBER_ACCEPTED_SOURCE_PLATES
-    # Centres that don't process unconsolidated files
+    # Centres that we don't process unconsolidated files for
     assert source_plates_collection.count_documents({"barcode": "AP123"}) == 0
     assert source_plates_collection.count_documents({"barcode": "MK123"}) == 0
     assert source_plates_collection.count_documents({"barcode": "MK456"}) == 0
     assert source_plates_collection.count_documents({"barcode": "GLS123"}) == 0
     assert source_plates_collection.count_documents({"barcode": "GLS789"}) == 0
-    # Centres that do process all files
+    # Centres that process all files
     assert source_plates_collection.count_documents({"barcode": "CB123"}) == 1
     assert source_plates_collection.count_documents({"barcode": "TS789"}) == 1
 
