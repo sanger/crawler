@@ -1227,6 +1227,29 @@ def test_can_identify_unconsolidated_surveillance_file(config, testing_centres, 
     assert centre_file.is_unconsolidated_surveillance_file() is expected_value
 
 
+def test_log_unprocessed_takes_needed_actions(mongo_database, config, testing_files_for_process):
+    _, mongo_database = mongo_database
+
+    centre_config = config.CENTRES[0]
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+    centre_file = CentreFile(UNCONSOLIDATED_SURVEILLANCE_FILENAME, centre)
+    centre_file.log_unprocessed()
+
+    # Assert TYPE 34 log messages were created
+    log_messages = centre_file.logging_collection.get_messages_for_import()
+    assert len(log_messages) == 2
+    assert all("TYPE 34" in err for err in log_messages)
+
+    # Assert that files were stored in backups as errors
+    errors_path = os.path.join(centre_config["backups_folder"], ERRORS_DIR)
+    assert len(os.listdir(errors_path)) == 1
+
+    # Assert that an import record was created
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    imports_collection.count_documents({}) == 1
+
+
 def test_remove_bom(centre_file):
     with StringIO() as fake_csv:
         # construct a bytes object containing a byte order mark (BOM)
