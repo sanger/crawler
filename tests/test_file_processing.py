@@ -160,6 +160,36 @@ def test_process_files_dont_add_to_dart_mlwh_failed(
         pyodbc_conn.assert_not_called()
 
 
+def test_process_files_correctly_handles_files_not_to_be_processed(
+    mongo_database, config, testing_files_for_process, testing_centres
+):
+    _, mongo_database = mongo_database
+
+    centre_config = config.CENTRES[0]
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+    centre.process_files(True)
+
+    # No samples were recorded
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    assert samples_collection.count_documents({}) == 0
+
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+    assert source_plates_collection.count_documents({}) == 0
+
+    # Import records were made indicating files were not processed
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    imports = imports_collection.find()
+    assert imports.count() == 3
+    for imp in imports:
+        assert len(imp["errors"]) == 2
+        assert all("TYPE 34" in err for err in imp["errors"])
+
+    # Assert that files were stored in backups as errors
+    errors_path = os.path.join(centre_config["backups_folder"], ERRORS_DIR)
+    assert len(os.listdir(errors_path)) == 3
+
+
 def test_process_files_one_wrong_format(mongo_database, config, testing_files_for_process, testing_centres):
     """Test using files in the files/TEST directory; they include a rogue XLSX file dressed as CSV file."""
     _, mongo_database = mongo_database
