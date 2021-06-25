@@ -1213,6 +1213,20 @@ def test_where_positive_result_does_not_align_with_ct_channel_results(config):
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
 
+@mark.parametrize(
+    "filename, expected_value",
+    [
+        [UNCONSOLIDATED_SURVEILLANCE_FILENAME, True],
+        [CONSOLIDATED_EAGLE_FILENAME, False],
+        [CONSOLIDATED_SURVEILLANCE_FILENAME, False],
+    ],
+)
+def test_can_identify_unconsolidated_surveillance_file(config, testing_centres, filename, expected_value):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile(filename, centre)
+    assert centre_file.is_unconsolidated_surveillance_file() is expected_value
+
+
 def test_remove_bom(centre_file):
     with StringIO() as fake_csv:
         # construct a bytes object containing a byte order mark (BOM)
