@@ -338,7 +338,7 @@ def create_checksum_files_for(filepath, filename, checksums, timestamp):
 
 def test_checksum_not_match(config, tmpdir):
     with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
-        tmpdir.mkdir("successes")
+        tmpdir.mkdir(SUCCESSES_DIR)
 
         list_files = create_checksum_files_for(
             f"{config.CENTRES[0]['backups_folder']}/successes/",
@@ -351,7 +351,7 @@ def test_checksum_not_match(config, tmpdir):
             centre = Centre(config, config.CENTRES[0])
             centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
 
-            assert centre_file.checksum_match("successes") is False
+            assert centre_file.checksum_match(SUCCESSES_DIR) is False
         finally:
             for tmpfile_for_list in list_files:
                 os.remove(tmpfile_for_list)
@@ -360,7 +360,7 @@ def test_checksum_not_match(config, tmpdir):
 def test_checksum_match(config, tmpdir):
     with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
 
-        tmpdir.mkdir("successes")
+        tmpdir.mkdir(SUCCESSES_DIR)
 
         list_files = create_checksum_files_for(
             f"{config.CENTRES[0]['backups_folder']}/successes/",
@@ -372,7 +372,7 @@ def test_checksum_match(config, tmpdir):
         try:
             centre = Centre(config, config.CENTRES[0])
             centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
-            assert centre_file.checksum_match("successes") is True
+            assert centre_file.checksum_match(SUCCESSES_DIR) is True
         finally:
             for tmpfile_for_list in list_files:
                 os.remove(tmpfile_for_list)
