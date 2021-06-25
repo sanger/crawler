@@ -1249,7 +1249,7 @@ def test_log_unprocessed_takes_needed_actions(mongo_database, config, testing_fi
 
     # Assert that an import record was created
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
-    imports_collection.count_documents({}) == 1
+    assert imports_collection.count_documents({}) == 1
 
 
 def test_remove_bom(centre_file):

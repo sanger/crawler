@@ -367,8 +367,8 @@ class CentreFile:
         """Identifies whether this file is from the batch of unconsolidated surveillance files for the centre that uploaded it.
 
         Returns:
-            bool: True if the filename matches the unconsolidated surveillance regex specified in the centre's configuration.
-                  False otherwise.
+            bool: True if the filename matches the unconsolidated surveillance regex specified
+                  in the centre's configuration. False otherwise.
         """
         centre = self.get_centre_from_db()
         compiled_regex = re.compile(centre["sftp_file_regex_unconsolidated_surveillance"])
