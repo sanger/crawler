@@ -125,7 +125,9 @@ def test_process_files(mongo_database, config, testing_files_for_process, testin
     # We record *all* our samples
     date_time = datetime(year=2020, month=4, day=16, hour=14, minute=30, second=40)
     assert (
-        samples_collection.count_documents({"RNA ID": "CB123_A09", "source": "Cambridge-az", FIELD_DATE_TESTED: date_time})
+        samples_collection.count_documents(
+            {"RNA ID": "CB123_A09", "source": "Cambridge-az", FIELD_DATE_TESTED: date_time}
+        )
         == 1
     )
     assert source_plates_collection.count_documents({"barcode": "CB123"}) == 1

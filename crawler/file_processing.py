@@ -396,10 +396,7 @@ class CentreFile:
             self.file_state = CentreFileState.FILE_PROCESSED_WITH_SUCCESS
 
         # check for this being an unconsolidated samples file where the centre doesn't support those
-        elif (
-                centre.get(CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES, False) and
-                self.is_unconsolidated_surveillance_file()
-             ):
+        elif centre.get(CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES, False) and self.is_unconsolidated_surveillance_file():
             self.file_state = CentreFileState.FILE_SHOULD_NOT_BE_PROCESSED
 
         # if checksum(s) differs or if the file was not present in success directory, process it
@@ -466,7 +463,8 @@ class CentreFile:
         self.logging_collection.add_error(
             "TYPE 34",
             f"File '{self.file_name}' is not being processed because unconsolidated "
-            "sample files are no longer needed from this centre.")
+            "sample files are no longer needed from this centre.",
+        )
 
         self.backup_file()
         self.create_import_record_for_file()
