@@ -18,3 +18,4 @@ class CentreFileState(Enum):
     FILE_NOT_PROCESSED_YET = auto()
     FILE_PROCESSED_WITH_ERROR = auto()
     FILE_PROCESSED_WITH_SUCCESS = auto()
+    FILE_SHOULD_NOT_BE_PROCESSED = auto()

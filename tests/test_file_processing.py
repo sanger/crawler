@@ -112,7 +112,7 @@ def test_get_download_dir(config):
 def test_process_files(mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn):
     _, mongo_database = mongo_database
 
-    centre_config = config.CENTRES[0]
+    centre_config = config.CENTRES[3]
     centre_config["sftp_root_read"] = "tmp/files"
     centre = Centre(config, centre_config)
     centre.process_files(True)
@@ -125,10 +125,12 @@ def test_process_files(mongo_database, config, testing_files_for_process, testin
     # We record *all* our samples
     date_time = datetime(year=2020, month=4, day=16, hour=14, minute=30, second=40)
     assert (
-        samples_collection.count_documents({"RNA ID": "AP123_B09", "source": "Alderley", FIELD_DATE_TESTED: date_time})
+        samples_collection.count_documents(
+            {"RNA ID": "CB123_A09", "source": "Cambridge-az", FIELD_DATE_TESTED: date_time}
+        )
         == 1
     )
-    assert source_plates_collection.count_documents({"barcode": "AP123"}) == 1
+    assert source_plates_collection.count_documents({"barcode": "CB123"}) == 1
 
 
 def test_process_files_dont_add_to_dart_flag_not_set(
@@ -158,6 +160,36 @@ def test_process_files_dont_add_to_dart_mlwh_failed(
 
         # assert no attempt was made to connect
         pyodbc_conn.assert_not_called()
+
+
+def test_process_files_correctly_handles_files_not_to_be_processed(
+    mongo_database, config, testing_files_for_process, testing_centres
+):
+    _, mongo_database = mongo_database
+
+    centre_config = config.CENTRES[0]
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+    centre.process_files(True)
+
+    # No samples were recorded
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    assert samples_collection.count_documents({}) == 0
+
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+    assert source_plates_collection.count_documents({}) == 0
+
+    # Import records were made indicating files were not processed
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    imports = imports_collection.find()
+    assert imports.count() == 3
+    for imp in imports:
+        assert len(imp["errors"]) == 2
+        assert all("TYPE 34" in err for err in imp["errors"])
+
+    # Assert that files were stored in backups as errors
+    errors_path = os.path.join(centre_config["backups_folder"], ERRORS_DIR)
+    assert len(os.listdir(errors_path)) == 3
 
 
 def test_process_files_one_wrong_format(mongo_database, config, testing_files_for_process, testing_centres):
@@ -338,7 +370,7 @@ def create_checksum_files_for(filepath, filename, checksums, timestamp):
 
 def test_checksum_not_match(config, tmpdir):
     with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
-        tmpdir.mkdir("successes")
+        tmpdir.mkdir(SUCCESSES_DIR)
 
         list_files = create_checksum_files_for(
             f"{config.CENTRES[0]['backups_folder']}/successes/",
@@ -351,7 +383,7 @@ def test_checksum_not_match(config, tmpdir):
             centre = Centre(config, config.CENTRES[0])
             centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
 
-            assert centre_file.checksum_match("successes") is False
+            assert centre_file.checksum_match(SUCCESSES_DIR) is False
         finally:
             for tmpfile_for_list in list_files:
                 os.remove(tmpfile_for_list)
@@ -360,7 +392,7 @@ def test_checksum_not_match(config, tmpdir):
 def test_checksum_match(config, tmpdir):
     with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
 
-        tmpdir.mkdir("successes")
+        tmpdir.mkdir(SUCCESSES_DIR)
 
         list_files = create_checksum_files_for(
             f"{config.CENTRES[0]['backups_folder']}/successes/",
@@ -372,7 +404,7 @@ def test_checksum_match(config, tmpdir):
         try:
             centre = Centre(config, config.CENTRES[0])
             centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
-            assert centre_file.checksum_match("successes") is True
+            assert centre_file.checksum_match(SUCCESSES_DIR) is True
         finally:
             for tmpfile_for_list in list_files:
                 os.remove(tmpfile_for_list)
@@ -1181,6 +1213,43 @@ def test_where_positive_result_does_not_align_with_ct_channel_results(config):
         # should create a specific error type for the row
         assert centre_file.logging_collection.aggregator_types["TYPE 21"].count_errors == 1
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+
+
+@mark.parametrize(
+    "filename, expected_value",
+    [
+        [UNCONSOLIDATED_SURVEILLANCE_FILENAME, True],
+        [CONSOLIDATED_EAGLE_FILENAME, False],
+        [CONSOLIDATED_SURVEILLANCE_FILENAME, False],
+    ],
+)
+def test_can_identify_unconsolidated_surveillance_file(config, testing_centres, filename, expected_value):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile(filename, centre)
+    assert centre_file.is_unconsolidated_surveillance_file() is expected_value
+
+
+def test_log_unprocessed_takes_needed_actions(mongo_database, config, testing_files_for_process):
+    _, mongo_database = mongo_database
+
+    centre_config = config.CENTRES[0]
+    centre_config["sftp_root_read"] = "tmp/files"
+    centre = Centre(config, centre_config)
+    centre_file = CentreFile(UNCONSOLIDATED_SURVEILLANCE_FILENAME, centre)
+    centre_file.log_unprocessed()
+
+    # Assert TYPE 34 log messages were created
+    log_messages = centre_file.logging_collection.get_messages_for_import()
+    assert len(log_messages) == 2
+    assert all("TYPE 34" in err for err in log_messages)
+
+    # Assert that files were stored in backups as errors
+    errors_path = os.path.join(centre_config["backups_folder"], ERRORS_DIR)
+    assert len(os.listdir(errors_path)) == 1
+
+    # Assert that an import record was created
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    assert imports_collection.count_documents({}) == 1
 
 
 def test_remove_bom(centre_file):

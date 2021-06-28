@@ -12,6 +12,7 @@ pytest = "*"
 pytest-cov = "*"
 pytest-freezegun = "*"
 black = "*"
+types-python-dateutil = "*"
 
 [packages]
 pymongo = "~=3.10"
