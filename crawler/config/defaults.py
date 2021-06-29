@@ -4,9 +4,16 @@ import os
 from crawler.config.centres import *
 from crawler.config.logging import *
 
-# setting here will overwrite those in 'centre.py'
+# setting here will overwrite those in 'centres.py'
 
 # general details
+
+# A list of HTTP methods supported at resource endpoints, open to public access even when Authentication and
+#   Authorization is enabled.
+PUBLIC_METHODS = ["GET"]
+PUBLIC_ITEM_METHODS = ["GET"]
+DOMAIN = { "temporary": { } }
+
 DIR_DOWNLOADED_DATA = "data/sftp_files/"
 
 ADD_LAB_ID = False

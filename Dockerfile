@@ -48,6 +48,9 @@ COPY . .
 # "The best use for ENTRYPOINT is to set the image’s main command, allowing that image to be run as though it was that
 #   command (and then use CMD as the default flags)."
 #   https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#entrypoint
-# have a look in .flaskenv for configured run options
-ENTRYPOINT ["python", "runner.py"]
-CMD ["--sftp", "--scheduled", "--add-to-dart"]
+ENTRYPOINT ["flask"]
+CMD ["run"]
+
+# https://docs.docker.com/engine/reference/builder/#healthcheck
+HEALTHCHECK --interval=1m --timeout=3s \
+    CMD curl -f http://localhost:8000/health || exit 1
