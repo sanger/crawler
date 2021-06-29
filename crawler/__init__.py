@@ -19,6 +19,6 @@ def create_app() -> Eve:
 
     @app.get("/health")
     def health_check():
-        return "Factory working", HTTPStatus.OK
+        return "Crawler is working", HTTPStatus.OK
 
     return app
