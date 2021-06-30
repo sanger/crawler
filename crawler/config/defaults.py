@@ -70,7 +70,7 @@ SLACK_CHANNEL_ID = ""
 #   Authorization is enabled.
 PUBLIC_METHODS = ["GET"]
 PUBLIC_ITEM_METHODS = ["GET"]
-DOMAIN = { "temporary": { } }
+DOMAIN = {"temporary": {}}
 
 ###
 # APScheduler config

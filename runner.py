@@ -41,6 +41,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    main.run(
-        sftp=args.sftp, keep_files=args.keep_files, add_to_dart=args.add_to_dart, centre_prefix=args.centre_prefix
-    )
+    main.run(sftp=args.sftp, keep_files=args.keep_files, add_to_dart=args.add_to_dart, centre_prefix=args.centre_prefix)

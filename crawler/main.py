@@ -128,8 +128,7 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
 
 
 def scheduled_run():
-    """Scheduler's job to do a run every 15 minutes.
-    """
+    """Scheduler's job to do a run every 15 minutes."""
     logger.info("Starting scheduled_run job.")
 
     with scheduler.app.app_context():
