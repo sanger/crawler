@@ -14,7 +14,7 @@ bp = Blueprint("cherrypicker", __name__)
 CORS(bp)
 
 
-@bp.post("/cherrypicker/generate_test_data")
+@bp.put("/cherrypicker/test_data")
 def generate_cherrypicker_test_data_endpoint() -> FlaskResponse:
     """Generates cherrypicker test data for a number of plates with defined
     numbers of positives per plate.
