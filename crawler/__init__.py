@@ -1,15 +1,17 @@
 import logging
 import logging.config
+import os
 from http import HTTPStatus
 
-from eve import Eve
+from flask import Flask
 from flask_apscheduler import APScheduler
 
 scheduler = APScheduler()
 
 
-def create_app() -> Eve:
-    app = Eve(__name__)
+def create_app() -> Flask:
+    app = Flask(__name__)
+    app.config.from_object(os.environ["SETTINGS_MODULE"])
 
     # setup logging
     logging.config.dictConfig(app.config["LOGGING"])

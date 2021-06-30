@@ -63,16 +63,6 @@ SLACK_API_TOKEN = ""
 SLACK_CHANNEL_ID = ""
 
 ###
-# Eve config
-###
-
-# A list of HTTP methods supported at resource endpoints, open to public access even when Authentication and
-#   Authorization is enabled.
-PUBLIC_METHODS = ["GET"]
-PUBLIC_ITEM_METHODS = ["GET"]
-DOMAIN: Dict[str, dict] = {"temporary": {}}
-
-###
 # APScheduler config
 ###
 SCHEDULER_RUN = True

@@ -85,7 +85,7 @@ This scheduled behaviour can be turned off by adding the following to the `devel
     SCHEDULER_RUN = False
 
 You can also adjust the behaviour of the scheduled ingest using the settings in the same file.
-To run an ingest immediately, whether Flash is running or not, the `runner.py` file can be used with the arguments shown:
+To run an ingest immediately, whether Flask is running or not, the `runner.py` file can be used with the arguments shown:
 
     python runner.py --help
 

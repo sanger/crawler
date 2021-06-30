@@ -10,6 +10,3 @@ FLASK_RUN_PORT=8000
 
 # https://flask.palletsprojects.com/en/1.1.x/config/#environment-and-debug-features
 FLASK_ENV=development
-
-# https://docs.python-eve.org/en/stable/config.html#development-production
-EVE_SETTINGS=development.py

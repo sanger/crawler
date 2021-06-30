@@ -16,7 +16,6 @@ types-python-dateutil = "*"
 
 [packages]
 colorlog = "~=5.0"
-eve = "~=1.1"
 flask = "~=2.0"
 flask-apscheduler = "~=1.11"
 flask-cors = "~=3.0"
