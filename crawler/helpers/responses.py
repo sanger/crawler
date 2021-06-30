@@ -22,5 +22,5 @@ def ok(**kwargs: Any) -> FlaskResponse:
     return {**kwargs}, HTTPStatus.OK
 
 
-def created(**kwargs: Any) -> FlaskResponse:
-    return {**kwargs}, HTTPStatus.CREATED
+def accepted(**kwargs: Any) -> FlaskResponse:
+    return {**kwargs}, HTTPStatus.ACCEPTED

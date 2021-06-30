@@ -4,7 +4,7 @@ from flask import Blueprint, request
 from flask_cors import CORS
 
 from crawler.constants import FLASK_ERROR_UNEXPECTED, FLASK_ERROR_MISSING_PARAMETERS
-from crawler.helpers.responses import bad_request, internal_server_error, created
+from crawler.helpers.responses import bad_request, internal_server_error, accepted
 # from crawler.jobs.cherrypicker import generate_test_data
 from crawler.types import FlaskResponse
 
@@ -14,17 +14,18 @@ bp = Blueprint("cherrypicker", __name__)
 CORS(bp)
 
 
-@bp.put("/cherrypicker/test_data")
-def generate_cherrypicker_test_data_endpoint() -> FlaskResponse:
+@bp.patch("/cherrypicker_test_data/<run_id>")
+def start_cherrypicker_test_data_generator_endpoint(run_id: str) -> FlaskResponse:
     """Generates cherrypicker test data for a number of plates with defined
     numbers of positives per plate.
 
-    The body of the request should be in the format:
+    The body of the request should be:
 
-    `{ "job_id": "CPTD-0000001" }`
+    `{ "status": "started" }`
 
-    It is expected that this job ID will already exist in the Mongo DB with
-    details of the plates to generate.
+    It is expected that the run_id will already exist in Mongo DB with details
+    of the plates to generate and that the status of the run will currently be
+    "pending".
 
     Returns: FlaskResponse: metadata for the generated test data or a list of
         errors with the corresponding HTTP status code.
@@ -33,15 +34,16 @@ def generate_cherrypicker_test_data_endpoint() -> FlaskResponse:
 
     try:
         if (
-            (request_json := request.get_json()) is not None and
-            (job_id := request_json.get("job_id")) is not None
+            (request_json := request.get_json()) is None or
+            (new_status := request_json.get("status")) is None or
+            new_status != "started"
         ):
-            return created(job_id=job_id)
+            msg = f"{FLASK_ERROR_MISSING_PARAMETERS} - Request body should contain a JSON object with the key 'status' and value 'started'."
+            logger.error(msg)
+            return bad_request(msg)
 
-        msg = f"{FLASK_ERROR_MISSING_PARAMETERS} - Request body should contain a JSON object with a 'job_id' key."
-        logger.error(msg)
+        return accepted(run_id=run_id, status=new_status)
 
-        return bad_request(msg)
     except Exception as e:
         msg = f"{FLASK_ERROR_UNEXPECTED} ({type(e).__name__})"
         logger.error(msg)
