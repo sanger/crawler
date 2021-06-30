@@ -136,3 +136,5 @@ dmypy.json
 
 # talisman
 .talismanrc
+
+**/.DS_Store
