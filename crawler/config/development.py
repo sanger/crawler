@@ -11,8 +11,3 @@ ADD_TO_DART = False
 # logging config
 LOGGING["loggers"]["crawler"]["level"] = "DEBUG"
 LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream_dev"]
-
-###
-# APScheduler config
-###
-SCHEDULER_RUN = False

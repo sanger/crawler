@@ -75,32 +75,41 @@ Once all the required packages are installed, enter the virtual environment with
 
     pipenv shell
 
-The following runtime flags are available:
+To then run the app, use the command:
+
+    flask run
+
+This will cause the crawler to execute an ingest every 15 minutes, triggered by cron, so at 0, 15, 30 and 45 minutes past the hour.
+This scheduled behaviour can be turned off by adding the following to the `development.py` file:
+
+    SCHEDULER_RUN = False
+
+You can also adjust the behaviour of the scheduled ingest using the settings in the same file.
+To run an ingest immediately, whether Flash is running or not, the `runner.py` file can be used with the arguments shown:
 
     python runner.py --help
 
-    usage: runner.py [-h] [--sftp] [--scheduled]
+    usage: runner.py [-h] [--sftp] [--keep-files] [--add-to-dart] [--centre_prefix {ALDP}]
 
-    Store external samples in mongo.
+    Parse CSV files from the Lighthouse Labs and store the sample information in MongoDB
 
     optional arguments:
-    -h, --help    show this help message and exit
-    --scheduled   start scheduled execution, defaults to running once
-    --sftp        use SFTP to download CSV files, defaults to using local files
-    --keep-files  keeps the CSV files after the runner has been executed
-    --add-to-dart add samples to DART, by default they are not
+    -h, --help            show this help message and exit
+    --sftp                use SFTP to download CSV files, defaults to using local files
+    --keep-files          keeps the CSV files after the runner has been executed
+    --add-to-dart         on processing samples, also add them to DART
+    --centre_prefix {ALDP}
+                          process only this centre's CSV files
 
 ## Migrations
 
 ### Updating the MLWH `lighthouse_sample` Table
 
-When the crawler process runs nightly it should be updating the MLWH lighthouse_sample table as it goes with records for
-all rows that are inserted into MongoDB. If that MLWH insert process fails you should see a critical exception for the
-file in Lighthouse-UI. This may be after records inserted correctly into MongoDB, and re-running the file will not
-re-attempt the MLWH inserts in that situation.
+When the crawler process runs every 15 minutes it should be updating the MLWH lighthouse_sample table as it goes with records for all rows that are inserted into MongoDB.
+If that MLWH insert process fails you should see a critical exception for the file in Lighthouse-UI.
+This may be after records inserted correctly into MongoDB, and re-running the file will not re-attempt the MLWH inserts in that situation.
 
-There is a manual migration task that can be run to fix this discrepancy (update_mlwh_with_legacy_samples) that allows
-insertion of rows to the MLWH between two MongoDB `created_at` datetimes.
+There is a manual migration task that can be run to fix this discrepancy (update_mlwh_with_legacy_samples) that allows insertion of rows to the MLWH between two MongoDB `created_at` datetimes.
 
 __NB__: Both datetimes are inclusive: range includes those rows greater than or equal to start datetime, and less than
 or equal to end datetime.
@@ -225,8 +234,6 @@ By default, the migration will attempt to use DART, as it will safely fail if DA
 the user to reconsider what they are doing. However, using DART can be omitted by including the `omit_dart` flag.
 Neither process duplicates any data, instead updating existing entries.
 
-
-
 ## Testing
 
 ### Testing Requirements
@@ -267,8 +274,8 @@ A little convenience script can be used to run the formatting, type checking and
 
 ### Docker
 
-If you do not have root access pyodbc will not work if you use brew
-Using the docker compose you can set up the full stack and it will also set the correct environment variables
+If you do not have root access pyodbc will not work if you use brew.
+Using the docker compose you can set up the full stack and it will also set the correct environment variables.
 
 To build the containers:
 
