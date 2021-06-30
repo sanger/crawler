@@ -192,3 +192,12 @@ EVENT_CHERRYPICK_LAYOUT_SET: Final[str] = "cherrypick_layout_set"
 
 # As per Beckman events detailed in https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/Cherrypicking+Events
 PLATE_EVENT_DESTINATION_CREATED: Final[str] = "lh_beckman_cp_destination_created"
+
+
+###
+# Flask endpoints
+###
+
+# general
+FLASK_ERROR_UNEXPECTED: Final[str] = "An unexpected error occurred"
+FLASK_ERROR_MISSING_PARAMETERS: Final[str] = "Missing required parameters"

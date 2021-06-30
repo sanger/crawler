@@ -15,6 +15,7 @@ RowSignature = Tuple[str, ...]
 CentreConf = Dict[str, str]  # config for a centre
 SourcePlateDoc = Dict[str, Union[str, datetime]]  # mongo document that represents a source plate
 DartWellProp = Dict[str, str]  # well properties of a DART well 'object'
+FlaskResponse = Tuple[Dict[str, Any], int]  # a response from a Flask endpoint, including the status code
 
 
 class Config(ModuleType):
