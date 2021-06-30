@@ -7,6 +7,7 @@ from flask_apscheduler import APScheduler
 
 scheduler = APScheduler()
 
+
 def create_app() -> Eve:
     app = Eve(__name__)
 
