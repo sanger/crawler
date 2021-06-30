@@ -6,6 +6,7 @@ import time
 import schedule
 
 from crawler import main
+from crawler.config.centres import CENTRES
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +40,10 @@ if __name__ == "__main__":
         help="on processing samples, also add them to DART",
     )
     parser.add_argument(
-        "--centre_prefix",
-        choices=["ALDP"],
-        help="process only this centre's CSV files",
+        "--centre-prefix",
+        dest="centre_prefix",
+        choices=[centre["prefix"] for centre in CENTRES],
+        help="process only this centre's plate map files",
     )
 
     parser.set_defaults(once=True)
