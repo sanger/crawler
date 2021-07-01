@@ -5,7 +5,7 @@ from flask_cors import CORS
 
 from crawler.constants import FLASK_ERROR_UNEXPECTED, FLASK_ERROR_MISSING_PARAMETERS
 from crawler.helpers.responses import bad_request, internal_server_error, accepted
-# from crawler.jobs.cherrypicker import generate_test_data
+# from crawler.jobs.cherrypicker_test_data import generate
 from crawler.types import FlaskResponse
 
 logger = logging.getLogger(__name__)

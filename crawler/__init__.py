@@ -16,9 +16,9 @@ def create_app() -> Flask:
     # setup logging
     logging.config.dictConfig(app.config["LOGGING"])
 
-    from crawler.blueprints import cherrypicker
+    from crawler.blueprints import cherrypicker_test_data
 
-    app.register_blueprint(cherrypicker.bp)
+    app.register_blueprint(cherrypicker_test_data.bp)
 
     if app.config.get("SCHEDULER_RUN", False):
         scheduler.init_app(app)
