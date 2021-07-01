@@ -12,9 +12,17 @@ def test_set_state_for_file_when_file_in_black_list(config, blacklist_for_centre
     assert centre_file.file_state == CentreFileState.FILE_IN_BLACKLIST
 
 
-def test_set_state_for_file_when_never_seen_before(config, testing_centres):
+def test_set_state_for_file_when_should_not_be_processed(config, testing_centres):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("AP_sanger_report_200503_2338.csv", centre)
+    centre_file.set_state_for_file()
+
+    assert centre_file.file_state == CentreFileState.FILE_SHOULD_NOT_BE_PROCESSED
+
+
+def test_set_state_for_file_when_never_seen_before(config, testing_centres):
+    centre = Centre(config, config.CENTRES[3])
+    centre_file = CentreFile("CB_sanger_report_200503_2338.csv", centre)
     centre_file.set_state_for_file()
 
     assert centre_file.file_state == CentreFileState.FILE_NOT_PROCESSED_YET
