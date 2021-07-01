@@ -225,8 +225,6 @@ By default, the migration will attempt to use DART, as it will safely fail if DA
 the user to reconsider what they are doing. However, using DART can be omitted by including the `omit_dart` flag.
 Neither process duplicates any data, instead updating existing entries.
 
-
-
 ## Testing
 
 ### Testing Requirements
