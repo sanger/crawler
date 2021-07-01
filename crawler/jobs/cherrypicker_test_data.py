@@ -31,9 +31,11 @@ def generate(run_id: str) -> str:
 
     # TODO: Get actual plate specs from Mongo
     plate_specs = [[1, 1], [2, 96]]
+    num_plates = reduce(lambda a, b: a + b[0], plate_specs, 0)
+
+    # TODO: Check the number of plates are 100 or fewer
 
     dt = datetime.datetime.now()
-    num_plates = reduce(lambda a, b: a + b[0], plate_specs, 0)
     barcodes = create_barcodes(num_plates)
     barcode_meta = create_barcode_meta(plate_specs, barcodes)
     csv_rows = create_csv_rows(plate_specs, dt, barcodes)
