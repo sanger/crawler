@@ -1,5 +1,12 @@
+import datetime
+from functools import reduce
 import logging
 
+
+from crawler.helpers.cherrypicker_test_data import (
+    create_barcodes,
+    create_csv_rows,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +21,20 @@ def generate(run_id: str) -> str:
     Arguments:
         run_id: str - The ID of the run.  If this is not found in Mongo an
             exception will be thrown.
+
+    Returns:
+        Metadata about the plates generated, as { "barcode": "description" }
     """
     logger.info("Begin generating data.")
 
-    return { "TP-012345": "Plate with 96 positives" }
+    # TODO: Get actual plate specs from Mongo
+    plate_specs = [[1, 1], [2, 96]]
+
+    dt = datetime.datetime.now()
+    num_plates = reduce(lambda a, b: a + b[0], plate_specs, 0)
+    list_barcodes = create_barcodes(num_plates)
+    csv_rows = create_csv_rows(plate_specs, dt, list_barcodes)
+    # filename = write_file(dt, rows)
+    # create_printing_file(list_barcodes, filename)
+
+    return csv_rows
