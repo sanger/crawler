@@ -4,7 +4,7 @@ from flask import Blueprint, request
 from flask_cors import CORS
 
 from crawler.constants import FLASK_ERROR_UNEXPECTED, FLASK_ERROR_MISSING_PARAMETERS
-from crawler.helpers.responses import bad_request, internal_server_error, accepted
+from crawler.helpers.responses import bad_request, internal_server_error, ok
 # from crawler.jobs.cherrypicker_test_data import generate
 from crawler.types import FlaskResponse
 
@@ -14,14 +14,14 @@ bp = Blueprint("cherrypicker", __name__)
 CORS(bp)
 
 
-@bp.patch("/cherrypicker_test_data/<run_id>")
-def start_cherrypicker_test_data_generator_endpoint(run_id: str) -> FlaskResponse:
+@bp.post("/cherrypick-test-data")
+def generate_test_data_endpoint() -> FlaskResponse:
     """Generates cherrypicker test data for a number of plates with defined
     numbers of positives per plate.
 
     The body of the request should be:
 
-    `{ "status": "started" }`
+    `{ "run_id": "CPTD0000001" }`
 
     It is expected that the run_id will already exist in Mongo DB with details
     of the plates to generate and that the status of the run will currently be
@@ -35,14 +35,13 @@ def start_cherrypicker_test_data_generator_endpoint(run_id: str) -> FlaskRespons
     try:
         if (
             (request_json := request.get_json()) is None or
-            (new_status := request_json.get("status")) is None or
-            new_status != "started"
+            (run_id := request_json.get("run_id")) is None
         ):
-            msg = f"{FLASK_ERROR_MISSING_PARAMETERS} - Request body should contain a JSON object with the key 'status' and value 'started'."
+            msg = f"{FLASK_ERROR_MISSING_PARAMETERS} - Request body should contain a JSON object with a 'run_id' specified."
             logger.error(msg)
             return bad_request(msg)
 
-        return accepted(run_id=run_id, status=new_status)
+        return ok(run_id=run_id)
 
     except Exception as e:
         msg = f"{FLASK_ERROR_UNEXPECTED} ({type(e).__name__})"
