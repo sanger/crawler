@@ -20,7 +20,3 @@ def internal_server_error(errors: Union[str, List[str]], **kwargs: Any) -> Flask
 
 def ok(**kwargs: Any) -> FlaskResponse:
     return {**kwargs}, HTTPStatus.OK
-
-
-def accepted(**kwargs: Any) -> FlaskResponse:
-    return {**kwargs}, HTTPStatus.ACCEPTED
