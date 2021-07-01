@@ -5,6 +5,7 @@ import logging
 
 from crawler.helpers.cherrypicker_test_data import (
     create_barcodes,
+    create_barcode_meta,
     create_csv_rows,
 )
 
@@ -23,7 +24,8 @@ def generate(run_id: str) -> str:
             exception will be thrown.
 
     Returns:
-        Metadata about the plates generated, as { "barcode": "description" }
+        Metadata about the plates generated, as:
+        [ [ "barcode1", "description1" ], [ "barcode2", "description2" ] ]
     """
     logger.info("Begin generating data.")
 
@@ -32,9 +34,9 @@ def generate(run_id: str) -> str:
 
     dt = datetime.datetime.now()
     num_plates = reduce(lambda a, b: a + b[0], plate_specs, 0)
-    list_barcodes = create_barcodes(num_plates)
-    csv_rows = create_csv_rows(plate_specs, dt, list_barcodes)
+    barcodes = create_barcodes(num_plates)
+    barcode_meta = create_barcode_meta(plate_specs, barcodes)
+    csv_rows = create_csv_rows(plate_specs, dt, barcodes)
     # filename = write_file(dt, rows)
-    # create_printing_file(list_barcodes, filename)
 
-    return csv_rows
+    return barcode_meta

@@ -1,8 +1,10 @@
-import os
 import csv
+import logging
 import random
 import requests
 
+
+logger = logging.getLogger(__name__)
 
 WELL_COORDS = [
     "A01","A02","A03","A04","A05","A06","A07","A08","A09","A10","A11","A12",
@@ -108,11 +110,25 @@ def create_plate_rows(dt, num_positives, plate_barcode):
     return [create_row(dt, i, outcome, plate_barcode) for i, outcome in enumerate(outcomes)]
 
 
-def create_csv_rows(plate_specs, dt, list_barcodes):
+def flat_list_of_positives_per_plate(plate_specs) -> list:
     # Turn [[2, 5], [3, 10]] into [5, 5, 10, 10, 10]
-    pos_per_plate = flatten([[specs[1]] * specs[0] for specs in plate_specs])
+    return flatten([[specs[1]] * specs[0] for specs in plate_specs])
 
-    # Create a list of lists containing plate rows
+
+def create_csv_rows(plate_specs, dt, list_barcodes):
+    pos_per_plate = flat_list_of_positives_per_plate(plate_specs)
+
+    # Create lists of csv rows for each plate
+    # i.e. [ [ [ "plate1", "row1" ], [ "plate1", "row2" ] ], [ [ "plate2", "row1" ] ] ]
     plate_rows = [create_plate_rows(dt, pos_per_plate[i], list_barcodes[i]) for i in range(len(pos_per_plate))]
 
+    # Flatten before returning
+    # i.e. [ [ "plate1", "row1" ], [ "plate1", "row2" ], [ "plate2", "row1" ] ]
     return flatten(plate_rows)
+
+
+def create_barcode_meta(plate_specs, list_barcodes) -> list:
+    print("Creating metadata for barcodes")
+
+    pos_per_plate = flat_list_of_positives_per_plate(plate_specs)
+    return [[list_barcodes[i], f"numer of positives: {pos_per_plate[i]}"] for i in range(len(pos_per_plate))]
