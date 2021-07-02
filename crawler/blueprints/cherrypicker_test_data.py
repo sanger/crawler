@@ -55,4 +55,6 @@ def generate_test_data_endpoint() -> FlaskResponse:
         logger.error(msg)
         logger.exception(e)
 
-        return internal_server_error(msg, timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
+
+        return internal_server_error(msg, timestamp=timestamp)

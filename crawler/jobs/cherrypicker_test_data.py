@@ -6,6 +6,7 @@ import logging
 
 from crawler.constants import (
     COLLECTION_CHERRYPICK_TEST_DATA,
+    FIELD_MONGODB_ID,
     FIELD_UPDATED_AT,
     FIELD_STATUS,
     FIELD_PLATE_SPECS,
@@ -67,7 +68,9 @@ def generate(run_id: str, settings_module = "") -> str:
         plate_specs = json.loads(plate_specs_string)
 
         num_plates = reduce(lambda a, b: a + b[0], plate_specs, 0)
-        # TODO: Check the number of plates are 100 or fewer
+        if num_plates < 1 or num_plates > 100:
+            log_processing_error(collection, run_id, "Number of plates to generate must be between 1 and 100")
+
         # TODO: Check no plates ask for fewer than 0 or more than 96 positives
 
         dt = datetime.utcnow()
@@ -75,6 +78,7 @@ def generate(run_id: str, settings_module = "") -> str:
         csv_rows = create_csv_rows(plate_specs, dt, barcodes)
         # filename = write_file(dt, rows)
 
+        update_status(collection, run_id, FIELD_STATUS_COMPLETED)
         return create_barcode_meta(plate_specs, barcodes)
 
 
@@ -89,7 +93,7 @@ def get_run_doc(collection, run_id):
     return run_doc
 
 
-def log_processing_error(message, collection, run_id):
+def log_processing_error(collection, run_id, message):
     update_run(collection, run_id, {
         FIELD_STATUS: FIELD_STATUS_FAILED,
         FIELD_FAILURE_REASON: message,
@@ -102,4 +106,5 @@ def update_status(collection, run_id, status):
 
 
 def update_run(collection, run_id, update):
-    collection.update_one(ObjectId(run_id), { **update, FIELD_UPDATED_AT: datetime.utcnow() })
+    update_dict = { "$set": update, "$currentDate": { FIELD_UPDATED_AT: True } }
+    collection.update_one({FIELD_MONGODB_ID: ObjectId(run_id) }, update_dict)
