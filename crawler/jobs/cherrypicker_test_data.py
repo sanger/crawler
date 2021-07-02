@@ -18,6 +18,10 @@ from crawler.constants import (
     FIELD_STATUS_CRAWLING_DATA,
     FIELD_STATUS_COMPLETED,
     FIELD_STATUS_FAILED,
+    TEST_DATA_ERROR_NO_RUN_FOR_ID,
+    TEST_DATA_ERROR_WRONG_STATE,
+    TEST_DATA_ERROR_NUMBER_OF_PLATES,
+    TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES,
 )
 from crawler.db.mongo import (
     create_mongo_client,
@@ -63,7 +67,7 @@ def process(run_id: str, settings_module: str = "") -> str:
 
         run_doc = get_run_doc(collection, run_id)
         if run_doc[FIELD_STATUS] != FIELD_STATUS_PENDING:
-            raise TestDataError(f"Run doesn't have status '{FIELD_STATUS_PENDING}'")
+            raise TestDataError(f"{TEST_DATA_ERROR_WRONG_STATE} '{FIELD_STATUS_PENDING}'")
 
         try:
             plate_specs_string = run_doc[FIELD_PLATE_SPECS]
@@ -71,9 +75,11 @@ def process(run_id: str, settings_module: str = "") -> str:
 
             num_plates = reduce(lambda a, b: a + b[0], plate_specs, 0)
             if num_plates < 1 or num_plates > 100:
-                raise TestDataError("Number of plates to generate must be between 1 and 100")
+                raise TestDataError(TEST_DATA_ERROR_NUMBER_OF_PLATES)
 
-            # TODO: Check no plates ask for fewer than 0 or more than 96 positives
+            pos_per_plate = [spec[1] for spec in plate_specs]
+            if any([pos < 50 or pos > 96 for pos in pos_per_plate]):
+                raise TestDataError(TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES)
 
             update_status(collection, run_id, FIELD_STATUS_STARTED)
 
@@ -81,7 +87,6 @@ def process(run_id: str, settings_module: str = "") -> str:
             barcodes = create_barcodes(num_plates)
             csv_rows = create_csv_rows(plate_specs, dt, barcodes)
             # filename = write_file(dt, rows)
-
 
             # TODO: start the crawler for the test data centre
 
@@ -105,7 +110,7 @@ def get_run_doc(collection, run_id):
 
     run_doc = collection.find_one(ObjectId(run_id))
     if run_doc is None:
-        raise TestDataError(f"No run found for ID {run_id}")
+        raise TestDataError(f"{TEST_DATA_ERROR_NO_RUN_FOR_ID} '{run_id}'")
     logger.debug(f"Found run: {run_doc}")
 
     return run_doc
