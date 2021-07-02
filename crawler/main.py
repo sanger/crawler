@@ -101,7 +101,9 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                     centres = list(filter(lambda config: config.get("prefix") == centre_prefix, centres))
                 else:
                     # We should only include centres that are to be batch processed
-                    centres = list(filter(lambda config: config.get(CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS, True), centres))
+                    centres = list(
+                        filter(lambda config: config.get(CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS, True), centres)
+                    )
 
                 centres_instances = [Centre(config, centre_config) for centre_config in centres]
 
