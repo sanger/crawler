@@ -50,12 +50,10 @@ def generate(run_id: str, settings_module = "") -> str:
         mongo_db = get_mongo_db(config, mongo_client)
         collection = get_mongo_collection(mongo_db, COLLECTION_CHERRYPICK_TEST_DATA)
 
-        logger.debug(f"Getting Mongo document for ID: {run_id}")
-        run_doc = collection.find_one(ObjectId(run_id))
-        if run_doc is None:
-            raise TestDataError(f"No run found for ID {run_id}")
+        run_doc = get_run_doc(collection, run_id)
+        if run_doc[FIELD_STATUS] != "pending":
+            raise TestDataError("Run doesn't have status 'pending'")
 
-        logger.debug(f"Found run: {run_doc}")
         plate_specs_string = run_doc[FIELD_PLATE_SPECS]
         plate_specs = json.loads(plate_specs_string)
 
@@ -70,3 +68,13 @@ def generate(run_id: str, settings_module = "") -> str:
         # filename = write_file(dt, rows)
 
         return barcode_meta
+
+def get_run_doc(collection, run_id):
+    logger.info(f"Getting Mongo document for ID: {run_id}")
+
+    run_doc = collection.find_one(ObjectId(run_id))
+    if run_doc is None:
+        raise TestDataError(f"No run found for ID {run_id}")
+    logger.debug(f"Found run: {run_doc}")
+
+    return run_doc
