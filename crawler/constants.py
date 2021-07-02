@@ -10,6 +10,7 @@ COLLECTION_IMPORTS: Final[str] = "imports"
 COLLECTION_SAMPLES: Final[str] = "samples"
 COLLECTION_PRIORITY_SAMPLES: Final[str] = "priority_samples"
 COLLECTION_SOURCE_PLATES: Final[str] = "source_plates"
+COLLECTION_CHERRYPICK_TEST_DATA: Final[str] = "cherrypick_test_data"
 
 ###
 # CSV file column names
@@ -56,6 +57,8 @@ FIELD_MUST_SEQUENCE: Final[str] = "must_sequence"
 FIELD_PREFERENTIALLY_SEQUENCE: Final[str] = "preferentially_sequence"
 FIELD_PROCESSED: Final[str] = "processed"
 FIELD_SAMPLE_ID: Final[str] = "sample_id"
+FIELD_STATUS: Final[str] = "status"
+FIELD_PLATE_SPECS: Final[str] = "plate_specs"
 
 # filtered-positive field names
 FIELD_FILTERED_POSITIVE_TIMESTAMP: Final[str] = "filtered_positive_timestamp"
