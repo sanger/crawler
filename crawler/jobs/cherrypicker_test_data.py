@@ -111,13 +111,12 @@ def process(run_id: str, settings_module: str = "") -> List[List[str]]:
 
             return barcode_meta
         except Exception as e:
-            reason = e.message if isinstance(e, TestDataError) else type(e).__name__
             update_run(
                 collection,
                 run_id,
                 {
                     FIELD_STATUS: FIELD_STATUS_FAILED,
-                    FIELD_FAILURE_REASON: reason,
+                    FIELD_FAILURE_REASON: str(e),
                 },
             )
             raise

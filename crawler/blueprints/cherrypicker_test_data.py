@@ -35,7 +35,10 @@ def generate_test_data_endpoint() -> FlaskResponse:
 
     try:
         if (request_json := request.get_json()) is None or (run_id := request_json.get("run_id")) is None:
-            msg = f"{FLASK_ERROR_MISSING_PARAMETERS} - Request body should contain a JSON object with a 'run_id' specified."
+            msg = (
+                f"{FLASK_ERROR_MISSING_PARAMETERS} - "
+                "Request body should contain a JSON object with a 'run_id' specified."
+            )
             logger.error(msg)
             return bad_request(msg)
 
@@ -44,7 +47,7 @@ def generate_test_data_endpoint() -> FlaskResponse:
 
     except Exception as e:
         if isinstance(e, TestDataError):
-            msg = e.message
+            msg = str(e)
         else:
             msg = f"{FLASK_ERROR_UNEXPECTED} ({type(e).__name__})"
 
