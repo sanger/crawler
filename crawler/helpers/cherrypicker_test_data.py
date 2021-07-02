@@ -48,8 +48,8 @@ PRINT_FILE_HEADERS = [
 
 BARACODA_PREFIX = 'TEST'
 
-def flatten(t):
-    return [item for sublist in t for item in sublist]
+def flatten(nested_list):
+    return [item for sublist in nested_list for item in sublist]
 
 
 def generate_baracoda_barcodes(num_required) -> list:
@@ -62,9 +62,8 @@ def generate_baracoda_barcodes(num_required) -> list:
 
 def create_barcodes(num_required):
     # call Baracoda here and fetch a set of barcodes with the prefix we want
-    print(f"Num barcodes required from Baracoda = {num_required}")
+    logger.info(f"Num barcodes required from Baracoda = {num_required}")
     list_barcodes = generate_baracoda_barcodes(num_required)
-    print("list_barcodes = %s" % list_barcodes)
     return list_barcodes
 
 
@@ -128,7 +127,7 @@ def create_csv_rows(plate_specs, dt, list_barcodes):
 
 
 def create_barcode_meta(plate_specs, list_barcodes) -> list:
-    print("Creating metadata for barcodes")
+    logger.info("Creating metadata for barcodes")
 
     pos_per_plate = flat_list_of_positives_per_plate(plate_specs)
-    return [[list_barcodes[i], f"numer of positives: {pos_per_plate[i]}"] for i in range(len(pos_per_plate))]
+    return [[list_barcodes[i], f"number of positives: {pos_per_plate[i]}"] for i in range(len(pos_per_plate))]
