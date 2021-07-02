@@ -38,9 +38,11 @@ from crawler.helpers.general_helpers import get_config
 
 logger = logging.getLogger(__name__)
 
+
 class TestDataError(Exception):
     def __init__(self, message):
         self.message = message
+
 
 def process(run_id: str, settings_module: str = "") -> str:
     """Generates cherrypicker test data for processing by Crawler and then
@@ -97,17 +99,25 @@ def process(run_id: str, settings_module: str = "") -> str:
             # TODO: start the crawler for the test data centre
 
             barcode_meta = create_barcode_meta(plate_specs, barcodes)
-            update_run(collection, run_id, {
-                FIELD_STATUS: FIELD_STATUS_COMPLETED,
-                FIELD_BARCODES: json.dumps(barcode_meta),
-            })
+            update_run(
+                collection,
+                run_id,
+                {
+                    FIELD_STATUS: FIELD_STATUS_COMPLETED,
+                    FIELD_BARCODES: json.dumps(barcode_meta),
+                },
+            )
 
             return barcode_meta
         except Exception as e:
-            update_run(collection, run_id, {
-                FIELD_STATUS: FIELD_STATUS_FAILED,
-                FIELD_FAILURE_REASON: e.message,
-            })
+            update_run(
+                collection,
+                run_id,
+                {
+                    FIELD_STATUS: FIELD_STATUS_FAILED,
+                    FIELD_FAILURE_REASON: e.message,
+                },
+            )
             raise
 
 
@@ -123,9 +133,9 @@ def get_run_doc(collection, run_id):
 
 
 def update_status(collection, run_id, status):
-    update_run(collection, ObjectId(run_id), { FIELD_STATUS: status })
+    update_run(collection, ObjectId(run_id), {FIELD_STATUS: status})
 
 
 def update_run(collection, run_id, update):
-    update_dict = { "$set": update, "$currentDate": { FIELD_UPDATED_AT: True } }
-    collection.update_one({FIELD_MONGODB_ID: ObjectId(run_id) }, update_dict)
+    update_dict = {"$set": update, "$currentDate": {FIELD_UPDATED_AT: True}}
+    collection.update_one({FIELD_MONGODB_ID: ObjectId(run_id)}, update_dict)

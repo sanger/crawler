@@ -38,15 +38,13 @@ SAMPLES_FILE_HEADERS = [
     "CH3-Cq",
     "CH4-Target",
     "CH4-Result",
-    "CH4-Cq"
+    "CH4-Cq",
 ]
 
-PRINT_FILE_HEADERS = [
-    "barcode",
-    "text"
-]
+PRINT_FILE_HEADERS = ["barcode", "text"]
 
-BARACODA_PREFIX = 'TEST'
+BARACODA_PREFIX = "TEST"
+
 
 def flatten(nested_list):
     return [item for sublist in nested_list for item in sublist]

@@ -80,7 +80,9 @@ FIELD_STATUS_FAILED: Final[str] = "failed"
 TEST_DATA_ERROR_NO_RUN_FOR_ID: Final[str] = "No run found for ID"
 TEST_DATA_ERROR_WRONG_STATE: Final[str] = "Run doesn't have status"
 TEST_DATA_ERROR_NUMBER_OF_PLATES: Final[str] = "Number of plates to generate must be between 1 and 100."
-TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES: Final[str] = "One or more plates expected fewer than 0 or more than 96 positive samples."
+TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES: Final[
+    str
+] = "One or more plates expected fewer than 0 or more than 96 positive samples."
 
 
 ##
