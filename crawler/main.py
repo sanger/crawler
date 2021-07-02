@@ -30,6 +30,7 @@ from crawler.db.mongo import (
 from crawler.priority_samples_process import update_priority_samples
 from crawler.file_processing import Centre
 from crawler.helpers.general_helpers import get_config
+from crawler.config.centres import CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS
 
 logger = logging.getLogger(__name__)
 
@@ -95,9 +96,12 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                 logger.debug(f"Creating index '{FIELD_LH_SOURCE_PLATE_UUID}' on '{samples_collection.full_name}'")
                 samples_collection.create_index(FIELD_LH_SOURCE_PLATE_UUID)
 
-                # If we are only interested in a certain centre
                 if centre_prefix:
+                    # We are only interested in processing a single centre
                     centres = filter(lambda config: config.get("prefix") == centre_prefix, centres)  # type: ignore
+                else:
+                    # We should only include centres that are to be batch processed
+                    centres = filter(lambda config: config.get(CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS, True), centres)
 
                 centres_instances = [Centre(config, centre_config) for centre_config in centres]
 
