@@ -6,7 +6,7 @@ from flask_cors import CORS
 
 from crawler.constants import FLASK_ERROR_UNEXPECTED, FLASK_ERROR_MISSING_PARAMETERS
 from crawler.helpers.responses import bad_request, internal_server_error, ok
-from crawler.jobs.cherrypicker_test_data import TestDataError, generate
+from crawler.jobs.cherrypicker_test_data import TestDataError, process
 from crawler.types import FlaskResponse
 
 logger = logging.getLogger(__name__)
@@ -42,8 +42,7 @@ def generate_test_data_endpoint() -> FlaskResponse:
             logger.error(msg)
             return bad_request(msg)
 
-        plates_meta = generate(run_id)
-        # TODO: Trigger a run on the test centre
+        plates_meta = process(run_id)
         return ok(run_id=run_id, plates=plates_meta, status="completed")
 
     except Exception as e:

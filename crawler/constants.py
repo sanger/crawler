@@ -59,6 +59,7 @@ FIELD_PROCESSED: Final[str] = "processed"
 FIELD_SAMPLE_ID: Final[str] = "sample_id"
 FIELD_STATUS: Final[str] = "status"
 FIELD_PLATE_SPECS: Final[str] = "plate_specs"
+FIELD_BARCODES: Final[str] = "barcodes"
 FIELD_FAILURE_REASON: Final[str] = "failure_reason"
 
 # filtered-positive field names

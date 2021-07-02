@@ -10,6 +10,7 @@ from crawler.constants import (
     FIELD_UPDATED_AT,
     FIELD_STATUS,
     FIELD_PLATE_SPECS,
+    FIELD_BARCODES,
     FIELD_FAILURE_REASON,
     FIELD_STATUS_PENDING,
     FIELD_STATUS_STARTED,
@@ -17,7 +18,6 @@ from crawler.constants import (
     FIELD_STATUS_CRAWLING_DATA,
     FIELD_STATUS_COMPLETED,
     FIELD_STATUS_FAILED,
-    FIELD_UPDATED_AT,
 )
 from crawler.db.mongo import (
     create_mongo_client,
@@ -38,12 +38,13 @@ class TestDataError(Exception):
     def __init__(self, message):
         self.message = message
 
-def generate(run_id: str, settings_module = "") -> str:
-    """Generates cherrypicker test data for processing by Crawler.
+def process(run_id: str, settings_module: str = "") -> str:
+    """Generates cherrypicker test data for processing by Crawler and then
+    processes it via the usual runner.
 
-    The specification of the plates to be generated should be in Mongo.
-    Each plate will contain an exact number of positive results between 0 and 96
-    as specified. Up to 100 plates can be generated at a time.
+    The specification of the plates to be generated should be in Mongo. Each
+    plate will contain an exact number of positive results between 0 and 96 as
+    specified. Up to 100 plates can be generated at a time.
 
     Arguments:
         run_id: str - The ID of the run.  If this is not found in Mongo an
@@ -64,22 +65,39 @@ def generate(run_id: str, settings_module = "") -> str:
         if run_doc[FIELD_STATUS] != FIELD_STATUS_PENDING:
             raise TestDataError(f"Run doesn't have status '{FIELD_STATUS_PENDING}'")
 
-        plate_specs_string = run_doc[FIELD_PLATE_SPECS]
-        plate_specs = json.loads(plate_specs_string)
+        try:
+            plate_specs_string = run_doc[FIELD_PLATE_SPECS]
+            plate_specs = json.loads(plate_specs_string)
 
-        num_plates = reduce(lambda a, b: a + b[0], plate_specs, 0)
-        if num_plates < 1 or num_plates > 100:
-            log_processing_error(collection, run_id, "Number of plates to generate must be between 1 and 100")
+            num_plates = reduce(lambda a, b: a + b[0], plate_specs, 0)
+            if num_plates < 1 or num_plates > 100:
+                raise TestDataError("Number of plates to generate must be between 1 and 100")
 
-        # TODO: Check no plates ask for fewer than 0 or more than 96 positives
+            # TODO: Check no plates ask for fewer than 0 or more than 96 positives
 
-        dt = datetime.utcnow()
-        barcodes = create_barcodes(num_plates)
-        csv_rows = create_csv_rows(plate_specs, dt, barcodes)
-        # filename = write_file(dt, rows)
+            update_status(collection, run_id, FIELD_STATUS_STARTED)
 
-        update_status(collection, run_id, FIELD_STATUS_COMPLETED)
-        return create_barcode_meta(plate_specs, barcodes)
+            dt = datetime.utcnow()
+            barcodes = create_barcodes(num_plates)
+            csv_rows = create_csv_rows(plate_specs, dt, barcodes)
+            # filename = write_file(dt, rows)
+
+
+            # TODO: start the crawler for the test data centre
+
+            barcode_meta = create_barcode_meta(plate_specs, barcodes)
+            update_run(collection, run_id, {
+                FIELD_STATUS: FIELD_STATUS_COMPLETED,
+                FIELD_BARCODES: json.dumps(barcode_meta),
+            })
+
+            return barcode_meta
+        except Exception as e:
+            update_run(collection, run_id, {
+                FIELD_STATUS: FIELD_STATUS_FAILED,
+                FIELD_FAILURE_REASON: e.message,
+            })
+            raise
 
 
 def get_run_doc(collection, run_id):
@@ -91,14 +109,6 @@ def get_run_doc(collection, run_id):
     logger.debug(f"Found run: {run_doc}")
 
     return run_doc
-
-
-def log_processing_error(collection, run_id, message):
-    update_run(collection, run_id, {
-        FIELD_STATUS: FIELD_STATUS_FAILED,
-        FIELD_FAILURE_REASON: message,
-    })
-    raise TestDataError(message)
 
 
 def update_status(collection, run_id, status):
