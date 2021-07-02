@@ -1,4 +1,5 @@
 import csv
+from datetime import datetime
 import logging
 import random
 import requests
@@ -42,46 +43,46 @@ PRINT_FILE_HEADERS = ["barcode", "text"]
 BARACODA_PREFIX = "TEST"
 
 
-def flatten(nested_list):
+def flatten(nested_list: list) -> list:
     return [item for sublist in nested_list for item in sublist]
 
 
-def generate_baracoda_barcodes(num_required) -> list:
+def generate_baracoda_barcodes(num_required: int) -> list:
     baracoda_url = f"http://uat.baracoda.psd.sanger.ac.uk/barcodes_group/{BARACODA_PREFIX}/new?count={num_required}"
     response = requests.post(baracoda_url, data={})
     response_json = response.json()
-    barcodes = response_json["barcodes_group"]["barcodes"]
+    barcodes: list = response_json["barcodes_group"]["barcodes"]
     return barcodes
 
 
-def create_barcodes(num_required):
+def create_barcodes(num_required: int) -> list:
     # call Baracoda here and fetch a set of barcodes with the prefix we want
     logger.info(f"Num barcodes required from Baracoda = {num_required}")
     list_barcodes = generate_baracoda_barcodes(num_required)
     return list_barcodes
 
 
-def create_root_sample_id(barcode, well_num) -> str:
+def create_root_sample_id(barcode: str, well_num: int) -> str:
     return "RSID-%s%s" % (barcode, str(well_num).zfill(4))
 
 
-def create_viral_prep_id(barcode, well_num, well_coordinate) -> str:
+def create_viral_prep_id(barcode: str, well_num: int, well_coordinate: str) -> str:
     return "VPID-%s%s_%s" % (barcode, str(well_num).zfill(4), well_coordinate)
 
 
-def create_rna_id(barcode, well_coordinate) -> str:
+def create_rna_id(barcode: str, well_coordinate: str) -> str:
     return "%s_%s" % (barcode, well_coordinate)
 
 
-def create_rna_pcr_id(barcode, well_num, well_coordinate) -> str:
+def create_rna_pcr_id(barcode: str, well_num: int, well_coordinate: str) -> str:
     return "RNA_PCR-%s%s_%s" % (barcode, str(well_num).zfill(4), well_coordinate)
 
 
-def create_test_timestamp(dt) -> str:
+def create_test_timestamp(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
-def create_row(dt, well_index, result, barcode) -> str:
+def create_row(dt: datetime, well_index: int, result: str, barcode: str) -> list:
     well_coordinate = WELL_COORDS[well_index]
     well_num = well_index + 1
     return [
@@ -103,7 +104,7 @@ def create_plate_rows(dt, num_positives, plate_barcode):
     return [create_row(dt, i, outcome, plate_barcode) for i, outcome in enumerate(outcomes)]
 
 
-def flat_list_of_positives_per_plate(plate_specs) -> list:
+def flat_list_of_positives_per_plate(plate_specs: list) -> list:
     # Turn [[2, 5], [3, 10]] into [5, 5, 10, 10, 10]
     return flatten([[specs[1]] * specs[0] for specs in plate_specs])
 
@@ -120,7 +121,7 @@ def create_csv_rows(plate_specs, dt, list_barcodes):
     return flatten(plate_rows)
 
 
-def create_barcode_meta(plate_specs, list_barcodes) -> list:
+def create_barcode_meta(plate_specs: list, list_barcodes: list) -> list:
     logger.info("Creating metadata for barcodes")
 
     pos_per_plate = flat_list_of_positives_per_plate(plate_specs)

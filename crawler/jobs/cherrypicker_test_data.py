@@ -3,6 +3,7 @@ from datetime import datetime
 from functools import reduce
 import json
 import logging
+from typing import List
 
 from crawler.constants import (
     COLLECTION_CHERRYPICK_TEST_DATA,
@@ -44,7 +45,7 @@ class TestDataError(Exception):
         self.message = message
 
 
-def process(run_id: str, settings_module: str = "") -> str:
+def process(run_id: str, settings_module: str = "") -> List[List[str]]:
     """Generates cherrypicker test data for processing by Crawler and then
     processes it via the usual runner.
 
@@ -73,7 +74,7 @@ def process(run_id: str, settings_module: str = "") -> str:
 
         try:
             plate_specs_string = run_doc[FIELD_PLATE_SPECS]
-            plate_specs = json.loads(plate_specs_string)
+            plate_specs: List[List[int]] = json.loads(plate_specs_string)
 
             num_plates = reduce(lambda a, b: a + b[0], plate_specs, 0)
             if num_plates < 1 or num_plates > 100:
@@ -110,12 +111,13 @@ def process(run_id: str, settings_module: str = "") -> str:
 
             return barcode_meta
         except Exception as e:
+            reason = e.message if isinstance(e, TestDataError) else type(e).__name__
             update_run(
                 collection,
                 run_id,
                 {
                     FIELD_STATUS: FIELD_STATUS_FAILED,
-                    FIELD_FAILURE_REASON: e.message,
+                    FIELD_FAILURE_REASON: reason,
                 },
             )
             raise
