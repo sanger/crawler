@@ -85,8 +85,14 @@ def process(run_id: str, settings_module: str = "") -> str:
 
             dt = datetime.utcnow()
             barcodes = create_barcodes(num_plates)
+
+            update_status(collection, run_id, FIELD_STATUS_PREPARING_DATA)
+
             csv_rows = create_csv_rows(plate_specs, dt, barcodes)
+            # TODO: Write the CSV rows to the correct location
             # filename = write_file(dt, rows)
+
+            update_status(collection, run_id, FIELD_STATUS_CRAWLING_DATA)
 
             # TODO: start the crawler for the test data centre
 
