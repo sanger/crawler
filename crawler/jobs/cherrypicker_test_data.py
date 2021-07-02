@@ -1,13 +1,22 @@
 from bson.objectid import ObjectId
-import datetime
+from datetime import datetime
 from functools import reduce
 import json
 import logging
 
 from crawler.constants import (
     COLLECTION_CHERRYPICK_TEST_DATA,
+    FIELD_UPDATED_AT,
     FIELD_STATUS,
     FIELD_PLATE_SPECS,
+    FIELD_FAILURE_REASON,
+    FIELD_STATUS_PENDING,
+    FIELD_STATUS_STARTED,
+    FIELD_STATUS_PREPARING_DATA,
+    FIELD_STATUS_CRAWLING_DATA,
+    FIELD_STATUS_COMPLETED,
+    FIELD_STATUS_FAILED,
+    FIELD_UPDATED_AT,
 )
 from crawler.db.mongo import (
     create_mongo_client,
@@ -51,8 +60,8 @@ def generate(run_id: str, settings_module = "") -> str:
         collection = get_mongo_collection(mongo_db, COLLECTION_CHERRYPICK_TEST_DATA)
 
         run_doc = get_run_doc(collection, run_id)
-        if run_doc[FIELD_STATUS] != "pending":
-            raise TestDataError("Run doesn't have status 'pending'")
+        if run_doc[FIELD_STATUS] != FIELD_STATUS_PENDING:
+            raise TestDataError(f"Run doesn't have status '{FIELD_STATUS_PENDING}'")
 
         plate_specs_string = run_doc[FIELD_PLATE_SPECS]
         plate_specs = json.loads(plate_specs_string)
@@ -61,13 +70,13 @@ def generate(run_id: str, settings_module = "") -> str:
         # TODO: Check the number of plates are 100 or fewer
         # TODO: Check no plates ask for fewer than 0 or more than 96 positives
 
-        dt = datetime.datetime.now()
+        dt = datetime.utcnow()
         barcodes = create_barcodes(num_plates)
-        barcode_meta = create_barcode_meta(plate_specs, barcodes)
         csv_rows = create_csv_rows(plate_specs, dt, barcodes)
         # filename = write_file(dt, rows)
 
-        return barcode_meta
+        return create_barcode_meta(plate_specs, barcodes)
+
 
 def get_run_doc(collection, run_id):
     logger.info(f"Getting Mongo document for ID: {run_id}")
@@ -78,3 +87,19 @@ def get_run_doc(collection, run_id):
     logger.debug(f"Found run: {run_doc}")
 
     return run_doc
+
+
+def log_processing_error(message, collection, run_id):
+    update_run(collection, run_id, {
+        FIELD_STATUS: FIELD_STATUS_FAILED,
+        FIELD_FAILURE_REASON: message,
+    })
+    raise TestDataError(message)
+
+
+def update_status(collection, run_id, status):
+    update_run(collection, ObjectId(run_id), { FIELD_STATUS: status })
+
+
+def update_run(collection, run_id, update):
+    collection.update_one(ObjectId(run_id), { **update, FIELD_UPDATED_AT: datetime.utcnow() })

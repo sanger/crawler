@@ -59,11 +59,20 @@ FIELD_PROCESSED: Final[str] = "processed"
 FIELD_SAMPLE_ID: Final[str] = "sample_id"
 FIELD_STATUS: Final[str] = "status"
 FIELD_PLATE_SPECS: Final[str] = "plate_specs"
+FIELD_FAILURE_REASON: Final[str] = "failure_reason"
 
 # filtered-positive field names
 FIELD_FILTERED_POSITIVE_TIMESTAMP: Final[str] = "filtered_positive_timestamp"
 FIELD_FILTERED_POSITIVE_VERSION: Final[str] = "filtered_positive_version"
 FIELD_FILTERED_POSITIVE: Final[str] = "filtered_positive"
+
+# status field values
+FIELD_STATUS_PENDING: Final[str] = "pending"
+FIELD_STATUS_STARTED: Final[str] = "started"
+FIELD_STATUS_PREPARING_DATA: Final[str] = "preparing_data"
+FIELD_STATUS_CRAWLING_DATA: Final[str] = "crawling_data"
+FIELD_STATUS_COMPLETED: Final[str] = "completed"
+FIELD_STATUS_FAILED: Final[str] = "failed"
 
 ##
 # multi-lims warehouse field names
