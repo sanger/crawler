@@ -16,6 +16,7 @@ from crawler.constants import (
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
+    FIELD_LH_SAMPLE_UUID,
 )
 from crawler.db.mongo import (
     create_mongo_client,
@@ -71,6 +72,10 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                 # Index on result column to make it easier to select the positives
                 logger.debug(f"Creating index '{FIELD_RESULT}' on '{samples_collection.full_name}'")
                 samples_collection.create_index(FIELD_RESULT)
+
+                # Index on lh_sample_uuid column to make it easier for queries joining on the samples from lighthouse
+                logger.debug(f"Creating index '{FIELD_LH_SAMPLE_UUID}' on '{samples_collection.full_name}'")
+                samples_collection.create_index(FIELD_LH_SAMPLE_UUID)
 
                 # Index on unique combination of columns
                 logger.debug(f"Creating compound index on '{samples_collection.full_name}'")
