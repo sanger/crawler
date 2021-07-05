@@ -1,6 +1,7 @@
 import csv
 from datetime import datetime
 import logging
+import os
 import random
 import requests
 
@@ -121,11 +122,15 @@ def create_csv_rows(plate_specs, dt, list_barcodes):
     return flatten(plate_rows)
 
 
-def write_plates_file(rows, filepath) -> str:
-    logger.info(f"Writing to file: {filepath}")
+def write_plates_file(rows, path, filename) -> str:
+    logger.info(f"Writing to file: {filename}")
 
     try:
-        with open(filepath, mode='w') as plates_file:
+        if not os.path.isdir(path):
+            os.makedirs(path)
+
+        full_path = os.path.join(path, filename)
+        with open(full_path, mode='w') as plates_file:
             plates_writer = csv.writer(plates_file, delimiter=',', quotechar='"',
                 quoting=csv.QUOTE_MINIMAL)
 
@@ -140,7 +145,7 @@ def write_plates_file(rows, filepath) -> str:
         logger.error(f"Exception: {e}")
         raise
     else:
-        logger.info(f"Test data plates file written: {filepath}")
+        logger.info(f"Test data plates file written: {filename}")
 
 
 def create_barcode_meta(plate_specs: list, list_barcodes: list) -> list:

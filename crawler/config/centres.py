@@ -179,7 +179,7 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "prefix": TEST_DATA_CENTRE_PREFIX,
         "lab_id_default": "CPTD",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/CPTD",
-        "sftp_file_regex_unconsolidated_surveillance": f"^CPTD_{CENTRE_REGEX_SFTP_FILE_HERON}",
+        "sftp_file_regex_unconsolidated_surveillance": f"^CPTD_(\d{6}_\d{6}_\d{6}).*\.csv",
         "sftp_file_regex_consolidated_surveillance": r"^$",
         "sftp_file_regex_consolidated_eagle": r"^$",
         CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,

@@ -95,9 +95,9 @@ def process(run_id: str, settings_module: str = "") -> List[List[str]]:
             update_status(collection, run_id, FIELD_STATUS_PREPARING_DATA)
 
             csv_rows = create_csv_rows(plate_specs, dt, barcodes)
-            plates_filename = f"{TEST_DATA_CENTRE_PREFIX}_sanger_report_{dt.strftime('%y%m%d_%H%M')}.csv"
-            plates_filepath = os.path.join(config.DIR_DOWNLOADED_DATA, plates_filename)
-            write_plates_file(csv_rows, plates_filepath)
+            plates_path = os.path.join(config.DIR_DOWNLOADED_DATA, TEST_DATA_CENTRE_PREFIX)
+            plates_filename = f"{TEST_DATA_CENTRE_PREFIX}_{dt.strftime('%y%m%d_%H%M%S_%f')}.csv"
+            write_plates_file(csv_rows, plates_path, plates_filename)
 
             # TODO: Write the CSV rows to the correct location
             # filename = write_file(dt, rows)
