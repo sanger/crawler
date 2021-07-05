@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def make_coords_list():
-    for column in ["A", "B", "C", "D", "E", "F", "G", "H"]:
+    for column in "ABCDEFGH":
         for row in range(1, 13):
             yield "%s%02d" % (column, row)
 
