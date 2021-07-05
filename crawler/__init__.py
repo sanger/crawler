@@ -22,6 +22,9 @@ def create_app() -> Flask:
 
     @app.get("/health")
     def health_check():
-        return "Crawler is working", HTTPStatus.OK
+        if scheduler.get_job("run_crawler"):
+            return "Crawler is working", HTTPStatus.OK
+
+        return "Crawler is not working correctly", HTTPStatus.INTERNAL_SERVER_ERROR
 
     return app
