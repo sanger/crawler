@@ -89,7 +89,7 @@ To run an ingest immediately, whether Flask is running or not, the `runner.py` f
 
     python runner.py --help
 
-    usage: runner.py [-h] [--sftp] [--keep-files] [--add-to-dart] [--centre_prefix {ALDP}]
+    usage: runner.py [-h] [--sftp] [--keep-files] [--add-to-dart] [--centre_prefix {ALDP,MILK,QEUH,CAMC,RAND,HSLL,PLYM,BRBR}]
 
     Parse CSV files from the Lighthouse Labs and store the sample information in MongoDB
 
@@ -98,8 +98,8 @@ To run an ingest immediately, whether Flask is running or not, the `runner.py` f
     --sftp                use SFTP to download CSV files, defaults to using local files
     --keep-files          keeps the CSV files after the runner has been executed
     --add-to-dart         on processing samples, also add them to DART
-    --centre_prefix {ALDP}
-                          process only this centre's CSV files
+    --centre_prefix {ALDP,MILK,QEUH,CAMC,RAND,HSLL,PLYM,BRBR}
+                          process only this centre's plate map files
 
 ## Migrations
 
