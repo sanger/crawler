@@ -110,7 +110,7 @@ def flat_list_of_positives_per_plate(plate_specs: list) -> list:
     return flatten([[specs[1]] * specs[0] for specs in plate_specs])
 
 
-def create_csv_rows(plate_specs, dt, list_barcodes):
+def create_csv_rows(plate_specs: list, dt: datetime, list_barcodes: list) -> list:
     pos_per_plate = flat_list_of_positives_per_plate(plate_specs)
 
     # Create lists of csv rows for each plate
@@ -122,7 +122,7 @@ def create_csv_rows(plate_specs, dt, list_barcodes):
     return flatten(plate_rows)
 
 
-def write_plates_file(rows, path, filename) -> str:
+def write_plates_file(rows: list, path: str, filename: str) -> None:
     logger.info(f"Writing to file: {filename}")
 
     try:
@@ -130,9 +130,8 @@ def write_plates_file(rows, path, filename) -> str:
             os.makedirs(path)
 
         full_path = os.path.join(path, filename)
-        with open(full_path, mode='w') as plates_file:
-            plates_writer = csv.writer(plates_file, delimiter=',', quotechar='"',
-                quoting=csv.QUOTE_MINIMAL)
+        with open(full_path, mode="w") as plates_file:
+            plates_writer = csv.writer(plates_file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
             # write header row
             plates_writer.writerow(SAMPLES_FILE_HEADERS)
