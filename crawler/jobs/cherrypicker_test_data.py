@@ -99,9 +99,6 @@ def process(run_id: str, settings_module: str = "") -> List[List[str]]:
             plates_filename = f"{TEST_DATA_CENTRE_PREFIX}_{dt.strftime('%y%m%d_%H%M%S_%f')}.csv"
             write_plates_file(csv_rows, plates_path, plates_filename)
 
-            # TODO: Write the CSV rows to the correct location
-            # filename = write_file(dt, rows)
-
             update_status(collection, run_id, FIELD_STATUS_CRAWLING_DATA)
 
             # TODO: start the crawler for the test data centre
