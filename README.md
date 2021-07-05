@@ -62,7 +62,7 @@ The following tools are required for development:
 The app is set to run with development settings when not deployed via Ansible.
 To change this you can update the line in `.flaskenv` to another module if desired:
 
-    SETTINGS_PATH=config/development.py
+    SETTINGS_MODULE=crawler.config.development
 
 ### Setup Steps
 

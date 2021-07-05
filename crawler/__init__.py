@@ -1,6 +1,7 @@
+from http import HTTPStatus
 import logging
 import logging.config
-from http import HTTPStatus
+import os
 
 from flask import Flask
 from flask_apscheduler import APScheduler
@@ -10,7 +11,7 @@ scheduler = APScheduler()
 
 def create_app() -> Flask:
     app = Flask(__name__)
-    app.config.from_envvar("SETTINGS_PATH")
+    app.config.from_object(os.environ["SETTINGS_MODULE"])
 
     # setup logging
     logging.config.dictConfig(app.config["LOGGING"])
