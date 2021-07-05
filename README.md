@@ -59,9 +59,10 @@ The following tools are required for development:
 
 ### Configuring Environment
 
-Create a `.env` file (or copy and rename the `.env.example`) file with the following values:
+The app is set to run with development settings when not deployed via Ansible.
+To change this you can update the line in `.flaskenv` to another module if desired:
 
-    SETTINGS_MODULE=crawler.config.development
+    SETTINGS_PATH=config/development.py
 
 ### Setup Steps
 

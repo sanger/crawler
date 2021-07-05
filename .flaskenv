@@ -10,3 +10,5 @@ FLASK_RUN_PORT=8000
 
 # https://flask.palletsprojects.com/en/1.1.x/config/#environment-and-debug-features
 FLASK_ENV=development
+
+SETTINGS_PATH=config/development.py
