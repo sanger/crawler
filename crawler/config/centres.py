@@ -1,7 +1,12 @@
 # flake8: noqa
 from typing import Dict, List, Union
 
-from crawler.constants import BIOMEK_LABWARE_CLASS_BIO, BIOMEK_LABWARE_CLASS_KINGFISHER, FIELD_RNA_ID
+from crawler.constants import (
+    BIOMEK_LABWARE_CLASS_BIO,
+    BIOMEK_LABWARE_CLASS_KINGFISHER,
+    FIELD_RNA_ID,
+    TEST_DATA_CENTRE_PREFIX,
+)
 
 # centre details
 # This information will also be persisted in the mongo database
@@ -154,19 +159,6 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
     {
         "barcode_field": FIELD_RNA_ID,
         "barcode_regex": CENTRE_REGEX_BARCODE,
-        "name": "Cherrypick Test Data",
-        "prefix": "CPTD",
-        "lab_id_default": "CPTD",
-        "backups_folder": f"{CENTRE_DIR_BACKUPS}/CPTD",
-        "sftp_file_regex_unconsolidated_surveillance": f"^CPTD_{CENTRE_REGEX_SFTP_FILE_HERON}",
-        "sftp_file_regex_consolidated_surveillance": r"^$",
-        "sftp_file_regex_consolidated_eagle": r"^$",
-        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,
-        CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS: False,
-    },
-    {
-        "barcode_field": FIELD_RNA_ID,
-        "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Brants Bridge",
         "prefix": "BRBR",
         "lab_id_default": "BRBR",
@@ -178,5 +170,19 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
         CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,
+        CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS: True,
+    },
+    {
+        "barcode_field": FIELD_RNA_ID,
+        "barcode_regex": CENTRE_REGEX_BARCODE,
+        "name": "Cherrypick Test Data",
+        "prefix": TEST_DATA_CENTRE_PREFIX,
+        "lab_id_default": "CPTD",
+        "backups_folder": f"{CENTRE_DIR_BACKUPS}/CPTD",
+        "sftp_file_regex_unconsolidated_surveillance": f"^CPTD_{CENTRE_REGEX_SFTP_FILE_HERON}",
+        "sftp_file_regex_consolidated_surveillance": r"^$",
+        "sftp_file_regex_consolidated_eagle": r"^$",
+        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,
+        CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS: False,
     },
 ]

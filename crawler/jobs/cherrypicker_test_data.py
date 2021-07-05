@@ -3,6 +3,7 @@ from datetime import datetime
 from functools import reduce
 import json
 import logging
+import os
 from typing import List
 
 from crawler.constants import (
@@ -19,6 +20,7 @@ from crawler.constants import (
     FIELD_STATUS_CRAWLING_DATA,
     FIELD_STATUS_COMPLETED,
     FIELD_STATUS_FAILED,
+    TEST_DATA_CENTRE_PREFIX,
     TEST_DATA_ERROR_NO_RUN_FOR_ID,
     TEST_DATA_ERROR_WRONG_STATE,
     TEST_DATA_ERROR_NUMBER_OF_PLATES,
@@ -33,6 +35,7 @@ from crawler.helpers.cherrypicker_test_data import (
     create_barcodes,
     create_barcode_meta,
     create_csv_rows,
+    write_plates_file,
 )
 from crawler.helpers.general_helpers import get_config
 
@@ -80,8 +83,8 @@ def process(run_id: str, settings_module: str = "") -> List[List[str]]:
             if num_plates < 1 or num_plates > 100:
                 raise TestDataError(TEST_DATA_ERROR_NUMBER_OF_PLATES)
 
-            pos_per_plate = [spec[1] for spec in plate_specs]
-            if any([pos < 50 or pos > 96 for pos in pos_per_plate]):
+            positives_per_plate = [spec[1] for spec in plate_specs]
+            if any([positives < 0 or positives > 96 for positives in positives_per_plate]):
                 raise TestDataError(TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES)
 
             update_status(collection, run_id, FIELD_STATUS_STARTED)
@@ -92,6 +95,10 @@ def process(run_id: str, settings_module: str = "") -> List[List[str]]:
             update_status(collection, run_id, FIELD_STATUS_PREPARING_DATA)
 
             csv_rows = create_csv_rows(plate_specs, dt, barcodes)
+            plates_filename = f"{TEST_DATA_CENTRE_PREFIX}_sanger_report_{dt.strftime('%y%m%d_%H%M')}.csv"
+            plates_filepath = os.path.join(config.DIR_DOWNLOADED_DATA, plates_filename)
+            write_plates_file(csv_rows, plates_filepath)
+
             # TODO: Write the CSV rows to the correct location
             # filename = write_file(dt, rows)
 

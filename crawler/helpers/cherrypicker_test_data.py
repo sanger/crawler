@@ -121,32 +121,26 @@ def create_csv_rows(plate_specs, dt, list_barcodes):
     return flatten(plate_rows)
 
 
-# def create_filename(dt) -> str:
-#     return "%s_%s_%s" % (FILENAME_CENTRE_PREFIX, FILENAME_MIDDLE, dt.strftime("%y%m%d_%H%M"))
+def write_plates_file(rows, filepath) -> str:
+    logger.info(f"Writing to file: {filepath}")
 
+    try:
+        with open(filepath, mode='w') as plates_file:
+            plates_writer = csv.writer(plates_file, delimiter=',', quotechar='"',
+                quoting=csv.QUOTE_MINIMAL)
 
-# def write_plates_file(dt, rows) -> str:
-#     filename = create_filename(dt)
-#     full_filepath = "%s%s.csv" % (FILEPATH, filename)
-#     print(f"Writing to file: {full_filepath}")
+            # write header row
+            plates_writer.writerow(SAMPLES_FILE_HEADERS)
 
-#     try:
-#         with open(full_filepath, mode='w') as source_plate_file:
-#             source_plate_writer = csv.writer(source_plate_file, delimiter=',', quotechar='"',
-#                 quoting=csv.QUOTE_MINIMAL)
-#             # write header row
-#             source_plate_writer.writerow(FILE_HEADERS)
-#             # write well rows
-#             for row in rows:
-#                 source_plate_writer.writerow(row)
+            # write well rows
+            for row in rows:
+                plates_writer.writerow(row)
 
-#     except Exception as e:
-#         print("Exception:")
-#         print(e)
-#     else:
-#         print(f"File written: {filename}")
-#     finally:
-#         return filename
+    except Exception as e:
+        logger.error(f"Exception: {e}")
+        raise
+    else:
+        logger.info(f"Test data plates file written: {filepath}")
 
 
 def create_barcode_meta(plate_specs: list, list_barcodes: list) -> list:
