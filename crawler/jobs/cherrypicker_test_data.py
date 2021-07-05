@@ -38,6 +38,7 @@ from crawler.helpers.cherrypicker_test_data import (
     write_plates_file,
 )
 from crawler.helpers.general_helpers import get_config
+from crawler.main import run as run_crawler
 
 
 logger = logging.getLogger(__name__)
@@ -101,7 +102,7 @@ def process(run_id: str, settings_module: str = "") -> List[List[str]]:
 
             update_status(collection, run_id, FIELD_STATUS_CRAWLING_DATA)
 
-            # TODO: start the crawler for the test data centre
+            run_crawler(sftp=False, keep_files=False, add_to_dart=False, centre_prefix=TEST_DATA_CENTRE_PREFIX)
 
             barcode_meta = create_barcode_meta(plate_specs, barcodes)
             update_run(
