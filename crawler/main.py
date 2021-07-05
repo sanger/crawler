@@ -74,8 +74,9 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                 samples_collection.create_index(FIELD_RESULT)
 
                 # Index on lh_sample_uuid column to make it easier for queries joining on the samples from lighthouse
+                # Index is sparse because not all rows have an lh_sample_uuid
                 logger.debug(f"Creating index '{FIELD_LH_SAMPLE_UUID}' on '{samples_collection.full_name}'")
-                samples_collection.create_index(FIELD_LH_SAMPLE_UUID)
+                samples_collection.create_index(FIELD_LH_SAMPLE_UUID, sparse=True)
 
                 # Index on unique combination of columns
                 logger.debug(f"Creating compound index on '{samples_collection.full_name}'")
