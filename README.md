@@ -79,7 +79,7 @@ To then run the app, use the command:
 
     flask run
 
-This will cause the crawler to execute an ingest every 15 minutes, triggered by cron, so at 0, 15, 30 and 45 minutes past the hour.
+This will cause the crawler to execute an ingest every 30 minutes, triggered by cron, so at 10 and 40 minutes past the hour.
 This scheduled behaviour can be turned off by adding the following to the `development.py` file:
 
     SCHEDULER_RUN = False

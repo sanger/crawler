@@ -77,6 +77,6 @@ JOBS = [
         "trigger": "cron",
         "day": "*",
         "hour": "*",
-        "minute": "*/15",
+        "minute": "10/30",
     }
 ]
