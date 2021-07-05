@@ -107,7 +107,7 @@ def testing_files_for_process(cleanup_backups):
     TODO: remove reference to master files above - they don't exist anymore
     2. It means we keep the tested process closer to the actual one
     """
-    _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
+    _ = shutil.copytree("tests/test_files/good", "tmp/files", dirs_exist_ok=True)
     try:
         yield
     finally:
