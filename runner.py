@@ -1,11 +1,7 @@
 import argparse
-import logging
-import logging.config
 
 from crawler import main
 from crawler.config.centres import CENTRES
-
-logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

@@ -73,7 +73,7 @@ SCHEDULER_API_ENABLED = False
 JOBS = [
     {
         "id": "run_crawler",
-        "func": "crawler.main:scheduled_run",
+        "func": "crawler.jobs.apscheduler:scheduled_run",
         "trigger": "cron",
         "day": "*",
         "hour": "*",
