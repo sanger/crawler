@@ -20,7 +20,7 @@ from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mong
 from crawler.db.mysql import create_mysql_connection
 from crawler.file_processing import Centre, CentreFile
 from crawler.helpers.general_helpers import get_config
-from tests.data.testing_objects import (
+from tests.testing_objects import (
     EVENT_WH_DATA,
     FILTERED_POSITIVE_TESTING_SAMPLES,
     MLWH_SAMPLE_LIGHTHOUSE_SAMPLE,
