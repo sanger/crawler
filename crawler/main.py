@@ -4,9 +4,7 @@ import time
 
 import pymongo
 
-from flask import current_app as app
-
-from crawler import scheduler
+from crawler.config.centres import CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS
 from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_SAMPLES,
@@ -27,10 +25,9 @@ from crawler.db.mongo import (
     populate_collection,
     samples_collection_accessor,
 )
-from crawler.priority_samples_process import update_priority_samples
 from crawler.file_processing import Centre
 from crawler.helpers.general_helpers import get_config
-from crawler.config.centres import CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS
+from crawler.priority_samples_process import update_priority_samples
 
 logger = logging.getLogger(__name__)
 
@@ -117,8 +114,7 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
 
                         centre_instance.process_files(add_to_dart)
                     except Exception as e:
-                        logger.error("An exception occured")
-                        logger.error(f"Error in centre {centre_instance.centre_config['name']}")
+                        logger.error(f"Error in centre '{centre_instance.centre_config['name']}'")
                         logger.exception(e)
                     finally:
                         if not keep_files and centre_instance.is_download_dir_walkable:
@@ -131,14 +127,3 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
         logger.info("=" * 80)
     except Exception as e:
         logger.exception(e)
-
-
-def scheduled_run():
-    """Scheduler's job to do a run every 15 minutes."""
-    logger.info("Starting scheduled_run job.")
-
-    with scheduler.app.app_context():
-        use_sftp = app.config["USE_SFTP"]
-        keep_files = app.config["KEEP_FILES"]
-        add_to_dart = app.config["ADD_TO_DART"]
-        run(use_sftp, keep_files, add_to_dart)

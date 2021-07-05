@@ -59,7 +59,8 @@ The following tools are required for development:
 
 ### Configuring Environment
 
-Create a `.env` file (or copy and rename the `.env.example`) file with the following values:
+The app is set to run with development settings when not deployed via Ansible.
+To change this you can update the line in `.flaskenv` to another module if desired:
 
     SETTINGS_MODULE=crawler.config.development
 
@@ -79,7 +80,7 @@ To then run the app, use the command:
 
     flask run
 
-This will cause the crawler to execute an ingest every 15 minutes, triggered by cron, so at 0, 15, 30 and 45 minutes past the hour.
+This will cause the crawler to execute an ingest every 30 minutes, triggered by cron, so at 10 and 40 minutes past the hour.
 This scheduled behaviour can be turned off by adding the following to the `development.py` file:
 
     SCHEDULER_RUN = False
@@ -89,7 +90,7 @@ To run an ingest immediately, whether Flask is running or not, the `runner.py` f
 
     python runner.py --help
 
-    usage: runner.py [-h] [--sftp] [--keep-files] [--add-to-dart] [--centre_prefix {ALDP}]
+    usage: runner.py [-h] [--sftp] [--keep-files] [--add-to-dart] [--centre_prefix {ALDP,MILK,QEUH,CAMC,RAND,HSLL,PLYM,BRBR}]
 
     Parse CSV files from the Lighthouse Labs and store the sample information in MongoDB
 
@@ -98,14 +99,14 @@ To run an ingest immediately, whether Flask is running or not, the `runner.py` f
     --sftp                use SFTP to download CSV files, defaults to using local files
     --keep-files          keeps the CSV files after the runner has been executed
     --add-to-dart         on processing samples, also add them to DART
-    --centre_prefix {ALDP}
-                          process only this centre's CSV files
+    --centre_prefix {ALDP,MILK,QEUH,CAMC,RAND,HSLL,PLYM,BRBR}
+                          process only this centre's plate map files
 
 ## Migrations
 
 ### Updating the MLWH `lighthouse_sample` Table
 
-When the crawler process runs every 15 minutes it should be updating the MLWH lighthouse_sample table as it goes with records for all rows that are inserted into MongoDB.
+When the crawler process runs every 30 minutes it should be updating the MLWH lighthouse_sample table as it goes with records for all rows that are inserted into MongoDB.
 If that MLWH insert process fails you should see a critical exception for the file in Lighthouse-UI.
 This may be after records inserted correctly into MongoDB, and re-running the file will not re-attempt the MLWH inserts in that situation.
 

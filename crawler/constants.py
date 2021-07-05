@@ -2,6 +2,12 @@
 from decimal import Decimal
 from typing import Final, Set, Tuple
 
+
+###
+# AP Scheduler Jobs
+###
+SCHEDULER_JOB_ID_RUN_CRAWLER: Final[str] = "run_crawler"
+
 ###
 # mongo collections
 ###

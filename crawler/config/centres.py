@@ -1,4 +1,6 @@
 # flake8: noqa
+from typing import Dict, List, Union
+
 from crawler.constants import BIOMEK_LABWARE_CLASS_BIO, BIOMEK_LABWARE_CLASS_KINGFISHER, FIELD_RNA_ID
 
 # centre details
@@ -26,6 +28,8 @@ from crawler.constants import BIOMEK_LABWARE_CLASS_BIO, BIOMEK_LABWARE_CLASS_KIN
 # sftp_root_write: directory on sftp in which to upload master files
 # file_names_to_ignore: array of files to exclude from processing, such as those
 #                       containing invalid headers
+# skip_unconsolidated_surveillance_files: Sanger will not be processing unconsolidated files to prevents duplicates
+
 CENTRE_REGEX_BARCODE = r"^[\W_]*([\w-]*)_([A-Z]\d{0,1}\d)[\W_]*$"
 CENTRE_DIR_BACKUPS = "data/backups"
 CENTRE_REGEX_SFTP_FILE_HERON = r"sanger_report_(\d{6}_\d{4}).*\.csv$"
@@ -35,7 +39,7 @@ REGEX_SURVEILLANCE_GLS_2 = r"^[a-zA-Z]{3}-[a-zA-Z]{2}-\d+\.csv$"
 CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES = "skip_unconsolidated_surveillance_files"
 CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS = "include_in_scheduled_runs"  # default true
 
-CENTRES = [
+CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
     {
         "barcode_field": FIELD_RNA_ID,
         "barcode_regex": CENTRE_REGEX_BARCODE,
@@ -159,5 +163,20 @@ CENTRES = [
         "sftp_file_regex_consolidated_eagle": r"^$",
         CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,
         CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS: False,
+    },
+    {
+        "barcode_field": FIELD_RNA_ID,
+        "barcode_regex": CENTRE_REGEX_BARCODE,
+        "name": "Brants Bridge",
+        "prefix": "BRBR",
+        "lab_id_default": "BRBR",
+        "backups_folder": f"{CENTRE_DIR_BACKUPS}/BRBR",
+        "sftp_file_regex_unconsolidated_surveillance": r"^$",
+        "sftp_file_regex_consolidated_surveillance": r"^BB_\d+\.csv$",
+        "sftp_file_regex_consolidated_eagle": r"^$",
+        "sftp_root_read": "project-heron_brbr",
+        "file_names_to_ignore": [],
+        "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,
     },
 ]

@@ -18,6 +18,7 @@ from more_itertools import groupby_transform
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
+from crawler.config.centres import CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES
 from crawler.constants import (
     ALLOWED_CH_RESULT_VALUES,
     ALLOWED_CH_TARGET_VALUES,
@@ -88,8 +89,6 @@ from crawler.types import (
     SampleDoc,
     SourcePlateDoc,
 )
-
-from crawler.config.centres import CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES
 
 logger = logging.getLogger(__name__)
 
@@ -197,12 +196,15 @@ class Centre:
             pass
 
         with get_sftp_connection(self.config) as sftp:
-            logger.debug("Connected to SFTP")
+            logger.info("Connected to SFTP")
             logger.debug("Listing centre's root directory")
-            logger.debug(f"ls: {sftp.listdir(self.centre_config['sftp_root_read'])}")
 
-            # downloads all files
-            logger.info("Downloading CSV files")
+            sftp_root_read = self.centre_config["sftp_root_read"]
+            logger.debug(f"ls {self.config.SFTP_HOST}/{sftp_root_read}")
+            logger.debug(sftp.listdir(sftp_root_read))
+
+            # download all plate map files
+            logger.info("Downloading plate map files")
             sftp.get_d(self.centre_config["sftp_root_read"], self.get_download_dir())
 
         return None
@@ -1032,7 +1034,7 @@ class CentreFile:
                     seen_headers.append(csv_field)
 
                     if csv_row[csv_field]:
-                        modified_row[channel_field] = csv_row[csv_field]
+                        modified_row[channel_field] = csv_row[csv_field].strip()
 
         return seen_headers, modified_row
 
