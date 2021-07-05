@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def scheduled_run():
-    """Scheduler's job to do a run every 15 minutes."""
+    """Scheduler's job to do a run every 30 minutes."""
     config, _ = get_config()
     logging.config.dictConfig(config.LOGGING)
 

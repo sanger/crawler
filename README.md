@@ -106,7 +106,7 @@ To run an ingest immediately, whether Flask is running or not, the `runner.py` f
 
 ### Updating the MLWH `lighthouse_sample` Table
 
-When the crawler process runs every 15 minutes it should be updating the MLWH lighthouse_sample table as it goes with records for all rows that are inserted into MongoDB.
+When the crawler process runs every 30 minutes it should be updating the MLWH lighthouse_sample table as it goes with records for all rows that are inserted into MongoDB.
 If that MLWH insert process fails you should see a critical exception for the file in Lighthouse-UI.
 This may be after records inserted correctly into MongoDB, and re-running the file will not re-attempt the MLWH inserts in that situation.
 
