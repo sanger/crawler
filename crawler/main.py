@@ -27,9 +27,9 @@ from crawler.db.mongo import (
     populate_collection,
     samples_collection_accessor,
 )
-from crawler.priority_samples_process import update_priority_samples
 from crawler.file_processing import Centre
 from crawler.helpers.general_helpers import get_config
+from crawler.priority_samples_process import update_priority_samples
 
 logger = logging.getLogger(__name__)
 
@@ -111,8 +111,7 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
 
                         centre_instance.process_files(add_to_dart)
                     except Exception as e:
-                        logger.error("An exception occured")
-                        logger.error(f"Error in centre {centre_instance.centre_config['name']}")
+                        logger.error(f"Error in centre '{centre_instance.centre_config['name']}'")
                         logger.exception(e)
                     finally:
                         if not keep_files and centre_instance.is_download_dir_walkable:
