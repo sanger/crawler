@@ -1,6 +1,7 @@
 # flake8: noqa
 import os
 
+from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
 from crawler.config.centres import *
 from crawler.config.logging import *
 
@@ -72,7 +73,7 @@ SCHEDULER_TIMEZONE = (
 SCHEDULER_API_ENABLED = False
 JOBS = [
     {
-        "id": "run_crawler",
+        "id": SCHEDULER_JOB_ID_RUN_CRAWLER,
         "func": "crawler.jobs.apscheduler:scheduled_run",
         "trigger": "cron",
         "day": "*",
