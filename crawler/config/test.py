@@ -5,7 +5,7 @@ from crawler.constants import FIELD_RNA_ID
 # settings here overwrite those in 'defaults.py'
 
 # general details
-DIR_DOWNLOADED_DATA = "tests/files/"
+DIR_DOWNLOADED_DATA = "tests/test_files/good/"
 
 # change all the backup folder entries for the centres during testing
 for centre in CENTRES:
@@ -23,7 +23,7 @@ CENTRES.append(
         "sftp_file_regex_unconsolidated_surveillance": f"^TEST_{CENTRE_REGEX_SFTP_FILE_HERON}",
         "sftp_file_regex_consolidated_surveillance": r"^Test-\d+\.csv$",
         "sftp_file_regex_consolidated_eagle": r"^TE\d+\.csv$",
-        "sftp_root_read": "tests/files",
+        "sftp_root_read": "tests/test_files/good",
         "file_names_to_ignore": ["TEST_sanger_report_200518_2205.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
     }

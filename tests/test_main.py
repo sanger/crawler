@@ -96,8 +96,8 @@ def test_error_run(mongo_database, testing_files_for_process, pyodbc_conn):
     (_, _, files) = next(os.walk("tmp/backups/TEST/errors"))
     assert 2 == len(files)
 
-    _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
-    _ = shutil.copytree("tests/malformed_files", "tmp/files", dirs_exist_ok=True)
+    _ = shutil.copytree("tests/test_files/good", "tmp/files", dirs_exist_ok=True)
+    _ = shutil.copytree("tests/test_files/malformed", "tmp/files", dirs_exist_ok=True)
 
     run(False, False, False, "crawler.config.integration")
 
@@ -120,7 +120,7 @@ def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_f
     _, mongo_database = mongo_database
 
     # copy an additional file with duplicates
-    _ = shutil.copytree("tests/files_with_duplicate_samples", "tmp/files", dirs_exist_ok=True)
+    _ = shutil.copytree("tests/test_files/duplicate_samples", "tmp/files", dirs_exist_ok=True)
 
     with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
         run(False, False, False, "crawler.config.integration")
@@ -149,7 +149,7 @@ def test_error_run_duplicates_plate_barcodes_from_different_labs_message(
     _, mongo_database = mongo_database
 
     # copy an additional file with duplicates
-    _ = shutil.copytree("tests/files_with_duplicate_barcodes", "tmp/files", dirs_exist_ok=True)
+    _ = shutil.copytree("tests/test_files/duplicate_barcodes", "tmp/files", dirs_exist_ok=True)
 
     with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
         run(False, False, False, "crawler.config.integration")
@@ -232,7 +232,7 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     # Second run to test that already processed files are skipped
     # and that a file previously in the blacklist is now processed
     # First copy full set of files as before.
-    _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
+    _ = shutil.copytree("tests/test_files/good", "tmp/files", dirs_exist_ok=True)
 
     # Invalidate old copy of config
     invalidate_caches()
