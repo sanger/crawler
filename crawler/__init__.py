@@ -11,9 +11,13 @@ from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
 scheduler = APScheduler()
 
 
-def create_app() -> Flask:
+def create_app(config_object=None) -> Flask:
     app = Flask(__name__)
-    app.config.from_object(os.environ["SETTINGS_MODULE"])
+
+    if config_object is None:
+        app.config.from_object(os.environ["SETTINGS_MODULE"])
+    else:
+        app.config.from_object(config_object)
 
     # setup logging
     logging.config.dictConfig(app.config["LOGGING"])
