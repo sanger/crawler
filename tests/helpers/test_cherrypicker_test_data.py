@@ -194,11 +194,36 @@ def test_create_csv_rows():
     # Note this is an integration of all the methods tested above, so not strictly a unit test!
     plate_specs = [[1, 0], [2, 40], [1, 96]]
     dt = datetime(2012, 3, 4, 5, 6, 7)
-    barcodes = ["TEST-00POS01", "TEST-40POS01", "TEST-40POS02", "TEST-96POS01"]
+    barcodes = { "TEST-00POS01": 0, "TEST-40POS01": 40, "TEST-40POS02": 40, "TEST-96POS01": 96 }
 
-    actual = create_csv_rows(plate_specs, dt, barcodes)
+    actual = create_csv_rows(plate_specs, dt, list(barcodes.keys()))
 
-    assert len(actual) == 96 * len(barcodes)
-    for barcode in barcodes:
+    wells_per_plate = 96
+    expected_count = wells_per_plate * len(barcodes)
+    assert len(actual) == expected_count
 
-        assert len([row for row in actual if barcode in row[0]]) == 96
+    # Check that identifier fields are unique across the rows
+    assert len(set([row[0] for row in actual])) == expected_count
+    assert len(set([row[1] for row in actual])) == expected_count
+    assert len(set([row[2] for row in actual])) == expected_count
+    assert len(set([row[3] for row in actual])) == expected_count
+
+    # Check that the timestamp was added to all rows identically
+    assert len(set([row[5] for row in actual])) == 1
+
+    # Per plate checks
+    for barcode, positives in barcodes.items():
+        barcode_rows = [row for row in actual if barcode in row[0]]
+        assert len(barcode_rows) == wells_per_plate
+
+        # Assert that expected fields contain the correct prefix and barcode
+        assert all([row[0].startswith(f"RSID-{barcode}") for row in barcode_rows])
+        assert all([row[1].startswith(f"VPID-{barcode}") for row in barcode_rows])
+        assert all([row[2].startswith(f"{barcode}_") for row in barcode_rows])
+        assert all([row[3].startswith(f"RNA_PCR-{barcode}") for row in barcode_rows])
+
+        # Check the correct number of positives and negatives were generated
+        positive_rows = [row for row in barcode_rows if 'Positive' == row[4]]
+        negative_rows = [row for row in barcode_rows if 'Negative' == row[4]]
+        assert len(positive_rows) == positives
+        assert len(negative_rows) == 96 - positives
