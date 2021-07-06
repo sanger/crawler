@@ -14,6 +14,7 @@ from crawler.helpers.cherrypicker_test_data import (
     create_row,
     create_plate_rows,
     flat_list_of_positives_per_plate,
+    create_csv_rows,
 )
 
 
@@ -175,3 +176,17 @@ def test_flat_list_of_positives_per_plate():
     expected = [5, 5, 10, 10, 10]
 
     assert actual == expected
+
+
+def test_create_csv_rows():
+    # Note this is an integration of all the methods tested above, so not strictly a unit test!
+    plate_specs = [[1, 0], [2, 40], [1, 96]]
+    dt = datetime(2012, 3, 4, 5, 6, 7)
+    barcodes = ['TEST-00POS01', 'TEST-40POS01', 'TEST-40POS02', 'TEST-96POS01']
+
+    actual = create_csv_rows(plate_specs, dt, barcodes)
+
+    assert len(actual) == 96 * len(barcodes)
+    for barcode in barcodes:
+
+        assert len([row for row in actual if barcode in row[0]]) == 96
