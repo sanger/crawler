@@ -1,3 +1,4 @@
+from collections import namedtuple
 from datetime import datetime
 import os
 import pytest
@@ -232,18 +233,39 @@ def test_create_csv_rows():
         assert len(negative_rows) == 96 - positives
 
 
-@pytest.mark.parametrize("existing_output_path", [True, False])
-def test_write_plates_file(existing_output_path):
-    test_data = [
+@pytest.fixture
+def test_rows_data():
+    return [
         ["RSID-01", "VPID-01", "RNAID-01", "RNAPCRID-01", "Positive", "Timestamp", "AP"] + [""] * 12,
         ["RSID-02", "VPID-02", "RNAID-02", "RNAPCRID-02", "Negative", "Timestamp", "AP"] + [""] * 12,
     ]
 
-    expected = """Root Sample ID,Viral Prep ID,RNA ID,RNA-PCR ID,Result,Date Tested,Lab ID,CH1-Target,CH1-Result,CH1-Cq,CH2-Target,CH2-Result,CH2-Cq,CH3-Target,CH3-Result,CH3-Cq,CH4-Target,CH4-Result,CH4-Cq
+
+@pytest.fixture
+def expected_test_output():
+    return """Root Sample ID,Viral Prep ID,RNA ID,RNA-PCR ID,Result,Date Tested,Lab ID,CH1-Target,CH1-Result,CH1-Cq,CH2-Target,CH2-Result,CH2-Cq,CH3-Target,CH3-Result,CH3-Cq,CH4-Target,CH4-Result,CH4-Cq
 RSID-01,VPID-01,RNAID-01,RNAPCRID-01,Positive,Timestamp,AP,,,,,,,,,,,,
 RSID-02,VPID-02,RNAID-02,RNAPCRID-02,Negative,Timestamp,AP,,,,,,,,,,,,
 """
 
+
+LoggerMessages = namedtuple("LoggerMessages", ["info", "error"])
+
+
+@pytest.fixture
+def logger_messages():
+    with patch("crawler.helpers.cherrypicker_test_data.logger") as logger:
+        infos = []
+        logger.info.side_effect = lambda msg: infos.append(msg)
+
+        errors = []
+        logger.error.side_effect = lambda msg: errors.append(msg)
+
+        yield LoggerMessages(info=infos, error=errors)
+
+
+@pytest.mark.parametrize("existing_output_path", [True, False])
+def test_write_plates_file_success(existing_output_path, test_rows_data, expected_test_output, logger_messages):
     data_path = os.path.join("tmp", "data")
     output_path = os.path.join(data_path, "TEST")
     filename = "testing.csv"
@@ -254,11 +276,32 @@ RSID-02,VPID-02,RNAID-02,RNAPCRID-02,Negative,Timestamp,AP,,,,,,,,,,,,
         if existing_output_path:
             os.makedirs(output_path)
 
-        write_plates_file(test_data, output_path, filename)
+        write_plates_file(test_rows_data, output_path, filename)
 
         with open(os.path.join(output_path, filename), mode="r") as f:
             saved_data = f.read()
-        assert saved_data == expected
+        assert saved_data == expected_test_output
 
     finally:
         shutil.rmtree(data_path, ignore_errors=True)
+
+    assert len(logger_messages.info) == 2
+    assert len(logger_messages.error) == 0
+    assert "Writing to file: testing.csv" in logger_messages.info
+    assert "Test data plates file written: testing.csv" in logger_messages.info
+
+
+
+def test_write_plates_file_exception(test_rows_data, logger_messages):
+    output_path = os.path.join("tmp", "data", "TEST")
+    filename = "testing.csv"
+
+    with patch("builtins.open") as open_func:
+        open_func.side_effect = OSError(5, 'Unable to write file')
+        with pytest.raises(OSError):
+            write_plates_file(test_rows_data, output_path, filename)
+
+    assert len(logger_messages.info) == 1
+    assert len(logger_messages.error) == 1
+    assert "Writing to file: testing.csv" in logger_messages.info
+    assert "Exception: [Errno 5] Unable to write file" in logger_messages.error
