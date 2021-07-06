@@ -266,4 +266,4 @@ def biomek_labclass_by_centre_name(centres: List[Dict[str, str]]) -> Dict[str, s
     Returns:
         Dict[str, str] -- biomek labware class by centre name
     """
-    return {centre["name"]: centre.get("biomek_labware_class", None) for centre in centres}
+    return {centre["name"]: centre.get("biomek_labware_class", "") for centre in centres}
