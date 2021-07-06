@@ -9,13 +9,12 @@ from crawler.constants import (
     FLASK_ERROR_MISSING_PARAMETERS,
 )
 
-
-LoggerMessages = namedtuple("LoggerMessages", ["info", "error", "exception"])
-
 barcode_metadata = [
     ["Plate-1", "positive samples: 30"],
     ["Plate-2", "positive samples: 50"],
 ]
+
+LoggerMessages = namedtuple("LoggerMessages", ["info", "error", "exception"])
 
 
 @pytest.fixture
@@ -40,6 +39,10 @@ def process_mock(process):
     yield process
 
 
+def is_found_in_list(needle, haystack):
+    return any([needle in bail for bail in haystack])
+
+
 # def test_generate_endpoint_success(client, logger_messages, process_mock):
 #     response = client.post("/cherrypick-test-data", json={"run_id": "0123456789abcdef"})
 #     assert response.status_code == HTTPStatus.BAD_REQUEST
@@ -50,6 +53,5 @@ def process_mock(process):
 def test_generate_endpoint_invalid_json(json, client, logger_messages):
     response = client.post("/cherrypick-test-data", json=json)
     assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert 'errors' in response.json
-    assert len(response.json['errors']) == 1
-    assert FLASK_ERROR_MISSING_PARAMETERS in response.json['errors'][0]
+    assert is_found_in_list(FLASK_ERROR_MISSING_PARAMETERS, response.json['errors'])
+    assert is_found_in_list(FLASK_ERROR_MISSING_PARAMETERS, logger_messages.error)
