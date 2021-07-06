@@ -11,6 +11,8 @@ from crawler.helpers.cherrypicker_test_data import (
     create_rna_id,
     create_rna_pcr_id,
     create_test_timestamp,
+    create_row,
+    create_plate_rows,
 )
 
 
@@ -102,3 +104,66 @@ def test_create_test_timestamp():
     actual = create_test_timestamp(dt)
 
     assert actual == expected
+
+
+@patch('crawler.helpers.cherrypicker_test_data.create_test_timestamp')
+@patch('crawler.helpers.cherrypicker_test_data.create_rna_pcr_id')
+@patch('crawler.helpers.cherrypicker_test_data.create_rna_id')
+@patch('crawler.helpers.cherrypicker_test_data.create_viral_prep_id')
+@patch('crawler.helpers.cherrypicker_test_data.create_root_sample_id')
+def test_create_row(rs_id, vp_id, rna_id, rna_pcr_id, timestamp):
+    rs_id.return_value = 'RSID'
+    vp_id.return_value = 'VPID'
+    rna_id.return_value = 'RNAID'
+    rna_pcr_id.return_value = 'RNAPCRID'
+    timestamp.return_value = 'TS'
+
+    dt = datetime(2012, 3, 4, 5, 6, 7)
+    well_index = 2
+    result = 'Positive'
+    barcode = 'TEST-123456'
+
+    actual = create_row(dt, well_index, result, barcode)
+
+    expected = ['RSID', 'VPID', 'RNAID', 'RNAPCRID', result, 'TS', 'AP'] + [''] * 12
+    well_num = well_index + 1
+    well_coordinate = 'A02'
+
+    assert actual == expected
+    assert rs_id.called_with(barcode, well_num)
+    assert vp_id.called_with(barcode, well_num, well_coordinate)
+    assert rna_id.called_with(barcode, well_coordinate)
+    assert rna_pcr_id.called_with(barcode, well_num, well_coordinate)
+    assert timestamp.called_with(dt)
+
+
+@patch('random.shuffle')
+@patch('crawler.helpers.cherrypicker_test_data.create_row')
+def test_create_plate_rows(create_row, shuffle):
+    positives = negatives = 0
+    dt = datetime(2012, 3, 4, 5, 6, 7)
+    barcode = 'TEST-123456'
+
+    def create_row_side_effect(dt_arg, _, result_arg, barcode_arg):
+        nonlocal positives, negatives, dt, barcode
+
+        assert dt_arg == dt
+        assert barcode_arg == barcode
+
+        if result_arg == 'Positive':
+            positives += 1
+        elif result_arg == 'Negative':
+            negatives += 1
+
+        return ['A', 'row']
+
+    create_row.side_effect = create_row_side_effect
+
+    actual = create_plate_rows(dt, 40, barcode)
+    expected = [['A', 'row']] * 96
+
+    assert actual == expected
+    assert shuffle.called_with(["Positive"] * 40 + ["Negative"] * 56)
+    assert create_row.call_count == 96
+    assert positives == 40
+    assert negatives == 56
