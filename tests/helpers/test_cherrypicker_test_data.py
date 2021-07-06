@@ -19,6 +19,7 @@ from crawler.helpers.cherrypicker_test_data import (
     flat_list_of_positives_per_plate,
     create_csv_rows,
     write_plates_file,
+    create_barcode_meta,
 )
 
 
@@ -305,3 +306,17 @@ def test_write_plates_file_exception(test_rows_data, logger_messages):
     assert len(logger_messages.error) == 1
     assert "Writing to file: testing.csv" in logger_messages.info
     assert "Exception: [Errno 5] Unable to write file" in logger_messages.error
+
+
+def test_create_barcode_meta():
+    barcodes = ["TEST-123450", "TEST-123451", "TEST-123452", "TEST-123453", "TEST-123454"]
+    actual = create_barcode_meta([[2, 5], [3, 10]], barcodes)
+    expected = [
+        ["TEST-123450", "number of positives: 5"],
+        ["TEST-123451", "number of positives: 5"],
+        ["TEST-123452", "number of positives: 10"],
+        ["TEST-123453", "number of positives: 10"],
+        ["TEST-123454", "number of positives: 10"],
+    ]
+
+    assert actual == expected
