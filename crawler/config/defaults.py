@@ -1,15 +1,21 @@
 # flake8: noqa
 import os
 
+from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
 from crawler.config.centres import *
 from crawler.config.logging import *
 
-# setting here will overwrite those in 'centre.py'
+# setting here will overwrite those in 'centres.py'
 
 # general details
-DIR_DOWNLOADED_DATA = "data/sftp_files/"
 
+DIR_DOWNLOADED_DATA = "data/sftp_files/"
 ADD_LAB_ID = False
+
+# ingest behaviour for scheduled runs
+USE_SFTP = True
+KEEP_FILES = False
+ADD_TO_DART = True
 
 # If we're running in a container, then instead of localhost
 # we want host.docker.internal, you can specify this in the
@@ -56,3 +62,22 @@ SFTP_WRITE_USERNAME = "foo"
 # slack details
 SLACK_API_TOKEN = ""
 SLACK_CHANNEL_ID = ""
+
+###
+# APScheduler config
+###
+SCHEDULER_RUN = True
+SCHEDULER_TIMEZONE = (
+    "Europe/London"  # We need to define timezone because current flask_apscheduler does not load from TZ env
+)
+SCHEDULER_API_ENABLED = False
+JOBS = [
+    {
+        "id": SCHEDULER_JOB_ID_RUN_CRAWLER,
+        "func": "crawler.jobs.apscheduler:scheduled_run",
+        "trigger": "cron",
+        "day": "*",
+        "hour": "*",
+        "minute": "10/30",
+    }
+]

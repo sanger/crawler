@@ -37,6 +37,8 @@ services:
   # we need to set the localhost and root password as they can be different
   crawler:
     build: .
+    ports:
+      - "8000:8000"
     environment:
       - LOCALHOST=host.docker.internal
       - ROOT_PASSWORD=
