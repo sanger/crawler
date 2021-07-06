@@ -247,7 +247,7 @@ def expected_test_output():
     return """Root Sample ID,Viral Prep ID,RNA ID,RNA-PCR ID,Result,Date Tested,Lab ID,CH1-Target,CH1-Result,CH1-Cq,CH2-Target,CH2-Result,CH2-Cq,CH3-Target,CH3-Result,CH3-Cq,CH4-Target,CH4-Result,CH4-Cq
 RSID-01,VPID-01,RNAID-01,RNAPCRID-01,Positive,Timestamp,AP,,,,,,,,,,,,
 RSID-02,VPID-02,RNAID-02,RNAPCRID-02,Negative,Timestamp,AP,,,,,,,,,,,,
-"""
+"""  # noqa E501
 
 
 LoggerMessages = namedtuple("LoggerMessages", ["info", "error"])

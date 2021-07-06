@@ -11,7 +11,7 @@ from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
 scheduler = APScheduler()
 
 
-def create_app(config_object: str=None) -> Flask:
+def create_app(config_object: str = None) -> Flask:
     app = Flask(__name__)
 
     if config_object is None:
