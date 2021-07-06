@@ -1,5 +1,7 @@
 from datetime import datetime
+import os
 import pytest
+import shutil
 from unittest.mock import patch
 
 from crawler.helpers.cherrypicker_test_data import (
@@ -15,6 +17,7 @@ from crawler.helpers.cherrypicker_test_data import (
     create_plate_rows,
     flat_list_of_positives_per_plate,
     create_csv_rows,
+    write_plates_file,
 )
 
 
@@ -194,7 +197,7 @@ def test_create_csv_rows():
     # Note this is an integration of all the methods tested above, so not strictly a unit test!
     plate_specs = [[1, 0], [2, 40], [1, 96]]
     dt = datetime(2012, 3, 4, 5, 6, 7)
-    barcodes = { "TEST-00POS01": 0, "TEST-40POS01": 40, "TEST-40POS02": 40, "TEST-96POS01": 96 }
+    barcodes = {"TEST-00POS01": 0, "TEST-40POS01": 40, "TEST-40POS02": 40, "TEST-96POS01": 96}
 
     actual = create_csv_rows(plate_specs, dt, list(barcodes.keys()))
 
@@ -223,7 +226,39 @@ def test_create_csv_rows():
         assert all([row[3].startswith(f"RNA_PCR-{barcode}") for row in barcode_rows])
 
         # Check the correct number of positives and negatives were generated
-        positive_rows = [row for row in barcode_rows if 'Positive' == row[4]]
-        negative_rows = [row for row in barcode_rows if 'Negative' == row[4]]
+        positive_rows = [row for row in barcode_rows if "Positive" == row[4]]
+        negative_rows = [row for row in barcode_rows if "Negative" == row[4]]
         assert len(positive_rows) == positives
         assert len(negative_rows) == 96 - positives
+
+
+@pytest.mark.parametrize("existing_output_path", [True, False])
+def test_write_plates_file(existing_output_path):
+    test_data = [
+        ["RSID-01", "VPID-01", "RNAID-01", "RNAPCRID-01", "Positive", "Timestamp", "AP"] + [""] * 12,
+        ["RSID-02", "VPID-02", "RNAID-02", "RNAPCRID-02", "Negative", "Timestamp", "AP"] + [""] * 12,
+    ]
+
+    expected = """Root Sample ID,Viral Prep ID,RNA ID,RNA-PCR ID,Result,Date Tested,Lab ID,CH1-Target,CH1-Result,CH1-Cq,CH2-Target,CH2-Result,CH2-Cq,CH3-Target,CH3-Result,CH3-Cq,CH4-Target,CH4-Result,CH4-Cq
+RSID-01,VPID-01,RNAID-01,RNAPCRID-01,Positive,Timestamp,AP,,,,,,,,,,,,
+RSID-02,VPID-02,RNAID-02,RNAPCRID-02,Negative,Timestamp,AP,,,,,,,,,,,,
+"""
+
+    data_path = os.path.join("tmp", "data")
+    output_path = os.path.join(data_path, "TEST")
+    filename = "testing.csv"
+
+    shutil.rmtree(data_path, ignore_errors=True)
+
+    try:
+        if existing_output_path:
+            os.makedirs(output_path)
+
+        write_plates_file(test_data, output_path, filename)
+
+        with open(os.path.join(output_path, filename), mode="r") as f:
+            saved_data = f.read()
+        assert saved_data == expected
+
+    finally:
+        shutil.rmtree(data_path, ignore_errors=True)
