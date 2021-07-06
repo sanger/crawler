@@ -53,5 +53,8 @@ def is_found_in_list(needle, haystack):
 def test_generate_endpoint_invalid_json(json, client, logger_messages):
     response = client.post("/cherrypick-test-data", json=json)
     assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert is_found_in_list(FLASK_ERROR_MISSING_PARAMETERS, response.json['errors'])
+    assert "run_id" not in response.json
+    assert "plates" not in response.json
+    assert "status" not in response.json
+    assert is_found_in_list(FLASK_ERROR_MISSING_PARAMETERS, response.json["errors"])
     assert is_found_in_list(FLASK_ERROR_MISSING_PARAMETERS, logger_messages.error)
