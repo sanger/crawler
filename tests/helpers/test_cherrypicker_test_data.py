@@ -292,13 +292,12 @@ def test_write_plates_file_success(existing_output_path, test_rows_data, expecte
     assert "Test data plates file written: testing.csv" in logger_messages.info
 
 
-
 def test_write_plates_file_exception(test_rows_data, logger_messages):
     output_path = os.path.join("tmp", "data", "TEST")
     filename = "testing.csv"
 
     with patch("builtins.open") as open_func:
-        open_func.side_effect = OSError(5, 'Unable to write file')
+        open_func.side_effect = OSError(5, "Unable to write file")
         with pytest.raises(OSError):
             write_plates_file(test_rows_data, output_path, filename)
 

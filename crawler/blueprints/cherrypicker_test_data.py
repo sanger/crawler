@@ -4,7 +4,11 @@ from datetime import datetime, timezone
 from flask import Blueprint, request
 from flask_cors import CORS
 
-from crawler.constants import FIELD_STATUS_COMPLETED, FLASK_ERROR_UNEXPECTED, FLASK_ERROR_MISSING_PARAMETERS
+from crawler.constants import (
+    FIELD_STATUS_COMPLETED,
+    FLASK_ERROR_UNEXPECTED,
+    FLASK_ERROR_MISSING_PARAMETERS,
+)
 from crawler.helpers.responses import bad_request, internal_server_error, ok
 from crawler.jobs.cherrypicker_test_data import TestDataError, process
 from crawler.types import FlaskResponse
