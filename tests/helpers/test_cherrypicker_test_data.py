@@ -13,6 +13,7 @@ from crawler.helpers.cherrypicker_test_data import (
     create_test_timestamp,
     create_row,
     create_plate_rows,
+    flat_list_of_positives_per_plate,
 )
 
 
@@ -167,3 +168,10 @@ def test_create_plate_rows(create_row, shuffle):
     assert create_row.call_count == 96
     assert positives == 40
     assert negatives == 56
+
+
+def test_flat_list_of_positives_per_plate():
+    actual = flat_list_of_positives_per_plate([[2, 5], [3, 10]])
+    expected = [5, 5, 10, 10, 10]
+
+    assert actual == expected
