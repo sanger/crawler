@@ -2,6 +2,7 @@ import copy
 import logging
 import logging.config
 import shutil
+from typing import List
 from unittest.mock import patch
 
 import pytest
@@ -397,3 +398,17 @@ def generate_new_object_for_string(original_str):
     part2 = original_str[2:]
     new_str = part1 + part2
     return new_str
+
+
+def is_found_in_list(needle: str, haystack: List[str]) -> bool:
+    """A helper method for finding a string contained in any one of a list of strings.
+
+    Arguments:
+        needle: str -- The string to identify in the list of strings.
+        haystack: List[str] -- A list of strings that might contain the needle.
+
+    Returns:
+        True if the needle exists as a sub-string of any of the strings in the haystack.
+        False if the needle cannot be found in any string in the haystack.
+    """
+    return any([needle in bail for bail in haystack])

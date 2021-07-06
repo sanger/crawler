@@ -21,6 +21,22 @@ from crawler.helpers.cherrypicker_test_data import (
     write_plates_file,
     create_barcode_meta,
 )
+from tests.conftest import is_found_in_list
+
+
+LoggerMessages = namedtuple("LoggerMessages", ["info", "error"])
+
+
+@pytest.fixture
+def logger_messages():
+    with patch("crawler.helpers.cherrypicker_test_data.logger") as logger:
+        infos = []
+        logger.info.side_effect = lambda msg: infos.append(msg)
+
+        errors = []
+        logger.error.side_effect = lambda msg: errors.append(msg)
+
+        yield LoggerMessages(info=infos, error=errors)
 
 
 @pytest.fixture
@@ -250,21 +266,6 @@ RSID-02,VPID-02,RNAID-02,RNAPCRID-02,Negative,Timestamp,AP,,,,,,,,,,,,
 """  # noqa E501
 
 
-LoggerMessages = namedtuple("LoggerMessages", ["info", "error"])
-
-
-@pytest.fixture
-def logger_messages():
-    with patch("crawler.helpers.cherrypicker_test_data.logger") as logger:
-        infos = []
-        logger.info.side_effect = lambda msg: infos.append(msg)
-
-        errors = []
-        logger.error.side_effect = lambda msg: errors.append(msg)
-
-        yield LoggerMessages(info=infos, error=errors)
-
-
 @pytest.mark.parametrize("existing_output_path", [True, False])
 def test_write_plates_file_success(existing_output_path, test_rows_data, expected_test_output, logger_messages):
     data_path = os.path.join("tmp", "data")
@@ -286,10 +287,10 @@ def test_write_plates_file_success(existing_output_path, test_rows_data, expecte
     finally:
         shutil.rmtree(data_path, ignore_errors=True)
 
-    assert len(logger_messages.info) == 2
     assert len(logger_messages.error) == 0
-    assert "Writing to file: testing.csv" in logger_messages.info
-    assert "Test data plates file written: testing.csv" in logger_messages.info
+    assert is_found_in_list("Writing to file", logger_messages.info)
+    assert is_found_in_list("Test data plates file written", logger_messages.info)
+    assert is_found_in_list("testing.csv", logger_messages.info)
 
 
 def test_write_plates_file_exception(test_rows_data, logger_messages):
@@ -301,10 +302,8 @@ def test_write_plates_file_exception(test_rows_data, logger_messages):
         with pytest.raises(OSError):
             write_plates_file(test_rows_data, output_path, filename)
 
-    assert len(logger_messages.info) == 1
-    assert len(logger_messages.error) == 1
-    assert "Writing to file: testing.csv" in logger_messages.info
-    assert "Exception: [Errno 5] Unable to write file" in logger_messages.error
+    assert is_found_in_list("Exception", logger_messages.error)
+    assert is_found_in_list("Unable to write file", logger_messages.error)
 
 
 def test_create_barcode_meta():

@@ -8,6 +8,7 @@ from crawler.constants import (
     FLASK_ERROR_UNEXPECTED,
     FLASK_ERROR_MISSING_PARAMETERS,
 )
+from tests.conftest import is_found_in_list
 
 barcode_metadata = [
     ["Plate-1", "positive samples: 30"],
@@ -37,10 +38,6 @@ def logger_messages():
 def process_mock(process):
     process.return_value = barcode_metadata
     yield process
-
-
-def is_found_in_list(needle, haystack):
-    return any([needle in bail for bail in haystack])
 
 
 # def test_generate_endpoint_success(client, logger_messages, process_mock):
