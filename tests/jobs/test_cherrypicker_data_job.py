@@ -21,6 +21,7 @@ from crawler.constants import (
     FIELD_STATUS_COMPLETED,
     FIELD_STATUS_FAILED,
     TEST_DATA_CENTRE_PREFIX,
+    TEST_DATA_ERROR_INVALID_PLATE_SPECS,
     TEST_DATA_ERROR_NO_RUN_FOR_ID,
     TEST_DATA_ERROR_WRONG_STATE,
     TEST_DATA_ERROR_NUMBER_OF_PLATES,
@@ -34,21 +35,16 @@ from crawler.jobs.cherrypicker_test_data import (
 from tests.conftest import is_found_in_list
 
 
-partial_pending_run = {
+partial_run_doc = {
     FIELD_CREATED_AT: datetime(2012, 3, 4, 5, 6, 7, 890),
     FIELD_UPDATED_AT: datetime(2012, 3, 4, 5, 6, 7, 890),
-    FIELD_STATUS: FIELD_STATUS_PENDING,
-    FIELD_PLATE_SPECS: "[[2,48],[1,0],[1,96]]"
 }
 
 mocked_utc_now = datetime(2021, 3, 12, 9, 41, 0)
 
 created_barcodes = ["Plate-1", "Plate-2", "Plate-3", "Plate-4"]
 
-created_csv_rows = [
-    ["Test", "CSV", "Data"],
-    ["One",  "Two", "Three"]
-]
+created_csv_rows = [["Test", "CSV", "Data"], ["One", "Two", "Three"]]
 
 created_barcode_metadata = [
     ["Plate-1", "positive samples: 48"],
@@ -88,13 +84,15 @@ def mock_stack():
         stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.create_csv_rows", return_value=created_csv_rows))
         stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.write_plates_file"))
         stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.run_crawler"))
-        stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.create_barcode_meta", return_value=created_barcode_metadata))
+        stack.enter_context(
+            patch("crawler.jobs.cherrypicker_test_data.create_barcode_meta", return_value=created_barcode_metadata)
+        )
 
         yield stack
 
 
-def insert_pending_run(collection, plate_specs):
-    result = collection.insert_one({**partial_pending_run, "plate_specs": plate_specs})
+def insert_run(collection, status=FIELD_STATUS_PENDING, plate_specs="[[50, 48], [25, 0], [25, 96]]"):
+    result = collection.insert_one({**partial_run_doc, FIELD_STATUS: status, FIELD_PLATE_SPECS: plate_specs})
 
     return result.inserted_id
 
@@ -105,22 +103,22 @@ def get_run_doc(collection, run_id):
 
 def test_process_success(logger_messages, mongo_collection, mock_stack):
     config, collection = mongo_collection
-    pending_id = insert_pending_run(collection, "[[2,48],[1,0],[1,96]]")
+    pending_id = insert_run(collection)
 
     barcode_meta = process(pending_id, config)
     run_doc = get_run_doc(collection, pending_id)
 
     assert barcode_meta == created_barcode_metadata
-    assert run_doc[FIELD_UPDATED_AT] != partial_pending_run[FIELD_UPDATED_AT]
+    assert run_doc[FIELD_UPDATED_AT] != partial_run_doc[FIELD_UPDATED_AT]
     assert run_doc[FIELD_STATUS] == FIELD_STATUS_COMPLETED
     assert run_doc[FIELD_BARCODES] == json.dumps(created_barcode_metadata)
     assert FIELD_FAILURE_REASON not in run_doc
     assert is_found_in_list("Begin generating", logger_messages.info)
 
 
-def test_process_updates_through_statuses(logger_messages, mongo_collection, mock_stack):
+def test_process_updates_through_statuses(mongo_collection, mock_stack):
     config, collection = mongo_collection
-    pending_id = insert_pending_run(collection, "[[2,48],[1,0],[1,96]]")
+    pending_id = insert_run(collection)
 
     with patch("crawler.jobs.cherrypicker_test_data.update_status") as update_status:
         process(pending_id, config)
@@ -130,3 +128,63 @@ def test_process_updates_through_statuses(logger_messages, mongo_collection, moc
         assert update_status.called_with(status=FIELD_STATUS_CRAWLING_DATA)
         assert update_status.called_with(status=FIELD_STATUS_COMPLETED)
         assert update_status.not_called_with(status=FIELD_STATUS_FAILED)
+
+
+@pytest.mark.parametrize(
+    "wrong_status",
+    [
+        FIELD_STATUS_STARTED,
+        FIELD_STATUS_PREPARING_DATA,
+        FIELD_STATUS_CRAWLING_DATA,
+        FIELD_STATUS_COMPLETED,
+        FIELD_STATUS_FAILED,
+    ],
+)
+def test_process_raises_error_when_run_not_pending(mongo_collection, mock_stack, wrong_status):
+    config, collection = mongo_collection
+    pending_id = insert_run(collection, status=wrong_status)
+
+    with pytest.raises(TestDataError) as e_info:
+        process(pending_id, config)
+
+    assert TEST_DATA_ERROR_WRONG_STATE in str(e_info.value)
+    assert FIELD_STATUS_PENDING in str(e_info.value)
+
+
+@pytest.mark.parametrize("bad_plate_specs", [None, ""])
+def test_process_raises_error_invalid_plate_specs(mongo_collection, mock_stack, bad_plate_specs):
+    config, collection = mongo_collection
+    pending_id = insert_run(collection, plate_specs=bad_plate_specs)
+
+    with pytest.raises(TestDataError) as e_info:
+        process(pending_id, config)
+
+    assert TEST_DATA_ERROR_INVALID_PLATE_SPECS in str(e_info.value)
+
+
+@pytest.mark.parametrize(
+    "bad_plate_specs",
+    [
+        "[]",  # Unspecified plates
+        "[[0, 96]]",  # 0 plates
+        "[[34, 10], [34, 20], [33, 30]]",  # 101 plates
+    ],
+)
+def test_process_raises_error_wrong_number_of_plates(mongo_collection, mock_stack, bad_plate_specs):
+    config, collection = mongo_collection
+    pending_id = insert_run(collection, plate_specs=bad_plate_specs)
+
+    with pytest.raises(TestDataError) as e_info:
+        process(pending_id, config)
+
+    assert TEST_DATA_ERROR_NUMBER_OF_PLATES in str(e_info.value)
+
+@pytest.mark.parametrize("bad_plate_specs", ["[[1, -1]]", "[[1, 97]]"])
+def test_process_raises_error_invalid_plate_specs(mongo_collection, mock_stack, bad_plate_specs):
+    config, collection = mongo_collection
+    pending_id = insert_run(collection, plate_specs=bad_plate_specs)
+
+    with pytest.raises(TestDataError) as e_info:
+        process(pending_id, config)
+
+    assert TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES in str(e_info.value)

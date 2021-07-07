@@ -23,6 +23,7 @@ from crawler.constants import (
     TEST_DATA_CENTRE_PREFIX,
     TEST_DATA_ERROR_NO_RUN_FOR_ID,
     TEST_DATA_ERROR_WRONG_STATE,
+    TEST_DATA_ERROR_INVALID_PLATE_SPECS,
     TEST_DATA_ERROR_NUMBER_OF_PLATES,
     TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES,
 )
@@ -80,8 +81,11 @@ def process(run_id: str, config: Config = None) -> List[List[str]]:
             raise TestDataError(f"{TEST_DATA_ERROR_WRONG_STATE} '{FIELD_STATUS_PENDING}'")
 
         try:
-            plate_specs_string = run_doc[FIELD_PLATE_SPECS]
-            plate_specs: List[List[int]] = json.loads(plate_specs_string)
+            try:
+                plate_specs_string = run_doc[FIELD_PLATE_SPECS]
+                plate_specs: List[List[int]] = json.loads(plate_specs_string)
+            except (TypeError, json.JSONDecodeError):
+                raise TestDataError(TEST_DATA_ERROR_INVALID_PLATE_SPECS)
 
             num_plates = reduce(lambda a, b: a + b[0], plate_specs, 0)
             if num_plates < 1 or num_plates > 100:
