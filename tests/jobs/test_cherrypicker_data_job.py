@@ -116,3 +116,17 @@ def test_process_success(logger_messages, mongo_collection, mock_stack):
     assert run_doc[FIELD_BARCODES] == json.dumps(created_barcode_metadata)
     assert FIELD_FAILURE_REASON not in run_doc
     assert is_found_in_list("Begin generating", logger_messages.info)
+
+
+def test_process_updates_through_statuses(logger_messages, mongo_collection, mock_stack):
+    config, collection = mongo_collection
+    pending_id = insert_pending_run(collection, "[[2,48],[1,0],[1,96]]")
+
+    with patch("crawler.jobs.cherrypicker_test_data.update_status") as update_status:
+        process(pending_id, config)
+
+        assert update_status.called_with(status=FIELD_STATUS_STARTED)
+        assert update_status.called_with(status=FIELD_STATUS_PREPARING_DATA)
+        assert update_status.called_with(status=FIELD_STATUS_CRAWLING_DATA)
+        assert update_status.called_with(status=FIELD_STATUS_COMPLETED)
+        assert update_status.not_called_with(status=FIELD_STATUS_FAILED)
