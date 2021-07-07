@@ -223,9 +223,6 @@ A sample is filtered positive if:
 - it is not a control (ROOT_SAMPLE_ID does not start with 'CBIQA_', 'QC0', or 'ZZA')
 - all of CH1_CQ, CH2_CQ and CH3_CQ are `None`, or one of these is less than or equal to 30
 
-More information on this version can be found on [this](to do)
-Confluence page.
-
 #### Propagating Filtered Positive version changes to MongoDB, MLWH and (optionally) DART
 
 On changing the positive filtering version/definition, all unpicked samples stored in MongoDB, MLWH and DART need
