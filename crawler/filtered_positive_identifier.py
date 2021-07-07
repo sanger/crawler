@@ -19,6 +19,7 @@ from crawler.types import SampleDoc
 FILTERED_POSITIVE_VERSION_0 = "v0"  # pre-filtered_positive definitions
 FILTERED_POSITIVE_VERSION_1 = "v1"  # initial implementation, as per GPL-669
 FILTERED_POSITIVE_VERSION_2 = "v2"  # updated as per GPL-699 and GPL-740
+FILTERED_POSITIVE_VERSION_3 = "v3"  # updated as per DPL-018
 
 
 class FilteredPositiveIdentifier(ABC):
@@ -81,7 +82,7 @@ def current_filtered_positive_identifier() -> FilteredPositiveIdentifier:
     Returns:
         {FilteredPositiveIdentifier} -- the current filtered positive identifier
     """
-    return FilteredPositiveIdentifierV2()
+    return FilteredPositiveIdentifierV3()
 
 
 def filtered_positive_identifier_by_version(version: str) -> FilteredPositiveIdentifier:
@@ -99,6 +100,8 @@ def filtered_positive_identifier_by_version(version: str) -> FilteredPositiveIde
         return FilteredPositiveIdentifierV1()
     elif version == FILTERED_POSITIVE_VERSION_2:
         return FilteredPositiveIdentifierV2()
+    elif version == FILTERED_POSITIVE_VERSION_3:
+        return FilteredPositiveIdentifierV3()
     else:
         raise ValueError(f"'{version}' is not a known filtered positive version")
 
@@ -122,4 +125,12 @@ class FilteredPositiveIdentifierV2(FilteredPositiveIdentifier):
         super(FilteredPositiveIdentifierV2, self).__init__()
         self.version = FILTERED_POSITIVE_VERSION_2
         self.root_sample_id_control_regex = re.compile("^(?:CBIQA_|QC0|ZZA000)")
+        self.evaluate_ct_values = True
+
+
+class FilteredPositiveIdentifierV3(FilteredPositiveIdentifier):
+    def __init__(self):
+        super(FilteredPositiveIdentifierV3, self).__init__()
+        self.version = FILTERED_POSITIVE_VERSION_3
+        self.root_sample_id_control_regex = re.compile("^(?:CBIQA_|QC0|ZZA)")
         self.evaluate_ct_values = True
