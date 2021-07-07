@@ -8,6 +8,7 @@ from crawler.constants import (
     FLASK_ERROR_UNEXPECTED,
     FLASK_ERROR_MISSING_PARAMETERS,
 )
+from crawler.jobs.cherrypicker_test_data import TestDataError
 from tests.conftest import is_found_in_list
 
 barcode_metadata = [
@@ -39,6 +40,18 @@ def process_mock():
         yield process
 
 
+@pytest.mark.parametrize("json", [{}, {"run_id": None}])
+def test_generate_endpoint_invalid_json(json, client, logger_messages):
+    response = client.post("/cherrypick-test-data", json=json)
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert "run_id" not in response.json
+    assert "plates" not in response.json
+    assert "status" not in response.json
+    assert "timestamp" in response.json
+    assert is_found_in_list(FLASK_ERROR_MISSING_PARAMETERS, response.json["errors"])
+    assert is_found_in_list(FLASK_ERROR_MISSING_PARAMETERS, logger_messages.error)
+
+
 def test_generate_endpoint_success(client, logger_messages, process_mock):
     process_mock.return_value = barcode_metadata
     test_run_id = "0123456789abcdef01234567"
@@ -52,13 +65,32 @@ def test_generate_endpoint_success(client, logger_messages, process_mock):
     assert is_found_in_list("Generating test data", logger_messages.info)
 
 
-@pytest.mark.parametrize("json", [{}, {"run_id": None}])
-def test_generate_endpoint_invalid_json(json, client, logger_messages):
-    response = client.post("/cherrypick-test-data", json=json)
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+def test_generate_endpoint_handles_testdataerror_exception(client, logger_messages, process_mock):
+    test_error_message = "Test Error!"
+    test_error = TestDataError(test_error_message)
+    process_mock.side_effect = test_error
+    response = client.post("/cherrypick-test-data", json={"run_id": "test_id"})
+    assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
     assert "run_id" not in response.json
     assert "plates" not in response.json
     assert "status" not in response.json
     assert "timestamp" in response.json
-    assert is_found_in_list(FLASK_ERROR_MISSING_PARAMETERS, response.json["errors"])
-    assert is_found_in_list(FLASK_ERROR_MISSING_PARAMETERS, logger_messages.error)
+    assert is_found_in_list(test_error_message, response.json["errors"])
+    assert is_found_in_list(test_error_message, logger_messages.error)
+    assert test_error in logger_messages.exception
+
+
+def test_generate_endpoint_handles_generic_exception(client, logger_messages, process_mock):
+    test_error = ConnectionError()
+    process_mock.side_effect = test_error
+    response = client.post("/cherrypick-test-data", json={"run_id": "test_id"})
+    assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert "run_id" not in response.json
+    assert "plates" not in response.json
+    assert "status" not in response.json
+    assert "timestamp" in response.json
+    assert is_found_in_list(FLASK_ERROR_UNEXPECTED, response.json["errors"])
+    assert is_found_in_list(type(test_error).__name__, response.json["errors"])
+    assert is_found_in_list(FLASK_ERROR_UNEXPECTED, logger_messages.error)
+    assert is_found_in_list(type(test_error).__name__, logger_messages.error)
+    assert test_error in logger_messages.exception
