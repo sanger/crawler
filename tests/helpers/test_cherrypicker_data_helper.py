@@ -297,8 +297,7 @@ def test_write_plates_file_exception(test_rows_data, logger_messages):
     output_path = os.path.join("tmp", "data", "TEST")
     filename = "testing.csv"
 
-    with patch("builtins.open") as open_func:
-        open_func.side_effect = OSError(5, "Unable to write file")
+    with patch("builtins.open", side_effect=OSError(5, "Unable to write file")):
         with pytest.raises(OSError):
             write_plates_file(test_rows_data, output_path, filename)
 
