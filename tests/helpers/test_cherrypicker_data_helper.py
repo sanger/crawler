@@ -73,12 +73,13 @@ def test_generate_baracoda_barcodes_calls_correct_baracoda_endpoint(request_post
 def test_create_barcodes(count):
     expected = ["TEST-012345", "TEST-012346", "TEST-012347"]
 
-    with patch("crawler.helpers.cherrypicker_test_data.generate_baracoda_barcodes") as generate_barcodes:
-        generate_barcodes.return_value = expected
+    with patch(
+        "crawler.helpers.cherrypicker_test_data.generate_baracoda_barcodes", return_value=expected
+    ) as generate_barcodes:
         actual = create_barcodes(count)
 
-        assert generate_barcodes.called_with(count)
-        assert actual == expected
+    assert generate_barcodes.called_with(count)
+    assert actual == expected
 
 
 @pytest.mark.parametrize(

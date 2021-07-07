@@ -3,11 +3,13 @@ from collections import namedtuple
 from contextlib import ExitStack
 from datetime import datetime
 import json
+import os
 import pytest
 from unittest.mock import patch
 
 from crawler.constants import (
     COLLECTION_CHERRYPICK_TEST_DATA,
+    FIELD_MONGODB_ID,
     FIELD_CREATED_AT,
     FIELD_UPDATED_AT,
     FIELD_STATUS,
@@ -31,6 +33,9 @@ from crawler.db.mongo import get_mongo_collection
 from crawler.jobs.cherrypicker_test_data import (
     TestDataError,
     process,
+    get_run_doc,
+    update_status,
+    update_run,
 )
 from tests.conftest import is_found_in_list
 
@@ -97,7 +102,7 @@ def insert_run(collection, status=FIELD_STATUS_PENDING, plate_specs="[[50, 48], 
     return result.inserted_id
 
 
-def get_run_doc(collection, run_id):
+def get_doc(collection, run_id):
     return collection.find_one(ObjectId(run_id))
 
 
@@ -106,7 +111,7 @@ def test_process_success(logger_messages, mongo_collection, mock_stack):
     pending_id = insert_run(collection)
 
     barcode_meta = process(pending_id, config)
-    run_doc = get_run_doc(collection, pending_id)
+    run_doc = get_doc(collection, pending_id)
 
     assert barcode_meta == created_barcode_metadata
     assert run_doc[FIELD_UPDATED_AT] != partial_run_doc[FIELD_UPDATED_AT]
@@ -121,13 +126,20 @@ def test_process_updates_through_statuses(mongo_collection, mock_stack):
     pending_id = insert_run(collection)
 
     with patch("crawler.jobs.cherrypicker_test_data.update_status") as update_status:
-        process(pending_id, config)
+        with patch("crawler.jobs.cherrypicker_test_data.update_run") as update_run:
+            process(pending_id, config)
 
-        assert update_status.called_with(status=FIELD_STATUS_STARTED)
-        assert update_status.called_with(status=FIELD_STATUS_PREPARING_DATA)
-        assert update_status.called_with(status=FIELD_STATUS_CRAWLING_DATA)
-        assert update_status.called_with(status=FIELD_STATUS_COMPLETED)
-        assert update_status.not_called_with(status=FIELD_STATUS_FAILED)
+    update_status.assert_any_call(collection, pending_id, FIELD_STATUS_STARTED)
+    update_status.assert_any_call(collection, pending_id, FIELD_STATUS_PREPARING_DATA)
+    update_status.assert_any_call(collection, pending_id, FIELD_STATUS_CRAWLING_DATA)
+    update_run.assert_any_call(
+        collection,
+        pending_id,
+        {
+            FIELD_STATUS: FIELD_STATUS_COMPLETED,
+            FIELD_BARCODES: json.dumps(created_barcode_metadata),
+        },
+    )
 
 
 @pytest.mark.parametrize(
@@ -179,8 +191,9 @@ def test_process_raises_error_wrong_number_of_plates(mongo_collection, mock_stac
 
     assert TEST_DATA_ERROR_NUMBER_OF_PLATES in str(e_info.value)
 
+
 @pytest.mark.parametrize("bad_plate_specs", ["[[1, -1]]", "[[1, 97]]"])
-def test_process_raises_error_invalid_plate_specs(mongo_collection, mock_stack, bad_plate_specs):
+def test_process_raises_error_invalid_num_of_positives(mongo_collection, mock_stack, bad_plate_specs):
     config, collection = mongo_collection
     pending_id = insert_run(collection, plate_specs=bad_plate_specs)
 
@@ -188,3 +201,98 @@ def test_process_raises_error_invalid_plate_specs(mongo_collection, mock_stack, 
         process(pending_id, config)
 
     assert TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES in str(e_info.value)
+
+
+def test_process_asks_for_correct_number_of_barcodes(mongo_collection, mock_stack):
+    config, collection = mongo_collection
+    pending_id = insert_run(collection, plate_specs="[[5, 10], [15, 20], [19, 30]]")
+
+    with patch("crawler.jobs.cherrypicker_test_data.create_barcodes") as create_barcodes:
+        process(pending_id, config)
+
+    assert create_barcodes.called_with(5 + 15 + 19)
+
+
+def test_process_calls_create_csv_rows_with_correct_parameters(mongo_collection, mock_stack):
+    config, collection = mongo_collection
+    plate_specs = [[5, 10], [15, 20], [19, 30]]
+    plate_specs_string = json.dumps(plate_specs)
+    pending_id = insert_run(collection, plate_specs=plate_specs_string)
+
+    with patch("crawler.jobs.cherrypicker_test_data.create_csv_rows") as create_csv_rows:
+        process(pending_id, config)
+
+    assert create_csv_rows.called_with(plate_specs, mocked_utc_now, created_barcodes)
+
+
+def test_process_calls_write_plates_file_with_correct_parameters(mongo_collection, mock_stack):
+    config, collection = mongo_collection
+    pending_id = insert_run(collection)
+
+    with patch("crawler.jobs.cherrypicker_test_data.write_plates_file") as write_plates_file:
+        process(pending_id, config)
+
+    plates_path = os.path.join(config.DIR_DOWNLOADED_DATA, TEST_DATA_CENTRE_PREFIX)
+    filename = "CPTD_20210312_094100_000000.csv"
+    assert write_plates_file.called_with(created_csv_rows, plates_path, filename)
+
+
+def test_process_calls_run_crawler_with_correct_parameters(mongo_collection, mock_stack):
+    config, collection = mongo_collection
+    pending_id = insert_run(collection)
+
+    with patch("crawler.jobs.cherrypicker_test_data.run_crawler") as run_crawler:
+        process(pending_id, config)
+
+    assert run_crawler.called_with(sftp=False, keep_files=False, add_to_dart=False, centre_prefix="CPTD")
+
+
+def test_get_run_doc_gets_the_doc_by_id(logger_messages, mongo_collection):
+    _, collection = mongo_collection
+    pending_id = insert_run(collection)
+
+    actual = get_run_doc(collection, pending_id)
+    expected = get_doc(collection, pending_id)
+
+    assert actual == expected
+    assert is_found_in_list("Getting Mongo document", logger_messages.info)
+    assert is_found_in_list(str(pending_id), logger_messages.info)
+    assert is_found_in_list("Found run", logger_messages.debug)
+    assert is_found_in_list(str(actual), logger_messages.debug)
+
+
+def test_get_run_doc_raises_error_when_id_not_found(mongo_collection):
+    _, collection = mongo_collection
+    insert_run(collection)
+    search_id = "000000000000000000000000"
+
+    with pytest.raises(TestDataError) as e_info:
+        get_run_doc(collection, search_id)
+
+    assert TEST_DATA_ERROR_NO_RUN_FOR_ID in str(e_info.value)
+    assert search_id in str(e_info.value)
+
+
+def test_update_status_calls_update_run_with_correct_parameters(mongo_collection):
+    _, collection = mongo_collection
+    test_id = "000000000000000000000000"
+    test_status = "Test Status"
+
+    with patch("crawler.jobs.cherrypicker_test_data.update_run") as update_run_mock:
+        update_status(collection, test_id, test_status)
+
+    update_run_mock.assert_called_once_with(collection, ObjectId(test_id), {FIELD_STATUS: test_status})
+
+
+def test_update_run_calls_mongo_with_correct_parameters(mongo_collection):
+    _, collection = mongo_collection
+    test_id = "000000000000000000000000"
+    update_dict = {"a_key": "a_value"}
+
+    with patch("pymongo.collection.Collection.update_one") as update_one:
+        update_run(collection, test_id, update_dict)
+
+    update_one.assert_called_once_with(
+        {FIELD_MONGODB_ID: ObjectId(test_id)},
+        {"$set": update_dict, "$currentDate": {FIELD_UPDATED_AT: True}},
+    )
