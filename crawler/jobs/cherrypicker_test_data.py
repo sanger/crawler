@@ -39,6 +39,7 @@ from crawler.helpers.cherrypicker_test_data import (
 )
 from crawler.helpers.general_helpers import get_config
 from crawler.main import run as run_crawler
+from crawler.types import Config
 
 
 logger = logging.getLogger(__name__)
@@ -49,7 +50,7 @@ class TestDataError(Exception):
         self.message = message
 
 
-def process(run_id: str, settings_module: str = "") -> List[List[str]]:
+def process(run_id: str, config: Config = None) -> List[List[str]]:
     """Generates cherrypicker test data for processing by Crawler and then
     processes it via the usual runner.
 
@@ -67,7 +68,9 @@ def process(run_id: str, settings_module: str = "") -> List[List[str]]:
     """
     logger.info("Begin generating data.")
 
-    config, _ = get_config(settings_module)
+    if config is None:
+        config, _ = get_config()
+
     with create_mongo_client(config) as mongo_client:
         mongo_db = get_mongo_db(config, mongo_client)
         collection = get_mongo_collection(mongo_db, COLLECTION_CHERRYPICK_TEST_DATA)
