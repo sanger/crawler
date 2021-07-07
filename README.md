@@ -204,7 +204,7 @@ A sample is filtered positive if:
 More information on this version can be found on [this](https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/UAT+6th+October+2020)
 Confluence page.
 
-#### Version 2 `v2` - **Current Version**
+#### Version 2 `v2`
 
 A sample is filtered positive if:
 
@@ -214,6 +214,14 @@ A sample is filtered positive if:
 
 More information on this version can be found on [this](https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/Fit+to+pick+-+v2)
 Confluence page.
+
+#### Version 3 `v3` - **Current Version**
+
+A sample is filtered positive if:
+
+- it has a 'Positive' RESULT
+- it is not a control (ROOT_SAMPLE_ID does not start with 'CBIQA_', 'QC0', or 'ZZA')
+- all of CH1_CQ, CH2_CQ and CH3_CQ are `None`, or one of these is less than or equal to 30
 
 #### Propagating Filtered Positive version changes to MongoDB, MLWH and (optionally) DART
 
