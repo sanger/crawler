@@ -127,6 +127,7 @@ class FilteredPositiveIdentifierV2(FilteredPositiveIdentifier):
         self.root_sample_id_control_regex = re.compile("^(?:CBIQA_|QC0|ZZA000)")
         self.evaluate_ct_values = True
 
+
 class FilteredPositiveIdentifierV3(FilteredPositiveIdentifier):
     def __init__(self):
         super(FilteredPositiveIdentifierV3, self).__init__()

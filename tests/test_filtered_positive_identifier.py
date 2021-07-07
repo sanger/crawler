@@ -61,6 +61,7 @@ def test_filtered_positive_identifier_by_version_returns_V2_identifier():
     identifier = filtered_positive_identifier_by_version(FILTERED_POSITIVE_VERSION_2)
     assert identifier.version == FILTERED_POSITIVE_VERSION_2
 
+
 def test_filtered_positive_identifier_by_version_returns_V3_identifier():
     identifier = filtered_positive_identifier_by_version(FILTERED_POSITIVE_VERSION_3)
     assert identifier.version == FILTERED_POSITIVE_VERSION_3
