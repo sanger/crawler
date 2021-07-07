@@ -4,11 +4,11 @@ from typing import Any, List, Union
 from crawler.types import FlaskResponse
 
 
-def bad_request(errors: Union[str, List[str]]) -> FlaskResponse:
+def bad_request(errors: Union[str, List[str]], **kwargs: Any) -> FlaskResponse:
     if isinstance(errors, str):
-        return {"errors": [errors]}, HTTPStatus.BAD_REQUEST
+        return {"errors": [errors], **kwargs}, HTTPStatus.BAD_REQUEST
 
-    return {"errors": errors}, HTTPStatus.BAD_REQUEST
+    return {"errors": errors, **kwargs}, HTTPStatus.BAD_REQUEST
 
 
 def internal_server_error(errors: Union[str, List[str]], **kwargs: Any) -> FlaskResponse:

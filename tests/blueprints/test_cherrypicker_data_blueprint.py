@@ -34,16 +34,22 @@ def logger_messages():
 
 
 @pytest.fixture
-@patch("crawler.jobs.cherrypicker_test_data.process")
-def process_mock(process):
-    process.return_value = barcode_metadata
-    yield process
+def process_mock():
+    with patch("crawler.blueprints.cherrypicker_test_data.process") as process:
+        yield process
 
 
-# def test_generate_endpoint_success(client, logger_messages, process_mock):
-#     response = client.post("/cherrypick-test-data", json={"run_id": "0123456789abcdef"})
-#     assert response.status_code == HTTPStatus.BAD_REQUEST
-#     assert FLASK_ERROR_MISSING_PARAMETERS in response.json
+def test_generate_endpoint_success(client, logger_messages, process_mock):
+    process_mock.return_value = barcode_metadata
+    test_run_id = "0123456789abcdef01234567"
+    response = client.post("/cherrypick-test-data", json={"run_id": test_run_id})
+    assert response.status_code == HTTPStatus.OK
+    assert response.json["run_id"] == test_run_id
+    assert response.json["plates"] == barcode_metadata
+    assert response.json["status"] == FIELD_STATUS_COMPLETED
+    assert "timestamp" in response.json
+    assert "errors" not in response.json
+    assert is_found_in_list("Generating test data", logger_messages.info)
 
 
 @pytest.mark.parametrize("json", [{}, {"run_id": None}])
@@ -53,5 +59,6 @@ def test_generate_endpoint_invalid_json(json, client, logger_messages):
     assert "run_id" not in response.json
     assert "plates" not in response.json
     assert "status" not in response.json
+    assert "timestamp" in response.json
     assert is_found_in_list(FLASK_ERROR_MISSING_PARAMETERS, response.json["errors"])
     assert is_found_in_list(FLASK_ERROR_MISSING_PARAMETERS, logger_messages.error)

@@ -26,7 +26,7 @@ def generate_test_data_endpoint() -> FlaskResponse:
 
     The body of the request should be:
 
-    `{ "run_id": "0123456789abcdef" }`
+    `{ "run_id": "0123456789abcdef01234567" }`
 
     It is expected that the run_id will already exist in Mongo DB with details
     of the plates to generate and that the status of the run will currently be
@@ -37,6 +37,8 @@ def generate_test_data_endpoint() -> FlaskResponse:
     """
     logger.info("Generating test data for cherrypicking hardware")
 
+    timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
+
     try:
         if (request_json := request.get_json()) is None or (run_id := request_json.get("run_id")) is None:
             msg = (
@@ -44,10 +46,10 @@ def generate_test_data_endpoint() -> FlaskResponse:
                 "Request body should contain a JSON object with a 'run_id' specified."
             )
             logger.error(msg)
-            return bad_request(msg)
+            return bad_request(msg, timestamp=timestamp)
 
         plates_meta = process(run_id)
-        return ok(run_id=run_id, plates=plates_meta, status=FIELD_STATUS_COMPLETED)
+        return ok(run_id=run_id, plates=plates_meta, status=FIELD_STATUS_COMPLETED, timestamp=timestamp)
 
     except Exception as e:
         if isinstance(e, TestDataError):
@@ -57,7 +59,5 @@ def generate_test_data_endpoint() -> FlaskResponse:
 
         logger.error(msg)
         logger.exception(e)
-
-        timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
 
         return internal_server_error(msg, timestamp=timestamp)
