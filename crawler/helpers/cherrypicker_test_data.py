@@ -40,7 +40,6 @@ SAMPLES_FILE_HEADERS = [
     "CH4-Cq",
 ]
 
-PRINT_FILE_HEADERS = ["barcode", "text"]
 BARACODA_PREFIX = "TEST"
 
 
