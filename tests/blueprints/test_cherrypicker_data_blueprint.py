@@ -1,13 +1,12 @@
 from collections import namedtuple
 from http import HTTPStatus
-import pytest
 from unittest.mock import patch
 
-from crawler.constants import (
-    FIELD_STATUS_COMPLETED,
-    FLASK_ERROR_UNEXPECTED,
-    FLASK_ERROR_MISSING_PARAMETERS,
-)
+import pytest
+
+from crawler.constants import (FIELD_STATUS_COMPLETED,
+                               FLASK_ERROR_MISSING_PARAMETERS,
+                               FLASK_ERROR_UNEXPECTED)
 from crawler.jobs.cherrypicker_test_data import TestDataError
 from tests.conftest import is_found_in_list
 
@@ -16,7 +15,7 @@ barcode_metadata = [
     ["Plate-2", "positive samples: 50"],
 ]
 
-LoggerMessages = namedtuple("LoggerMessages", ["info", "error", "exception"])
+LoggerMessages = namedtuple("LoggerMessages", ["info", "error"])
 
 
 @pytest.fixture
@@ -28,10 +27,7 @@ def logger_messages():
         errors = []
         logger.error.side_effect = lambda msg: errors.append(msg)
 
-        exceptions = []
-        logger.exception.side_effect = lambda msg: exceptions.append(msg)
-
-        yield LoggerMessages(info=infos, error=errors, exception=exceptions)
+        yield LoggerMessages(info=infos, error=errors)
 
 
 @pytest.fixture
@@ -77,7 +73,6 @@ def test_generate_endpoint_handles_testdataerror_exception(client, logger_messag
     assert "timestamp" in response.json
     assert is_found_in_list(test_error_message, response.json["errors"])
     assert is_found_in_list(test_error_message, logger_messages.error)
-    assert test_error in logger_messages.exception
 
 
 def test_generate_endpoint_handles_generic_exception(client, logger_messages, process_mock):
@@ -93,4 +88,3 @@ def test_generate_endpoint_handles_generic_exception(client, logger_messages, pr
     assert is_found_in_list(type(test_error).__name__, response.json["errors"])
     assert is_found_in_list(FLASK_ERROR_UNEXPECTED, logger_messages.error)
     assert is_found_in_list(type(test_error).__name__, logger_messages.error)
-    assert test_error in logger_messages.exception
