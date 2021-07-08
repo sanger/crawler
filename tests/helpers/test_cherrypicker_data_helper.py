@@ -60,23 +60,23 @@ def test_flatten_reduces_one_level_only():
 
 
 @pytest.mark.parametrize("count", [2, 3])
-def test_generate_baracoda_barcodes_calls_correct_baracoda_endpoint(request_post_mock, count):
+def test_generate_baracoda_barcodes_calls_correct_baracoda_endpoint(request_post_mock, config, count):
     expected = ["TEST-012345", "TEST-012346", "TEST-012347"]
     request_post_mock.return_value.json.return_value = {"barcodes_group": {"barcodes": expected}}
-    actual = generate_baracoda_barcodes(count)
+    actual = generate_baracoda_barcodes(config, count)
 
-    assert request_post_mock.called_with(f"http://uat.baracoda.psd.sanger.ac.uk/barcodes_group/TEST/new?count={count}")
+    assert request_post_mock.called_with(f"{config.BARACODA_BASE_URL}/barcodes_group/TEST/new?count={count}")
     assert actual == expected
 
 
 @pytest.mark.parametrize("count", [2, 3])
-def test_create_barcodes(count):
+def test_create_barcodes(config, count):
     expected = ["TEST-012345", "TEST-012346", "TEST-012347"]
 
     with patch(
         "crawler.helpers.cherrypicker_test_data.generate_baracoda_barcodes", return_value=expected
     ) as generate_barcodes:
-        actual = create_barcodes(count)
+        actual = create_barcodes(config, count)
 
     assert generate_barcodes.called_with(count)
     assert actual == expected

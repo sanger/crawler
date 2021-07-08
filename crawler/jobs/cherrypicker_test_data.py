@@ -98,7 +98,7 @@ def process(run_id: str, config: Config = None) -> List[List[str]]:
             update_status(collection, run_id, FIELD_STATUS_STARTED)
 
             dt = datetime.utcnow()
-            barcodes = create_barcodes(num_plates)
+            barcodes = create_barcodes(config, num_plates)
 
             update_status(collection, run_id, FIELD_STATUS_PREPARING_DATA)
 

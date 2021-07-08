@@ -28,6 +28,14 @@ class Config(ModuleType):
     ADD_LAB_ID: bool
     DIR_DOWNLOADED_DATA: str
 
+    # Ingest Behaviour
+    USE_SFTP: bool
+    KEEP_FILES: bool
+    ADD_TO_DART: bool
+
+    # Baracode
+    BARACODA_BASE_URL: str
+
     # Mongo
     MONGO_URI: str
     MONGO_HOST: str
@@ -59,3 +67,9 @@ class Config(ModuleType):
     SFTP_PORT: int
     SFTP_READ_USERNAME: str
     SFTP_READ_PASSWORD: str
+
+    # APScheduler
+    SCHEDULER_RUN: bool
+    SCHEDULER_TIMEZONE: str
+    SCHEDULER_API_ENABLED: bool
+    JOBS: list

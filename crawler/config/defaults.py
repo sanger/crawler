@@ -24,6 +24,9 @@ ADD_TO_DART = True
 LOCALHOST = os.environ.get("LOCALHOST", "127.0.0.1")
 ROOT_PASSWORD = os.environ.get("ROOT_PASSWORD", "")
 
+# Baracoda
+BARACODA_BASE_URL = "http://uat.baracoda.psd.sanger.ac.uk"
+
 # mongo details
 MONGO_DB = "lighthouseDevelopmentDB"
 MONGO_HOST = LOCALHOST
@@ -63,9 +66,7 @@ SFTP_WRITE_USERNAME = "foo"
 SLACK_API_TOKEN = ""
 SLACK_CHANNEL_ID = ""
 
-###
 # APScheduler config
-###
 SCHEDULER_RUN = True
 SCHEDULER_TIMEZONE = (
     "Europe/London"  # We need to define timezone because current flask_apscheduler does not load from TZ env

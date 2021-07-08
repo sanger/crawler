@@ -5,6 +5,8 @@ import os
 import random
 import requests
 
+from crawler.types import Config
+
 
 logger = logging.getLogger(__name__)
 
@@ -47,18 +49,18 @@ def flatten(nested_list: list) -> list:
     return [item for sublist in nested_list for item in sublist]
 
 
-def generate_baracoda_barcodes(num_required: int) -> list:
-    baracoda_url = f"http://uat.baracoda.psd.sanger.ac.uk/barcodes_group/{BARACODA_PREFIX}/new?count={num_required}"
+def generate_baracoda_barcodes(config: Config, num_required: int) -> list:
+    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{BARACODA_PREFIX}/new?count={num_required}"
     response = requests.post(baracoda_url, data={})
     response_json = response.json()
     barcodes: list = response_json["barcodes_group"]["barcodes"]
     return barcodes
 
 
-def create_barcodes(num_required: int) -> list:
+def create_barcodes(config: Config, num_required: int) -> list:
     # call Baracoda here and fetch a set of barcodes with the prefix we want
     logger.info(f"Num barcodes required from Baracoda = {num_required}")
-    list_barcodes = generate_baracoda_barcodes(num_required)
+    list_barcodes = generate_baracoda_barcodes(config, num_required)
     return list_barcodes
 
 
