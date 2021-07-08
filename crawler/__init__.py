@@ -1,7 +1,7 @@
-from http import HTTPStatus
 import logging
 import logging.config
 import os
+from http import HTTPStatus
 
 from flask import Flask
 from flask_apscheduler import APScheduler

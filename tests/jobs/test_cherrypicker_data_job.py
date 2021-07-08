@@ -125,10 +125,18 @@ def test_process_success(logger_messages, config):
         mongo_client_context = Mock()
         mongo_client_context.__enter__ = Mock(return_value=mongo_client)
         mongo_client_context.__exit__ = Mock()
-        create_mongo_client = stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.create_mongo_client", return_value=mongo_client_context))
-        get_mongo_db = stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.get_mongo_db", return_value=mongo_db))
-        get_mongo_collection = stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.get_mongo_collection", return_value=mongo_collection))
-        process_run = stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.process_run", return_value=created_barcode_metadata))
+        create_mongo_client = stack.enter_context(
+            patch("crawler.jobs.cherrypicker_test_data.create_mongo_client", return_value=mongo_client_context)
+        )
+        get_mongo_db = stack.enter_context(
+            patch("crawler.jobs.cherrypicker_test_data.get_mongo_db", return_value=mongo_db)
+        )
+        get_mongo_collection = stack.enter_context(
+            patch("crawler.jobs.cherrypicker_test_data.get_mongo_collection", return_value=mongo_collection)
+        )
+        process_run = stack.enter_context(
+            patch("crawler.jobs.cherrypicker_test_data.process_run", return_value=created_barcode_metadata)
+        )
 
         barcode_meta = process(pending_id, config)
 
@@ -204,8 +212,12 @@ def test_process_run_calls_helper_methods(mongo_collection, mock_stack):
     run_doc = get_doc(collection, pending_id)
 
     with ExitStack() as stack:
-        get_run_doc = stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.get_run_doc", return_value=run_doc))
-        extract_plate_specs = stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.extract_plate_specs", return_value=(plate_specs, 6)))
+        get_run_doc = stack.enter_context(
+            patch("crawler.jobs.cherrypicker_test_data.get_run_doc", return_value=run_doc)
+        )
+        extract_plate_specs = stack.enter_context(
+            patch("crawler.jobs.cherrypicker_test_data.extract_plate_specs", return_value=(plate_specs, 6))
+        )
         prepare_data = stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.prepare_data"))
 
         process_run(config, collection, pending_id)
@@ -252,7 +264,7 @@ def test_process_run_calls_run_crawler_with_correct_parameters(mongo_collection,
         ["[[2,0]]", [[2, 0]], 2],
         ["[[1,96]]", [[1, 96]], 1],
         ["[[1,1],[2,2],[3,3],[4,4]]", [[1, 1], [2, 2], [3, 3], [4, 4]], 10],
-    ]
+    ],
 )
 def test_extract_plate_specs_correct_extracts_specs_and_plate_number(plate_specs_string, expected_specs, expected_num):
     actual_specs, actual_num = extract_plate_specs(plate_specs_string)

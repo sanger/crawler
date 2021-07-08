@@ -4,9 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from crawler.constants import (FIELD_STATUS_COMPLETED,
-                               FLASK_ERROR_MISSING_PARAMETERS,
-                               FLASK_ERROR_UNEXPECTED)
+from crawler.constants import FIELD_STATUS_COMPLETED, FLASK_ERROR_MISSING_PARAMETERS, FLASK_ERROR_UNEXPECTED
 from crawler.jobs.cherrypicker_test_data import TestDataError
 from tests.conftest import is_found_in_list
 
