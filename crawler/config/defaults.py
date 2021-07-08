@@ -1,9 +1,9 @@
 # flake8: noqa
 import os
 
-from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
 from crawler.config.centres import *
 from crawler.config.logging import *
+from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
 
 # setting here will overwrite those in 'centres.py'
 
@@ -11,6 +11,7 @@ from crawler.config.logging import *
 
 DIR_DOWNLOADED_DATA = "data/sftp_files/"
 ADD_LAB_ID = False
+CAN_CREATE_CHERRYPICKER_TEST_DATA = False  # Safeguards it being on by accident in production
 
 # ingest behaviour for scheduled runs
 USE_SFTP = True

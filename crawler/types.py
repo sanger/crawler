@@ -27,6 +27,7 @@ class Config(ModuleType):
     # General
     ADD_LAB_ID: bool
     DIR_DOWNLOADED_DATA: str
+    CAN_CREATE_CHERRYPICKER_TEST_DATA: bool
 
     # Ingest Behaviour
     USE_SFTP: bool
