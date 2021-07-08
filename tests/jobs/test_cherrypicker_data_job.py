@@ -210,7 +210,7 @@ def test_process_asks_for_correct_number_of_barcodes(mongo_collection, mock_stac
     with patch("crawler.jobs.cherrypicker_test_data.create_barcodes") as create_barcodes:
         process(pending_id, config)
 
-    assert create_barcodes.called_with(5 + 15 + 19)
+    create_barcodes.assert_called_with(config, 5 + 15 + 19)
 
 
 def test_process_calls_create_csv_rows_with_correct_parameters(mongo_collection, mock_stack):
@@ -222,7 +222,7 @@ def test_process_calls_create_csv_rows_with_correct_parameters(mongo_collection,
     with patch("crawler.jobs.cherrypicker_test_data.create_csv_rows") as create_csv_rows:
         process(pending_id, config)
 
-    assert create_csv_rows.called_with(plate_specs, mocked_utc_now, created_barcodes)
+    create_csv_rows.assert_called_with(plate_specs, mocked_utc_now, created_barcodes)
 
 
 def test_process_calls_write_plates_file_with_correct_parameters(mongo_collection, mock_stack):
@@ -233,8 +233,8 @@ def test_process_calls_write_plates_file_with_correct_parameters(mongo_collectio
         process(pending_id, config)
 
     plates_path = os.path.join(config.DIR_DOWNLOADED_DATA, TEST_DATA_CENTRE_PREFIX)
-    filename = "CPTD_20210312_094100_000000.csv"
-    assert write_plates_file.called_with(created_csv_rows, plates_path, filename)
+    filename = "CPTD_210312_094100_000000.csv"
+    write_plates_file.assert_called_with(created_csv_rows, plates_path, filename)
 
 
 def test_process_calls_run_crawler_with_correct_parameters(mongo_collection, mock_stack):
@@ -244,7 +244,7 @@ def test_process_calls_run_crawler_with_correct_parameters(mongo_collection, moc
     with patch("crawler.jobs.cherrypicker_test_data.run_crawler") as run_crawler:
         process(pending_id, config)
 
-    assert run_crawler.called_with(sftp=False, keep_files=False, add_to_dart=False, centre_prefix="CPTD")
+    run_crawler.assert_called_with(sftp=False, keep_files=False, add_to_dart=False, centre_prefix="CPTD")
 
 
 def test_get_run_doc_gets_the_doc_by_id(logger_messages, mongo_collection):
