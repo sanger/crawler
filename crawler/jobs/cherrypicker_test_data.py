@@ -1,47 +1,44 @@
-from bson.objectid import ObjectId
-from datetime import datetime
-from functools import reduce
 import json
 import logging
 import os
+from datetime import datetime
+from functools import reduce
 from typing import List
+
+from bson.objectid import ObjectId
+from pymongo.collection import Collection
 
 from crawler.constants import (
     COLLECTION_CHERRYPICK_TEST_DATA,
-    FIELD_MONGODB_ID,
-    FIELD_UPDATED_AT,
-    FIELD_STATUS,
-    FIELD_PLATE_SPECS,
     FIELD_BARCODES,
     FIELD_FAILURE_REASON,
-    FIELD_STATUS_PENDING,
-    FIELD_STATUS_STARTED,
-    FIELD_STATUS_PREPARING_DATA,
-    FIELD_STATUS_CRAWLING_DATA,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_SPECS,
+    FIELD_STATUS,
     FIELD_STATUS_COMPLETED,
+    FIELD_STATUS_CRAWLING_DATA,
     FIELD_STATUS_FAILED,
+    FIELD_STATUS_PENDING,
+    FIELD_STATUS_PREPARING_DATA,
+    FIELD_STATUS_STARTED,
+    FIELD_UPDATED_AT,
     TEST_DATA_CENTRE_PREFIX,
-    TEST_DATA_ERROR_NO_RUN_FOR_ID,
-    TEST_DATA_ERROR_WRONG_STATE,
     TEST_DATA_ERROR_INVALID_PLATE_SPECS,
+    TEST_DATA_ERROR_NO_RUN_FOR_ID,
     TEST_DATA_ERROR_NUMBER_OF_PLATES,
     TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES,
+    TEST_DATA_ERROR_WRONG_STATE,
 )
-from crawler.db.mongo import (
-    create_mongo_client,
-    get_mongo_collection,
-    get_mongo_db,
-)
+from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.helpers.cherrypicker_test_data import (
-    create_barcodes,
     create_barcode_meta,
+    create_barcodes,
     create_csv_rows,
     write_plates_file,
 )
 from crawler.helpers.general_helpers import get_config
 from crawler.main import run as run_crawler
 from crawler.types import Config
-
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +76,7 @@ def process(run_id: str, config: Config = None) -> List[List[str]]:
         return process_run(config, collection, run_id)
 
 
-def process_run(config, collection, run_id):
+def process_run(config: Config, collection: Collection, run_id: str) -> List[List[str]]:
     dt = datetime.utcnow()
     run_doc = get_run_doc(collection, run_id)
 

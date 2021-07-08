@@ -1,47 +1,47 @@
-from bson.objectid import ObjectId
+import json
+import os
 from collections import namedtuple
 from contextlib import ExitStack
 from datetime import datetime
-import json
-import os
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import patch, Mock, MagicMock
+from bson.objectid import ObjectId
 
 from crawler.constants import (
     COLLECTION_CHERRYPICK_TEST_DATA,
-    FIELD_MONGODB_ID,
-    FIELD_CREATED_AT,
-    FIELD_UPDATED_AT,
-    FIELD_STATUS,
-    FIELD_PLATE_SPECS,
     FIELD_BARCODES,
+    FIELD_CREATED_AT,
     FIELD_FAILURE_REASON,
-    FIELD_STATUS_PENDING,
-    FIELD_STATUS_STARTED,
-    FIELD_STATUS_PREPARING_DATA,
-    FIELD_STATUS_CRAWLING_DATA,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_SPECS,
+    FIELD_STATUS,
     FIELD_STATUS_COMPLETED,
+    FIELD_STATUS_CRAWLING_DATA,
     FIELD_STATUS_FAILED,
+    FIELD_STATUS_PENDING,
+    FIELD_STATUS_PREPARING_DATA,
+    FIELD_STATUS_STARTED,
+    FIELD_UPDATED_AT,
     TEST_DATA_CENTRE_PREFIX,
     TEST_DATA_ERROR_INVALID_PLATE_SPECS,
     TEST_DATA_ERROR_NO_RUN_FOR_ID,
-    TEST_DATA_ERROR_WRONG_STATE,
     TEST_DATA_ERROR_NUMBER_OF_PLATES,
     TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES,
+    TEST_DATA_ERROR_WRONG_STATE,
 )
 from crawler.db.mongo import get_mongo_collection
 from crawler.jobs.cherrypicker_test_data import (
     TestDataError,
+    extract_plate_specs,
+    get_run_doc,
+    prepare_data,
     process,
     process_run,
-    get_run_doc,
-    extract_plate_specs,
-    prepare_data,
-    update_status,
     update_run,
+    update_status,
 )
 from tests.conftest import is_found_in_list
-
 
 partial_run_doc = {
     FIELD_CREATED_AT: datetime(2012, 3, 4, 5, 6, 7, 890),
