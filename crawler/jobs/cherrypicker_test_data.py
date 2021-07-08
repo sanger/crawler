@@ -76,62 +76,49 @@ def process(run_id: str, config: Config = None) -> List[List[str]]:
         mongo_db = get_mongo_db(config, mongo_client)
         collection = get_mongo_collection(mongo_db, COLLECTION_CHERRYPICK_TEST_DATA)
 
-        run_doc = get_run_doc(collection, run_id)
-        if run_doc[FIELD_STATUS] != FIELD_STATUS_PENDING:
-            raise TestDataError(f"{TEST_DATA_ERROR_WRONG_STATE} '{FIELD_STATUS_PENDING}'")
+        return process_run(config, collection, run_id)
 
-        try:
-            try:
-                plate_specs_string = run_doc[FIELD_PLATE_SPECS]
-                plate_specs: List[List[int]] = json.loads(plate_specs_string)
-            except (TypeError, json.JSONDecodeError):
-                raise TestDataError(TEST_DATA_ERROR_INVALID_PLATE_SPECS)
 
-            num_plates = reduce(lambda a, b: a + b[0], plate_specs, 0)
-            if num_plates < 1 or num_plates > 100:
-                raise TestDataError(TEST_DATA_ERROR_NUMBER_OF_PLATES)
+def process_run(config, collection, run_id):
+    dt = datetime.utcnow()
+    run_doc = get_run_doc(collection, run_id)
 
-            positives_per_plate = [spec[1] for spec in plate_specs]
-            if any([positives < 0 or positives > 96 for positives in positives_per_plate]):
-                raise TestDataError(TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES)
+    if run_doc[FIELD_STATUS] != FIELD_STATUS_PENDING:
+        raise TestDataError(f"{TEST_DATA_ERROR_WRONG_STATE} '{FIELD_STATUS_PENDING}'")
 
-            update_status(collection, run_id, FIELD_STATUS_STARTED)
+    try:
+        plate_specs, num_plates = extract_plate_specs(run_doc.get(FIELD_PLATE_SPECS))
 
-            dt = datetime.utcnow()
-            barcodes = create_barcodes(config, num_plates)
+        update_status(collection, run_id, FIELD_STATUS_STARTED)
+        barcodes = create_barcodes(config, num_plates)
 
-            update_status(collection, run_id, FIELD_STATUS_PREPARING_DATA)
+        update_status(collection, run_id, FIELD_STATUS_PREPARING_DATA)
+        prepare_data(plate_specs, dt, barcodes, config.DIR_DOWNLOADED_DATA)
 
-            csv_rows = create_csv_rows(plate_specs, dt, barcodes)
-            plates_path = os.path.join(config.DIR_DOWNLOADED_DATA, TEST_DATA_CENTRE_PREFIX)
-            plates_filename = f"{TEST_DATA_CENTRE_PREFIX}_{dt.strftime('%y%m%d_%H%M%S_%f')}.csv"
-            write_plates_file(csv_rows, plates_path, plates_filename)
+        update_status(collection, run_id, FIELD_STATUS_CRAWLING_DATA)
+        run_crawler(sftp=False, keep_files=False, add_to_dart=False, centre_prefix=TEST_DATA_CENTRE_PREFIX)
 
-            update_status(collection, run_id, FIELD_STATUS_CRAWLING_DATA)
+        barcode_meta = create_barcode_meta(plate_specs, barcodes)
+        update_run(
+            collection,
+            run_id,
+            {
+                FIELD_STATUS: FIELD_STATUS_COMPLETED,
+                FIELD_BARCODES: json.dumps(barcode_meta),
+            },
+        )
 
-            run_crawler(sftp=False, keep_files=False, add_to_dart=False, centre_prefix=TEST_DATA_CENTRE_PREFIX)
-
-            barcode_meta = create_barcode_meta(plate_specs, barcodes)
-            update_run(
-                collection,
-                run_id,
-                {
-                    FIELD_STATUS: FIELD_STATUS_COMPLETED,
-                    FIELD_BARCODES: json.dumps(barcode_meta),
-                },
-            )
-
-            return barcode_meta
-        except Exception as e:
-            update_run(
-                collection,
-                run_id,
-                {
-                    FIELD_STATUS: FIELD_STATUS_FAILED,
-                    FIELD_FAILURE_REASON: str(e),
-                },
-            )
-            raise
+        return barcode_meta
+    except Exception as e:
+        update_run(
+            collection,
+            run_id,
+            {
+                FIELD_STATUS: FIELD_STATUS_FAILED,
+                FIELD_FAILURE_REASON: str(e),
+            },
+        )
+        raise
 
 
 def get_run_doc(collection, run_id):
@@ -143,6 +130,30 @@ def get_run_doc(collection, run_id):
     logger.debug(f"Found run: {run_doc}")
 
     return run_doc
+
+
+def extract_plate_specs(plate_specs_string):
+    try:
+        plate_specs: List[List[int]] = json.loads(plate_specs_string)
+    except (TypeError, json.JSONDecodeError):
+        raise TestDataError(TEST_DATA_ERROR_INVALID_PLATE_SPECS)
+
+    num_plates = reduce(lambda a, b: a + b[0], plate_specs, 0)
+    if num_plates < 1 or num_plates > 100:
+        raise TestDataError(TEST_DATA_ERROR_NUMBER_OF_PLATES)
+
+    positives_per_plate = [spec[1] for spec in plate_specs]
+    if any([positives < 0 or positives > 96 for positives in positives_per_plate]):
+        raise TestDataError(TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES)
+
+    return plate_specs, num_plates
+
+
+def prepare_data(plate_specs, dt, barcodes, downloaded_data_path):
+    csv_rows = create_csv_rows(plate_specs, dt, barcodes)
+    plates_path = os.path.join(downloaded_data_path, TEST_DATA_CENTRE_PREFIX)
+    plates_filename = f"{TEST_DATA_CENTRE_PREFIX}_{dt.strftime('%y%m%d_%H%M%S_%f')}.csv"
+    write_plates_file(csv_rows, plates_path, plates_filename)
 
 
 def update_status(collection, run_id, status):
