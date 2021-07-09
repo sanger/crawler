@@ -6,7 +6,7 @@ from crawler.constants import FIELD_RNA_ID
 
 # general details
 DIR_DOWNLOADED_DATA = "tests/test_files/good/"
-CAN_CREATE_CHERRYPICKER_TEST_DATA = True
+ENABLE_CHERRYPICKER_ENDPOINTS = True
 
 
 # change all the backup folder entries for the centres during testing

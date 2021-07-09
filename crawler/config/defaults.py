@@ -11,7 +11,7 @@ from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
 
 DIR_DOWNLOADED_DATA = "data/sftp_files/"
 ADD_LAB_ID = False
-CAN_CREATE_CHERRYPICKER_TEST_DATA = False  # Safeguards it being on by accident in production
+ENABLE_CHERRYPICKER_ENDPOINTS = False  # Safeguards it being on by accident in production
 
 # ingest behaviour for scheduled runs
 USE_SFTP = True

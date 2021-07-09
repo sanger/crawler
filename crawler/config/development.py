@@ -4,7 +4,7 @@ from crawler.config.defaults import *
 # setting here will overwrite those in 'defaults.py'
 
 # general details
-CAN_CREATE_CHERRYPICKER_TEST_DATA = True
+ENABLE_CHERRYPICKER_ENDPOINTS = True
 
 # ingest behaviour for scheduled runs
 USE_SFTP = False

@@ -22,7 +22,7 @@ def create_app(config_object: str = None) -> Flask:
     # setup logging
     logging.config.dictConfig(app.config["LOGGING"])
 
-    if app.config.get("CAN_CREATE_CHERRYPICKER_TEST_DATA", False):
+    if app.config.get("ENABLE_CHERRYPICKER_ENDPOINTS", False):
         from crawler.blueprints import cherrypicker_test_data
 
         app.register_blueprint(cherrypicker_test_data.bp)
