@@ -1,28 +1,28 @@
+import os
+import shutil
 from collections import namedtuple
 from datetime import datetime
-import os
-import pytest
-import shutil
 from unittest.mock import patch
 
+import pytest
+
 from crawler.helpers.cherrypicker_test_data import (
-    flatten,
-    generate_baracoda_barcodes,
+    create_barcode_meta,
     create_barcodes,
-    create_root_sample_id,
-    create_viral_prep_id,
+    create_csv_rows,
+    create_plate_rows,
     create_rna_id,
     create_rna_pcr_id,
-    create_test_timestamp,
+    create_root_sample_id,
     create_row,
-    create_plate_rows,
+    create_test_timestamp,
+    create_viral_prep_id,
     flat_list_of_positives_per_plate,
-    create_csv_rows,
+    flatten,
+    generate_baracoda_barcodes,
     write_plates_file,
-    create_barcode_meta,
 )
 from tests.conftest import is_found_in_list
-
 
 LoggerMessages = namedtuple("LoggerMessages", ["info", "error"])
 
@@ -85,9 +85,9 @@ def test_create_barcodes(config, count):
 @pytest.mark.parametrize(
     "barcode, well_num, expected",
     [
-        ["TEST-123450", 4, "RSID-TEST-1234500004"],
-        ["TEST-123451", 34, "RSID-TEST-1234510034"],
-        ["TEST-123452", 96, "RSID-TEST-1234520096"],
+        ["TEST-123450", 4, "RSID-TEST-12345004"],
+        ["TEST-123451", 34, "RSID-TEST-12345134"],
+        ["TEST-123452", 96, "RSID-TEST-12345296"],
     ],
 )
 def test_create_root_sample_id(barcode, well_num, expected):
@@ -98,9 +98,9 @@ def test_create_root_sample_id(barcode, well_num, expected):
 @pytest.mark.parametrize(
     "barcode, well_num, well_coordinate, expected",
     [
-        ["TEST-123450", 4, "A04", "VPID-TEST-1234500004_A04"],
-        ["TEST-123451", 34, "C10", "VPID-TEST-1234510034_C10"],
-        ["TEST-123452", 96, "H12", "VPID-TEST-1234520096_H12"],
+        ["TEST-123450", 4, "A04", "VPID-TEST-12345004_A04"],
+        ["TEST-123451", 34, "C10", "VPID-TEST-12345134_C10"],
+        ["TEST-123452", 96, "H12", "VPID-TEST-12345296_H12"],
     ],
 )
 def test_create_viral_prep_id(barcode, well_num, well_coordinate, expected):
@@ -124,9 +124,9 @@ def test_create_rna_id(barcode, well_coordinate, expected):
 @pytest.mark.parametrize(
     "barcode, well_num, well_coordinate, expected",
     [
-        ["TEST-123450", 4, "A04", "RNA_PCR-TEST-1234500004_A04"],
-        ["TEST-123451", 34, "C10", "RNA_PCR-TEST-1234510034_C10"],
-        ["TEST-123452", 96, "H12", "RNA_PCR-TEST-1234520096_H12"],
+        ["TEST-123450", 4, "A04", "RNA_PCR-TEST-12345004_A04"],
+        ["TEST-123451", 34, "C10", "RNA_PCR-TEST-12345134_C10"],
+        ["TEST-123452", 96, "H12", "RNA_PCR-TEST-12345296_H12"],
     ],
 )
 def test_create_rna_pcr_id(barcode, well_num, well_coordinate, expected):

@@ -1,12 +1,12 @@
 import csv
-from datetime import datetime
 import logging
 import os
 import random
+from datetime import datetime
+
 import requests
 
 from crawler.types import Config
-
 
 logger = logging.getLogger(__name__)
 
@@ -65,11 +65,11 @@ def create_barcodes(config: Config, num_required: int) -> list:
 
 
 def create_root_sample_id(barcode: str, well_num: int) -> str:
-    return "RSID-%s%s" % (barcode, str(well_num).zfill(4))
+    return "RSID-%s%s" % (barcode, str(well_num).zfill(2))
 
 
 def create_viral_prep_id(barcode: str, well_num: int, well_coordinate: str) -> str:
-    return "VPID-%s%s_%s" % (barcode, str(well_num).zfill(4), well_coordinate)
+    return "VPID-%s%s_%s" % (barcode, str(well_num).zfill(2), well_coordinate)
 
 
 def create_rna_id(barcode: str, well_coordinate: str) -> str:
@@ -77,7 +77,7 @@ def create_rna_id(barcode: str, well_coordinate: str) -> str:
 
 
 def create_rna_pcr_id(barcode: str, well_num: int, well_coordinate: str) -> str:
-    return "RNA_PCR-%s%s_%s" % (barcode, str(well_num).zfill(4), well_coordinate)
+    return "RNA_PCR-%s%s_%s" % (barcode, str(well_num).zfill(2), well_coordinate)
 
 
 def create_test_timestamp(dt: datetime) -> str:
