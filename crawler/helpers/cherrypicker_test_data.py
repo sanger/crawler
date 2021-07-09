@@ -98,6 +98,8 @@ def create_row(dt: datetime, well_index: int, result: str, barcode: str) -> list
     ] + [""] * 12
 
 
+# TODO: At the moment, dt is used as a static timestamp across all samples and all plates It could be desirable to add
+#       some random noise to this timestamp between either all samples or between plates.
 def create_plate_rows(dt, num_positives, plate_barcode):
     num_negatives = PLATE_SIZE - num_positives
     outcomes = ["Positive"] * num_positives + ["Negative"] * num_negatives
