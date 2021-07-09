@@ -10,6 +10,7 @@ from bson.objectid import ObjectId
 
 from crawler.constants import (
     COLLECTION_CHERRYPICK_TEST_DATA,
+    FIELD_ADD_TO_DART,
     FIELD_BARCODES,
     FIELD_CREATED_AT,
     FIELD_FAILURE_REASON,
@@ -99,11 +100,14 @@ def mock_stack():
         yield stack
 
 
-def insert_run(collection, status=FIELD_STATUS_PENDING, plate_specs="[[75, 48], [50, 0], [50, 96]]"):
-    run_doc = {**partial_run_doc, FIELD_STATUS: status, FIELD_PLATE_SPECS: plate_specs}
+def insert_run(collection, status=FIELD_STATUS_PENDING, plate_specs="[[75, 48], [50, 0], [50, 96]]", add_to_dart=False):
+    run_doc = {**partial_run_doc, FIELD_STATUS: status}
 
-    if plate_specs is None:
-        del run_doc[FIELD_PLATE_SPECS]
+    if plate_specs is not None:
+        run_doc[FIELD_PLATE_SPECS] = plate_specs
+
+    if add_to_dart is not None:
+        run_doc[FIELD_ADD_TO_DART] = add_to_dart
 
     result = collection.insert_one(run_doc)
 
@@ -248,14 +252,28 @@ def test_process_run_run_asks_for_correct_number_of_barcodes(mongo_collection, m
     create_barcodes.assert_called_with(config, 5 + 15 + 19)
 
 
-def test_process_run_calls_run_crawler_with_correct_parameters(mongo_collection, mock_stack):
+@pytest.mark.parametrize(
+    "add_to_dart, expected_dart_value",
+    [
+        [None, False],
+        [True, True],
+        [False, False],
+        [" tRuE  ", True],
+        ["  FaLsE ", False],
+        [["True"], False],
+        [{"True": True}, False],
+    ],
+)
+def test_process_run_calls_run_crawler_with_correct_parameters(
+    mongo_collection, mock_stack, add_to_dart, expected_dart_value
+):
     config, collection = mongo_collection
-    pending_id = insert_run(collection)
+    pending_id = insert_run(collection, add_to_dart=add_to_dart)
 
     with patch("crawler.jobs.cherrypicker_test_data.run_crawler") as run_crawler:
         process_run(config, collection, pending_id)
 
-    run_crawler.assert_called_with(sftp=False, keep_files=False, add_to_dart=False, centre_prefix="CPTD")
+    run_crawler.assert_called_with(sftp=False, keep_files=False, add_to_dart=expected_dart_value, centre_prefix="CPTD")
 
 
 @pytest.mark.parametrize(

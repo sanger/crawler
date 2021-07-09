@@ -3,13 +3,14 @@ import logging
 import os
 from datetime import datetime
 from functools import reduce
-from typing import List
+from typing import Any, List
 
 from bson.objectid import ObjectId
 from pymongo.collection import Collection
 
 from crawler.constants import (
     COLLECTION_CHERRYPICK_TEST_DATA,
+    FIELD_ADD_TO_DART,
     FIELD_BARCODES,
     FIELD_FAILURE_REASON,
     FIELD_MONGODB_ID,
@@ -85,6 +86,7 @@ def process_run(config: Config, collection: Collection, run_id: str) -> List[Lis
 
     try:
         plate_specs, num_plates = extract_plate_specs(run_doc.get(FIELD_PLATE_SPECS))
+        add_to_dart = parse_bool_field(run_doc.get(FIELD_ADD_TO_DART), False)
 
         update_status(collection, run_id, FIELD_STATUS_STARTED)
         barcodes = create_barcodes(config, num_plates)
@@ -93,7 +95,7 @@ def process_run(config: Config, collection: Collection, run_id: str) -> List[Lis
         prepare_data(plate_specs, dt, barcodes, config.DIR_DOWNLOADED_DATA)
 
         update_status(collection, run_id, FIELD_STATUS_CRAWLING_DATA)
-        run_crawler(sftp=False, keep_files=False, add_to_dart=False, centre_prefix=TEST_DATA_CENTRE_PREFIX)
+        run_crawler(sftp=False, keep_files=False, add_to_dart=add_to_dart, centre_prefix=TEST_DATA_CENTRE_PREFIX)
 
         barcode_meta = create_barcode_meta(plate_specs, barcodes)
         update_run(
@@ -144,6 +146,28 @@ def extract_plate_specs(plate_specs_string):
         raise TestDataError(TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES)
 
     return plate_specs, num_plates
+
+
+def parse_bool_field(value: Any, default_value: bool) -> bool:
+    """Convert a bool or string value to a bool.
+
+    Arguments:
+        value: any -- The value to convert to a bool.
+        deafult_value: bool -- The value to use if the conversation cannot be done.
+
+    Returns:
+        The value of the bool, if it was already a bool.  If the value can be coerced into a string, True will be returned if the string
+        is the word "true" or False will be returned when the string is the word "false".  Strings are tested in a case
+        insensitive manner.  In all other cases, the default value is returned.
+    """
+    if type(value) == bool:
+        return value
+    elif str(value).strip().lower() == "true":
+        return True
+    elif str(value).strip().lower() == "false":
+        return False
+
+    return default_value
 
 
 def prepare_data(plate_specs, dt, barcodes, downloaded_data_path):
