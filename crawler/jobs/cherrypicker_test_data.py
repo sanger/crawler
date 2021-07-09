@@ -156,9 +156,9 @@ def parse_bool_field(value: Any, default_value: bool) -> bool:
         deafult_value: bool -- The value to use if the conversation cannot be done.
 
     Returns:
-        The value of the bool, if it was already a bool.  If the value can be coerced into a string, True will be returned if the string
-        is the word "true" or False will be returned when the string is the word "false".  Strings are tested in a case
-        insensitive manner.  In all other cases, the default value is returned.
+        The value of the bool, if it was already a bool.  If the value can be coerced into a string, True will be
+        returned if the string is the word "true" or False will be returned when the string is the word "false".
+        Strings are tested in a case insensitive manner.  In all other cases, the default value is returned.
     """
     if type(value) == bool:
         return value
