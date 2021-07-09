@@ -99,7 +99,7 @@ def mock_stack():
         yield stack
 
 
-def insert_run(collection, status=FIELD_STATUS_PENDING, plate_specs="[[50, 48], [25, 0], [25, 96]]"):
+def insert_run(collection, status=FIELD_STATUS_PENDING, plate_specs="[[75, 48], [50, 0], [50, 96]]"):
     run_doc = {**partial_run_doc, FIELD_STATUS: status, FIELD_PLATE_SPECS: plate_specs}
 
     if plate_specs is None:
@@ -286,7 +286,7 @@ def test_extract_plate_specs_raises_error_invalid_plate_specs(bad_plate_specs):
     [
         "[]",  # Unspecified plates
         "[[0, 96]]",  # 0 plates
-        "[[34, 10], [34, 20], [33, 30]]",  # 101 plates
+        "[[67, 10], [67, 20], [67, 30]]",  # 201 plates
     ],
 )
 def test_extract_plate_specs_raises_error_wrong_number_of_plates(bad_plate_specs):
