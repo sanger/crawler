@@ -50,8 +50,8 @@ EVENTS_WH_DB = "event_warehouse_development"
 DART_DB_DBNAME = "dart_test"
 DART_DB_HOST = os.environ.get("LOCALHOST", "127.0.0.1")
 DART_DB_PORT = 1433
-DART_DB_RW_USER = "root"
-DART_DB_RW_PASSWORD = ""
+DART_DB_RW_USER = "sa"
+DART_DB_RW_PASSWORD = "MyS3cr3tPassw0rd"
 DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
 
 # SFTP details
