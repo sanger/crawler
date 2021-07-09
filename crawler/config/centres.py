@@ -182,6 +182,7 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_file_regex_unconsolidated_surveillance": r"^CPTD_\d{6}_\d{6}_\d{6}\.csv$",
         "sftp_file_regex_consolidated_surveillance": r"^$",
         "sftp_file_regex_consolidated_eagle": r"^$",
+        "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
         CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,
         CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS: False,
     },
