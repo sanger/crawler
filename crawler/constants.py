@@ -2,7 +2,6 @@
 from decimal import Decimal
 from typing import Final, Set, Tuple
 
-
 ###
 # AP Scheduler Jobs
 ###
@@ -16,6 +15,7 @@ COLLECTION_IMPORTS: Final[str] = "imports"
 COLLECTION_SAMPLES: Final[str] = "samples"
 COLLECTION_PRIORITY_SAMPLES: Final[str] = "priority_samples"
 COLLECTION_SOURCE_PLATES: Final[str] = "source_plates"
+COLLECTION_CHERRYPICK_TEST_DATA: Final[str] = "cherrypick_test_data"
 
 ###
 # CSV file column names
@@ -62,11 +62,40 @@ FIELD_MUST_SEQUENCE: Final[str] = "must_sequence"
 FIELD_PREFERENTIALLY_SEQUENCE: Final[str] = "preferentially_sequence"
 FIELD_PROCESSED: Final[str] = "processed"
 FIELD_SAMPLE_ID: Final[str] = "sample_id"
+FIELD_STATUS: Final[str] = "status"
+FIELD_PLATE_SPECS: Final[str] = "plate_specs"
+FIELD_ADD_TO_DART: Final[str] = "add_to_dart"
+FIELD_BARCODES: Final[str] = "barcodes"
+FIELD_FAILURE_REASON: Final[str] = "failure_reason"
 
 # filtered-positive field names
 FIELD_FILTERED_POSITIVE_TIMESTAMP: Final[str] = "filtered_positive_timestamp"
 FIELD_FILTERED_POSITIVE_VERSION: Final[str] = "filtered_positive_version"
 FIELD_FILTERED_POSITIVE: Final[str] = "filtered_positive"
+
+# status field values
+FIELD_STATUS_PENDING: Final[str] = "pending"
+FIELD_STATUS_STARTED: Final[str] = "started"
+FIELD_STATUS_PREPARING_DATA: Final[str] = "preparing_data"
+FIELD_STATUS_CRAWLING_DATA: Final[str] = "crawling_data"
+FIELD_STATUS_COMPLETED: Final[str] = "completed"
+FIELD_STATUS_FAILED: Final[str] = "failed"
+
+###
+# cherrypicker test data
+###
+# the prefix for the centre which processes generated data
+TEST_DATA_CENTRE_PREFIX: Final[str] = "CPTD"
+
+# processing errors for the API endpoint for generating data
+TEST_DATA_ERROR_NO_RUN_FOR_ID: Final[str] = "No run found for ID"
+TEST_DATA_ERROR_WRONG_STATE: Final[str] = "Run doesn't have status"
+TEST_DATA_ERROR_INVALID_PLATE_SPECS: Final[str] = "There is a problem with the plate specs for the run."
+TEST_DATA_ERROR_NUMBER_OF_PLATES: Final[str] = "Number of plates to generate must be between 1 and {0}."
+TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES: Final[
+    str
+] = "One or more plates expected fewer than 0 or more than 96 positive samples."
+
 
 ##
 # multi-lims warehouse field names
@@ -198,3 +227,12 @@ EVENT_CHERRYPICK_LAYOUT_SET: Final[str] = "cherrypick_layout_set"
 
 # As per Beckman events detailed in https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/Cherrypicking+Events
 PLATE_EVENT_DESTINATION_CREATED: Final[str] = "lh_beckman_cp_destination_created"
+
+
+###
+# Flask endpoints
+###
+
+# general
+FLASK_ERROR_UNEXPECTED: Final[str] = "An unexpected error occurred"
+FLASK_ERROR_MISSING_PARAMETERS: Final[str] = "Missing required parameters"

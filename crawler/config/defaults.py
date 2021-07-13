@@ -1,18 +1,27 @@
 # flake8: noqa
 import os
 
-from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
 from crawler.config.centres import *
 from crawler.config.logging import *
+from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
 
 # setting here will overwrite those in 'centres.py'
 
+###
 # general details
-
+###
 DIR_DOWNLOADED_DATA = "data/sftp_files/"
 ADD_LAB_ID = False
 
+###
+# cherrypicker test data options
+###
+ENABLE_CHERRYPICKER_ENDPOINTS = False  # Safeguards it being on by accident in production
+MAX_PLATES_PER_TEST_DATA_RUN = 200
+
+###
 # ingest behaviour for scheduled runs
+###
 USE_SFTP = True
 KEEP_FILES = False
 ADD_TO_DART = True
@@ -24,14 +33,23 @@ ADD_TO_DART = True
 LOCALHOST = os.environ.get("LOCALHOST", "127.0.0.1")
 ROOT_PASSWORD = os.environ.get("ROOT_PASSWORD", "")
 
+###
+# Baracoda
+###
+BARACODA_BASE_URL = "http://uat.baracoda.psd.sanger.ac.uk"
+
+###
 # mongo details
+###
 MONGO_DB = "lighthouseDevelopmentDB"
 MONGO_HOST = LOCALHOST
 MONGO_PASSWORD = ""
 MONGO_PORT = 27017
 MONGO_USERNAME = ""
 
+###
 # MLWH database details
+###
 MLWH_DB_DBNAME = "unified_warehouse_development"
 MLWH_DB_HOST = LOCALHOST
 MLWH_DB_PORT = 3306
@@ -42,15 +60,19 @@ MLWH_DB_RW_PASSWORD = ROOT_PASSWORD
 
 EVENTS_WH_DB = "event_warehouse_development"
 
+###
 # DART database details
+###
 DART_DB_DBNAME = "dart_test"
 DART_DB_HOST = os.environ.get("LOCALHOST", "127.0.0.1")
 DART_DB_PORT = 1433
-DART_DB_RW_USER = "root"
-DART_DB_RW_PASSWORD = ""
+DART_DB_RW_USER = "sa"
+DART_DB_RW_PASSWORD = "MyS3cr3tPassw0rd"
 DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
 
+###
 # SFTP details
+###
 SFTP_UPLOAD = False  # upload files to SFTP server
 SFTP_HOST = "localhost"
 SFTP_PORT = 22
@@ -59,7 +81,9 @@ SFTP_READ_USERNAME = "foo"
 SFTP_WRITE_PASSWORD = "pass"
 SFTP_WRITE_USERNAME = "foo"
 
+###
 # slack details
+###
 SLACK_API_TOKEN = ""
 SLACK_CHANNEL_ID = ""
 

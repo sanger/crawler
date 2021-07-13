@@ -8,6 +8,7 @@ import pytest
 import sqlalchemy
 from sqlalchemy import MetaData
 
+from crawler import create_app
 from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_PRIORITY_SAMPLES,
@@ -35,6 +36,17 @@ from tests.testing_objects import (
 logger = logging.getLogger(__name__)
 CONFIG, _ = get_config("crawler.config.test")
 logging.config.dictConfig(CONFIG.LOGGING)
+
+
+@pytest.fixture
+def app():
+    app = create_app("crawler.config.test")
+    yield app
+
+
+@pytest.fixture
+def client(app):
+    return app.test_client()
 
 
 @pytest.fixture

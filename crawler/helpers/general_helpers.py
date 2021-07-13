@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from importlib import import_module
-from typing import Any, Dict, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import pysftp
 from bson.decimal128 import Decimal128
@@ -350,3 +350,17 @@ def create_source_plate_doc(plate_barcode: str, lab_id: str) -> SourcePlateDoc:
         FIELD_UPDATED_AT: datetime.utcnow(),
         FIELD_CREATED_AT: datetime.utcnow(),
     }
+
+
+def is_found_in_list(needle: str, haystack: List[str]) -> bool:
+    """A helper method for finding a string contained in any one of a list of strings.
+
+    Arguments:
+        needle: str -- The string to identify in the list of strings.
+        haystack: List[str] -- A list of strings that might contain the needle.
+
+    Returns:
+        True if the needle exists as a sub-string of any of the strings in the haystack.
+        False if the needle cannot be found in any string in the haystack.
+    """
+    return any([needle in bail for bail in haystack])
