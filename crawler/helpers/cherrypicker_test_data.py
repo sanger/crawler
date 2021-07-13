@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 def make_coords_list():
     for column in "ABCDEFGH":
         for row in range(1, 13):
-            yield "%s%02d" % (column, row)
+            yield f"{column}{row:02d}"
 
 
 WELL_COORDS = list(make_coords_list())
