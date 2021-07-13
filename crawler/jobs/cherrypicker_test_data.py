@@ -12,6 +12,7 @@ from crawler.constants import (
     COLLECTION_CHERRYPICK_TEST_DATA,
     FIELD_ADD_TO_DART,
     FIELD_BARCODES,
+    FIELD_EVE_UPDATED,
     FIELD_FAILURE_REASON,
     FIELD_MONGODB_ID,
     FIELD_PLATE_SPECS,
@@ -22,7 +23,6 @@ from crawler.constants import (
     FIELD_STATUS_PENDING,
     FIELD_STATUS_PREPARING_DATA,
     FIELD_STATUS_STARTED,
-    FIELD_UPDATED_AT,
     TEST_DATA_CENTRE_PREFIX,
     TEST_DATA_ERROR_INVALID_PLATE_SPECS,
     TEST_DATA_ERROR_NO_RUN_FOR_ID,
@@ -187,5 +187,5 @@ def update_status(collection, run_id, status):
 
 
 def update_run(collection, run_id, update):
-    update_dict = {"$set": update, "$currentDate": {FIELD_UPDATED_AT: True}}
+    update_dict = {"$set": update, "$currentDate": {FIELD_EVE_UPDATED: True}}
     collection.update_one({FIELD_MONGODB_ID: ObjectId(run_id)}, update_dict)

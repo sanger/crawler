@@ -67,6 +67,8 @@ FIELD_PLATE_SPECS: Final[str] = "plate_specs"
 FIELD_ADD_TO_DART: Final[str] = "add_to_dart"
 FIELD_BARCODES: Final[str] = "barcodes"
 FIELD_FAILURE_REASON: Final[str] = "failure_reason"
+FIELD_EVE_CREATED: Final[str] = "_created"
+FIELD_EVE_UPDATED: Final[str] = "_updated"
 
 # filtered-positive field names
 FIELD_FILTERED_POSITIVE_TIMESTAMP: Final[str] = "filtered_positive_timestamp"

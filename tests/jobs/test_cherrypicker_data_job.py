@@ -12,7 +12,8 @@ from crawler.constants import (
     COLLECTION_CHERRYPICK_TEST_DATA,
     FIELD_ADD_TO_DART,
     FIELD_BARCODES,
-    FIELD_CREATED_AT,
+    FIELD_EVE_CREATED,
+    FIELD_EVE_UPDATED,
     FIELD_FAILURE_REASON,
     FIELD_MONGODB_ID,
     FIELD_PLATE_SPECS,
@@ -23,7 +24,6 @@ from crawler.constants import (
     FIELD_STATUS_PENDING,
     FIELD_STATUS_PREPARING_DATA,
     FIELD_STATUS_STARTED,
-    FIELD_UPDATED_AT,
     TEST_DATA_CENTRE_PREFIX,
     TEST_DATA_ERROR_INVALID_PLATE_SPECS,
     TEST_DATA_ERROR_NO_RUN_FOR_ID,
@@ -45,8 +45,8 @@ from crawler.jobs.cherrypicker_test_data import (
 )
 
 partial_run_doc = {
-    FIELD_CREATED_AT: datetime(2012, 3, 4, 5, 6, 7, 890),
-    FIELD_UPDATED_AT: datetime(2012, 3, 4, 5, 6, 7, 890),
+    FIELD_EVE_CREATED: datetime(2012, 3, 4, 5, 6, 7, 890),
+    FIELD_EVE_UPDATED: datetime(2012, 3, 4, 5, 6, 7, 890),
 }
 
 mocked_utc_now = datetime(2021, 3, 12, 9, 41, 0)
@@ -160,7 +160,7 @@ def test_process_run_success(mongo_collection, mock_stack):
     run_doc = get_doc(collection, pending_id)
 
     assert barcode_meta == created_barcode_metadata
-    assert run_doc[FIELD_UPDATED_AT] != partial_run_doc[FIELD_UPDATED_AT]
+    assert run_doc[FIELD_EVE_UPDATED] != partial_run_doc[FIELD_EVE_UPDATED]
     assert run_doc[FIELD_STATUS] == FIELD_STATUS_COMPLETED
     assert run_doc[FIELD_BARCODES] == json.dumps(created_barcode_metadata)
     assert FIELD_FAILURE_REASON not in run_doc
@@ -392,5 +392,5 @@ def test_update_run_calls_mongo_with_correct_parameters(mongo_collection):
 
     update_one.assert_called_once_with(
         {FIELD_MONGODB_ID: ObjectId(test_id)},
-        {"$set": update_dict, "$currentDate": {FIELD_UPDATED_AT: True}},
+        {"$set": update_dict, "$currentDate": {FIELD_EVE_UPDATED: True}},
     )
