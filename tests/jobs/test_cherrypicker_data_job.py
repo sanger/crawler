@@ -29,7 +29,7 @@ from crawler.constants import (
     TEST_DATA_ERROR_NO_RUN_FOR_ID,
     TEST_DATA_ERROR_NUMBER_OF_PLATES,
     TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES,
-    TEST_DATA_ERROR_WRONG_STATE
+    TEST_DATA_ERROR_WRONG_STATE,
 )
 from crawler.db.mongo import get_mongo_collection
 from crawler.helpers.general_helpers import is_found_in_list
@@ -41,7 +41,7 @@ from crawler.jobs.cherrypicker_test_data import (
     process,
     process_run,
     update_run,
-    update_status
+    update_status,
 )
 
 partial_run_doc = {
