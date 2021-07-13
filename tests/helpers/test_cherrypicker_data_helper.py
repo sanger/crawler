@@ -214,9 +214,16 @@ def test_flat_list_of_positives_per_plate():
 
 def test_create_csv_rows():
     # Note this is an integration of all the methods tested above, so not strictly a unit test!
-    plate_specs = [[1, 0], [2, 40], [1, 96]]
+    plate_specs = [[1, 0], [2, 40], [1, 96], [2, 40]]
     dt = datetime(2012, 3, 4, 5, 6, 7)
-    barcodes = {"TEST-00POS01": 0, "TEST-40POS01": 40, "TEST-40POS02": 40, "TEST-96POS01": 96}
+    barcodes = {
+        "TEST-00POS01": 0,
+        "TEST-40POS01": 40,
+        "TEST-40POS02": 40,
+        "TEST-96POS01": 96,
+        "TEST-40POS03": 40,
+        "TEST-40POS04": 40,
+    }
 
     actual = create_csv_rows(plate_specs, dt, list(barcodes.keys()))
 
