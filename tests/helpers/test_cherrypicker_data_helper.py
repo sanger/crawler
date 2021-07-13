@@ -158,10 +158,11 @@ def test_create_row(rs_id, vp_id, rna_id, rna_pcr_id, timestamp):
     well_index = 2
     result = "Positive"
     barcode = "TEST-123456"
+    lab_id = "TEST-LAB"
 
-    actual = create_row(dt, well_index, result, barcode)
+    actual = create_row(dt, well_index, result, barcode, lab_id)
 
-    expected = ["RSID", "VPID", "RNAID", "RNAPCRID", result, "TS", "AP"] + [""] * 12
+    expected = ["RSID", "VPID", "RNAID", "RNAPCRID", result, "TS", lab_id]
     well_num = well_index + 1
     well_coordinate = "A02"
 
@@ -179,12 +180,14 @@ def test_create_plate_rows(create_row, shuffle):
     positives = negatives = 0
     dt = datetime(2012, 3, 4, 5, 6, 7)
     barcode = "TEST-123456"
+    lab_id = "TEST-LAB"
 
-    def create_row_side_effect(dt_arg, _, result_arg, barcode_arg):
+    def create_row_side_effect(dt_arg, _, result_arg, barcode_arg, lab_id_arg):
         nonlocal positives, negatives, dt, barcode
 
         assert dt_arg == dt
         assert barcode_arg == barcode
+        assert lab_id_arg == lab_id
 
         if result_arg == "Positive":
             positives += 1
@@ -195,7 +198,7 @@ def test_create_plate_rows(create_row, shuffle):
 
     create_row.side_effect = create_row_side_effect
 
-    actual = create_plate_rows(dt, 40, barcode)
+    actual = create_plate_rows(dt, 40, barcode, lab_id)
     expected = [["A", "row"]] * 96
 
     assert actual == expected
@@ -224,8 +227,9 @@ def test_create_csv_rows():
         "TEST-40POS03": 40,
         "TEST-40POS04": 40,
     }
+    lab_id = "TEST-LAB"
 
-    actual = create_csv_rows(plate_specs, dt, list(barcodes.keys()))
+    actual = create_csv_rows(plate_specs, dt, list(barcodes.keys()), lab_id)
 
     wells_per_plate = 96
     expected_count = wells_per_plate * len(barcodes)
@@ -237,8 +241,10 @@ def test_create_csv_rows():
     assert len(set([row[2] for row in actual])) == expected_count
     assert len(set([row[3] for row in actual])) == expected_count
 
-    # Check that the timestamp was added to all rows identically
+    # Check that the timestamp and lab ID was added to all rows identically
     assert len(set([row[5] for row in actual])) == 1
+    assert len(set([row[6] for row in actual])) == 1
+    assert actual[0][6] == lab_id
 
     # Per plate checks
     for barcode, positives in barcodes.items():
@@ -261,16 +267,16 @@ def test_create_csv_rows():
 @pytest.fixture
 def test_rows_data():
     return [
-        ["RSID-01", "VPID-01", "RNAID-01", "RNAPCRID-01", "Positive", "Timestamp", "AP"] + [""] * 12,
-        ["RSID-02", "VPID-02", "RNAID-02", "RNAPCRID-02", "Negative", "Timestamp", "AP"] + [""] * 12,
+        ["RSID-01", "VPID-01", "RNAID-01", "RNAPCRID-01", "Positive", "Timestamp", "CPTD"],
+        ["RSID-02", "VPID-02", "RNAID-02", "RNAPCRID-02", "Negative", "Timestamp", "CPTD"],
     ]
 
 
 @pytest.fixture
 def expected_test_output():
-    return """Root Sample ID,Viral Prep ID,RNA ID,RNA-PCR ID,Result,Date Tested,Lab ID,CH1-Target,CH1-Result,CH1-Cq,CH2-Target,CH2-Result,CH2-Cq,CH3-Target,CH3-Result,CH3-Cq,CH4-Target,CH4-Result,CH4-Cq
-RSID-01,VPID-01,RNAID-01,RNAPCRID-01,Positive,Timestamp,AP,,,,,,,,,,,,
-RSID-02,VPID-02,RNAID-02,RNAPCRID-02,Negative,Timestamp,AP,,,,,,,,,,,,
+    return """Root Sample ID,Viral Prep ID,RNA ID,RNA-PCR ID,Result,Date Tested,Lab ID
+RSID-01,VPID-01,RNAID-01,RNAPCRID-01,Positive,Timestamp,CPTD
+RSID-02,VPID-02,RNAID-02,RNAPCRID-02,Negative,Timestamp,CPTD
 """  # noqa E501
 
 

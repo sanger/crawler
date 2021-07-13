@@ -29,7 +29,7 @@ from crawler.constants import (
     TEST_DATA_ERROR_NO_RUN_FOR_ID,
     TEST_DATA_ERROR_NUMBER_OF_PLATES,
     TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES,
-    TEST_DATA_ERROR_WRONG_STATE,
+    TEST_DATA_ERROR_WRONG_STATE
 )
 from crawler.db.mongo import get_mongo_collection
 from crawler.jobs.cherrypicker_test_data import (
@@ -40,7 +40,7 @@ from crawler.jobs.cherrypicker_test_data import (
     process,
     process_run,
     update_run,
-    update_status,
+    update_status
 )
 from tests.conftest import is_found_in_list
 
@@ -228,7 +228,7 @@ def test_process_run_calls_helper_methods(mongo_collection, mock_stack):
 
     get_run_doc.assert_called_once_with(collection, pending_id)
     extract_plate_specs.assert_called_once_with(plate_specs_string, config.MAX_PLATES_PER_TEST_DATA_RUN)
-    prepare_data.assert_called_once_with(plate_specs, mocked_utc_now, created_barcodes, config.DIR_DOWNLOADED_DATA)
+    prepare_data.assert_called_once_with(plate_specs, mocked_utc_now, created_barcodes, config)
 
 
 def test_process_run_handles_missing_plate_specs(mongo_collection, mock_stack):
@@ -273,7 +273,9 @@ def test_process_run_calls_run_crawler_with_correct_parameters(
     with patch("crawler.jobs.cherrypicker_test_data.run_crawler") as run_crawler:
         process_run(config, collection, pending_id)
 
-    run_crawler.assert_called_with(sftp=False, keep_files=False, add_to_dart=expected_dart_value, centre_prefix="CPTD")
+    run_crawler.assert_called_with(
+        sftp=False, keep_files=False, add_to_dart=expected_dart_value, centre_prefix=TEST_DATA_CENTRE_PREFIX
+    )
 
 
 @pytest.mark.parametrize(
@@ -349,22 +351,22 @@ def test_get_run_doc_raises_error_when_id_not_found(mongo_collection):
     assert search_id in str(e_info.value)
 
 
-def test_prepare_data_calls_create_csv_rows_with_correct_parameters(mock_stack):
+def test_prepare_data_calls_create_csv_rows_with_correct_parameters(config, mock_stack):
     plate_specs = [[5, 10], [15, 20], [19, 30]]
 
     with patch("crawler.jobs.cherrypicker_test_data.create_csv_rows") as create_csv_rows:
-        prepare_data(plate_specs, mocked_utc_now, created_barcodes, "")
+        prepare_data(plate_specs, mocked_utc_now, created_barcodes, config)
 
-    create_csv_rows.assert_called_with(plate_specs, mocked_utc_now, created_barcodes)
+    test_centre = next(filter(lambda c: c["prefix"] == TEST_DATA_CENTRE_PREFIX, config.CENTRES))
+    create_csv_rows.assert_called_with(plate_specs, mocked_utc_now, created_barcodes, test_centre["lab_id_default"])
 
 
-def test_prepare_data_calls_write_plates_file_with_correct_parameters(mock_stack):
+def test_prepare_data_calls_write_plates_file_with_correct_parameters(config, mock_stack):
     plate_specs = [[5, 10], [15, 20], [19, 30]]
-    data_path = "a_path"
     with patch("crawler.jobs.cherrypicker_test_data.write_plates_file") as write_plates_file:
-        prepare_data(plate_specs, mocked_utc_now, created_barcodes, data_path)
+        prepare_data(plate_specs, mocked_utc_now, created_barcodes, config)
 
-    plates_path = os.path.join(data_path, TEST_DATA_CENTRE_PREFIX)
+    plates_path = os.path.join(config.DIR_DOWNLOADED_DATA, TEST_DATA_CENTRE_PREFIX)
     filename = "CPTD_210312_094100_000000.csv"
     write_plates_file.assert_called_with(created_csv_rows, plates_path, filename)
 
