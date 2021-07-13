@@ -31,7 +31,7 @@ def generate_test_data_endpoint() -> FlaskResponse:
     """
     logger.info("Generating test data for cherrypicking hardware")
 
-    timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
+    timestamp = datetime.now(timezone.utc).isoformat()
 
     try:
         if (request_json := request.get_json()) is None or (run_id := request_json.get("run_id")) is None:
