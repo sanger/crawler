@@ -210,7 +210,7 @@ def test_process_run_raises_error_when_run_not_pending(mongo_collection, mock_st
 
 def test_process_run_calls_helper_methods(mongo_collection, mock_stack):
     config, collection = mongo_collection
-    plate_specs = [[1, 40], [5, 60]]
+    plate_specs = [[1, 40], [5, 60], [5, 40]]
     plate_specs_string = json.dumps(plate_specs)
     pending_id = insert_run(collection, plate_specs=plate_specs_string)
     run_doc = get_doc(collection, pending_id)
