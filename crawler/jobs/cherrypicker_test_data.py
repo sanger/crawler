@@ -85,7 +85,9 @@ def process_run(config: Config, collection: Collection, run_id: str) -> List[Lis
         raise TestDataError(f"{TEST_DATA_ERROR_WRONG_STATE} '{FIELD_STATUS_PENDING}'")
 
     try:
-        plate_specs, num_plates = extract_plate_specs(run_doc.get(FIELD_PLATE_SPECS))
+        plate_specs, num_plates = extract_plate_specs(
+            run_doc.get(FIELD_PLATE_SPECS), config.MAX_PLATES_PER_TEST_DATA_RUN
+        )
         add_to_dart = parse_bool_field(run_doc.get(FIELD_ADD_TO_DART), False)
 
         update_status(collection, run_id, FIELD_STATUS_STARTED)
@@ -131,15 +133,15 @@ def get_run_doc(collection, run_id):
     return run_doc
 
 
-def extract_plate_specs(plate_specs_string):
+def extract_plate_specs(plate_specs_string, max_plates_per_run):
     try:
         plate_specs: List[List[int]] = json.loads(plate_specs_string)
     except (TypeError, json.JSONDecodeError):
         raise TestDataError(TEST_DATA_ERROR_INVALID_PLATE_SPECS)
 
     num_plates = reduce(lambda a, b: a + b[0], plate_specs, 0)
-    if num_plates < 1 or num_plates > 200:
-        raise TestDataError(TEST_DATA_ERROR_NUMBER_OF_PLATES)
+    if num_plates < 1 or num_plates > max_plates_per_run:
+        raise TestDataError(TEST_DATA_ERROR_NUMBER_OF_PLATES.format(max_plates_per_run))
 
     positives_per_plate = [spec[1] for spec in plate_specs]
     if any([positives < 0 or positives > 96 for positives in positives_per_plate]):

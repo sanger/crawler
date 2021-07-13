@@ -227,7 +227,7 @@ def test_process_run_calls_helper_methods(mongo_collection, mock_stack):
         process_run(config, collection, pending_id)
 
     get_run_doc.assert_called_once_with(collection, pending_id)
-    extract_plate_specs.assert_called_once_with(plate_specs_string)
+    extract_plate_specs.assert_called_once_with(plate_specs_string, config.MAX_PLATES_PER_TEST_DATA_RUN)
     prepare_data.assert_called_once_with(plate_specs, mocked_utc_now, created_barcodes, config.DIR_DOWNLOADED_DATA)
 
 
@@ -285,7 +285,7 @@ def test_process_run_calls_run_crawler_with_correct_parameters(
     ],
 )
 def test_extract_plate_specs_correct_extracts_specs_and_plate_number(plate_specs_string, expected_specs, expected_num):
-    actual_specs, actual_num = extract_plate_specs(plate_specs_string)
+    actual_specs, actual_num = extract_plate_specs(plate_specs_string, 200)
 
     assert actual_specs == expected_specs
     assert actual_num == expected_num
@@ -294,7 +294,7 @@ def test_extract_plate_specs_correct_extracts_specs_and_plate_number(plate_specs
 @pytest.mark.parametrize("bad_plate_specs", [None, ""])
 def test_extract_plate_specs_raises_error_invalid_plate_specs(bad_plate_specs):
     with pytest.raises(TestDataError) as e_info:
-        extract_plate_specs(bad_plate_specs)
+        extract_plate_specs(bad_plate_specs, 200)
 
     assert TEST_DATA_ERROR_INVALID_PLATE_SPECS in str(e_info.value)
 
@@ -309,15 +309,16 @@ def test_extract_plate_specs_raises_error_invalid_plate_specs(bad_plate_specs):
 )
 def test_extract_plate_specs_raises_error_wrong_number_of_plates(bad_plate_specs):
     with pytest.raises(TestDataError) as e_info:
-        extract_plate_specs(bad_plate_specs)
+        extract_plate_specs(bad_plate_specs, 200)
 
-    assert TEST_DATA_ERROR_NUMBER_OF_PLATES in str(e_info.value)
+    error_msg = TEST_DATA_ERROR_NUMBER_OF_PLATES.format(200)
+    assert error_msg in str(e_info.value)
 
 
 @pytest.mark.parametrize("bad_plate_specs", ["[[1, -1]]", "[[1, 97]]"])
 def test_extract_plate_specs_raises_error_invalid_num_of_positives(bad_plate_specs):
     with pytest.raises(TestDataError) as e_info:
-        extract_plate_specs(bad_plate_specs)
+        extract_plate_specs(bad_plate_specs, 200)
 
     assert TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES in str(e_info.value)
 

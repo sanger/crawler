@@ -82,16 +82,16 @@ FIELD_STATUS_COMPLETED: Final[str] = "completed"
 FIELD_STATUS_FAILED: Final[str] = "failed"
 
 ###
-# test data
+# cherrypicker test data
 ###
-
+# the prefix for the centre which processes generated data
 TEST_DATA_CENTRE_PREFIX: Final[str] = "CPTD"
 
-# processing errors
+# processing errors for the API endpoint for generating data
 TEST_DATA_ERROR_NO_RUN_FOR_ID: Final[str] = "No run found for ID"
 TEST_DATA_ERROR_WRONG_STATE: Final[str] = "Run doesn't have status"
 TEST_DATA_ERROR_INVALID_PLATE_SPECS: Final[str] = "There is a problem with the plate specs for the run."
-TEST_DATA_ERROR_NUMBER_OF_PLATES: Final[str] = "Number of plates to generate must be between 1 and 200."
+TEST_DATA_ERROR_NUMBER_OF_PLATES: Final[str] = "Number of plates to generate must be between 1 and {0}."
 TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES: Final[
     str
 ] = "One or more plates expected fewer than 0 or more than 96 positive samples."
