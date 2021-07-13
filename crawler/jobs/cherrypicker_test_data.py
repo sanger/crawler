@@ -94,7 +94,7 @@ def process_run(config: Config, collection: Collection, run_id: str) -> List[Lis
         barcodes = create_barcodes(config, num_plates)
 
         update_status(collection, run_id, FIELD_STATUS_PREPARING_DATA)
-        prepare_data(plate_specs, dt, barcodes, config.DIR_DOWNLOADED_DATA)
+        prepare_data(plate_specs, dt, barcodes, config)
 
         update_status(collection, run_id, FIELD_STATUS_CRAWLING_DATA)
         run_crawler(sftp=False, keep_files=False, add_to_dart=add_to_dart, centre_prefix=TEST_DATA_CENTRE_PREFIX)
@@ -172,8 +172,11 @@ def parse_bool_field(value: Any, default_value: bool) -> bool:
     return default_value
 
 
-def prepare_data(plate_specs, dt, barcodes, downloaded_data_path):
-    csv_rows = create_csv_rows(plate_specs, dt, barcodes)
+def prepare_data(plate_specs, dt, barcodes, config):
+    test_centre = next(filter(lambda c: c["prefix"] == TEST_DATA_CENTRE_PREFIX, config["CENTRES"]))
+    downloaded_data_path = config.DIR_DOWNLOADED_DATA
+
+    csv_rows = create_csv_rows(plate_specs, dt, barcodes, test_centre["lab_id_default"])
     plates_path = os.path.join(downloaded_data_path, TEST_DATA_CENTRE_PREFIX)
     plates_filename = f"{TEST_DATA_CENTRE_PREFIX}_{dt.strftime('%y%m%d_%H%M%S_%f')}.csv"
     write_plates_file(csv_rows, plates_path, plates_filename)
