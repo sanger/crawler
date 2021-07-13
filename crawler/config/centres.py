@@ -41,7 +41,7 @@ CENTRE_REGEX_SFTP_FILE_HERON = r"sanger_report_(\d{6}_\d{4}).*\.csv$"
 REGEX_SURVEILLANCE_GLS_1 = r"^GLA\d+[A-Za-z]\.csv$"
 REGEX_SURVEILLANCE_GLS_2 = r"^[a-zA-Z]{3}-[a-zA-Z]{2}-\d+\.csv$"
 
-CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES = "skip_unconsolidated_surveillance_files"
+CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES = "skip_unconsolidated_surveillance_files"  # default false
 CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS = "include_in_scheduled_runs"  # default true
 
 CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
@@ -58,7 +58,6 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_root_read": "project-heron_alderly-park",
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
         CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: True,
-        CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -74,7 +73,6 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "file_names_to_ignore": ["MK_sanger_report_200715_2000_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
         CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: True,
-        CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -90,7 +88,6 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "file_names_to_ignore": ["GLS_sanger_report_200713_0001_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
         CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: True,
-        CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -105,8 +102,6 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_root_read": "project-heron_cambridge-az",
         "file_names_to_ignore": ["CB_sanger_report_200714_0001_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_BIO,
-        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,
-        CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -121,8 +116,6 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_root_read": "project-heron_randox",
         "file_names_to_ignore": [r"^lw-randox-biocentre-box-((\d)|(1\d)|20)-.*$"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,
-        CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -137,8 +130,6 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_root_read": "project-heron_hsl",
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,
-        CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -153,8 +144,6 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_root_read": "project-heron_plym",
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,
-        CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -169,8 +158,6 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_root_read": "project-heron_brbr",
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,
-        CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -183,7 +170,6 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_file_regex_consolidated_surveillance": r"^$",
         "sftp_file_regex_consolidated_eagle": r"^$",
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: False,
         CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS: False,
     },
 ]

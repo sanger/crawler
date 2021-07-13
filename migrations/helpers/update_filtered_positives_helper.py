@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 from more_itertools import groupby_transform
 
 from crawler.constants import (
+    BIOMEK_LABWARE_CLASS_KINGFISHER,
     COLLECTION_SAMPLES,
     DART_STATE_PENDING,
     FIELD_COORDINATE,
@@ -266,4 +267,4 @@ def biomek_labclass_by_centre_name(centres: List[Dict[str, str]]) -> Dict[str, s
     Returns:
         Dict[str, str] -- biomek labware class by centre name
     """
-    return {centre["name"]: centre.get("biomek_labware_class", "") for centre in centres}
+    return {centre["name"]: centre.get("biomek_labware_class", BIOMEK_LABWARE_CLASS_KINGFISHER) for centre in centres}
