@@ -48,7 +48,7 @@ def flatten(nested_list: list) -> list:
 
 def generate_baracoda_barcodes(config: Config, num_required: int) -> list:
     baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{BARACODA_PREFIX}/new?count={num_required}"
-    response = requests.post(baracoda_url, data={})
+    response = requests.post(baracoda_url)
     response_json = response.json()
     barcodes: list = response_json["barcodes_group"]["barcodes"]
     return barcodes
