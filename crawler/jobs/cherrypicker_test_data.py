@@ -146,7 +146,7 @@ def validate_plate_specs(plate_specs, max_plates_per_run):
     ):
         raise CherrypickerDataError(TEST_DATA_ERROR_INVALID_PLATE_SPECS)
 
-    num_plates = reduce(lambda a, b: a + b[0], plate_specs, 0)
+    num_plates = reduce(lambda a, b: a + int(b[0]), plate_specs, 0)
     if num_plates < 1 or num_plates > max_plates_per_run:
         raise CherrypickerDataError(TEST_DATA_ERROR_NUMBER_OF_PLATES.format(max_plates_per_run))
 

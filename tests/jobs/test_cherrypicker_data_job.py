@@ -100,7 +100,7 @@ def mock_stack():
         yield stack
 
 
-def insert_run(collection, status=FIELD_STATUS_PENDING, plate_specs=[[75, 48], [50, 0], [50, 96]], add_to_dart=False):
+def insert_run(collection, status=FIELD_STATUS_PENDING, plate_specs=((75, 48), (50, 0), (50, 96)), add_to_dart=False):
     run_doc = {**partial_run_doc, FIELD_STATUS: status}
 
     if plate_specs is not None:
