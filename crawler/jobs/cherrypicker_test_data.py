@@ -44,7 +44,7 @@ from crawler.types import Config
 logger = logging.getLogger(__name__)
 
 
-class TestDataError(Exception):
+class CherrypickerDataError(Exception):
     def __init__(self, message):
         self.message = message
 
@@ -82,7 +82,7 @@ def process_run(config: Config, collection: Collection, run_id: str) -> List[Lis
     run_doc = get_run_doc(collection, run_id)
 
     if run_doc[FIELD_STATUS] != FIELD_STATUS_PENDING:
-        raise TestDataError(f"{TEST_DATA_ERROR_WRONG_STATE} '{FIELD_STATUS_PENDING}'")
+        raise CherrypickerDataError(f"{TEST_DATA_ERROR_WRONG_STATE} '{FIELD_STATUS_PENDING}'")
 
     try:
         plate_specs, num_plates = extract_plate_specs(
@@ -127,7 +127,7 @@ def get_run_doc(collection, run_id):
 
     run_doc = collection.find_one(ObjectId(run_id))
     if run_doc is None:
-        raise TestDataError(f"{TEST_DATA_ERROR_NO_RUN_FOR_ID} '{run_id}'")
+        raise CherrypickerDataError(f"{TEST_DATA_ERROR_NO_RUN_FOR_ID} '{run_id}'")
     logger.debug(f"Found run: {run_doc}")
 
     return run_doc
@@ -137,15 +137,15 @@ def extract_plate_specs(plate_specs_string, max_plates_per_run):
     try:
         plate_specs: List[List[int]] = json.loads(plate_specs_string)
     except (TypeError, json.JSONDecodeError):
-        raise TestDataError(TEST_DATA_ERROR_INVALID_PLATE_SPECS)
+        raise CherrypickerDataError(TEST_DATA_ERROR_INVALID_PLATE_SPECS)
 
     num_plates = reduce(lambda a, b: a + b[0], plate_specs, 0)
     if num_plates < 1 or num_plates > max_plates_per_run:
-        raise TestDataError(TEST_DATA_ERROR_NUMBER_OF_PLATES.format(max_plates_per_run))
+        raise CherrypickerDataError(TEST_DATA_ERROR_NUMBER_OF_PLATES.format(max_plates_per_run))
 
     positives_per_plate = [spec[1] for spec in plate_specs]
     if any([positives < 0 or positives > 96 for positives in positives_per_plate]):
-        raise TestDataError(TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES)
+        raise CherrypickerDataError(TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES)
 
     return plate_specs, num_plates
 
@@ -173,7 +173,7 @@ def parse_bool_field(value: Any, default_value: bool) -> bool:
 
 
 def prepare_data(plate_specs, dt, barcodes, config):
-    test_centre = next(filter(lambda c: c["prefix"] == TEST_DATA_CENTRE_PREFIX, config["CENTRES"]))
+    test_centre = next(filter(lambda c: c["prefix"] == TEST_DATA_CENTRE_PREFIX, config.CENTRES))
     downloaded_data_path = config.DIR_DOWNLOADED_DATA
 
     csv_rows = create_csv_rows(plate_specs, dt, barcodes, test_centre["lab_id_default"])

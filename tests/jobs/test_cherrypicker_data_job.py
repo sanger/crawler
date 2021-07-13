@@ -33,7 +33,7 @@ from crawler.constants import (
 )
 from crawler.db.mongo import get_mongo_collection
 from crawler.jobs.cherrypicker_test_data import (
-    TestDataError,
+    CherrypickerDataError,
     extract_plate_specs,
     get_run_doc,
     prepare_data,
@@ -201,7 +201,7 @@ def test_process_run_raises_error_when_run_not_pending(mongo_collection, mock_st
     config, collection = mongo_collection
     pending_id = insert_run(collection, status=wrong_status)
 
-    with pytest.raises(TestDataError) as e_info:
+    with pytest.raises(CherrypickerDataError) as e_info:
         process_run(config, collection, pending_id)
 
     assert TEST_DATA_ERROR_WRONG_STATE in str(e_info.value)
@@ -293,7 +293,7 @@ def test_extract_plate_specs_correct_extracts_specs_and_plate_number(plate_specs
 
 @pytest.mark.parametrize("bad_plate_specs", [None, ""])
 def test_extract_plate_specs_raises_error_invalid_plate_specs(bad_plate_specs):
-    with pytest.raises(TestDataError) as e_info:
+    with pytest.raises(CherrypickerDataError) as e_info:
         extract_plate_specs(bad_plate_specs, 200)
 
     assert TEST_DATA_ERROR_INVALID_PLATE_SPECS in str(e_info.value)
@@ -308,7 +308,7 @@ def test_extract_plate_specs_raises_error_invalid_plate_specs(bad_plate_specs):
     ],
 )
 def test_extract_plate_specs_raises_error_wrong_number_of_plates(bad_plate_specs):
-    with pytest.raises(TestDataError) as e_info:
+    with pytest.raises(CherrypickerDataError) as e_info:
         extract_plate_specs(bad_plate_specs, 200)
 
     error_msg = TEST_DATA_ERROR_NUMBER_OF_PLATES.format(200)
@@ -317,7 +317,7 @@ def test_extract_plate_specs_raises_error_wrong_number_of_plates(bad_plate_specs
 
 @pytest.mark.parametrize("bad_plate_specs", ["[[1, -1]]", "[[1, 97]]"])
 def test_extract_plate_specs_raises_error_invalid_num_of_positives(bad_plate_specs):
-    with pytest.raises(TestDataError) as e_info:
+    with pytest.raises(CherrypickerDataError) as e_info:
         extract_plate_specs(bad_plate_specs, 200)
 
     assert TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES in str(e_info.value)
@@ -342,7 +342,7 @@ def test_get_run_doc_raises_error_when_id_not_found(mongo_collection):
     insert_run(collection)
     search_id = "000000000000000000000000"
 
-    with pytest.raises(TestDataError) as e_info:
+    with pytest.raises(CherrypickerDataError) as e_info:
         get_run_doc(collection, search_id)
 
     assert TEST_DATA_ERROR_NO_RUN_FOR_ID in str(e_info.value)
