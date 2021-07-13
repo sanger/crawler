@@ -8,6 +8,10 @@ from crawler.constants import FIELD_RNA_ID
 # general details
 ###
 DIR_DOWNLOADED_DATA = "tests/test_files/good/"
+
+###
+# cherrypicker test data options
+###
 ENABLE_CHERRYPICKER_ENDPOINTS = True
 
 ###

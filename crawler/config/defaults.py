@@ -12,7 +12,12 @@ from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
 ###
 DIR_DOWNLOADED_DATA = "data/sftp_files/"
 ADD_LAB_ID = False
+
+###
+# cherrypicker test data options
+###
 ENABLE_CHERRYPICKER_ENDPOINTS = False  # Safeguards it being on by accident in production
+MAX_PLATES_PER_TEST_DATA_RUN = 200
 
 ###
 # ingest behaviour for scheduled runs

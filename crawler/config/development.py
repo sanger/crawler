@@ -4,7 +4,7 @@ from crawler.config.defaults import *
 # setting here will overwrite those in 'defaults.py'
 
 ###
-# general details
+# cherrypicker test data options
 ###
 ENABLE_CHERRYPICKER_ENDPOINTS = True
 

@@ -27,14 +27,17 @@ class Config(ModuleType):
     # General
     ADD_LAB_ID: bool
     DIR_DOWNLOADED_DATA: str
+
+    # Cherrypicker Test Data
     ENABLE_CHERRYPICKER_ENDPOINTS: bool
+    MAX_PLATES_PER_TEST_DATA_RUN: int
 
     # Ingest Behaviour
     USE_SFTP: bool
     KEEP_FILES: bool
     ADD_TO_DART: bool
 
-    # Baracode
+    # Baracoda
     BARACODA_BASE_URL: str
 
     # Mongo
