@@ -22,7 +22,7 @@ from crawler.helpers.cherrypicker_test_data import (
     generate_baracoda_barcodes,
     write_plates_file,
 )
-from tests.conftest import is_found_in_list
+from crawler.helpers.general_helpers import is_found_in_list
 
 LoggerMessages = namedtuple("LoggerMessages", ["info", "error"])
 

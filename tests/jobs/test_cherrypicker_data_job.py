@@ -32,6 +32,7 @@ from crawler.constants import (
     TEST_DATA_ERROR_WRONG_STATE
 )
 from crawler.db.mongo import get_mongo_collection
+from crawler.helpers.general_helpers import is_found_in_list
 from crawler.jobs.cherrypicker_test_data import (
     CherrypickerDataError,
     extract_plate_specs,
@@ -42,7 +43,6 @@ from crawler.jobs.cherrypicker_test_data import (
     update_run,
     update_status
 )
-from tests.conftest import is_found_in_list
 
 partial_run_doc = {
     FIELD_CREATED_AT: datetime(2012, 3, 4, 5, 6, 7, 890),
