@@ -12,7 +12,8 @@ from crawler.constants import (
     COLLECTION_CHERRYPICK_TEST_DATA,
     FIELD_ADD_TO_DART,
     FIELD_BARCODES,
-    FIELD_CREATED_AT,
+    FIELD_EVE_CREATED,
+    FIELD_EVE_UPDATED,
     FIELD_FAILURE_REASON,
     FIELD_MONGODB_ID,
     FIELD_PLATE_SPECS,
@@ -23,7 +24,6 @@ from crawler.constants import (
     FIELD_STATUS_PENDING,
     FIELD_STATUS_PREPARING_DATA,
     FIELD_STATUS_STARTED,
-    FIELD_UPDATED_AT,
     TEST_DATA_CENTRE_PREFIX,
     TEST_DATA_ERROR_INVALID_PLATE_SPECS,
     TEST_DATA_ERROR_NO_RUN_FOR_ID,
@@ -35,18 +35,18 @@ from crawler.db.mongo import get_mongo_collection
 from crawler.helpers.general_helpers import is_found_in_list
 from crawler.jobs.cherrypicker_test_data import (
     CherrypickerDataError,
-    extract_plate_specs,
     get_run_doc,
     prepare_data,
     process,
     process_run,
     update_run,
     update_status,
+    validate_plate_specs,
 )
 
 partial_run_doc = {
-    FIELD_CREATED_AT: datetime(2012, 3, 4, 5, 6, 7, 890),
-    FIELD_UPDATED_AT: datetime(2012, 3, 4, 5, 6, 7, 890),
+    FIELD_EVE_CREATED: datetime(2012, 3, 4, 5, 6, 7, 890),
+    FIELD_EVE_UPDATED: datetime(2012, 3, 4, 5, 6, 7, 890),
 }
 
 mocked_utc_now = datetime(2021, 3, 12, 9, 41, 0)
@@ -100,7 +100,7 @@ def mock_stack():
         yield stack
 
 
-def insert_run(collection, status=FIELD_STATUS_PENDING, plate_specs="[[75, 48], [50, 0], [50, 96]]", add_to_dart=False):
+def insert_run(collection, status=FIELD_STATUS_PENDING, plate_specs=((75, 48), (50, 0), (50, 96)), add_to_dart=False):
     run_doc = {**partial_run_doc, FIELD_STATUS: status}
 
     if plate_specs is not None:
@@ -160,7 +160,7 @@ def test_process_run_success(mongo_collection, mock_stack):
     run_doc = get_doc(collection, pending_id)
 
     assert barcode_meta == created_barcode_metadata
-    assert run_doc[FIELD_UPDATED_AT] != partial_run_doc[FIELD_UPDATED_AT]
+    assert run_doc[FIELD_EVE_UPDATED] != partial_run_doc[FIELD_EVE_UPDATED]
     assert run_doc[FIELD_STATUS] == FIELD_STATUS_COMPLETED
     assert run_doc[FIELD_BARCODES] == json.dumps(created_barcode_metadata)
     assert FIELD_FAILURE_REASON not in run_doc
@@ -211,40 +211,28 @@ def test_process_run_raises_error_when_run_not_pending(mongo_collection, mock_st
 def test_process_run_calls_helper_methods(mongo_collection, mock_stack):
     config, collection = mongo_collection
     plate_specs = [[1, 40], [5, 60], [5, 40]]
-    plate_specs_string = json.dumps(plate_specs)
-    pending_id = insert_run(collection, plate_specs=plate_specs_string)
+    pending_id = insert_run(collection, plate_specs=plate_specs)
     run_doc = get_doc(collection, pending_id)
 
     with ExitStack() as stack:
         get_run_doc = stack.enter_context(
             patch("crawler.jobs.cherrypicker_test_data.get_run_doc", return_value=run_doc)
         )
-        extract_plate_specs = stack.enter_context(
-            patch("crawler.jobs.cherrypicker_test_data.extract_plate_specs", return_value=(plate_specs, 6))
+        validate_plate_specs = stack.enter_context(
+            patch("crawler.jobs.cherrypicker_test_data.validate_plate_specs", return_value=(plate_specs, 6))
         )
         prepare_data = stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.prepare_data"))
 
         process_run(config, collection, pending_id)
 
     get_run_doc.assert_called_once_with(collection, pending_id)
-    extract_plate_specs.assert_called_once_with(plate_specs_string, config.MAX_PLATES_PER_TEST_DATA_RUN)
+    validate_plate_specs.assert_called_once_with(plate_specs, config.MAX_PLATES_PER_TEST_DATA_RUN)
     prepare_data.assert_called_once_with(plate_specs, mocked_utc_now, created_barcodes, config)
-
-
-def test_process_run_handles_missing_plate_specs(mongo_collection, mock_stack):
-    config, collection = mongo_collection
-    pending_id = insert_run(collection, plate_specs=None)
-
-    try:
-        with patch("crawler.jobs.cherrypicker_test_data.extract_plate_specs", return_value=([1, 96], 1)):
-            process_run(config, collection, pending_id)
-    except Exception as e:
-        pytest.fail(f"Having no plate specs should not raise an exception, but this was raised:  {e}")
 
 
 def test_process_run_run_asks_for_correct_number_of_barcodes(mongo_collection, mock_stack):
     config, collection = mongo_collection
-    pending_id = insert_run(collection, plate_specs="[[5, 10], [15, 20], [19, 30]]")
+    pending_id = insert_run(collection, plate_specs=[[5, 10], [15, 20], [19, 30]])
 
     with patch("crawler.jobs.cherrypicker_test_data.create_barcodes") as create_barcodes:
         process_run(config, collection, pending_id)
@@ -279,24 +267,24 @@ def test_process_run_calls_run_crawler_with_correct_parameters(
 
 
 @pytest.mark.parametrize(
-    "plate_specs_string, expected_specs, expected_num",
+    "plate_specs, expected_num",
     [
-        ["[[2,0]]", [[2, 0]], 2],
-        ["[[1,96]]", [[1, 96]], 1],
-        ["[[1,1],[2,2],[3,3],[4,4]]", [[1, 1], [2, 2], [3, 3], [4, 4]], 10],
+        [[[2, 0]], 2],
+        [[[1, 96]], 1],
+        [[[1, 1], [2, 2], [3, 3], [4, 4]], 10],
     ],
 )
-def test_extract_plate_specs_correct_extracts_specs_and_plate_number(plate_specs_string, expected_specs, expected_num):
-    actual_specs, actual_num = extract_plate_specs(plate_specs_string, 200)
+def test_validate_plate_specs_correct_extracts_specs_and_plate_number(plate_specs, expected_num):
+    actual_specs, actual_num = validate_plate_specs(plate_specs, 200)
 
-    assert actual_specs == expected_specs
+    assert actual_specs == plate_specs
     assert actual_num == expected_num
 
 
-@pytest.mark.parametrize("bad_plate_specs", [None, ""])
-def test_extract_plate_specs_raises_error_invalid_plate_specs(bad_plate_specs):
+@pytest.mark.parametrize("bad_plate_specs", [None, [], [[1, 2, 3]], ["test"], [[1, "test"]], [[1, 40, "test"]]])
+def test_validate_plate_specs_raises_error_invalid_plate_specs(bad_plate_specs):
     with pytest.raises(CherrypickerDataError) as e_info:
-        extract_plate_specs(bad_plate_specs, 200)
+        validate_plate_specs(bad_plate_specs, 200)
 
     assert TEST_DATA_ERROR_INVALID_PLATE_SPECS in str(e_info.value)
 
@@ -304,23 +292,22 @@ def test_extract_plate_specs_raises_error_invalid_plate_specs(bad_plate_specs):
 @pytest.mark.parametrize(
     "bad_plate_specs",
     [
-        "[]",  # Unspecified plates
-        "[[0, 96]]",  # 0 plates
-        "[[67, 10], [67, 20], [67, 30]]",  # 201 plates
+        [[0, 96]],  # 0 plates
+        [[67, 10], [67, 20], [67, 30]],  # 201 plates
     ],
 )
-def test_extract_plate_specs_raises_error_wrong_number_of_plates(bad_plate_specs):
+def test_validate_plate_specs_raises_error_wrong_number_of_plates(bad_plate_specs):
     with pytest.raises(CherrypickerDataError) as e_info:
-        extract_plate_specs(bad_plate_specs, 200)
+        validate_plate_specs(bad_plate_specs, 200)
 
     error_msg = TEST_DATA_ERROR_NUMBER_OF_PLATES.format(200)
     assert error_msg in str(e_info.value)
 
 
-@pytest.mark.parametrize("bad_plate_specs", ["[[1, -1]]", "[[1, 97]]"])
-def test_extract_plate_specs_raises_error_invalid_num_of_positives(bad_plate_specs):
+@pytest.mark.parametrize("bad_plate_specs", [[[1, -1]], [[1, 97]]])
+def test_validate_plate_specs_raises_error_invalid_num_of_positives(bad_plate_specs):
     with pytest.raises(CherrypickerDataError) as e_info:
-        extract_plate_specs(bad_plate_specs, 200)
+        validate_plate_specs(bad_plate_specs, 200)
 
     assert TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES in str(e_info.value)
 
@@ -392,5 +379,5 @@ def test_update_run_calls_mongo_with_correct_parameters(mongo_collection):
 
     update_one.assert_called_once_with(
         {FIELD_MONGODB_ID: ObjectId(test_id)},
-        {"$set": update_dict, "$currentDate": {FIELD_UPDATED_AT: True}},
+        {"$set": update_dict, "$currentDate": {FIELD_EVE_UPDATED: True}},
     )

@@ -12,6 +12,7 @@ from crawler.constants import (
     COLLECTION_CHERRYPICK_TEST_DATA,
     FIELD_ADD_TO_DART,
     FIELD_BARCODES,
+    FIELD_EVE_UPDATED,
     FIELD_FAILURE_REASON,
     FIELD_MONGODB_ID,
     FIELD_PLATE_SPECS,
@@ -22,7 +23,6 @@ from crawler.constants import (
     FIELD_STATUS_PENDING,
     FIELD_STATUS_PREPARING_DATA,
     FIELD_STATUS_STARTED,
-    FIELD_UPDATED_AT,
     TEST_DATA_CENTRE_PREFIX,
     TEST_DATA_ERROR_INVALID_PLATE_SPECS,
     TEST_DATA_ERROR_NO_RUN_FOR_ID,
@@ -30,7 +30,11 @@ from crawler.constants import (
     TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES,
     TEST_DATA_ERROR_WRONG_STATE,
 )
-from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.db.mongo import (
+    create_mongo_client,
+    get_mongo_collection,
+    get_mongo_db,
+)
 from crawler.helpers.cherrypicker_test_data import (
     create_barcode_meta,
     create_barcodes,
@@ -85,7 +89,7 @@ def process_run(config: Config, collection: Collection, run_id: str) -> List[Lis
         raise CherrypickerDataError(f"{TEST_DATA_ERROR_WRONG_STATE} '{FIELD_STATUS_PENDING}'")
 
     try:
-        plate_specs, num_plates = extract_plate_specs(
+        plate_specs, num_plates = validate_plate_specs(
             run_doc.get(FIELD_PLATE_SPECS), config.MAX_PLATES_PER_TEST_DATA_RUN
         )
         add_to_dart = parse_bool_field(run_doc.get(FIELD_ADD_TO_DART), False)
@@ -133,13 +137,16 @@ def get_run_doc(collection, run_id):
     return run_doc
 
 
-def extract_plate_specs(plate_specs_string, max_plates_per_run):
-    try:
-        plate_specs: List[List[int]] = json.loads(plate_specs_string)
-    except (TypeError, json.JSONDecodeError):
+def validate_plate_specs(plate_specs, max_plates_per_run):
+    if (
+        type(plate_specs) != list
+        or len(plate_specs) == 0
+        or not all([type(ps) == list and len(ps) == 2 for ps in plate_specs])
+        or not all([type(s) == int for ps in plate_specs for s in ps])
+    ):
         raise CherrypickerDataError(TEST_DATA_ERROR_INVALID_PLATE_SPECS)
 
-    num_plates = reduce(lambda a, b: a + b[0], plate_specs, 0)
+    num_plates = reduce(lambda a, b: a + int(b[0]), plate_specs, 0)
     if num_plates < 1 or num_plates > max_plates_per_run:
         raise CherrypickerDataError(TEST_DATA_ERROR_NUMBER_OF_PLATES.format(max_plates_per_run))
 
@@ -187,5 +194,5 @@ def update_status(collection, run_id, status):
 
 
 def update_run(collection, run_id, update):
-    update_dict = {"$set": update, "$currentDate": {FIELD_UPDATED_AT: True}}
+    update_dict = {"$set": update, "$currentDate": {FIELD_EVE_UPDATED: True}}
     collection.update_one({FIELD_MONGODB_ID: ObjectId(run_id)}, update_dict)
