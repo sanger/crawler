@@ -181,8 +181,9 @@ def test_process_files_correctly_handles_files_not_to_be_processed(
 
     # Import records were made indicating files were not processed
     imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+    assert imports_collection.count_documents({}) == 3
+
     imports = imports_collection.find()
-    assert imports.count() == 3
     for imp in imports:
         assert len(imp["errors"]) == 2
         assert all("TYPE 34" in err for err in imp["errors"])

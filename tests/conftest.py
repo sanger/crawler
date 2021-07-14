@@ -8,6 +8,7 @@ import pytest
 import sqlalchemy
 from sqlalchemy import MetaData
 
+from crawler import create_app
 from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_PRIORITY_SAMPLES,
@@ -20,7 +21,7 @@ from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mong
 from crawler.db.mysql import create_mysql_connection
 from crawler.file_processing import Centre, CentreFile
 from crawler.helpers.general_helpers import get_config
-from tests.data.testing_objects import (
+from tests.testing_objects import (
     EVENT_WH_DATA,
     FILTERED_POSITIVE_TESTING_SAMPLES,
     MLWH_SAMPLE_LIGHTHOUSE_SAMPLE,
@@ -35,6 +36,17 @@ from tests.data.testing_objects import (
 logger = logging.getLogger(__name__)
 CONFIG, _ = get_config("crawler.config.test")
 logging.config.dictConfig(CONFIG.LOGGING)
+
+
+@pytest.fixture
+def app():
+    app = create_app("crawler.config.test")
+    yield app
+
+
+@pytest.fixture
+def client(app):
+    return app.test_client()
 
 
 @pytest.fixture
@@ -107,7 +119,7 @@ def testing_files_for_process(cleanup_backups):
     TODO: remove reference to master files above - they don't exist anymore
     2. It means we keep the tested process closer to the actual one
     """
-    _ = shutil.copytree("tests/files", "tmp/files", dirs_exist_ok=True)
+    _ = shutil.copytree("tests/test_files/good", "tmp/files", dirs_exist_ok=True)
     try:
         yield
     finally:

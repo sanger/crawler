@@ -59,7 +59,8 @@ The following tools are required for development:
 
 ### Configuring Environment
 
-Create a `.env` file (or copy and rename the `.env.example`) file with the following values:
+The app is set to run with development settings when not deployed via Ansible.
+To change this you can update the line in `.flaskenv` to another module if desired:
 
     SETTINGS_MODULE=crawler.config.development
 
@@ -75,32 +76,41 @@ Once all the required packages are installed, enter the virtual environment with
 
     pipenv shell
 
-The following runtime flags are available:
+To then run the app, use the command:
+
+    flask run
+
+This will cause the crawler to execute an ingest every 30 minutes, triggered by cron, so at 10 and 40 minutes past the hour.
+This scheduled behaviour can be turned off by adding the following to the `development.py` file:
+
+    SCHEDULER_RUN = False
+
+You can also adjust the behaviour of the scheduled ingest using the settings in the same file.
+To run an ingest immediately, whether Flask is running or not, the `runner.py` file can be used with the arguments shown:
 
     python runner.py --help
 
-    usage: runner.py [-h] [--sftp] [--scheduled]
+    usage: runner.py [-h] [--sftp] [--keep-files] [--add-to-dart] [--centre_prefix {ALDP,MILK,QEUH,CAMC,RAND,HSLL,PLYM,BRBR}]
 
-    Store external samples in mongo.
+    Parse CSV files from the Lighthouse Labs and store the sample information in MongoDB
 
     optional arguments:
-    -h, --help    show this help message and exit
-    --scheduled   start scheduled execution, defaults to running once
-    --sftp        use SFTP to download CSV files, defaults to using local files
-    --keep-files  keeps the CSV files after the runner has been executed
-    --add-to-dart add samples to DART, by default they are not
+    -h, --help            show this help message and exit
+    --sftp                use SFTP to download CSV files, defaults to using local files
+    --keep-files          keeps the CSV files after the runner has been executed
+    --add-to-dart         on processing samples, also add them to DART
+    --centre_prefix {ALDP,MILK,QEUH,CAMC,RAND,HSLL,PLYM,BRBR}
+                          process only this centre's plate map files
 
 ## Migrations
 
 ### Updating the MLWH `lighthouse_sample` Table
 
-When the crawler process runs nightly it should be updating the MLWH lighthouse_sample table as it goes with records for
-all rows that are inserted into MongoDB. If that MLWH insert process fails you should see a critical exception for the
-file in Lighthouse-UI. This may be after records inserted correctly into MongoDB, and re-running the file will not
-re-attempt the MLWH inserts in that situation.
+When the crawler process runs every 30 minutes it should be updating the MLWH lighthouse_sample table as it goes with records for all rows that are inserted into MongoDB.
+If that MLWH insert process fails you should see a critical exception for the file in Lighthouse-UI.
+This may be after records inserted correctly into MongoDB, and re-running the file will not re-attempt the MLWH inserts in that situation.
 
-There is a manual migration task that can be run to fix this discrepancy (update_mlwh_with_legacy_samples) that allows
-insertion of rows to the MLWH between two MongoDB `created_at` datetimes.
+There is a manual migration task that can be run to fix this discrepancy (update_mlwh_with_legacy_samples) that allows insertion of rows to the MLWH between two MongoDB `created_at` datetimes.
 
 __NB__: Both datetimes are inclusive: range includes those rows greater than or equal to start datetime, and less than
 or equal to end datetime.
@@ -194,7 +204,7 @@ A sample is filtered positive if:
 More information on this version can be found on [this](https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/UAT+6th+October+2020)
 Confluence page.
 
-#### Version 2 `v2` - **Current Version**
+#### Version 2 `v2`
 
 A sample is filtered positive if:
 
@@ -204,6 +214,14 @@ A sample is filtered positive if:
 
 More information on this version can be found on [this](https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/Fit+to+pick+-+v2)
 Confluence page.
+
+#### Version 3 `v3` - **Current Version**
+
+A sample is filtered positive if:
+
+- it has a 'Positive' RESULT
+- it is not a control (ROOT_SAMPLE_ID does not start with 'CBIQA_', 'QC0', or 'ZZA')
+- all of CH1_CQ, CH2_CQ and CH3_CQ are `None`, or one of these is less than or equal to 30
 
 #### Propagating Filtered Positive version changes to MongoDB, MLWH and (optionally) DART
 
@@ -265,8 +283,8 @@ A little convenience script can be used to run the formatting, type checking and
 
 ### Docker
 
-If you do not have root access pyodbc will not work if you use brew
-Using the docker compose you can set up the full stack and it will also set the correct environment variables
+If you do not have root access pyodbc will not work if you use brew.
+Using the docker compose you can set up the full stack and it will also set the correct environment variables.
 
 To build the containers:
 

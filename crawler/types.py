@@ -15,6 +15,7 @@ RowSignature = Tuple[str, ...]
 CentreConf = Dict[str, str]  # config for a centre
 SourcePlateDoc = Dict[str, Union[str, datetime]]  # mongo document that represents a source plate
 DartWellProp = Dict[str, str]  # well properties of a DART well 'object'
+FlaskResponse = Tuple[Dict[str, Any], int]  # a response from a Flask endpoint, including the status code
 
 
 class Config(ModuleType):
@@ -26,6 +27,18 @@ class Config(ModuleType):
     # General
     ADD_LAB_ID: bool
     DIR_DOWNLOADED_DATA: str
+
+    # Cherrypicker Test Data
+    ENABLE_CHERRYPICKER_ENDPOINTS: bool
+    MAX_PLATES_PER_TEST_DATA_RUN: int
+
+    # Ingest Behaviour
+    USE_SFTP: bool
+    KEEP_FILES: bool
+    ADD_TO_DART: bool
+
+    # Baracoda
+    BARACODA_BASE_URL: str
 
     # Mongo
     MONGO_URI: str
@@ -58,3 +71,9 @@ class Config(ModuleType):
     SFTP_PORT: int
     SFTP_READ_USERNAME: str
     SFTP_READ_PASSWORD: str
+
+    # APScheduler
+    SCHEDULER_RUN: bool
+    SCHEDULER_TIMEZONE: str
+    SCHEDULER_API_ENABLED: bool
+    JOBS: list

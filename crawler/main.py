@@ -4,6 +4,7 @@ import time
 
 import pymongo
 
+from crawler.config.centres import CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS
 from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_SAMPLES,
@@ -16,6 +17,7 @@ from crawler.constants import (
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
+    FIELD_LH_SAMPLE_UUID,
 )
 from crawler.db.mongo import (
     create_mongo_client,
@@ -72,6 +74,11 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                 logger.debug(f"Creating index '{FIELD_RESULT}' on '{samples_collection.full_name}'")
                 samples_collection.create_index(FIELD_RESULT)
 
+                # Index on lh_sample_uuid column to make it easier for queries joining on the samples from lighthouse
+                # Index is sparse because not all rows have an lh_sample_uuid
+                logger.debug(f"Creating index '{FIELD_LH_SAMPLE_UUID}' on '{samples_collection.full_name}'")
+                samples_collection.create_index(FIELD_LH_SAMPLE_UUID, sparse=True)
+
                 # Index on unique combination of columns
                 logger.debug(f"Creating compound index on '{samples_collection.full_name}'")
                 # create compound index on 'Root Sample ID', 'RNA ID', 'Result', 'Lab ID' - some
@@ -92,9 +99,14 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                 logger.debug(f"Creating index '{FIELD_LH_SOURCE_PLATE_UUID}' on '{samples_collection.full_name}'")
                 samples_collection.create_index(FIELD_LH_SOURCE_PLATE_UUID)
 
-                # If we are only interested in a certain centre
                 if centre_prefix:
-                    centres = filter(lambda config: config.get("prefix") == centre_prefix, centres)  # type: ignore
+                    # We are only interested in processing a single centre
+                    centres = list(filter(lambda config: config.get("prefix") == centre_prefix, centres))
+                else:
+                    # We should only include centres that are to be batch processed
+                    centres = list(
+                        filter(lambda config: config.get(CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS, True), centres)
+                    )
 
                 centres_instances = [Centre(config, centre_config) for centre_config in centres]
 
