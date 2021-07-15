@@ -1,0 +1,38 @@
+version: "3.8"
+services:
+  # A MySQL service as close to production as currently possible
+  # To run it as a standalone container:
+  #   docker run --name mysql-5.7 -e MYSQL_ALLOW_EMPTY_PASSWORD=yes -d -p 27017:3306 mysql:5.7
+  mysql-5.7:
+    image: mysql:5.7
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    volumes:
+      - mysql-volume:/var/lib/mysql
+
+  # A MongoDB service as close to production as currently possible
+  # To run it as a standalone container:
+  #   docker run --name mongo -d -p 27017:27017 mongo:4.2
+  mongo-4.2:
+    image: mongo:4.2
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-volume:/data/db
+
+  # A MS SQL Server service as close to production as currently possible
+  # To run it as a standalone container:
+  #   docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=MyS3cr3tPassw0rd' -p 1433:1433 -d --name mssql mcr.microsoft.com/mssql/server:2017-latest
+  mssql-2017:
+    image: mcr.microsoft.com/mssql/server:2017-latest
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: MyS3cr3tPassw0rd
+
+volumes:
+    mongo-volume:
+    mysql-volume:
