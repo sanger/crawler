@@ -38,7 +38,7 @@ services:
   crawler:
     build: .
     ports:
-      - "8000:8000"
+      - "8100:8100"
     environment:
       - LOCALHOST=host.docker.internal
       - ROOT_PASSWORD=

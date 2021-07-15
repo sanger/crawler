@@ -6,7 +6,7 @@ FLASK_APP=crawler
 
 # https://flask.palletsprojects.com/en/1.1.x/cli/#setting-command-options
 FLASK_RUN_HOST=0.0.0.0
-FLASK_RUN_PORT=8000
+FLASK_RUN_PORT=8100
 
 # https://flask.palletsprojects.com/en/1.1.x/config/#environment-and-debug-features
 FLASK_ENV=development
