@@ -32,7 +32,10 @@ services:
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: MyS3cr3tPassw0rd
+    volumes:
+      - mssql-volume:/var/opt/mssql
 
 volumes:
-    mongo-volume:
-    mysql-volume:
+  mongo-volume:
+  mysql-volume:
+  mssql-volume:
