@@ -2,7 +2,7 @@ version: "3.8"
 services:
   # A MySQL service as close to production as currently possible
   # To run it as a standalone container:
-  #   docker run --name mysql-5.7 -e MYSQL_ALLOW_EMPTY_PASSWORD=yes -d -p 27017:3306 mysql:5.7
+  #   docker run --name mysql-5.7 -e MYSQL_ALLOW_EMPTY_PASSWORD=yes -d -p 3306:3306 mysql:5.7
   mysql-5.7:
     image: mysql:5.7
     ports:
