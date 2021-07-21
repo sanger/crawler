@@ -30,6 +30,7 @@ def create_app(config_object: str = None) -> Flask:
 
     @app.get("/health")
     def _():
+        """Checks the health of Crawler by checking that there is a scheduled job to run Crawler periodically"""
         if scheduler.get_job(SCHEDULER_JOB_ID_RUN_CRAWLER):
             return "Crawler is working", HTTPStatus.OK
 
