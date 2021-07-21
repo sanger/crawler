@@ -44,5 +44,3 @@ def setup_routes(app):
         from crawler.routes.v1 import routes as v1_routes
 
         app.register_blueprint(v1_routes.bp, url_prefix="/v1")
-        app.register_blueprint(v1_routes.bp)  # Also serve v1 at the root of the host for now
-        # TODO: Remove the root API service when all calling services have been updated
