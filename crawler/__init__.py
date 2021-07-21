@@ -26,7 +26,7 @@ def create_app(config_object: str = None) -> Flask:
         scheduler.init_app(app)
         scheduler.start()
 
-    setup_blueprints(app)
+    setup_routes(app)
 
     @app.get("/health")
     def _():
@@ -38,10 +38,10 @@ def create_app(config_object: str = None) -> Flask:
     return app
 
 
-def setup_blueprints(app):
+def setup_routes(app):
     if app.config.get("ENABLE_CHERRYPICKER_ENDPOINTS", False):
-        from crawler.blueprints.v1 import cherrypicker_test_data as cptd_v1
+        from crawler.routes.v1 import routes as v1_routes
 
-        app.register_blueprint(cptd_v1.bp, url_prefix="/v1")
-        app.register_blueprint(cptd_v1.bp)  # Also serve v1 at the root of the host for now
+        app.register_blueprint(v1_routes.bp, url_prefix="/v1")
+        app.register_blueprint(v1_routes.bp)  # Also serve v1 at the root of the host for now
         # TODO: Remove the root API service when all calling services have been updated

@@ -10,6 +10,7 @@ from crawler.jobs.cherrypicker_test_data import CherrypickerDataError
 
 ORIGINAL_ENDPOINT = "/cherrypick-test-data"
 V1_ENDPOINT = "/v1/cherrypick-test-data"
+ENDPOINT_PATHS = [ORIGINAL_ENDPOINT, V1_ENDPOINT]
 BARCODE_METADATA = [
     ["Plate-1", "positive samples: 30"],
     ["Plate-2", "positive samples: 50"],
@@ -18,12 +19,9 @@ BARCODE_METADATA = [
 LoggerMessages = namedtuple("LoggerMessages", ["info", "error"])
 
 
-ENDPOINT_PATHS = [ORIGINAL_ENDPOINT, V1_ENDPOINT]
-
-
 @pytest.fixture
 def logger_messages():
-    with patch("crawler.blueprints.v1.cherrypicker_test_data.logger") as logger:
+    with patch("crawler.routes.common.cherrypicker_test_data.logger") as logger:
         infos = []
         logger.info.side_effect = lambda msg: infos.append(msg)
 
@@ -35,7 +33,7 @@ def logger_messages():
 
 @pytest.fixture
 def process_mock():
-    with patch("crawler.blueprints.v1.cherrypicker_test_data.process") as process:
+    with patch("crawler.routes.common.cherrypicker_test_data.process") as process:
         yield process
 
 
