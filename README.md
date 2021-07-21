@@ -283,10 +283,26 @@ A little convenience script can be used to run the formatting, type checking and
 
 ### Docker
 
-If you do not have root access pyodbc will not work if you use brew.
-Using the docker compose you can set up the full stack and it will also set the correct environment variables.
+If you do not have root access pyodbc will not work if you use brew. Using the
+docker compose you can set up the full stack and it will also set the correct
+environment variables.
 
-To build the containers:
+To run the database dependencies used by Crawler and also Lighthouse, there is a
+separate configuration for Docker Compose. This is shared with Lighthouse so if
+you start these dependencies here, there's no need to also attempt to do so in
+the Lighthouse repository. They are the same resources in both and the second
+one to be started will show exceptions about ports already being allocated:
+
+    docker-compose -f dependencies/docker-compose.yml up -d
+
+The `-d` is optional and runs the containers in the background. If you want to
+observe the logs in real time or just prefer to keep the process going in
+another terminal, exclude the option. If you've already used the option and
+want to shut the databases back down, you can do so with:
+
+    docker-compose -f dependencies/docker-compose.yml down
+
+To build and run the container for Crawler, run from the root of the repository:
 
     docker-compose up
 
