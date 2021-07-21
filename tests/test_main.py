@@ -7,7 +7,7 @@ from crawler.constants import COLLECTION_CENTRES, COLLECTION_IMPORTS, COLLECTION
 from crawler.db.mongo import get_mongo_collection
 from crawler.main import run
 
-NUMBER_CENTRES = 10
+NUMBER_CENTRES = 11
 NUMBER_VALID_SAMPLES = 7
 NUMBER_SAMPLES_ON_PARTIAL_IMPORT = 10
 NUMBER_OF_FILES_PROCESSED = 12
