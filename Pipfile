@@ -29,7 +29,7 @@ pysftp = "~=0.2"
 python-dotenv = "~=0.17"
 requests = "~=2.25"
 slackclient = "~=2.5"
-sqlalchemy = "~=1.3"
+sqlalchemy = "~=1.4"
 
 [requires]
 python_version = "3.8"
