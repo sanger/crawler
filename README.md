@@ -166,7 +166,7 @@ This will be applied with the following set of rules:
 - If the sample is in a plate that is not in a `pending` state **no updates will be performed in DART for this sample**
 even if there is any new prioritisation set for it
 - If the sample has `filtered_positive` set to `true`, the sample will be flagged as 'pickable' in DART
-- If the sample has any priority setting (`must_sequence` or `preferentially_sequence`), the sample will be flagged as 'pickable' in DART
+- If the sample has a 'must_sequence' priority setting, the sample will be flagged as 'pickable' in DART (even when the `filtered_positive` for that sample is set to 'false')
 - If the sample changes its prioritisation, the setting for 'pickable' will be removed in DART
 - After a record from the `priority_samples` collection has been processed, it will be flagged by setting `processed` set to `true`
 
