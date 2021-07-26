@@ -1,5 +1,5 @@
 # flake8: noqa
-from typing import List
+from typing import Final, List, Literal
 
 from crawler.constants import (
     BIOMEK_LABWARE_CLASS_BIO,
@@ -42,6 +42,9 @@ CENTRE_REGEX_SFTP_FILE_HERON = r"sanger_report_(\d{6}_\d{4}).*\.csv$"
 REGEX_SURVEILLANCE_GLS_1 = r"^GLA\d+[A-Za-z]\.csv$"
 REGEX_SURVEILLANCE_GLS_2 = r"^[a-zA-Z]{3}-[a-zA-Z]{2}-\d+\.csv$"
 
+CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: Final = "include_in_scheduled_runs"
+CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: Final = "skip_unconsolidated_surveillance_files"
+
 CENTRES: List[CentreConf] = [
     {
         "barcode_field": FIELD_RNA_ID,
@@ -56,8 +59,8 @@ CENTRES: List[CentreConf] = [
         "sftp_root_read": "project-heron_alderly-park",
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        "skip_unconsolidated_surveillance_files": True,
-        "include_in_scheduled_runs": True,
+        CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: True,
+        CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -72,8 +75,8 @@ CENTRES: List[CentreConf] = [
         "sftp_root_read": "project-heron/UK-Biocenter/Sanger Reports",
         "file_names_to_ignore": ["MK_sanger_report_200715_2000_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        "skip_unconsolidated_surveillance_files": True,
-        "include_in_scheduled_runs": True,
+        CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: True,
+        CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -88,8 +91,8 @@ CENTRES: List[CentreConf] = [
         "sftp_root_read": "project-heron_glasgow",
         "file_names_to_ignore": ["GLS_sanger_report_200713_0001_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        "skip_unconsolidated_surveillance_files": True,
-        "include_in_scheduled_runs": True,
+        CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: True,
+        CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -104,8 +107,8 @@ CENTRES: List[CentreConf] = [
         "sftp_root_read": "project-heron_cambridge-az",
         "file_names_to_ignore": ["CB_sanger_report_200714_0001_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_BIO,
-        "skip_unconsolidated_surveillance_files": False,
-        "include_in_scheduled_runs": True,
+        CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: False,
+        CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -120,8 +123,8 @@ CENTRES: List[CentreConf] = [
         "sftp_root_read": "project-heron_randox",
         "file_names_to_ignore": [r"^lw-randox-biocentre-box-((\d)|(1\d)|20)-.*$"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        "skip_unconsolidated_surveillance_files": False,
-        "include_in_scheduled_runs": True,
+        CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: False,
+        CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -136,8 +139,8 @@ CENTRES: List[CentreConf] = [
         "sftp_root_read": "project-heron_hsl",
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        "skip_unconsolidated_surveillance_files": False,
-        "include_in_scheduled_runs": True,
+        CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: False,
+        CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -152,8 +155,8 @@ CENTRES: List[CentreConf] = [
         "sftp_root_read": "project-heron_plym",
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        "skip_unconsolidated_surveillance_files": False,
-        "include_in_scheduled_runs": True,
+        CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: False,
+        CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -168,8 +171,8 @@ CENTRES: List[CentreConf] = [
         "sftp_root_read": "project-heron_brbr",
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        "skip_unconsolidated_surveillance_files": False,
-        "include_in_scheduled_runs": True,
+        CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: False,
+        CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -184,8 +187,8 @@ CENTRES: List[CentreConf] = [
         "sftp_root_read": "project-heron_lspa",
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        "skip_unconsolidated_surveillance_files": False,
-        "include_in_scheduled_runs": True,
+        CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: False,
+        CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -200,7 +203,7 @@ CENTRES: List[CentreConf] = [
         "sftp_root_read": "",
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        "skip_unconsolidated_surveillance_files": False,
-        "include_in_scheduled_runs": False,
+        CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: False,
+        CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: False,
     },
 ]

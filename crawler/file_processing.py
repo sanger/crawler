@@ -18,6 +18,7 @@ from more_itertools import groupby_transform
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
+from crawler.config.centres import CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES
 from crawler.constants import (
     ALLOWED_CH_RESULT_VALUES,
     ALLOWED_CH_TARGET_VALUES,
@@ -397,7 +398,10 @@ class CentreFile:
             self.file_state = CentreFileState.FILE_PROCESSED_WITH_SUCCESS
 
         # check for this being an unconsolidated samples file where the centre doesn't support those
-        elif centre.get("skip_unconsolidated_surveillance_files", False) and self.is_unconsolidated_surveillance_file():
+        elif (
+            centre.get(CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES, False)
+            and self.is_unconsolidated_surveillance_file()
+        ):
             self.file_state = CentreFileState.FILE_SHOULD_NOT_BE_PROCESSED
 
         # if checksum(s) differs or if the file was not present in success directory, process it

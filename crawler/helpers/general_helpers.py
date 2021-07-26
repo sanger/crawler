@@ -300,16 +300,6 @@ def is_sample_positive(sample: SampleDoc) -> bool:
     return sample.get(FIELD_RESULT, False) == RESULT_VALUE_POSITIVE
 
 
-def is_sample_important_or_positive(sample: SampleDoc) -> bool:
-    return is_sample_positive(sample) or is_sample_important(sample)
-
-
-def is_sample_important(sample: SampleDoc) -> bool:
-    return (sample.get(FIELD_MUST_SEQUENCE, False) is True) or (
-        sample.get(FIELD_PREFERENTIALLY_SEQUENCE, False) is True
-    )
-
-
 def is_sample_pickable(sample: SampleDoc) -> bool:
     return (sample.get(FIELD_FILTERED_POSITIVE, False) is True) or (sample.get(FIELD_MUST_SEQUENCE, False) is True)
 

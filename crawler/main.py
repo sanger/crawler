@@ -4,6 +4,7 @@ import time
 
 import pymongo
 
+from crawler.config.centres import CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS
 from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_SAMPLES,
@@ -103,7 +104,9 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                     centres = list(filter(lambda config: config.get("prefix") == centre_prefix, centres))
                 else:
                     # We should only include centres that are to be batch processed
-                    centres = list(filter(lambda config: config.get("include_in_scheduled_runs", True), centres))
+                    centres = list(
+                        filter(lambda config: config.get(CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS, True), centres)
+                    )
 
                 centres_instances = [Centre(config, centre_config) for centre_config in centres]
 

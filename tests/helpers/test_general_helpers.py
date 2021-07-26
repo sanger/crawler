@@ -58,8 +58,6 @@ from crawler.helpers.general_helpers import (
     create_source_plate_doc,
     get_config,
     get_dart_well_index,
-    is_sample_important,
-    is_sample_important_or_positive,
     is_sample_pickable,
     is_sample_positive,
     map_mongo_doc_to_dart_well_props,
@@ -319,58 +317,6 @@ def test_is_sample_positive():
     assert is_sample_positive({FIELD_RESULT: "negative"}) is False
     assert is_sample_positive({FIELD_RESULT: RESULT_VALUE_POSITIVE}) is True
     assert is_sample_positive({FIELD_RESULT: generate_new_object_for_string(RESULT_VALUE_POSITIVE)}) is True
-
-
-def test_is_sample_important_or_positive():
-    negative = "negative"
-    assert (
-        is_sample_important_or_positive(
-            {FIELD_RESULT: negative, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}
-        )
-        is False
-    )
-    assert is_sample_important_or_positive({FIELD_RESULT: negative}) is False
-    assert (
-        is_sample_important_or_positive(
-            {FIELD_RESULT: RESULT_VALUE_POSITIVE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}
-        )
-        is True
-    )
-    assert is_sample_important_or_positive({FIELD_RESULT: RESULT_VALUE_POSITIVE}) is True
-    assert (
-        is_sample_important_or_positive(
-            {FIELD_RESULT: negative, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}
-        )
-        is True
-    )
-    assert (
-        is_sample_important_or_positive(
-            {FIELD_RESULT: RESULT_VALUE_POSITIVE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}
-        )
-        is True
-    )
-    assert (
-        is_sample_important_or_positive(
-            {FIELD_RESULT: RESULT_VALUE_POSITIVE, FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}
-        )
-        is True
-    )
-    assert (
-        is_sample_important_or_positive(
-            {FIELD_RESULT: RESULT_VALUE_POSITIVE, FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}
-        )
-        is True
-    )
-
-
-def test_is_sample_important():
-    assert is_sample_important({FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: True}) is True
-    assert is_sample_important({FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: False}) is True
-    assert is_sample_important({FIELD_MUST_SEQUENCE: False, FIELD_PREFERENTIALLY_SEQUENCE: False}) is False
-    assert is_sample_important({FIELD_MUST_SEQUENCE: True, FIELD_PREFERENTIALLY_SEQUENCE: True}) is True
-    assert is_sample_important({FIELD_PREFERENTIALLY_SEQUENCE: True}) is True
-    assert is_sample_important({FIELD_MUST_SEQUENCE: True}) is True
-    assert is_sample_important({}) is False
 
 
 def test_is_sample_pickable():

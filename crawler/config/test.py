@@ -36,8 +36,8 @@ CENTRES.append(
         "sftp_root_read": "tests/test_files/good",
         "file_names_to_ignore": ["TEST_sanger_report_200518_2205.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        "skip_unconsolidated_surveillance_files": False,
-        "include_in_scheduled_runs": True,
+        CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: False,
+        CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     }
 )
 
