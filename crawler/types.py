@@ -1,21 +1,37 @@
 from datetime import datetime
 from types import ModuleType
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
 
 from bson.decimal128 import Decimal128
+from bson.objectid import ObjectId
 
 # Type aliases
 CentreDoc = Dict[str, Any]  #  mongo document that represents a centre
 CSVRow = Dict[str, str]  # row of data from the CSV DictReader
-ModifiedRowValue = Optional[Union[str, datetime, bool, int, Decimal128]]
+ModifiedRowValue = Optional[Union[str, datetime, bool, int, Decimal128, ObjectId]]
 ModifiedRow = Dict[str, ModifiedRowValue]
 SampleDoc = Dict[str, ModifiedRowValue]  # mongo document that represents a sample
-SamplePriorityDoc = Dict[str, ModifiedRowValue]  # mongo document that represents a sample priority
 RowSignature = Tuple[str, ...]
-CentreConf = Dict[str, str]  # config for a centre
 SourcePlateDoc = Dict[str, Union[str, datetime]]  # mongo document that represents a source plate
 DartWellProp = Dict[str, str]  # well properties of a DART well 'object'
 FlaskResponse = Tuple[Dict[str, Any], int]  # a response from a Flask endpoint, including the status code
+
+
+class CentreConf(TypedDict):
+    barcode_field: str
+    barcode_regex: str
+    name: str
+    prefix: str
+    lab_id_default: str
+    backups_folder: str
+    sftp_file_regex_unconsolidated_surveillance: str
+    sftp_file_regex_consolidated_surveillance: str
+    sftp_file_regex_consolidated_eagle: str
+    sftp_root_read: str
+    file_names_to_ignore: List[str]
+    biomek_labware_class: str
+    skip_unconsolidated_surveillance_files: bool
+    include_in_scheduled_runs: bool
 
 
 class Config(ModuleType):
@@ -76,4 +92,4 @@ class Config(ModuleType):
     SCHEDULER_RUN: bool
     SCHEDULER_TIMEZONE: str
     SCHEDULER_API_ENABLED: bool
-    JOBS: list
+    JOBS: List[Dict[str, str]]

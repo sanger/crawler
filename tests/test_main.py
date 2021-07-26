@@ -132,6 +132,8 @@ def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_f
     # Fetch the Test centre record
     test_centre_imports = imports_collection.find_one({"centre_name": "Test Centre"})
 
+    assert test_centre_imports is not None
+
     # We expect 2 errors for this file, type 5 (duplicates) errors, 1 message and 1 aggregate count
     assert len(test_centre_imports["errors"]) == 2
 
@@ -160,6 +162,8 @@ def test_error_run_duplicates_plate_barcodes_from_different_labs_message(
 
     # Fetch the Test centre record
     test_centre_imports = imports_collection.find_one({"centre_name": "Test Centre"})
+
+    assert test_centre_imports is not None
 
     # We expect 2 errors for this file, type 5 (duplicates) errors, 1 message and 1 aggregate count
     assert len(test_centre_imports["errors"]) == 2

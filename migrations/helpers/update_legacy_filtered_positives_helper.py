@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List
 
 from pandas import DataFrame
 
@@ -72,7 +72,7 @@ def filtered_positive_fields_set(config: Config, start_datetime: datetime, end_d
             }
         )
 
-        return cast(bool, num_versioned_samples > 0)
+        return num_versioned_samples > 0
 
 
 def split_mongo_samples_by_version(

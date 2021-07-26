@@ -18,7 +18,7 @@ from more_itertools import groupby_transform
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
-from crawler.config.centres import CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES
+from crawler.config.centres import CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES
 from crawler.constants import (
     ALLOWED_CH_RESULT_VALUES,
     ALLOWED_CH_TARGET_VALUES,
@@ -360,7 +360,7 @@ class CentreFile:
         """
         centre_collection = get_mongo_collection(self.get_db(), COLLECTION_CENTRES)
 
-        if centre := centre_collection.find_one({"name": self.centre_config["name"]}):
+        if centre := centre_collection.find_one(filter={"name": self.centre_config["name"]}):
             return cast(CentreDoc, centre)
 
         raise Exception("Unable to find the centre in the centre collection.")
@@ -398,7 +398,10 @@ class CentreFile:
             self.file_state = CentreFileState.FILE_PROCESSED_WITH_SUCCESS
 
         # check for this being an unconsolidated samples file where the centre doesn't support those
-        elif centre.get(CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES, False) and self.is_unconsolidated_surveillance_file():
+        elif (
+            centre.get(CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES, False)
+            and self.is_unconsolidated_surveillance_file()
+        ):
             self.file_state = CentreFileState.FILE_SHOULD_NOT_BE_PROCESSED
 
         # if checksum(s) differs or if the file was not present in success directory, process it
@@ -525,7 +528,7 @@ class CentreFile:
             exception (BulkWriteError): Exception with all the failed writes.
         """
         try:
-            wrong_instances = [write_error["op"] for write_error in exception.details["writeErrors"]]
+            wrong_instances = [write_error["op"] for write_error in exception.details["writeErrors"]]  # type: ignore
             samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
             for wrong_instance in wrong_instances:
                 # To identify TYPE 7 we need to do a search for
@@ -602,7 +605,7 @@ class CentreFile:
                     continue
 
                 # then attempt an update from plates that exist in mongo
-                existing_mongo_plate = source_plates_collection.find_one({FIELD_BARCODE: plate_barcode})
+                existing_mongo_plate = source_plates_collection.find_one(filter={FIELD_BARCODE: plate_barcode})
                 if existing_mongo_plate is not None:
                     update_doc_from_source_plate(doc, existing_mongo_plate)
                     continue
@@ -640,7 +643,7 @@ class CentreFile:
             # Inserts new version for samples
             #  insert_many will add the '_id' field to each document inserted, making document["_id"] available
             # https://pymongo.readthedocs.io/en/stable/faq.html#writes-and-ids
-            result = samples_collection.insert_many(docs_to_insert, ordered=False)
+            result = samples_collection.insert_many(documents=docs_to_insert, ordered=False)
 
             self.docs_inserted = len(result.inserted_ids)
 
@@ -659,7 +662,7 @@ class CentreFile:
             # logger.debug(e)
 
             # filter out any errors that are duplicates by checking the code in e.details["writeErrors"]
-            filtered_errors = list(filter(lambda x: x["code"] != 11000, e.details["writeErrors"]))
+            filtered_errors = list(filter(lambda x: x["code"] != 11000, e.details["writeErrors"]))  # type: ignore
 
             if (num_filtered_errors := len(filtered_errors)) > 0:
                 logger.info(
@@ -667,7 +670,7 @@ class CentreFile:
                 )
                 logger.info(filtered_errors[0])
 
-            self.docs_inserted = e.details["nInserted"]
+            self.docs_inserted = e.details["nInserted"]  # type: ignore
 
             logger.info(f"{self.docs_inserted} documents inserted into mongo")
 
@@ -684,7 +687,7 @@ class CentreFile:
                 """
                 return error["op"][FIELD_MONGODB_ID]
 
-            errored_ids = list(map(get_errored_ids, e.details["writeErrors"]))
+            errored_ids = list(map(get_errored_ids, e.details["writeErrors"]))  # type: ignore
 
             logger.warning(f"{len(errored_ids)} records were not inserted")
 
@@ -696,7 +699,7 @@ class CentreFile:
             logger.exception(e)
             return []
 
-    def logging_message_object(self) -> Dict:
+    def logging_message_object(self) -> Dict[str, Dict[str, str]]:
         return {
             "success": {
                 "msg": "MLWH database inserts completed successfully for file: {self.file_name}",
@@ -716,7 +719,10 @@ class CentreFile:
 
     def insert_samples_from_docs_into_mlwh(self, docs_to_insert: List[ModifiedRow]) -> bool:
         return insert_or_update_samples_in_mlwh(
-            docs_to_insert, self.config, False, self.logging_collection, self.logging_message_object()
+            samples=docs_to_insert,
+            config=self.config,
+            logging_collection=self.logging_collection,
+            logging_messages=self.logging_message_object(),
         )
 
     # TODO: refactor duplicated function insert_plates_and_wells_into_dart in priority_samples_process.py
@@ -1226,7 +1232,7 @@ class CentreFile:
         elif channel_cq_field_val:
             try:
                 # pymongo requires Decimal128 format for numbers rather than normal Decimal
-                row[channel_cq_field] = Decimal128(channel_cq_field_val)
+                row[channel_cq_field] = Decimal128(str(channel_cq_field_val))
             except Exception:
                 self.logging_collection.add_error(
                     "TYPE 19",
@@ -1259,7 +1265,7 @@ class CentreFile:
 
         date_time = datetime.strptime(datetime_string, "%d %m %Y %H:%M:%S")
 
-        # We are only checking for UTC at the moment, more time (excuse the pun) is needed to suppport timezones
+        # We are only checking for UTC at the moment, more time (excuse the pun) is needed to support timezones
         #   more robustly
         if timezone_name and timezone_name == "UTC":
             date_time = date_time.replace(tzinfo=timezone.utc)
@@ -1412,7 +1418,7 @@ class CentreFile:
         Returns:
             bool - whether the value lies within range
         """
-        return range_min <= cast(Decimal, num.to_decimal()) <= range_max
+        return range_min <= num.to_decimal() <= range_max
 
     def is_row_channel_cq_in_range(self, row: ModifiedRow, line_number: int, fieldname: str) -> bool:
         """Is the channel cq within the specified range.

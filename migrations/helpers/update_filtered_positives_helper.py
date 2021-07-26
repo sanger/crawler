@@ -29,7 +29,7 @@ from crawler.helpers.general_helpers import (
     map_mongo_to_sql_common,
 )
 from crawler.sql_queries import SQL_DART_GET_PLATE_BARCODES, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE
-from crawler.types import Config, SampleDoc
+from crawler.types import CentreConf, Config, SampleDoc
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ def positive_result_samples_from_mongo(config: Config, plate_barcodes: Optional[
         # this should take everything from the cursor find into RAM memory
         # (assuming you have enough memory)
         # should we project to an object that has fewer fields?
-        return list(samples_collection.aggregate(pipeline))
+        return list(samples_collection.aggregate(pipeline))  # type: ignore
 
 
 def update_filtered_positive_fields(
@@ -258,7 +258,7 @@ def update_dart_fields(config: Config, samples: List[SampleDoc]) -> bool:
     return dart_updated_successfully
 
 
-def biomek_labclass_by_centre_name(centres: List[Dict[str, str]]) -> Dict[str, str]:
+def biomek_labclass_by_centre_name(centres: List[CentreConf]) -> Dict[str, str]:
     """Determines a mapping between centre name and biomek labware class.
 
     Arguments:

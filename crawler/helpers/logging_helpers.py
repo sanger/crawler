@@ -1,3 +1,5 @@
+from typing import List
+
 from crawler.helpers.enums import ErrorLevel
 
 
@@ -447,32 +449,32 @@ class LoggingCollection:
             "TYPE 34": AggregateType34(),
         }
 
-    def add_error(self, aggregate_error_type, message):
-        self.aggregator_types[aggregate_error_type].add_error(message)
+    def add_error(self, aggregate_error_type: str, message: str) -> None:
+        self.aggregator_types[aggregate_error_type].add_error(message=message)
 
-    def get_aggregate_messages(self):
-        msgs = []
-        for (_k, v) in sorted(self.aggregator_types.items()):
-            if v.count_errors > 0:
-                msgs.append(v.get_message())
+    def get_aggregate_messages(self) -> List[str]:
+        messages: List[str] = []
+        for _, aggregator_type in sorted(self.aggregator_types.items()):
+            if aggregator_type.count_errors > 0:
+                messages.append(aggregator_type.get_message())
 
-        return msgs
+        return messages
 
-    def get_aggregate_total_messages(self):
-        msgs = []
-        for (_k, v) in sorted(self.aggregator_types.items()):
-            if v.count_errors > 0:
-                msgs.append(v.get_report_message())
+    def get_aggregate_total_messages(self) -> List[str]:
+        messages: List[str] = []
+        for _, aggregator_type in sorted(self.aggregator_types.items()):
+            if aggregator_type.count_errors > 0:
+                messages.append(aggregator_type.get_report_message())
 
-        return msgs
+        return messages
 
-    def get_messages_for_import(self):
+    def get_messages_for_import(self) -> List[str]:
         return self.get_aggregate_total_messages() + self.get_aggregate_messages()
 
-    def get_count_of_all_errors_and_criticals(self):
+    def get_count_of_all_errors_and_criticals(self) -> int:
         count = 0
-        for (_k, v) in self.aggregator_types.items():
-            if v.error_level == ErrorLevel.ERROR or v.error_level == ErrorLevel.CRITICAL:
-                count += v.count_errors
+        for aggregator_type in self.aggregator_types.values():
+            if aggregator_type.error_level == ErrorLevel.ERROR or aggregator_type.error_level == ErrorLevel.CRITICAL:
+                count += aggregator_type.count_errors
 
         return count
