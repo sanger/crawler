@@ -1,5 +1,4 @@
-# flake8: noqa
-from typing import Final, List, Literal
+from typing import Final, List
 
 from crawler.constants import (
     BIOMEK_LABWARE_CLASS_BIO,
@@ -117,7 +116,7 @@ CENTRES: List[CentreConf] = [
         "prefix": "RAND",
         "lab_id_default": "Randox",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/RAND",
-        "sftp_file_regex_unconsolidated_surveillance": f"^lw-randox-biocentre-box-.*\.csv$",
+        "sftp_file_regex_unconsolidated_surveillance": r"^lw-randox-biocentre-box-.*\.csv$",
         "sftp_file_regex_consolidated_surveillance": r"^RDX-[a-zA-Z0-9]{2}-\d+\.csv$",
         "sftp_file_regex_consolidated_eagle": r"^RXE\d+\.csv$",
         "sftp_root_read": "project-heron_randox",
