@@ -1,14 +1,14 @@
 import logging
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, Dict, Iterator, List
+from typing import Any, Iterator, List, Mapping
 
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.results import InsertOneResult
 
-from crawler.types import Config
+from crawler.types import CentreConf, Config
 
 logger = logging.getLogger(__name__)
 
@@ -17,10 +17,10 @@ def create_mongo_client(config: Config) -> MongoClient:
     """Create a MongoClient with the given config parameters.
 
     Arguments:
-        config {Config} -- application config specifying host and port
+        config {Config}: application config specifying host and port
 
     Returns:
-        MongoClient -- a client used to interact with the database server
+        MongoClient: a client used to interact with the database server
     """
     try:
         logger.debug("Connecting to mongo")
@@ -52,11 +52,11 @@ def get_mongo_db(config: Config, client: MongoClient) -> Database:
     documents are added to a collection.
 
     Arguments:
-        config {Config} -- application config specifying the database
-        client {MongoClient} -- the client to use for the connection
+        config {Config}: application config specifying the database
+        client {MongoClient}: the client to use for the connection
 
     Returns:
-        Database -- a reference to the database in mongo
+        Database: a reference to the database in mongo
     """
     db = config.MONGO_DB
 
@@ -70,11 +70,11 @@ def get_mongo_collection(database: Database, collection_name: str) -> Collection
     are written to it.
 
     Arguments:
-        database {Database} -- the database to get a collection from
-        collection_name {str} -- the name of the collection to get/create
+        database {Database}: the database to get a collection from
+        collection_name {str}: the name of the collection to get/create
 
     Returns:
-        Collection -- a reference to the collection
+        Collection: a reference to the collection
     """
     logger.debug(f"Get collection '{collection_name}'")
 
@@ -91,7 +91,7 @@ def samples_collection_accessor(database: Database, collection_name: str) -> Ite
 
 def create_import_record(
     import_collection: Collection,
-    centre: Dict[str, str],
+    centre: CentreConf,
     docs_inserted: int,
     file_name: str,
     errors: List[str],
@@ -99,14 +99,14 @@ def create_import_record(
     """Creates and inserts an import record for a centre.
 
     Arguments:
-        import_collection {Collection} -- the collection which stores import status documents
-        centre {Dict[str, str]} -- the centre for which to store the import status
-        docs_inserted {int} -- to number of documents inserted for this centre
-        file_name {str} -- file parsed for samples
-        errors {List[str]} -- a list of errors while trying to process this centre
+        import_collection {Collection}: the collection which stores import status documents
+        centre {CentreConf}: the centre for which to store the import status
+        docs_inserted {int}: to number of documents inserted for this centre
+        file_name {str}: file parsed for samples
+        errors {List[str]}: a list of errors while trying to process this centre
 
     Returns:
-        InsertOneResult -- the result of inserting this document
+        InsertOneResult: the result of inserting this document
     """
     logger.debug(f"Creating the import record for {centre['name']}")
 
@@ -118,18 +118,20 @@ def create_import_record(
         "errors": errors,
     }
 
-    return import_collection.insert_one(import_doc)
+    return import_collection.insert_one(document=import_doc)
 
 
-def populate_collection(collection: Collection, documents: List[Dict[str, Any]], filter_field: str) -> None:
+def populate_collection(collection: Collection, documents: List[Mapping[str, Any]], filter_field: str) -> None:
     """Populates a collection using the given documents. It uses the filter_field to replace any documents that match
     the filter and adds any new documents.
 
     Arguments:
-        collection {Collection} -- collection to populate
-        documents {List[Dict[str, Any]]} -- documents to populate the collection with
-        filter_field {str} -- filter to search for matching documents
+        collection {Collection}: collection to populate
+        documents {List[Dict[str, Any]]}: documents to populate the collection with
+        filter_field {str}: filter to search for matching documents
     """
     logger.debug(f"Populating/updating '{collection.full_name}' using '{filter_field}' as the filter")
     for document in documents:
-        _ = collection.find_one_and_update({filter_field: document[filter_field]}, {"$set": document}, upsert=True)
+        _ = collection.find_one_and_update(
+            filter={filter_field: document[filter_field]}, update={"$set": document}, upsert=True
+        )

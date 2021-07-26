@@ -265,7 +265,7 @@ def parse_decimal128(value: ModifiedRowValue) -> Optional[Decimal]:
     if not isinstance(value, Decimal128):
         return None
 
-    return cast(Decimal, value.to_decimal())
+    return value.to_decimal()
 
 
 def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
@@ -296,22 +296,22 @@ def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:
     return None
 
 
-def is_sample_positive(sample):
+def is_sample_positive(sample: SampleDoc) -> bool:
     return sample.get(FIELD_RESULT, False) == RESULT_VALUE_POSITIVE
 
 
-def is_sample_important_or_positive(sample):
+def is_sample_important_or_positive(sample: SampleDoc) -> bool:
     return is_sample_positive(sample) or is_sample_important(sample)
 
 
-def is_sample_important(sample):
+def is_sample_important(sample: SampleDoc) -> bool:
     return (sample.get(FIELD_MUST_SEQUENCE, False) is True) or (
         sample.get(FIELD_PREFERENTIALLY_SEQUENCE, False) is True
     )
 
 
-def is_sample_pickable(sample):
-    return (sample.get(FIELD_FILTERED_POSITIVE, False) is True) or is_sample_important(sample)
+def is_sample_pickable(sample: SampleDoc) -> bool:
+    return (sample.get(FIELD_FILTERED_POSITIVE, False) is True) or (sample.get(FIELD_MUST_SEQUENCE, False) is True)
 
 
 def map_mongo_doc_to_dart_well_props(sample: SampleDoc) -> DartWellProp:

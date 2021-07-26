@@ -1,5 +1,5 @@
 # flake8: noqa
-from typing import Dict, List, Union
+from typing import List
 
 from crawler.constants import (
     BIOMEK_LABWARE_CLASS_BIO,
@@ -7,6 +7,7 @@ from crawler.constants import (
     FIELD_RNA_ID,
     TEST_DATA_CENTRE_PREFIX,
 )
+from crawler.types import CentreConf
 
 # centre details
 # This information will also be persisted in the mongo database
@@ -41,10 +42,7 @@ CENTRE_REGEX_SFTP_FILE_HERON = r"sanger_report_(\d{6}_\d{4}).*\.csv$"
 REGEX_SURVEILLANCE_GLS_1 = r"^GLA\d+[A-Za-z]\.csv$"
 REGEX_SURVEILLANCE_GLS_2 = r"^[a-zA-Z]{3}-[a-zA-Z]{2}-\d+\.csv$"
 
-CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES = "skip_unconsolidated_surveillance_files"  # default false
-CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS = "include_in_scheduled_runs"  # default true
-
-CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
+CENTRES: List[CentreConf] = [
     {
         "barcode_field": FIELD_RNA_ID,
         "barcode_regex": CENTRE_REGEX_BARCODE,
@@ -56,8 +54,10 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_file_regex_consolidated_surveillance": r"^[a-zA-Z]{2}-[a-zA-Z]{3}-\d+\.csv$",
         "sftp_file_regex_consolidated_eagle": r"^APE\d+\.csv$",
         "sftp_root_read": "project-heron_alderly-park",
+        "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: True,
+        "skip_unconsolidated_surveillance_files": True,
+        "include_in_scheduled_runs": True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -72,7 +72,8 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_root_read": "project-heron/UK-Biocenter/Sanger Reports",
         "file_names_to_ignore": ["MK_sanger_report_200715_2000_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: True,
+        "skip_unconsolidated_surveillance_files": True,
+        "include_in_scheduled_runs": True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -87,7 +88,8 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_root_read": "project-heron_glasgow",
         "file_names_to_ignore": ["GLS_sanger_report_200713_0001_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRES_KEY_SKIP_UNCONSOLIDATED_FILES: True,
+        "skip_unconsolidated_surveillance_files": True,
+        "include_in_scheduled_runs": True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -102,6 +104,8 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_root_read": "project-heron_cambridge-az",
         "file_names_to_ignore": ["CB_sanger_report_200714_0001_master.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_BIO,
+        "skip_unconsolidated_surveillance_files": False,
+        "include_in_scheduled_runs": True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -116,6 +120,8 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_root_read": "project-heron_randox",
         "file_names_to_ignore": [r"^lw-randox-biocentre-box-((\d)|(1\d)|20)-.*$"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+        "skip_unconsolidated_surveillance_files": False,
+        "include_in_scheduled_runs": True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -130,6 +136,8 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_root_read": "project-heron_hsl",
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+        "skip_unconsolidated_surveillance_files": False,
+        "include_in_scheduled_runs": True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -144,6 +152,8 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_root_read": "project-heron_plym",
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+        "skip_unconsolidated_surveillance_files": False,
+        "include_in_scheduled_runs": True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -158,6 +168,8 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_root_read": "project-heron_brbr",
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+        "skip_unconsolidated_surveillance_files": False,
+        "include_in_scheduled_runs": True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -172,6 +184,8 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_root_read": "project-heron_lspa",
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+        "skip_unconsolidated_surveillance_files": False,
+        "include_in_scheduled_runs": True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
@@ -183,7 +197,10 @@ CENTRES: List[Dict[str, Union[str, bool, List[str]]]] = [
         "sftp_file_regex_unconsolidated_surveillance": r"^CPTD_\d{6}_\d{6}_\d{6}\.csv$",
         "sftp_file_regex_consolidated_surveillance": r"^$",
         "sftp_file_regex_consolidated_eagle": r"^$",
+        "sftp_root_read": "",
+        "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS: False,
+        "skip_unconsolidated_surveillance_files": False,
+        "include_in_scheduled_runs": False,
     },
 ]

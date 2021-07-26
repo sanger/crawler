@@ -281,7 +281,7 @@ def test_update_mlwh_filtered_positive_fields_calls_to_update_samples(config, ml
         },
     ]
 
-    result = update_mlwh_filtered_positive_fields(config, mongo_samples)
+    result = update_mlwh_filtered_positive_fields(config, mongo_samples)  # type: ignore
     assert result is True
 
     cursor = mlwh_connection.cursor()
@@ -316,7 +316,7 @@ def test_biomek_labclass_by_centre_name(config):
         {"name": "test centre 1", "biomek_labware_class": "test class 1"},
         {"name": "test centre 2", "biomek_labware_class": "test class 2"},
     ]
-    labclass_by_name = biomek_labclass_by_centre_name(centres)
+    labclass_by_name = biomek_labclass_by_centre_name(centres)  # type: ignore
 
     assert len(labclass_by_name.keys()) == 2
     assert labclass_by_name["test centre 1"] == "test class 1"

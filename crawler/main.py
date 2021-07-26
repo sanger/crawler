@@ -4,7 +4,6 @@ import time
 
 import pymongo
 
-from crawler.config.centres import CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS
 from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_SAMPLES,
@@ -12,12 +11,12 @@ from crawler.constants import (
     FIELD_BARCODE,
     FIELD_CENTRE_NAME,
     FIELD_LAB_ID,
+    FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_PLATE_BARCODE,
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
-    FIELD_LH_SAMPLE_UUID,
 )
 from crawler.db.mongo import (
     create_mongo_client,
@@ -54,7 +53,7 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
 
             logger.debug(f"Creating index '{FIELD_CENTRE_NAME}' on '{centres_collection.full_name}'")
             centres_collection.create_index(FIELD_CENTRE_NAME, unique=True)
-            populate_collection(centres_collection, centres, FIELD_CENTRE_NAME)
+            populate_collection(centres_collection, centres, FIELD_CENTRE_NAME)  # type: ignore
 
             # get or create the source plates collection
             source_plates_collection = get_mongo_collection(db, COLLECTION_SOURCE_PLATES)
@@ -104,9 +103,7 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
                     centres = list(filter(lambda config: config.get("prefix") == centre_prefix, centres))
                 else:
                     # We should only include centres that are to be batch processed
-                    centres = list(
-                        filter(lambda config: config.get(CENTRES_KEY_INCLUDE_IN_BATCH_PROCESS, True), centres)
-                    )
+                    centres = list(filter(lambda config: config.get("include_in_scheduled_runs", True), centres))
 
                 centres_instances = [Centre(config, centre_config) for centre_config in centres]
 

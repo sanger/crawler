@@ -85,7 +85,7 @@ from crawler.constants import (
 )
 from crawler.db.mongo import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
-from crawler.types import Config, ModifiedRow
+from crawler.types import Config, ModifiedRow, SampleDoc
 from tests.conftest import generate_new_object_for_string
 
 # ----- tests helpers -----
@@ -1476,7 +1476,7 @@ def test_insert_samples_from_docs_into_mlwh(
     date_tested_2 = datetime(2020, 4, 23, 14, 41, 0)
     filtered_positive_timestamp = datetime(2020, 4, 23, 14, 41, 0)
 
-    docs = [
+    docs: List[SampleDoc] = [
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000004",
@@ -1597,7 +1597,7 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_con
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
 
-    docs = [
+    docs: List[SampleDoc] = [
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000004",
@@ -1631,7 +1631,7 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_none(
     config: Config, mlwh_connection: CMySQLConnection, centre_file: CentreFile
 ) -> None:
 
-    docs = [
+    docs: List[SampleDoc] = [
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000004",
@@ -1667,7 +1667,7 @@ def test_insert_samples_from_docs_into_mlwh_returns_false_none_connection(config
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
 
-        docs = [
+        docs: List[SampleDoc] = [
             {
                 "_id": ObjectId("5f562d9931d9959b92544728"),
                 FIELD_ROOT_SAMPLE_ID: "ABC00000004",
@@ -1691,7 +1691,7 @@ def test_insert_samples_from_docs_into_mlwh_returns_false_not_connected(config, 
         centre = Centre(config, config.CENTRES[0])
         centre_file = CentreFile("some file", centre)
 
-        docs = [
+        docs: List[SampleDoc] = [
             {
                 "_id": ObjectId("5f562d9931d9959b92544728"),
                 FIELD_ROOT_SAMPLE_ID: "ABC00000004",
@@ -1715,7 +1715,7 @@ def test_insert_samples_from_docs_into_mlwh_returns_failure_executing(config, ml
             centre = Centre(config, config.CENTRES[0])
             centre_file = CentreFile("some file", centre)
 
-            docs = [
+            docs: List[SampleDoc] = [
                 {
                     "_id": ObjectId("5f562d9931d9959b92544728"),
                     FIELD_ROOT_SAMPLE_ID: "ABC00000004",
@@ -1763,7 +1763,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_failed_cursor(config):
 def test_insert_plates_and_wells_from_docs_into_dart_failure_adding_new_plate(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
-    docs_to_insert = [
+    docs_to_insert: List[SampleDoc] = [
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000004",
@@ -1792,7 +1792,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_non_pending_plate_does_not_
 ):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
-    docs_to_insert = [
+    docs_to_insert: List[ModifiedRow] = [
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000004",
@@ -1817,7 +1817,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_non_pending_plate_does_not_
 def test_insert_plates_and_wells_from_docs_into_dart_none_well_index(config):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some file", centre)
-    docs_to_insert = [
+    docs_to_insert: List[SampleDoc] = [
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000004",

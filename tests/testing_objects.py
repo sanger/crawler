@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Union
-from bson.objectid import ObjectId
 
 import dateutil.parser
+from bson.objectid import ObjectId
 
 from crawler.constants import (
     EVENT_CHERRYPICK_LAYOUT_SET,
@@ -12,12 +12,15 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_MONGODB_ID,
+    FIELD_MUST_SEQUENCE,
     FIELD_PLATE_BARCODE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
+    FIELD_PROCESSED,
     FIELD_RESULT,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
-    FIELD_SOURCE,
     FIELD_SAMPLE_ID,
+    FIELD_SOURCE,
     FILTERED_POSITIVE_FIELDS_SET_DATE,
     MLWH_COORDINATE,
     MLWH_FILTERED_POSITIVE,
@@ -32,12 +35,9 @@ from crawler.constants import (
     RESULT_VALUE_POSITIVE,
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
-    FIELD_MUST_SEQUENCE,
-    FIELD_PREFERENTIALLY_SEQUENCE,
-    FIELD_PROCESSED,
 )
 
-TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
+TESTING_SAMPLES: List[Dict[str, Union[str, bool, ObjectId]]] = [
     {
         FIELD_COORDINATE: "A01",
         FIELD_SOURCE: "Test Centre",
@@ -79,7 +79,7 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool]]] = [
     },
 ]
 
-TESTING_PRIORITY_SAMPLES: List[Dict[str, Union[str, bool]]] = [
+TESTING_PRIORITY_SAMPLES: List[Dict[str, Union[str, bool, ObjectId]]] = [
     {
         FIELD_SAMPLE_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa1"),
         FIELD_MUST_SEQUENCE: True,
