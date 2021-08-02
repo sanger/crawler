@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone
 
-from flask import Blueprint, request
+from flask import request
 
 from crawler.constants import FIELD_STATUS_COMPLETED, FLASK_ERROR_MISSING_PARAMETERS, FLASK_ERROR_UNEXPECTED
 from crawler.helpers.responses import bad_request, internal_server_error, ok
@@ -10,11 +10,8 @@ from crawler.types import FlaskResponse
 
 logger = logging.getLogger(__name__)
 
-bp = Blueprint("cherrypicker", __name__)
 
-
-@bp.post("/cherrypick-test-data")
-def generate_test_data_endpoint() -> FlaskResponse:
+def generate_test_data_v1() -> FlaskResponse:
     """Generates cherrypicker test data for a number of plates with defined
     numbers of positives per plate.
 

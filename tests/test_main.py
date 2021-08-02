@@ -7,7 +7,7 @@ from crawler.constants import COLLECTION_CENTRES, COLLECTION_IMPORTS, COLLECTION
 from crawler.db.mongo import get_mongo_collection
 from crawler.main import run
 
-NUMBER_CENTRES = 11
+NUMBER_CENTRES = 12
 NUMBER_VALID_SAMPLES = 7
 NUMBER_SAMPLES_ON_PARTIAL_IMPORT = 10
 NUMBER_OF_FILES_PROCESSED = 12
@@ -132,6 +132,8 @@ def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_f
     # Fetch the Test centre record
     test_centre_imports = imports_collection.find_one({"centre_name": "Test Centre"})
 
+    assert test_centre_imports is not None
+
     # We expect 2 errors for this file, type 5 (duplicates) errors, 1 message and 1 aggregate count
     assert len(test_centre_imports["errors"]) == 2
 
@@ -160,6 +162,8 @@ def test_error_run_duplicates_plate_barcodes_from_different_labs_message(
 
     # Fetch the Test centre record
     test_centre_imports = imports_collection.find_one({"centre_name": "Test Centre"})
+
+    assert test_centre_imports is not None
 
     # We expect 2 errors for this file, type 5 (duplicates) errors, 1 message and 1 aggregate count
     assert len(test_centre_imports["errors"]) == 2

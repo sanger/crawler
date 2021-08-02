@@ -19,7 +19,7 @@ ENABLE_CHERRYPICKER_ENDPOINTS = True
 ###
 # change all the backup folder entries for the centres during testing
 for centre in CENTRES:
-    centre["backups_folder"] = centre["backups_folder"].replace(CENTRE_DIR_BACKUPS, "tmp/backups")  # type: ignore
+    centre["backups_folder"] = centre["backups_folder"].replace(CENTRE_DIR_BACKUPS, "tmp/backups")
 
 # add a test centre to those defined in defaults.py
 CENTRES.append(
@@ -36,6 +36,8 @@ CENTRES.append(
         "sftp_root_read": "tests/test_files/good",
         "file_names_to_ignore": ["TEST_sanger_report_200518_2205.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+        CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: False,
+        CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     }
 )
 

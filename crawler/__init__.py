@@ -22,20 +22,25 @@ def create_app(config_object: str = None) -> Flask:
     # setup logging
     logging.config.dictConfig(app.config["LOGGING"])
 
-    if app.config.get("ENABLE_CHERRYPICKER_ENDPOINTS", False):
-        from crawler.blueprints import cherrypicker_test_data
-
-        app.register_blueprint(cherrypicker_test_data.bp)
-
     if app.config.get("SCHEDULER_RUN", False):
         scheduler.init_app(app)
         scheduler.start()
 
+    setup_routes(app)
+
     @app.get("/health")
-    def health_check():
+    def _():
+        """Checks the health of Crawler by checking that there is a scheduled job to run Crawler periodically"""
         if scheduler.get_job(SCHEDULER_JOB_ID_RUN_CRAWLER):
             return "Crawler is working", HTTPStatus.OK
 
         return "Crawler is not working correctly", HTTPStatus.INTERNAL_SERVER_ERROR
 
     return app
+
+
+def setup_routes(app):
+    if app.config.get("ENABLE_CHERRYPICKER_ENDPOINTS", False):
+        from crawler.routes.v1 import routes as v1_routes
+
+        app.register_blueprint(v1_routes.bp, url_prefix="/v1")

@@ -4,7 +4,7 @@
 #
 import logging
 import logging.config
-from typing import Any, Dict, Final, Iterator, List, Tuple
+from typing import Any, Dict, Final, Iterator, List, Mapping, Tuple
 
 from more_itertools import groupby_transform
 from pymongo.database import Database
@@ -22,7 +22,7 @@ from crawler.db.dart import add_dart_plate_if_doesnt_exist, add_dart_well_proper
 from crawler.db.mongo import get_mongo_collection
 from crawler.db.mysql import insert_or_update_samples_in_mlwh
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.types import Config, ModifiedRowValue, SampleDoc, SamplePriorityDoc
+from crawler.types import Config, ModifiedRowValue, SampleDoc
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ def validate_prioritisation_process(db: Database) -> None:
         )
 
 
-def get_all_unprocessed_priority_samples_records(db: Database) -> List[SamplePriorityDoc]:
+def get_all_unprocessed_priority_samples_records(db: Database) -> List[SampleDoc]:
     priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
     return list(priority_samples_collection.find({FIELD_PROCESSED: False}))
 
@@ -101,7 +101,7 @@ def print_summary():
         logger.info("Prioritisation of samples completed successfully")
 
 
-def query_any_unprocessed_samples(db: Database) -> List[SamplePriorityDoc]:
+def query_any_unprocessed_samples(db: Database) -> List[SampleDoc]:
     """
     Returns the list of unprocessed priority samples (from priority_samples mongo collection)
     that have at least one related sample (from samples mongo collection).
@@ -111,7 +111,7 @@ def query_any_unprocessed_samples(db: Database) -> List[SamplePriorityDoc]:
     """
     priority_samples_collection = get_mongo_collection(db, COLLECTION_PRIORITY_SAMPLES)
 
-    IMPORTANT_UNPROCESSED_SAMPLES_MONGO_QUERY: Final[List[object]] = [
+    IMPORTANT_UNPROCESSED_SAMPLES_MONGO_QUERY: Final[List[Mapping[str, Any]]] = [
         # All unprocessed priority samples
         {
             "$match": {FIELD_PROCESSED: False},
@@ -138,7 +138,7 @@ def query_any_unprocessed_samples(db: Database) -> List[SamplePriorityDoc]:
     return list(value)
 
 
-def update_unprocessed_priority_samples_to_processed(db: Database, samples: List[SamplePriorityDoc]) -> None:
+def update_unprocessed_priority_samples_to_processed(db: Database, samples: List[SampleDoc]) -> None:
     """
     Update the given samples processed field in mongo to true
     Arguments:
@@ -159,7 +159,7 @@ def update_unprocessed_priority_samples_to_processed(db: Database, samples: List
     logger.info("Mongo update of processed for priority samples successful")
 
 
-def logging_message_object() -> Dict:
+def logging_message_object() -> Dict[str, Dict[str, str]]:
     return {
         "success": {
             "msg": "MLWH database inserts completed successfully for priority samples",
@@ -177,20 +177,20 @@ def logging_message_object() -> Dict:
     }
 
 
-def update_priority_samples_into_mlwh(samples: List[SamplePriorityDoc], config: Config) -> bool:
-    mlwh_success = insert_or_update_samples_in_mlwh(samples, config, True, logging_collection, logging_message_object())
+def update_priority_samples_into_mlwh(samples: List[SampleDoc], config: Config) -> bool:
+    mlwh_success = insert_or_update_samples_in_mlwh(samples, config, logging_collection, logging_message_object())
     if mlwh_success:
         logger.info("MLWH insert successful")
     return mlwh_success
 
 
 # TODO: refactor duplicated function insert_plates_and_wells_from_docs_into_dart in file_processing.py
-def insert_plates_and_wells_into_dart(docs_to_insert: List[SamplePriorityDoc], config: Config) -> bool:
+def insert_plates_and_wells_into_dart(docs_to_insert: List[SampleDoc], config: Config) -> bool:
     """Insert plates and wells into the DART database.
     Create in DART with docs_to_insert
 
     Arguments:
-        docs_to_insert {List[SamplePriorityDoc]} -- List of any unprocessed samples
+        docs_to_insert {List[SampleDoc]} -- List of any unprocessed samples
 
     Returns:
         {bool} -- True if the insert was successful; otherwise False
