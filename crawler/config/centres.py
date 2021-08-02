@@ -202,6 +202,8 @@ CENTRES: List[CentreConf] = [
         "sftp_root_read": "project-heron_newc",
         "file_names_to_ignore": [],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
+        CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: False,
+        CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
         "barcode_field": FIELD_RNA_ID,
