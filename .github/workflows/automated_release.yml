@@ -54,7 +54,7 @@ jobs:
 
       - name: Set release tag
         # https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable
-        run: echo "RELEASE_VERSION=$([ ${BRANCH_NAME} = "develop" ] && printf '%s\n' $(cat .release-version)-develop || printf '%s\n' $(cat .release-version))" >> $GITHUB_ENV
+        run: echo "RELEASE_VERSION=$(printf '%s.%s%s\n' $(cat .release-version) ${GITHUB_RUN_ID} $([ ${BRANCH_NAME} = "develop" ] && echo "-develop" || echo ""))" >> $GITHUB_ENV
 
       - name: Create release
         uses: softprops/action-gh-release@v1
