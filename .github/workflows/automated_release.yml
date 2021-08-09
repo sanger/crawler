@@ -57,12 +57,11 @@ jobs:
         run: echo "RELEASE_VERSION=$(printf -- '%s%s\n' $(cat .release-version) $([ ${BRANCH_NAME} = "develop" ] && printf -- '-%s-develop' ${GITHUB_RUN_ID} || echo ""))" >> $GITHUB_ENV
 
       - name: Create release
-        uses: softprops/action-gh-release@v0.1.7
+        uses: ncipollo/release-action@v1.8.8
         with:
           name: ${{ env.RELEASE_VERSION }}
-          tag_name: v${{ env.RELEASE_VERSION }}
+          tag: v${{ env.RELEASE_VERSION }}
           prerelease: ${{ !(github.ref == 'refs/heads/master') }}
-          target_commitish: ${{ github.sha }}
 
       - name: Login to registry
         run: >-
