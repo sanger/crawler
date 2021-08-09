@@ -28,18 +28,20 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - uses: nelonoel/branch-name@v1.0.1
+
       - name: Build and tag the image for testing and release
         run: >-
           docker build .
           --file Dockerfile
-          --tag docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
+          --tag docker.pkg.github.com/${IMAGE_NAME}:${BRANCH_NAME}
 
       - name: Create mysql test warehouse database and table
         run: >-
           docker run
           --network host
           --entrypoint ''
-          docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
+          docker.pkg.github.com/${IMAGE_NAME}:${BRANCH_NAME}
           python setup_test_db.py
 
       - name: Run tests against the image
@@ -47,12 +49,12 @@ jobs:
           docker run
           --network host
           --entrypoint ''
-          docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
+          docker.pkg.github.com/${IMAGE_NAME}:${BRANCH_NAME}
           python -m pytest --no-cov -vx
 
       - name: Set release tag
         # https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable
-        run: echo "RELEASE_VERSION=$([ ${GITHUB_REF##*/} = "develop" ] && printf '%s\n' $(cat .release-version)-develop || printf '%s\n' $(cat .release-version))" >> $GITHUB_ENV
+        run: echo "RELEASE_VERSION=$(printf '%s%s\n' $(cat .release-version) $([ ${BRANCH_NAME} = "develop" ] && printf '.%s-develop' ${GITHUB_RUN_ID} || echo ""))" >> $GITHUB_ENV
 
       - name: Create release
         uses: softprops/action-gh-release@v1
@@ -60,8 +62,7 @@ jobs:
           name: ${{ env.RELEASE_VERSION }}
           tag_name: v${{ env.RELEASE_VERSION }}
           prerelease: ${{ !(github.ref == 'refs/heads/master') }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          target_commitish: ${{ github.sha }}
 
       - name: Login to registry
         run: >-
@@ -73,7 +74,7 @@ jobs:
       - name: Tag image with release version
         run: >-
           docker tag
-          docker.pkg.github.com/${IMAGE_NAME}:${GITHUB_REF##*/}
+          docker.pkg.github.com/${IMAGE_NAME}:${BRANCH_NAME}
           docker.pkg.github.com/${IMAGE_NAME}:${{ env.RELEASE_VERSION }}
 
       - name: Push release tag image to registry
