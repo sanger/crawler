@@ -62,6 +62,7 @@ jobs:
           name: ${{ env.RELEASE_VERSION }}
           tag: v${{ env.RELEASE_VERSION }}
           prerelease: ${{ !(github.ref == 'refs/heads/master') }}
+          commit: ${{ github.sha }}
 
       - name: Login to registry
         run: >-
