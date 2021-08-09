@@ -14,14 +14,14 @@ jobs:
 
       - name: Get the latest release
         id: last_release
-        uses: InsonusK/get-latest-release@v1.0.1
+        uses: pozetroninc/github-action-get-latest-release@v0.5.0
         with:
-          myToken: ${{ github.token }}
-          exclude_types: draft|prerelease
-          view_top: 1
+          owner: Sanger
+          repo: Crawler
+          excludes: prerelease, draft
 
       - name: Compare releases
         run: >-
-          if [ "${{ steps.last_release.outputs.tag_name }}" = "$(printf 'v%s\n' $(cat .release-version))" ]; then
+          if [ "${{ steps.last_release.outputs.release }}" = "$(printf 'v%s\n' $(cat .release-version))" ]; then
             exit 1;
           fi
