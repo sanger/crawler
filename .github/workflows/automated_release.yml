@@ -62,8 +62,7 @@ jobs:
           name: ${{ env.RELEASE_VERSION }}
           tag_name: v${{ env.RELEASE_VERSION }}
           prerelease: ${{ !(github.ref == 'refs/heads/master') }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          target_commitish: ${{ github.sha }}
 
       - name: Login to registry
         run: >-
