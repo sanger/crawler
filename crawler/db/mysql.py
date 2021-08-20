@@ -1,6 +1,6 @@
 import logging
 from itertools import zip_longest
-from typing import Any, Dict, Iterable, List, cast
+from typing import Any, Dict, Generator, Iterable, List, cast
 
 import mysql.connector as mysql
 import sqlalchemy
@@ -11,7 +11,8 @@ from sqlalchemy.engine.base import Engine
 from crawler.constants import MLWH_RNA_ID
 from crawler.helpers.general_helpers import map_mongo_sample_to_mysql
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT, SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS
+from crawler.sql_queries import (SQL_MLWH_MULTIPLE_INSERT,
+                                 SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS)
 from crawler.types import Config, ModifiedRow
 
 logger = logging.getLogger(__name__)
@@ -210,7 +211,7 @@ def create_mysql_connection_engine(connection_string: str, database: str = "") -
     return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
 
 
-def mygrouper(size_group: int, iterable: Iterable) -> List[str]:
+def mygrouper(size_group: int, iterable: Iterable) -> Generator[List[Any], None, None]:
     """Creates group of size_group size from the list defined by the iterable.
 
     Arguments:
@@ -249,7 +250,7 @@ def update_most_recent_rna_ids(cursor: CMySQLCursor, rna_ids: List[str], chunk_s
 
     total_rows_affected = 0
     for rna_ids_group in rna_ids_groups:
-        cursor.execute(SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS % format_sql_list_str(rna_ids_group))
+        cursor.execute(SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS % list(format_sql_list_str(rna_ids_group)))
         total_rows_affected += cursor.rowcount
 
     logger.info(f"Updated { total_rows_affected } rows for most_recent_rna_ids")
