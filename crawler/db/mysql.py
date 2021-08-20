@@ -1,4 +1,5 @@
 import logging
+from itertools import zip_longest
 from typing import Any, Dict, List, cast
 
 import mysql.connector as mysql
@@ -7,9 +8,11 @@ from mysql.connector.connection_cext import CMySQLConnection
 from mysql.connector.cursor_cext import CMySQLCursor
 from sqlalchemy.engine.base import Engine
 
+from crawler.constants import MLWH_RNA_ID
 from crawler.helpers.general_helpers import map_mongo_sample_to_mysql
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
+from crawler.sql_queries import (SQL_MLWH_MULTIPLE_INSERT,
+                                 SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS)
 from crawler.types import Config, ModifiedRow
 
 logger = logging.getLogger(__name__)
@@ -106,6 +109,11 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
             f"A total of {total_rows_affected} rows were affected in MLWH. (Note: each updated row "
             "increases the count by 2, instead of 1)"
         )
+
+        rna_ids = [sample[MLWH_RNA_ID] for sample in values]
+        update_most_recent_rna_ids(cursor, rna_ids)
+        mysql_conn.commit()
+
     except Exception:
         logger.error("MLWH database executemany transaction failed")
         raise
@@ -202,6 +210,21 @@ def create_mysql_connection_engine(connection_string: str, database: str = "") -
         create_engine_string += f"/{database}"
 
     return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
+
+
+def update_most_recent_rna_ids(cursor, rna_ids):
+    CHUNK_SIZE=1000
+    rna_ids_groups = zip_longest(*(iter(rna_ids),) * CHUNK_SIZE)
+    total_rows_affected = 0
+    for rna_ids_group in rna_ids_groups:
+        cursor.execute(
+            SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS,
+            "'" + "','".join(rna_ids_group) + ","
+        )
+        total_rows_affected += cursor.rowcount
+
+    logger.debug(f"Updated { total_rows_affected } rows for most_recent_rna_ids")
+
 
 
 def insert_or_update_samples_in_mlwh(

@@ -1,6 +1,7 @@
 # flake8: noqa
 
-from crawler.constants import FIELD_COORDINATE, FIELD_PLATE_BARCODE, FIELD_ROOT_SAMPLE_ID, MONGO_DATETIME_FORMAT
+from crawler.constants import (FIELD_COORDINATE, FIELD_PLATE_BARCODE,
+                               FIELD_ROOT_SAMPLE_ID, MONGO_DATETIME_FORMAT)
 
 # SQL query to insert multiple rows into the MLWH
 SQL_MLWH_MULTIPLE_INSERT = """
@@ -140,3 +141,23 @@ SQL_MLWH_GET_CP_SAMPLES_BY_DATE = (
     f" AND created >= %(start_date)s"
     f" AND created < %(end_date)s"
 )
+
+SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS = """
+UPDATE lighthouse_sample AS lsample,
+(
+SELECT
+    temp_lsample.id,
+        IF(most_recent_samples.most_recent_id IS NULL, 0, 1) AS { MLWH_IS_CURRENT },
+        IF(most_recent_samples.most_recent_id IS NULL, NULL, temp_lsample.rna_id) AS { MLWH_CURRENT_RNA_ID }
+    FROM lighthouse_sample AS temp_lsample
+    LEFT JOIN (
+    SELECT rna_id, max(id) AS most_recent_id
+        FROM lighthouse_sample
+        GROUP BY rna_id
+) AS most_recent_samples
+ON temp_lsample.rna_id=most_recent_samples.rna_id AND temp_lsample.id=most_recent_samples.most_recent_id
+) AS updated_data
+SET lsample.`{ MLWH_IS_CURRENT }`=updated_data.`{ MLWH_IS_CURRENT }`, lsample.`{ MLWH_CURRENT_RNA_ID }`=updated_data.`{ MLWH_CURRENT_RNA_ID }`
+WHERE  lsample.id=updated_data.id
+AND lsample.rna_id IN (%s);
+"""

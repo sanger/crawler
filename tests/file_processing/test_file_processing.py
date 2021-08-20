@@ -12,79 +12,44 @@ from bson.objectid import ObjectId
 from mysql.connector.connection_cext import CMySQLConnection
 from pytest import mark
 
-from crawler.constants import (
-    COLLECTION_IMPORTS,
-    COLLECTION_SAMPLES,
-    COLLECTION_SOURCE_PLATES,
-    DART_STATE_PENDING,
-    FIELD_BARCODE,
-    FIELD_CH1_CQ,
-    FIELD_CH1_RESULT,
-    FIELD_CH1_TARGET,
-    FIELD_CH2_CQ,
-    FIELD_CH2_RESULT,
-    FIELD_CH2_TARGET,
-    FIELD_CH3_CQ,
-    FIELD_CH3_RESULT,
-    FIELD_CH3_TARGET,
-    FIELD_CH4_CQ,
-    FIELD_CH4_RESULT,
-    FIELD_CH4_TARGET,
-    FIELD_COORDINATE,
-    FIELD_CREATED_AT,
-    FIELD_DATE_TESTED,
-    FIELD_FILE_NAME,
-    FIELD_FILE_NAME_DATE,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_LAB_ID,
-    FIELD_LH_SAMPLE_UUID,
-    FIELD_LH_SOURCE_PLATE_UUID,
-    FIELD_LINE_NUMBER,
-    FIELD_MUST_SEQUENCE,
-    FIELD_PLATE_BARCODE,
-    FIELD_PREFERENTIALLY_SEQUENCE,
-    FIELD_RESULT,
-    FIELD_RNA_ID,
-    FIELD_RNA_PCR_ID,
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_SOURCE,
-    FIELD_UPDATED_AT,
-    FIELD_VIRAL_PREP_ID,
-    MLWH_CH1_CQ,
-    MLWH_CH1_RESULT,
-    MLWH_CH1_TARGET,
-    MLWH_CH2_CQ,
-    MLWH_CH2_RESULT,
-    MLWH_CH2_TARGET,
-    MLWH_CH3_CQ,
-    MLWH_CH3_RESULT,
-    MLWH_CH3_TARGET,
-    MLWH_CH4_CQ,
-    MLWH_CH4_RESULT,
-    MLWH_CH4_TARGET,
-    MLWH_COORDINATE,
-    MLWH_CREATED_AT,
-    MLWH_DATE_TESTED,
-    MLWH_FILTERED_POSITIVE,
-    MLWH_FILTERED_POSITIVE_TIMESTAMP,
-    MLWH_FILTERED_POSITIVE_VERSION,
-    MLWH_LAB_ID,
-    MLWH_MONGODB_ID,
-    MLWH_MUST_SEQUENCE,
-    MLWH_PLATE_BARCODE,
-    MLWH_PREFERENTIALLY_SEQUENCE,
-    MLWH_RESULT,
-    MLWH_RNA_ID,
-    MLWH_ROOT_SAMPLE_ID,
-    MLWH_SOURCE,
-    MLWH_TABLE_NAME,
-    MLWH_UPDATED_AT,
-    RESULT_VALUE_POSITIVE,
-)
+from crawler.constants import (COLLECTION_IMPORTS, COLLECTION_SAMPLES,
+                               COLLECTION_SOURCE_PLATES, DART_STATE_PENDING,
+                               FIELD_BARCODE, FIELD_CH1_CQ, FIELD_CH1_RESULT,
+                               FIELD_CH1_TARGET, FIELD_CH2_CQ,
+                               FIELD_CH2_RESULT, FIELD_CH2_TARGET,
+                               FIELD_CH3_CQ, FIELD_CH3_RESULT,
+                               FIELD_CH3_TARGET, FIELD_CH4_CQ,
+                               FIELD_CH4_RESULT, FIELD_CH4_TARGET,
+                               FIELD_COORDINATE, FIELD_CREATED_AT,
+                               FIELD_DATE_TESTED, FIELD_FILE_NAME,
+                               FIELD_FILE_NAME_DATE, FIELD_FILTERED_POSITIVE,
+                               FIELD_FILTERED_POSITIVE_TIMESTAMP,
+                               FIELD_FILTERED_POSITIVE_VERSION, FIELD_LAB_ID,
+                               FIELD_LH_SAMPLE_UUID,
+                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_LINE_NUMBER,
+                               FIELD_MUST_SEQUENCE, FIELD_PLATE_BARCODE,
+                               FIELD_PREFERENTIALLY_SEQUENCE, FIELD_RESULT,
+                               FIELD_RNA_ID, FIELD_RNA_PCR_ID,
+                               FIELD_ROOT_SAMPLE_ID, FIELD_SOURCE,
+                               FIELD_UPDATED_AT, FIELD_VIRAL_PREP_ID,
+                               MLWH_CH1_CQ, MLWH_CH1_RESULT, MLWH_CH1_TARGET,
+                               MLWH_CH2_CQ, MLWH_CH2_RESULT, MLWH_CH2_TARGET,
+                               MLWH_CH3_CQ, MLWH_CH3_RESULT, MLWH_CH3_TARGET,
+                               MLWH_CH4_CQ, MLWH_CH4_RESULT, MLWH_CH4_TARGET,
+                               MLWH_COORDINATE, MLWH_CREATED_AT,
+                               MLWH_CURRENT_RNA_ID, MLWH_DATE_TESTED,
+                               MLWH_FILTERED_POSITIVE,
+                               MLWH_FILTERED_POSITIVE_TIMESTAMP,
+                               MLWH_FILTERED_POSITIVE_VERSION, MLWH_IS_CURRENT,
+                               MLWH_LAB_ID, MLWH_MONGODB_ID,
+                               MLWH_MUST_SEQUENCE, MLWH_PLATE_BARCODE,
+                               MLWH_PREFERENTIALLY_SEQUENCE, MLWH_RESULT,
+                               MLWH_RNA_ID, MLWH_ROOT_SAMPLE_ID, MLWH_SOURCE,
+                               MLWH_TABLE_NAME, MLWH_UPDATED_AT,
+                               RESULT_VALUE_POSITIVE)
 from crawler.db.mongo import get_mongo_collection
-from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
+from crawler.file_processing import (ERRORS_DIR, SUCCESSES_DIR, Centre,
+                                     CentreFile)
 from crawler.types import Config, ModifiedRow, SampleDoc
 from tests.conftest import generate_new_object_for_string
 
@@ -2189,3 +2154,62 @@ def test_docs_to_insert_updated_with_source_plate_handles_duplicate_existing_bar
 
     assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
     assert centre_file.logging_collection.aggregator_types["TYPE 25"].count_errors == 1
+
+
+
+## Test unique_current_rna_id and is_current
+def test_unique_current_rna_id(config, mlwh_connection):
+    # check when flag set in config it adds default lab id
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some_file.csv", centre)
+
+
+    docs: List[SampleDoc] = [
+        {
+            "_id": ObjectId("5f562d9931d9959b92544721"),
+            FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_RNA_ID: "TC-rna-00000029_A01",
+            FIELD_PLATE_BARCODE: "TC-rna-00000029",
+            FIELD_COORDINATE: "H11",
+            FIELD_RESULT: "Negative",
+            FIELD_SOURCE: "Test Centre",
+            FIELD_LAB_ID: "TC",
+        },
+        {
+            "_id": ObjectId("5f562d9931d9959b92544722"),
+            FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_RNA_ID: "TC-rna-00000029_A01",
+            FIELD_PLATE_BARCODE: "TC-rna-00000029",
+            FIELD_COORDINATE: "H11",
+            FIELD_RESULT: "Positive",
+            FIELD_SOURCE: "Test Centre",
+            FIELD_LAB_ID: "TC",
+        },
+        {
+            "_id": ObjectId("5f562d9931d9959b92544723"),
+            FIELD_ROOT_SAMPLE_ID: "ABC00000005",
+            FIELD_RNA_ID: "TC-rna-00000029_B01",
+            FIELD_PLATE_BARCODE: "TC-rna-00000029",
+            FIELD_COORDINATE: "H11",
+            FIELD_RESULT: "Negative",
+            FIELD_SOURCE: "Test Centre",
+            FIELD_LAB_ID: "TC",
+        },
+    ]
+
+    centre_file.insert_samples_from_docs_into_mlwh(docs)
+
+    cursor = mlwh_connection.cursor(dictionary=True)
+    cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
+    rows = cursor.fetchall()
+    cursor.close()
+
+    assert len(rows) == 3
+    assert rows[0][MLWH_IS_CURRENT] == 0
+    assert rows[0][MLWH_CURRENT_RNA_ID] is None
+    assert rows[1][MLWH_IS_CURRENT] == 1
+    assert rows[1][MLWH_CURRENT_RNA_ID] == rows[1][MLWH_RNA_ID]
+    assert rows[2][MLWH_IS_CURRENT] == 1
+    assert rows[2][MLWH_CURRENT_RNA_ID] == rows[2][MLWH_RNA_ID]
+
+
