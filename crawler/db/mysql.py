@@ -249,7 +249,7 @@ def update_most_recent_rna_ids(cursor: CMySQLCursor, rna_ids: List[str], chunk_s
 
     total_rows_affected = 0
     for rna_ids_group in rna_ids_groups:
-        cursor.execute(SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS % list(format_sql_list_str(rna_ids_group)))
+        cursor.execute(SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS % format_sql_list_str(rna_ids_group))
         total_rows_affected += cursor.rowcount
 
     logger.info(f"Updated { total_rows_affected } rows for most_recent_rna_ids")
