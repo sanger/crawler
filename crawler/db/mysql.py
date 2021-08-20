@@ -11,8 +11,7 @@ from sqlalchemy.engine.base import Engine
 from crawler.constants import MLWH_RNA_ID
 from crawler.helpers.general_helpers import map_mongo_sample_to_mysql
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.sql_queries import (SQL_MLWH_MULTIPLE_INSERT,
-                                 SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS)
+from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT, SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS
 from crawler.types import Config, ModifiedRow
 
 logger = logging.getLogger(__name__)
