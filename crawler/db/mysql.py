@@ -1,6 +1,6 @@
 import logging
 from itertools import zip_longest
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, Iterable, List, cast
 
 import mysql.connector as mysql
 import sqlalchemy
@@ -11,8 +11,7 @@ from sqlalchemy.engine.base import Engine
 from crawler.constants import MLWH_RNA_ID
 from crawler.helpers.general_helpers import map_mongo_sample_to_mysql
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.sql_queries import (SQL_MLWH_MULTIPLE_INSERT,
-                                 SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS)
+from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT, SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS
 from crawler.types import Config, ModifiedRow
 
 logger = logging.getLogger(__name__)
@@ -109,8 +108,7 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
             f"A total of {total_rows_affected} rows were affected in MLWH. (Note: each updated row "
             "increases the count by 2, instead of 1)"
         )
-
-        rna_ids = [sample[MLWH_RNA_ID] for sample in values]
+        rna_ids = [sample[MLWH_RNA_ID] for sample in values if MLWH_RNA_ID in sample]
         update_most_recent_rna_ids(cursor, rna_ids)
         mysql_conn.commit()
 
@@ -212,19 +210,49 @@ def create_mysql_connection_engine(connection_string: str, database: str = "") -
     return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
 
 
-def update_most_recent_rna_ids(cursor, rna_ids):
-    CHUNK_SIZE=1000
-    rna_ids_groups = zip_longest(*(iter(rna_ids),) * CHUNK_SIZE)
+def mygrouper(size_group: int, iterable: Iterable) -> List[str]:
+    """Creates group of size_group size from the list defined by the iterable.
+
+    Arguments:
+        size_group (int): maximum number of elements for each group (the last group could have
+        less elements to fit)
+        iterable (Iterable): iterator on the list we want to split in groups
+    """
+    args = [iter(iterable)] * size_group
+    return ([e for e in t if e is not None] for t in zip_longest(*args))
+
+
+def format_sql_list_str(mylist: List[str]) -> str:
+    """Writes the provided list as a SQL list of strings.
+
+    Arguments:
+        mylist (List<str>): list of strings that we want to format in SQL
+    """
+    if len(mylist) == 0:
+        return "()"
+    if len(mylist) == 1:
+        return f"('{ mylist[0]}')"
+    else:
+        return str(tuple(mylist))
+
+
+def update_most_recent_rna_ids(cursor: CMySQLCursor, rna_ids: List[str], chunk_size: int = 1000) -> None:
+    """Receives a cursor with an active connection and a list of rna_ids and
+    run an update on the list of rna ids in groups of chunk_size
+
+    Arguments:
+        cursor: database cursor with an active connection
+        rna_ids: List of strings with the rna ids where we want to update the most recent columns
+        chunk_size: Size of the groups in which we will process this update.
+    """
+    rna_ids_groups = mygrouper(chunk_size, rna_ids)
+
     total_rows_affected = 0
     for rna_ids_group in rna_ids_groups:
-        cursor.execute(
-            SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS,
-            "'" + "','".join(rna_ids_group) + ","
-        )
+        cursor.execute(SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS % format_sql_list_str(rna_ids_group))
         total_rows_affected += cursor.rowcount
 
-    logger.debug(f"Updated { total_rows_affected } rows for most_recent_rna_ids")
-
+    logger.info(f"Updated { total_rows_affected } rows for most_recent_rna_ids")
 
 
 def insert_or_update_samples_in_mlwh(
