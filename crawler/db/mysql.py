@@ -222,18 +222,17 @@ def mygrouper(size_group: int, iterable: Iterable) -> Generator[List[Any], None,
     return ([e for e in t if e is not None] for t in zip_longest(*args))
 
 
-def format_sql_list_str(mylist: List[str]) -> str:
+def format_sql_list_str(str_list: List[str]) -> str:
     """Writes the provided list as a SQL list of strings.
 
     Arguments:
-        mylist (List<str>): list of strings that we want to format in SQL
+        str_list (List<str>): list of strings that we want to format in SQL
+
+    Example Output:
+        "('item_1','item_2')"
     """
-    if len(mylist) == 0:
-        return "()"
-    if len(mylist) == 1:
-        return f"('{ mylist[0]}')"
-    else:
-        return str(tuple(mylist))
+    quoted_strings = [f"'{s}'" for s in str_list]
+    return f"({','.join(quoted_strings)})"
 
 
 def update_most_recent_rna_ids(cursor: CMySQLCursor, rna_ids: List[str], chunk_size: int = 1000) -> None:
