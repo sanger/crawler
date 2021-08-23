@@ -9,7 +9,7 @@ from crawler.db.mysql import (
     create_mysql_connection,
     create_mysql_connection_engine,
     format_sql_list_str,
-    mygrouper,
+    partition,
     run_mysql_execute_formatted_query,
     run_mysql_executemany_query,
     update_most_recent_rna_ids,
@@ -140,18 +140,18 @@ def test_create_mysql_connection_engine_result_can_initiate_connection(config):
     assert connection.closed is False
 
 
-def test_mygrouper():
-    assert list(mygrouper(3, [1, 2, 3, 4, 5])) == [[1, 2, 3], [4, 5]]
-    assert list(mygrouper(3, [])) == []
-    assert list(mygrouper(3, [1])) == [[1]]
-    assert list(mygrouper(3, [1, 2, 3, 4, 5, 6, 7, 8, 9])) == [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-    assert list(mygrouper(4, [1, 2, 3, 4, 5, 6, 7, 8, 9])) == [[1, 2, 3, 4], [5, 6, 7, 8], [9]]
+def test_partition():
+    assert list(partition([1, 2, 3, 4, 5], 3)) == [[1, 2, 3], [4, 5]]
+    assert list(partition([], 3)) == []
+    assert list(partition([1], 3)) == [[1]]
+    assert list(partition([1, 2, 3, 4, 5, 6, 7, 8, 9], 3)) == [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    assert list(partition([1, 2, 3, 4, 5, 6, 7, 8, 9], 4)) == [[1, 2, 3, 4], [5, 6, 7, 8], [9]]
 
 
 def test_format_sql_list_str():
     assert format_sql_list_str([]) == "()"
     assert format_sql_list_str(["1"]) == "('1')"
-    assert format_sql_list_str(["1", "2"]) == "('1', '2')"
+    assert format_sql_list_str(["1", "2"]) == "('1','2')"
 
 
 def test_update_most_recent_rna_ids(config):
