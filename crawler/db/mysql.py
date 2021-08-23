@@ -245,7 +245,7 @@ def update_most_recent_rna_ids(cursor: CMySQLCursor, rna_ids: List[str], chunk_s
         rna_ids: List of strings with the rna ids where we want to update the most recent columns
         chunk_size: Size of the groups in which we will process this update.
     """
-    rna_ids_groups = partition(chunk_size, rna_ids)
+    rna_ids_groups = partition(rna_ids, chunk_size)
 
     total_rows_affected = 0
     for rna_ids_group in rna_ids_groups:
