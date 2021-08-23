@@ -66,7 +66,6 @@ from crawler.constants import (
     MLWH_CH4_TARGET,
     MLWH_COORDINATE,
     MLWH_CREATED_AT,
-    MLWH_CURRENT_RNA_ID,
     MLWH_DATE_TESTED,
     MLWH_FILTERED_POSITIVE,
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
@@ -2240,8 +2239,5 @@ def test_unique_current_rna_id(config, mlwh_connection):
 
     assert len(rows) == 3
     assert rows[0][MLWH_IS_CURRENT] == 0
-    assert rows[0][MLWH_CURRENT_RNA_ID] is None
     assert rows[1][MLWH_IS_CURRENT] == 1
-    assert rows[1][MLWH_CURRENT_RNA_ID] == rows[1][MLWH_RNA_ID]
     assert rows[2][MLWH_IS_CURRENT] == 1
-    assert rows[2][MLWH_CURRENT_RNA_ID] == rows[2][MLWH_RNA_ID]
