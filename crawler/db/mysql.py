@@ -1,5 +1,5 @@
 import logging
-from itertools import zip_longest
+from itertools import islice
 from typing import Any, Dict, Generator, Iterable, List, cast
 
 import mysql.connector as mysql
@@ -210,16 +210,17 @@ def create_mysql_connection_engine(connection_string: str, database: str = "") -
     return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
 
 
-def mygrouper(size_group: int, iterable: Iterable) -> Generator[List[Any], None, None]:
-    """Creates group of size_group size from the list defined by the iterable.
+def partition(iterable: Iterable, partition_size: int) -> Generator[List[Any], None, None]:
+    """Creates partitions of partition_size size from the list defined by the iterable.
 
     Arguments:
-        size_group (int): maximum number of elements for each group (the last group could have
-        less elements to fit)
-        iterable (Iterable): iterator on the list we want to split in groups
+        iterable (Iterable):  iterator on the list we want to split into partitions.
+        partition_size (int): maximum number of elements for each partition (the last group could have
+                              fewer elements to fit).
     """
-    args = [iter(iterable)] * size_group
-    return ([e for e in t if e is not None] for t in zip_longest(*args))
+    dup_iter = iter(iterable)
+    while part := list(islice(dup_iter, partition_size)):
+        yield part
 
 
 def format_sql_list_str(str_list: List[str]) -> str:
@@ -244,7 +245,7 @@ def update_most_recent_rna_ids(cursor: CMySQLCursor, rna_ids: List[str], chunk_s
         rna_ids: List of strings with the rna ids where we want to update the most recent columns
         chunk_size: Size of the groups in which we will process this update.
     """
-    rna_ids_groups = mygrouper(chunk_size, rna_ids)
+    rna_ids_groups = partition(chunk_size, rna_ids)
 
     total_rows_affected = 0
     for rna_ids_group in rna_ids_groups:
