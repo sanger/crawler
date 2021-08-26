@@ -2192,8 +2192,8 @@ def test_docs_to_insert_updated_with_source_plate_handles_duplicate_existing_bar
     assert centre_file.logging_collection.aggregator_types["TYPE 25"].count_errors == 1
 
 
-# Test unique_current_rna_id and is_current
-def test_unique_current_rna_id(config, mlwh_connection):
+# Test is_current set to true for latest results only
+def test_is_current_correctly_set(config, mlwh_connection):
     centre = Centre(config, config.CENTRES[0])
     centre_file = CentreFile("some_file.csv", centre)
 
