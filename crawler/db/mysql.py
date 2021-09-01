@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Dict, List, cast
+from itertools import islice
+from typing import Any, Dict, Generator, Iterable, List, cast
 
 import mysql.connector as mysql
 import sqlalchemy
@@ -7,9 +8,10 @@ from mysql.connector.connection_cext import CMySQLConnection
 from mysql.connector.cursor_cext import CMySQLCursor
 from sqlalchemy.engine.base import Engine
 
+from crawler.constants import MLWH_RNA_ID
 from crawler.helpers.general_helpers import map_mongo_sample_to_mysql
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
+from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT, SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS
 from crawler.types import Config, ModifiedRow
 
 logger = logging.getLogger(__name__)
@@ -106,6 +108,10 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
             f"A total of {total_rows_affected} rows were affected in MLWH. (Note: each updated row "
             "increases the count by 2, instead of 1)"
         )
+        rna_ids = [sample[MLWH_RNA_ID] for sample in values if MLWH_RNA_ID in sample]
+        update_most_recent_rna_ids(cursor, rna_ids)
+        mysql_conn.commit()
+
     except Exception:
         logger.error("MLWH database executemany transaction failed")
         raise
@@ -202,6 +208,51 @@ def create_mysql_connection_engine(connection_string: str, database: str = "") -
         create_engine_string += f"/{database}"
 
     return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
+
+
+def partition(iterable: Iterable, partition_size: int) -> Generator[List[Any], None, None]:
+    """Creates partitions of partition_size size from the list defined by the iterable.
+
+    Arguments:
+        iterable (Iterable):  iterator on the list we want to split into partitions.
+        partition_size (int): maximum number of elements for each partition (the last group could have
+                              fewer elements to fit).
+    """
+    dup_iter = iter(iterable)
+    while part := list(islice(dup_iter, partition_size)):
+        yield part
+
+
+def format_sql_list_str(str_list: List[str]) -> str:
+    """Writes the provided list as a SQL list of strings.
+
+    Arguments:
+        str_list (List<str>): list of strings that we want to format in SQL
+
+    Example Output:
+        "('item_1','item_2')"
+    """
+    quoted_strings = [f"'{s}'" for s in str_list]
+    return f"({','.join(quoted_strings)})"
+
+
+def update_most_recent_rna_ids(cursor: CMySQLCursor, rna_ids: List[str], chunk_size: int = 1000) -> None:
+    """Receives a cursor with an active connection and a list of rna_ids and
+    run an update on the list of rna ids in groups of chunk_size
+
+    Arguments:
+        cursor: database cursor with an active connection
+        rna_ids: List of strings with the rna ids where we want to update the most recent columns
+        chunk_size: Size of the groups in which we will process this update.
+    """
+    rna_ids_groups = partition(rna_ids, chunk_size)
+
+    total_rows_affected = 0
+    for rna_ids_group in rna_ids_groups:
+        cursor.execute(SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS % format_sql_list_str(rna_ids_group))
+        total_rows_affected += cursor.rowcount
+
+    logger.info(f"Updated { total_rows_affected } rows for most_recent_rna_ids")
 
 
 def insert_or_update_samples_in_mlwh(

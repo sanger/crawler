@@ -133,6 +133,7 @@ MLWH_CREATED_AT: Final[str] = "created_at"
 MLWH_UPDATED_AT: Final[str] = "updated_at"
 MLWH_MUST_SEQUENCE: Final[str] = "must_sequence"
 MLWH_PREFERENTIALLY_SEQUENCE: Final[str] = "preferentially_sequence"
+MLWH_IS_CURRENT: Final[str] = "is_current"
 
 # datetime formats
 MONGO_DATETIME_FORMAT: Final[str] = "%y%m%d_%H%M"

@@ -62,11 +62,18 @@ CREATE TABLE `unified_warehouse_test`.`lighthouse_sample` (
 `updated_at` datetime DEFAULT NULL COMMENT 'When this record was last updated',
 `must_sequence` tinyint(1) DEFAULT NULL COMMENT 'PAM provided value whether sample is of high importance',
 `preferentially_sequence` tinyint(1) DEFAULT NULL COMMENT 'PAM provided value whether sample is important',
+`is_current` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Identifies if this sample has the most up to date information for the same rna_id',
 PRIMARY KEY (`id`),
-UNIQUE KEY `index_lighthouse_sample_on_root_sample_id_and_rna_id_and_result` (`root_sample_id`,`rna_id`,`result`),
-UNIQUE KEY `index_lighthouse_sample_on_lh_sample_uuid` (`lh_sample_uuid`),
-UNIQUE KEY `index_lighthouse_sample_on_mongodb_id` (`mongodb_id`),
-KEY `index_lighthouse_sample_on_date_tested` (`date_tested`)
+  UNIQUE KEY `index_lighthouse_sample_on_root_sample_id_and_rna_id_and_result` (`root_sample_id`,`rna_id`,`result`),
+  UNIQUE KEY `index_lighthouse_sample_on_cog_uk_id` (`cog_uk_id`),
+  UNIQUE KEY `index_lighthouse_sample_on_lh_sample_uuid` (`lh_sample_uuid`),
+  UNIQUE KEY `index_lighthouse_sample_on_mongodb_id` (`mongodb_id`),
+  KEY `index_lighthouse_sample_on_date_tested` (`date_tested`),
+  KEY `index_lighthouse_sample_on_filtered_positive` (`filtered_positive`),
+  KEY `index_lighthouse_sample_on_rna_id` (`rna_id`),
+  KEY `index_lighthouse_sample_on_plate_barcode_and_created_at` (`plate_barcode`,`created_at`),
+  KEY `index_lighthouse_sample_on_result` (`result`),
+  KEY `index_lighthouse_sample_on_is_current` (`is_current`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 """
 
@@ -242,6 +249,10 @@ drop_table_subject_types = """
 DROP TABLE IF EXISTS `event_warehouse_test`.`subject_types`;
 """
 
+drop_view_cherrypicked_samples = """
+DROP VIEW IF EXISTS `unified_warehouse_test`.`cherrypicked_samples`;
+"""
+
 drop_table_role_types = """
 DROP TABLE IF EXISTS `event_warehouse_test`.`role_types`;
 """
@@ -361,6 +372,8 @@ CREATE VIEW `unified_warehouse_test`.`cherrypicked_samples` AS
 with sql_engine.connect() as connection:
     connection.execute(create_db)
 
+    print("*** Dropping view CHERRYPICKED SAMPLES ***")
+    connection.execute(drop_view_cherrypicked_samples)
     print("*** Dropping table ROLES ***")
     connection.execute(drop_table_roles)
     print("*** Dropping table ROLE TYPES ***")
