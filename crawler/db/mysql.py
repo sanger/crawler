@@ -11,7 +11,11 @@ from sqlalchemy.engine.base import Engine
 from crawler.constants import MLWH_RNA_ID
 from crawler.helpers.general_helpers import map_mongo_sample_to_mysql
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT, SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS
+from crawler.sql_queries import (
+    SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT,
+    SQL_MLWH_MARK_MOST_RECENT_SAMPLES_BY_HIGHEST_ID,
+    SQL_MLWH_MULTIPLE_INSERT,
+)
 from crawler.types import Config, ModifiedRow
 
 logger = logging.getLogger(__name__)
@@ -249,7 +253,9 @@ def update_most_recent_rna_ids(cursor: CMySQLCursor, rna_ids: List[str], chunk_s
 
     total_rows_affected = 0
     for rna_ids_group in rna_ids_groups:
-        cursor.execute(SQL_MLWH_UPDATE_MOST_RECENT_SAMPLE_COLUMNS % format_sql_list_str(rna_ids_group))
+        rna_ids_sql = format_sql_list_str(rna_ids_group)
+        cursor.execute(SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT % rna_ids_sql)
+        cursor.execute(SQL_MLWH_MARK_MOST_RECENT_SAMPLES_BY_HIGHEST_ID % rna_ids_sql)
         total_rows_affected += cursor.rowcount
 
     logger.info(f"Updated { total_rows_affected } rows for most_recent_rna_ids")
