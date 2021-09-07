@@ -72,8 +72,7 @@ PRIMARY KEY (`id`),
   KEY `index_lighthouse_sample_on_filtered_positive` (`filtered_positive`),
   KEY `index_lighthouse_sample_on_rna_id` (`rna_id`),
   KEY `index_lighthouse_sample_on_plate_barcode_and_created_at` (`plate_barcode`,`created_at`),
-  KEY `index_lighthouse_sample_on_result` (`result`),
-  KEY `index_lighthouse_sample_on_is_current` (`is_current`)
+  KEY `index_lighthouse_sample_on_result` (`result`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 """
 
