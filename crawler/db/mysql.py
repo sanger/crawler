@@ -11,11 +11,7 @@ from sqlalchemy.engine.base import Engine
 from crawler.constants import MLWH_RNA_ID
 from crawler.helpers.general_helpers import map_mongo_sample_to_mysql
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.sql_queries import (
-    SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT,
-    SQL_MLWH_MARK_MOST_RECENT_SAMPLES_BY_HIGHEST_ID,
-    SQL_MLWH_MULTIPLE_INSERT,
-)
+from crawler.sql_queries import SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT, SQL_MLWH_MULTIPLE_INSERT
 from crawler.types import Config, ModifiedRow
 
 logger = logging.getLogger(__name__)
@@ -92,6 +88,9 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
             f"Attempting to insert or update {num_values} rows in the MLWH database in batches of {ROWS_PER_QUERY}"
         )
 
+        rna_ids = [sample[MLWH_RNA_ID] for sample in values if MLWH_RNA_ID in sample]
+        reset_is_current_flags(cursor, rna_ids)
+
         while values_index < num_values:
             logger.debug(f"Inserting records between {values_index} and {values_index + ROWS_PER_QUERY}")
             cursor.executemany(sql_query, values[values_index : (values_index + ROWS_PER_QUERY)])  # noqa: E203
@@ -112,8 +111,6 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
             f"A total of {total_rows_affected} rows were affected in MLWH. (Note: each updated row "
             "increases the count by 2, instead of 1)"
         )
-        rna_ids = [sample[MLWH_RNA_ID] for sample in values if MLWH_RNA_ID in sample]
-        update_most_recent_rna_ids(cursor, rna_ids)
         mysql_conn.commit()
 
     except Exception:
@@ -240,13 +237,14 @@ def format_sql_list_str(str_list: List[str]) -> str:
     return f"({','.join(quoted_strings)})"
 
 
-def update_most_recent_rna_ids(cursor: CMySQLCursor, rna_ids: List[str], chunk_size: int = 1000) -> None:
+def reset_is_current_flags(cursor: CMySQLCursor, rna_ids: List[str], chunk_size: int = 1000) -> None:
     """Receives a cursor with an active connection and a list of rna_ids and
-    run an update on the list of rna ids in groups of chunk_size
+    runs an update resetting any is_current flags to false for all the specified
+    rna ids in groups of chunk_size.
 
     Arguments:
-        cursor: database cursor with an active connection
-        rna_ids: List of strings with the rna ids where we want to update the most recent columns
+        cursor: Database cursor with an active connection.
+        rna_ids: List of strings with the rna ids where we want to reset the is_current flags to false.
         chunk_size: Size of the groups in which we will process this update.
     """
     rna_ids_groups = partition(rna_ids, chunk_size)
@@ -255,10 +253,9 @@ def update_most_recent_rna_ids(cursor: CMySQLCursor, rna_ids: List[str], chunk_s
     for rna_ids_group in rna_ids_groups:
         rna_ids_sql = format_sql_list_str(rna_ids_group)
         cursor.execute(SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT % rna_ids_sql)
-        cursor.execute(SQL_MLWH_MARK_MOST_RECENT_SAMPLES_BY_HIGHEST_ID % rna_ids_sql)
         total_rows_affected += cursor.rowcount
 
-    logger.info(f"Updated { total_rows_affected } rows for most_recent_rna_ids")
+    logger.info(f"Reset is_current to false for { total_rows_affected } rows.")
 
 
 def insert_or_update_samples_in_mlwh(

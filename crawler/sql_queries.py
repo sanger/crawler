@@ -144,15 +144,3 @@ SQL_MLWH_GET_CP_SAMPLES_BY_DATE = (
 SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT = (
     f"UPDATE lighthouse_sample SET { MLWH_IS_CURRENT } = false WHERE { MLWH_RNA_ID } IN %s"
 )
-
-SQL_MLWH_MARK_MOST_RECENT_SAMPLES_BY_HIGHEST_ID = (
-    f"UPDATE lighthouse_sample SET { MLWH_IS_CURRENT } = true"
-    f" WHERE id IN ("
-    f"   SELECT most_recent.max_id FROM ("
-    f"     SELECT { MLWH_RNA_ID }, max(id) AS max_id"
-    f"       FROM lighthouse_sample"
-    f"       WHERE { MLWH_RNA_ID } IN %s"
-    f"       GROUP BY { MLWH_RNA_ID }"
-    f"   ) as most_recent"
-    f" )"
-)
