@@ -255,6 +255,16 @@ def map_mongo_sample_to_mysql(doc: SampleDoc, copy_date: bool = False) -> Dict[s
 
 
 def set_is_current_on_mysql_samples(samples: Iterable[Dict[str, str]]) -> List[Dict[str, str]]:
+    """Creates a copy of the samples passed in, adding is_current values to each sample.
+    is_current will be True for all samples unless there is a repeated RNA ID, in which case
+    only the last one is set to True.
+
+    Arguments:
+        samples: Iterable[Dict[str, str]] -- An iterable containing dictionaries of sample data.
+
+    Returns:
+        A list containing new copies of the samples in the same order with is_current populated for each.
+    """
     reversed_samples: List[Dict[str, Any]] = []
     existing_rna_ids = set()
     for sample in reversed(list(samples)):
@@ -262,7 +272,8 @@ def set_is_current_on_mysql_samples(samples: Iterable[Dict[str, str]]) -> List[D
             reversed_samples.append({**sample, MLWH_IS_CURRENT: sample[MLWH_RNA_ID] not in existing_rna_ids})
             existing_rna_ids.add(sample[MLWH_RNA_ID])
         except KeyError:
-            reversed_samples.append(sample.copy())
+            # If there is no RNA ID (shouldn't happen) set is_current to False
+            reversed_samples.append({**sample, MLWH_IS_CURRENT: False})
 
     return list(reversed(reversed_samples))
 
