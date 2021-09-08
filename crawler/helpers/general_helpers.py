@@ -266,11 +266,12 @@ def set_is_current_on_mysql_samples(samples: Iterable[Dict[str, str]]) -> List[D
         A list containing new copies of the samples in the same order with is_current populated for each.
     """
     reversed_samples: List[Dict[str, Any]] = []
-    existing_rna_ids = set()
+    existing_rna_ids = set([""])
     for sample in reversed(list(samples)):
         try:
-            reversed_samples.append({**sample, MLWH_IS_CURRENT: sample[MLWH_RNA_ID] not in existing_rna_ids})
-            existing_rna_ids.add(sample[MLWH_RNA_ID])
+            rna_id = sample[MLWH_RNA_ID]
+            reversed_samples.append({**sample, MLWH_IS_CURRENT: rna_id not in existing_rna_ids})
+            existing_rna_ids.add(rna_id)
         except KeyError:
             # If there is no RNA ID (shouldn't happen) set is_current to False
             reversed_samples.append({**sample, MLWH_IS_CURRENT: False})

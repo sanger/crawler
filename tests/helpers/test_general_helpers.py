@@ -226,7 +226,8 @@ def test_set_is_current_on_mysql_samples_with_duplicates():
 def test_set_is_current_on_mysql_samples_missing_rna_ids():
     input_samples = [
         {MLWH_RNA_ID: "rna_A01"},
-        {},
+        {"id": "test"},
+        {MLWH_RNA_ID: ""},
         {MLWH_RNA_ID: "rna_H12"},
     ]
     output_samples = set_is_current_on_mysql_samples(input_samples)
@@ -235,8 +236,8 @@ def test_set_is_current_on_mysql_samples_missing_rna_ids():
     assert not any(MLWH_IS_CURRENT in sample for sample in input_samples)
 
     # Output samples were updated to have correct is_current values and correct order
-    assert [sample[MLWH_RNA_ID] for sample in output_samples if MLWH_RNA_ID in sample] == ["rna_A01", "rna_H12"]
-    assert [sample[MLWH_IS_CURRENT] for sample in output_samples] == [True, False, True]
+    assert [sample[MLWH_RNA_ID] for sample in output_samples if MLWH_RNA_ID in sample] == ["rna_A01", "", "rna_H12"]
+    assert [sample[MLWH_IS_CURRENT] for sample in output_samples] == [True, False, False, True]
 
 
 def test_get_dart_well_index(config):
