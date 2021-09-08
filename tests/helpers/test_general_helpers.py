@@ -203,7 +203,7 @@ def test_set_is_current_on_mysql_samples_no_duplicates():
 
     # Output samples were updated to all have is_current and are in input order
     assert [sample[MLWH_RNA_ID] for sample in output_samples] == ["rna_A01", "rna_D07", "rna_H12"]
-    assert all(sample[MLWH_IS_CURRENT] == True for sample in output_samples)
+    assert all(sample[MLWH_IS_CURRENT] for sample in output_samples)
 
 
 def test_set_is_current_on_mysql_samples_with_duplicates():

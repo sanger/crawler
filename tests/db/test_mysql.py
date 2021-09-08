@@ -160,25 +160,23 @@ def test_reset_is_current_flags(config):
 
     cursor = connection.cursor()
 
+    def insert_lighthouse_sample(cursor, root_sample_id, rna_id, result, is_current):
+        cursor.execute(
+            (
+                f"INSERT INTO lighthouse_sample (root_sample_id, rna_id, result, is_current)"
+                f" VALUES ('{root_sample_id}', '{rna_id}', '{result}', {is_current});"
+            )
+        )
+
     try:
         cursor.execute("DELETE FROM lighthouse_sample;")
 
-        cursor.execute(
-            "INSERT INTO lighthouse_sample (root_sample_id, rna_id, result, is_current) VALUES ('rna_1','rna_A01', 'negative', 0);"
-        )
+        insert_lighthouse_sample(cursor, "rna_1", "rna_A01", "negative", 0)
+        insert_lighthouse_sample(cursor, "rna_2", "rna_A01", "positive", 1)
+        insert_lighthouse_sample(cursor, "rna_3", "rna_A02", "positive", 0)
+        insert_lighthouse_sample(cursor, "rna_4", "rna_A02", "negative", 1)
+        insert_lighthouse_sample(cursor, "rna_5", "rna_A03", "positive", 1)
 
-        cursor.execute(
-            "INSERT INTO lighthouse_sample (root_sample_id, rna_id, result, is_current) VALUES ('rna_2','rna_A01', 'positive', 1);"
-        )
-        cursor.execute(
-            "INSERT INTO lighthouse_sample (root_sample_id, rna_id, result, is_current) VALUES ('rna_3','rna_A02', 'positive', 0);"
-        )
-        cursor.execute(
-            "INSERT INTO lighthouse_sample (root_sample_id, rna_id, result, is_current) VALUES ('rna_4','rna_A02', 'negative', 1);"
-        )
-        cursor.execute(
-            "INSERT INTO lighthouse_sample (root_sample_id, rna_id, result, is_current) VALUES ('rna_5','rna_A03', 'positive', 1);"
-        )
         connection.commit()
 
         cursor.execute("SELECT root_sample_id FROM lighthouse_sample WHERE is_current=0;")
