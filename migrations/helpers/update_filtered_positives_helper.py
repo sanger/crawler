@@ -85,7 +85,7 @@ def positive_result_samples_from_mongo(config: Config, plate_barcodes: Optional[
         # this should take everything from the cursor find into RAM memory
         # (assuming you have enough memory)
         # should we project to an object that has fewer fields?
-        return list(samples_collection.aggregate(pipeline))
+        return list(samples_collection.aggregate(pipeline))  # type: ignore
 
 
 def update_filtered_positive_fields(

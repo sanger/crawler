@@ -528,7 +528,7 @@ class CentreFile:
             exception (BulkWriteError): Exception with all the failed writes.
         """
         try:
-            wrong_instances = [write_error["op"] for write_error in exception.details["writeErrors"]]
+            wrong_instances = [write_error["op"] for write_error in exception.details["writeErrors"]]  # type: ignore
             samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
             for wrong_instance in wrong_instances:
                 # To identify TYPE 7 we need to do a search for
@@ -662,7 +662,7 @@ class CentreFile:
             # logger.debug(e)
 
             # filter out any errors that are duplicates by checking the code in e.details["writeErrors"]
-            filtered_errors = list(filter(lambda x: x["code"] != 11000, e.details["writeErrors"]))
+            filtered_errors = list(filter(lambda x: x["code"] != 11000, e.details["writeErrors"]))  # type: ignore
 
             if (num_filtered_errors := len(filtered_errors)) > 0:
                 logger.info(
@@ -670,7 +670,7 @@ class CentreFile:
                 )
                 logger.info(filtered_errors[0])
 
-            self.docs_inserted = e.details["nInserted"]
+            self.docs_inserted = e.details["nInserted"]  # type: ignore
 
             logger.info(f"{self.docs_inserted} documents inserted into mongo")
 
@@ -687,7 +687,7 @@ class CentreFile:
                 """
                 return error["op"][FIELD_MONGODB_ID]
 
-            errored_ids = list(map(get_errored_ids, e.details["writeErrors"]))
+            errored_ids = list(map(get_errored_ids, e.details["writeErrors"]))  # type: ignore
 
             logger.warning(f"{len(errored_ids)} records were not inserted")
 
