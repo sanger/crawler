@@ -281,7 +281,7 @@ def test_update_mlwh_filtered_positive_fields_calls_to_update_samples(config, ml
         },
     ]
 
-    result = update_mlwh_filtered_positive_fields(config, mongo_samples)  # type: ignore
+    result = update_mlwh_filtered_positive_fields(config, mongo_samples)
     assert result is True
 
     cursor = mlwh_connection.cursor()

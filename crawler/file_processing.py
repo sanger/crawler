@@ -528,7 +528,7 @@ class CentreFile:
             exception (BulkWriteError): Exception with all the failed writes.
         """
         try:
-            wrong_instances = [write_error["op"] for write_error in exception.details["writeErrors"]]  # type: ignore
+            wrong_instances = [write_error["op"] for write_error in exception.details["writeErrors"]]
             samples_collection = get_mongo_collection(self.get_db(), COLLECTION_SAMPLES)
             for wrong_instance in wrong_instances:
                 # To identify TYPE 7 we need to do a search for
@@ -662,7 +662,7 @@ class CentreFile:
             # logger.debug(e)
 
             # filter out any errors that are duplicates by checking the code in e.details["writeErrors"]
-            filtered_errors = list(filter(lambda x: x["code"] != 11000, e.details["writeErrors"]))  # type: ignore
+            filtered_errors = list(filter(lambda x: x["code"] != 11000, e.details["writeErrors"]))
 
             if (num_filtered_errors := len(filtered_errors)) > 0:
                 logger.info(
@@ -670,7 +670,7 @@ class CentreFile:
                 )
                 logger.info(filtered_errors[0])
 
-            self.docs_inserted = e.details["nInserted"]  # type: ignore
+            self.docs_inserted = e.details["nInserted"]
 
             logger.info(f"{self.docs_inserted} documents inserted into mongo")
 
@@ -687,7 +687,7 @@ class CentreFile:
                 """
                 return error["op"][FIELD_MONGODB_ID]
 
-            errored_ids = list(map(get_errored_ids, e.details["writeErrors"]))  # type: ignore
+            errored_ids = list(map(get_errored_ids, e.details["writeErrors"]))
 
             logger.warning(f"{len(errored_ids)} records were not inserted")
 
@@ -1418,7 +1418,13 @@ class CentreFile:
         Returns:
             bool - whether the value lies within range
         """
-        return range_min <= num.to_decimal() <= range_max
+        min_compare = range_min.compare(num.to_decimal())
+        is_within_min = min_compare != Decimal("1") and not min_compare.is_nan()
+
+        max_compare = range_max.compare(num.to_decimal())
+        is_within_max = max_compare != Decimal("-1") and not max_compare.is_nan()
+
+        return is_within_min and is_within_max
 
     def is_row_channel_cq_in_range(self, row: ModifiedRow, line_number: int, fieldname: str) -> bool:
         """Is the channel cq within the specified range.

@@ -290,7 +290,7 @@ def parse_decimal128(value: ModifiedRowValue) -> Optional[Decimal]:
     if not isinstance(value, Decimal128):
         return None
 
-    return value.to_decimal()
+    return (Decimal)(value.to_decimal())
 
 
 def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:

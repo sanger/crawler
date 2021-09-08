@@ -1160,6 +1160,10 @@ def test_is_within_cq_range():
     assert CentreFile.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("-0.00000001")) is False
     assert CentreFile.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("100.00000001")) is False
 
+    assert CentreFile.is_within_cq_range(Decimal("NaN"), Decimal("100.0"), Decimal128("50.0")) is False
+    assert CentreFile.is_within_cq_range(Decimal("0.0"), Decimal("NaN"), Decimal128("50.0")) is False
+    assert CentreFile.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("NaN")) is False
+
 
 def test_where_ct_channel_cq_value_is_not_within_range(config):
     centre = Centre(config, config.CENTRES[0])
