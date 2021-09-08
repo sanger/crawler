@@ -3,7 +3,7 @@ from datetime import datetime
 from crawler.constants import COLLECTION_SAMPLES, FIELD_CREATED_AT, MONGO_DATETIME_FORMAT
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
-from crawler.helpers.general_helpers import map_mongo_sample_to_mysql
+from crawler.helpers.general_helpers import map_mongo_sample_to_mysql, set_is_current_on_mysql_samples
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from crawler.types import Config
 from migrations.helpers.shared_helper import print_exception, valid_datetime_string
@@ -51,13 +51,15 @@ def update_mlwh_with_legacy_samples(config: Config, s_start_datetime: str = "", 
             for doc in mongo_docs:
                 mongo_docs_for_sql.append(map_mongo_sample_to_mysql(doc, copy_date=True))
 
+            mysql_samples = set_is_current_on_mysql_samples(mongo_docs_for_sql)
+
         if number_docs_found > 0:
-            print(f"Updating MLWH database for {len(mongo_docs_for_sql)} sample documents")
+            print(f"Updating MLWH database for {len(mysql_samples)} sample documents")
             # create connection to the MLWH database
             with create_mysql_connection(config, False) as mlwh_conn:
 
                 # execute sql query to insert/update timestamps into MLWH
-                run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
+                run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mysql_samples)
         else:
             print("No documents found for this timestamp range, nothing to insert or update in MLWH")
 

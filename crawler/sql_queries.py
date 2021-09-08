@@ -34,7 +34,8 @@ lh_source_plate_uuid,
 must_sequence,
 preferentially_sequence,
 created_at,
-updated_at
+updated_at,
+is_current
 )
 VALUES (
 %(mongodb_id)s,
@@ -66,7 +67,8 @@ VALUES (
 %(must_sequence)s,
 %(preferentially_sequence)s,
 %(created_at)s,
-%(updated_at)s
+%(updated_at)s,
+%(is_current)s
 )
 ON DUPLICATE KEY UPDATE
 plate_barcode=VALUES(plate_barcode),

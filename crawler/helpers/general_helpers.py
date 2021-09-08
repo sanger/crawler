@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from importlib import import_module
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
 
 import pysftp
 from bson.decimal128 import Decimal128
@@ -69,6 +69,7 @@ from crawler.constants import (
     MLWH_FILTERED_POSITIVE,
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
     MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_IS_CURRENT,
     MLWH_LAB_ID,
     MLWH_LH_SAMPLE_UUID,
     MLWH_LH_SOURCE_PLATE_UUID,
@@ -251,6 +252,19 @@ def map_mongo_sample_to_mysql(doc: SampleDoc, copy_date: bool = False) -> Dict[s
         value[MLWH_UPDATED_AT] = dt
 
     return value
+
+
+def set_is_current_on_mysql_samples(samples: Iterable[Dict[str, str]]) -> List[Dict[str, str]]:
+    reversed_samples: List[Dict[str, Any]] = []
+    existing_rna_ids = set()
+    for sample in reversed(list(samples)):
+        try:
+            reversed_samples.append({**sample, MLWH_IS_CURRENT: sample[MLWH_RNA_ID] not in existing_rna_ids})
+            existing_rna_ids.add(sample[MLWH_RNA_ID])
+        except KeyError:
+            reversed_samples.append(sample.copy())
+
+    return list(reversed(reversed_samples))
 
 
 def parse_decimal128(value: ModifiedRowValue) -> Optional[Decimal]:

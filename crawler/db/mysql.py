@@ -9,7 +9,7 @@ from mysql.connector.cursor_cext import CMySQLCursor
 from sqlalchemy.engine.base import Engine
 
 from crawler.constants import MLWH_RNA_ID
-from crawler.helpers.general_helpers import map_mongo_sample_to_mysql
+from crawler.helpers.general_helpers import map_mongo_sample_to_mysql, set_is_current_on_mysql_samples
 from crawler.helpers.logging_helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT, SQL_MLWH_MULTIPLE_INSERT
 from crawler.types import Config, ModifiedRow
@@ -276,12 +276,15 @@ def insert_or_update_samples_in_mlwh(
     Returns:
         {bool} -- True if the insert was successful; otherwise False
     """
-    values = list(map(map_mongo_sample_to_mysql, samples))
+    mysql_samples = map(map_mongo_sample_to_mysql, samples)
+    parsed_samples = set_is_current_on_mysql_samples(mysql_samples)
     mysql_conn = create_mysql_connection(config=config, readonly=False)
 
     if mysql_conn is not None and mysql_conn.is_connected():
         try:
-            run_mysql_executemany_query(mysql_conn=mysql_conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=values)
+            run_mysql_executemany_query(
+                mysql_conn=mysql_conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=parsed_samples
+            )
 
             logger.debug(logging_messages["success"]["msg"])
             return True
