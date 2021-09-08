@@ -223,6 +223,22 @@ def test_set_is_current_on_mysql_samples_with_duplicates():
     assert [sample[MLWH_IS_CURRENT] for sample in output_samples] == [True, False, True, True]
 
 
+def test_set_is_current_on_mysql_samples_missing_rna_ids():
+    input_samples = [
+        {MLWH_RNA_ID: "rna_A01"},
+        {},
+        {MLWH_RNA_ID: "rna_H12"},
+    ]
+    output_samples = set_is_current_on_mysql_samples(input_samples)
+
+    # Input samples were not updated -- don't mutate what you were passed
+    assert not any(MLWH_IS_CURRENT in sample for sample in input_samples)
+
+    # Output samples were updated to have correct is_current values and correct order
+    assert [sample[MLWH_RNA_ID] for sample in output_samples if MLWH_RNA_ID in sample] == ["rna_A01", "rna_H12"]
+    assert [sample[MLWH_IS_CURRENT] for sample in output_samples] == [True, False, True]
+
+
 def test_get_dart_well_index(config):
     coordinate = None
     assert get_dart_well_index(coordinate) is None, "Expected to be unable to determine a well index for no sample"
