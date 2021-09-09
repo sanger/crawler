@@ -267,6 +267,10 @@ def set_is_current_on_mysql_samples(samples: Iterable[Dict[str, str]]) -> List[D
     """
     reversed_samples: List[Dict[str, Any]] = []
     existing_rna_ids = set([""])
+
+    # Process samples in reverse order so that duplicate RNA IDs presented earlier in the file are processed later in
+    # the loop and can be set to is_current = False.  We will reverse the parsed samples again when returning to retain
+    # the original order.
     for sample in reversed(list(samples)):
         try:
             rna_id = sample[MLWH_RNA_ID]
