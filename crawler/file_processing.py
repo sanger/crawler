@@ -1416,13 +1416,13 @@ class CentreFile:
             num {Decimal128} - the number to be tested
 
         Returns:
-            bool - whether the value lies within range
+            bool -- True if all the values provided are not NaN and num is between, or equal to, range_min and range_max
         """
         min_compare = range_min.compare(num.to_decimal())
-        is_within_min = min_compare != Decimal("1") and not min_compare.is_nan()
+        is_within_min = (min_compare != Decimal("1")) and not min_compare.is_nan()
 
         max_compare = range_max.compare(num.to_decimal())
-        is_within_max = max_compare != Decimal("-1") and not max_compare.is_nan()
+        is_within_max = (max_compare != Decimal("-1")) and not max_compare.is_nan()
 
         return is_within_min and is_within_max
 
