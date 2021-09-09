@@ -28,7 +28,7 @@ from crawler.helpers.cherrypicked_samples import (
     get_cherrypicked_samples,
     remove_cherrypicked_samples,
 )
-from crawler.helpers.general_helpers import map_mongo_sample_to_mysql
+from crawler.helpers.general_helpers import map_mongo_sample_to_mysql, set_is_current_on_mysql_samples
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
 from crawler.types import Config, SampleDoc, SourcePlateDoc
 from migrations.helpers.shared_helper import valid_datetime_string
@@ -131,14 +131,16 @@ def migrate_all_dbs(config: Config, s_start_datetime: str = "", s_end_datetime: 
         for sample in samples:
             mongo_docs_for_sql.append(map_mongo_sample_to_mysql(sample, copy_date=True))
 
-        if (num_sql_docs := len(mongo_docs_for_sql)) > 0:
+        mysql_samples = set_is_current_on_mysql_samples(mongo_docs_for_sql)
+
+        if (num_sql_docs := len(mysql_samples)) > 0:
             logger.info(f"Updating MLWH database for {num_sql_docs} sample documents")
             # create connection to the MLWH database
             with create_mysql_connection(config, False) as mlwh_conn:
                 # 5. update the MLWH (should be an idempotent operation)
 
                 # TODO: Check here would migration dbs be ok?
-                run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mongo_docs_for_sql)
+                run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mysql_samples)
 
             # 6. add all the plates with non-cherrypicked samples (determined in step 2) to DART, as well as any
             #       positive samples in these plates
