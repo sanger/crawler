@@ -40,6 +40,7 @@ from crawler.constants import (
     MLWH_FILTERED_POSITIVE,
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
     MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_IS_CURRENT,
     MLWH_LAB_ID,
     MLWH_LH_SAMPLE_UUID,
     MLWH_LH_SOURCE_PLATE_UUID,
@@ -64,6 +65,7 @@ from crawler.helpers.general_helpers import (
     map_mongo_sample_to_mysql,
     pad_coordinate,
     parse_decimal128,
+    set_is_current_on_mysql_samples,
     unpad_coordinate,
 )
 from crawler.types import SampleDoc
@@ -186,6 +188,56 @@ def test_map_mongo_sample_to_mysql_with_copy(config):
     assert result[MLWH_LH_SOURCE_PLATE_UUID] is None
     assert result[MLWH_CREATED_AT] == created_at
     assert result[MLWH_UPDATED_AT] == updated_at
+
+
+def test_set_is_current_on_mysql_samples_no_duplicates():
+    input_samples = [
+        {MLWH_RNA_ID: "rna_A01"},
+        {MLWH_RNA_ID: "rna_D07"},
+        {MLWH_RNA_ID: "rna_H12"},
+    ]
+    output_samples = set_is_current_on_mysql_samples(input_samples)
+
+    # Input samples were not updated -- don't mutate what you were passed
+    assert not any(MLWH_IS_CURRENT in sample for sample in input_samples)
+
+    # Output samples were updated to all have is_current and are in input order
+    assert [sample[MLWH_RNA_ID] for sample in output_samples] == ["rna_A01", "rna_D07", "rna_H12"]
+    assert all(sample[MLWH_IS_CURRENT] for sample in output_samples)
+
+
+def test_set_is_current_on_mysql_samples_with_duplicates():
+    input_samples = [
+        {MLWH_RNA_ID: "rna_A01"},
+        {MLWH_RNA_ID: "rna_D07"},
+        {MLWH_RNA_ID: "rna_H12"},
+        {MLWH_RNA_ID: "rna_D07"},
+    ]
+    output_samples = set_is_current_on_mysql_samples(input_samples)
+
+    # Input samples were not updated -- don't mutate what you were passed
+    assert not any(MLWH_IS_CURRENT in sample for sample in input_samples)
+
+    # Output samples were updated to have correct is_current values and correct order
+    assert [sample[MLWH_RNA_ID] for sample in output_samples] == ["rna_A01", "rna_D07", "rna_H12", "rna_D07"]
+    assert [sample[MLWH_IS_CURRENT] for sample in output_samples] == [True, False, True, True]
+
+
+def test_set_is_current_on_mysql_samples_missing_rna_ids():
+    input_samples = [
+        {MLWH_RNA_ID: "rna_A01"},
+        {"id": "test"},
+        {MLWH_RNA_ID: ""},
+        {MLWH_RNA_ID: "rna_H12"},
+    ]
+    output_samples = set_is_current_on_mysql_samples(input_samples)
+
+    # Input samples were not updated -- don't mutate what you were passed
+    assert not any(MLWH_IS_CURRENT in sample for sample in input_samples)
+
+    # Output samples were updated to have correct is_current values and correct order
+    assert [sample[MLWH_RNA_ID] for sample in output_samples if MLWH_RNA_ID in sample] == ["rna_A01", "", "rna_H12"]
+    assert [sample[MLWH_IS_CURRENT] for sample in output_samples] == [True, False, False, True]
 
 
 def test_get_dart_well_index(config):

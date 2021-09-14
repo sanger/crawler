@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Dict, List, cast
+from itertools import islice
+from typing import Any, Dict, Generator, Iterable, List, cast
 
 import mysql.connector as mysql
 import sqlalchemy
@@ -7,9 +8,10 @@ from mysql.connector.connection_cext import CMySQLConnection
 from mysql.connector.cursor_cext import CMySQLCursor
 from sqlalchemy.engine.base import Engine
 
-from crawler.helpers.general_helpers import map_mongo_sample_to_mysql
+from crawler.constants import MLWH_RNA_ID
+from crawler.helpers.general_helpers import map_mongo_sample_to_mysql, set_is_current_on_mysql_samples
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.sql_queries import SQL_MLWH_MULTIPLE_INSERT
+from crawler.sql_queries import SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT, SQL_MLWH_MULTIPLE_INSERT
 from crawler.types import Config, ModifiedRow
 
 logger = logging.getLogger(__name__)
@@ -86,6 +88,9 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
             f"Attempting to insert or update {num_values} rows in the MLWH database in batches of {ROWS_PER_QUERY}"
         )
 
+        rna_ids = [sample[MLWH_RNA_ID] for sample in values if MLWH_RNA_ID in sample]
+        reset_is_current_flags(cursor, rna_ids)
+
         while values_index < num_values:
             logger.debug(f"Inserting records between {values_index} and {values_index + ROWS_PER_QUERY}")
             cursor.executemany(sql_query, values[values_index : (values_index + ROWS_PER_QUERY)])  # noqa: E203
@@ -106,6 +111,8 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
             f"A total of {total_rows_affected} rows were affected in MLWH. (Note: each updated row "
             "increases the count by 2, instead of 1)"
         )
+        mysql_conn.commit()
+
     except Exception:
         logger.error("MLWH database executemany transaction failed")
         raise
@@ -204,6 +211,53 @@ def create_mysql_connection_engine(connection_string: str, database: str = "") -
     return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
 
 
+def partition(iterable: Iterable, partition_size: int) -> Generator[List[Any], None, None]:
+    """Creates partitions of partition_size size from the list defined by the iterable.
+
+    Arguments:
+        iterable (Iterable):  iterator on the list we want to split into partitions.
+        partition_size (int): maximum number of elements for each partition (the last group could have
+                              fewer elements to fit).
+    """
+    dup_iter = iter(iterable)
+    while part := list(islice(dup_iter, partition_size)):
+        yield part
+
+
+def format_sql_list_str(str_list: List[str]) -> str:
+    """Writes the provided list as a SQL list of strings.
+
+    Arguments:
+        str_list (List<str>): list of strings that we want to format in SQL
+
+    Example Output:
+        "('item_1','item_2')"
+    """
+    quoted_strings = [f"'{s}'" for s in str_list]
+    return f"({','.join(quoted_strings)})"
+
+
+def reset_is_current_flags(cursor: CMySQLCursor, rna_ids: List[str], chunk_size: int = 1000) -> None:
+    """Receives a cursor with an active connection and a list of rna_ids and
+    runs an update resetting any is_current flags to false for all the specified
+    rna ids in groups of chunk_size.
+
+    Arguments:
+        cursor: Database cursor with an active connection.
+        rna_ids: List of strings with the rna ids where we want to reset the is_current flags to false.
+        chunk_size: Size of the groups in which we will process this update.
+    """
+    rna_ids_groups = partition(rna_ids, chunk_size)
+
+    total_rows_affected = 0
+    for rna_ids_group in rna_ids_groups:
+        rna_ids_sql = format_sql_list_str(rna_ids_group)
+        cursor.execute(SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT % rna_ids_sql)
+        total_rows_affected += cursor.rowcount
+
+    logger.info(f"Reset is_current to false for { total_rows_affected } rows.")
+
+
 def insert_or_update_samples_in_mlwh(
     samples: List[ModifiedRow],
     config: Config,
@@ -222,12 +276,15 @@ def insert_or_update_samples_in_mlwh(
     Returns:
         {bool} -- True if the insert was successful; otherwise False
     """
-    values = list(map(map_mongo_sample_to_mysql, samples))
+    mysql_samples = map(map_mongo_sample_to_mysql, samples)
+    parsed_samples = set_is_current_on_mysql_samples(mysql_samples)
     mysql_conn = create_mysql_connection(config=config, readonly=False)
 
     if mysql_conn is not None and mysql_conn.is_connected():
         try:
-            run_mysql_executemany_query(mysql_conn=mysql_conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=values)
+            run_mysql_executemany_query(
+                mysql_conn=mysql_conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=parsed_samples
+            )
 
             logger.debug(logging_messages["success"]["msg"])
             return True

@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from importlib import import_module
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
 
 import pysftp
 from bson.decimal128 import Decimal128
@@ -69,6 +69,7 @@ from crawler.constants import (
     MLWH_FILTERED_POSITIVE,
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
     MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_IS_CURRENT,
     MLWH_LAB_ID,
     MLWH_LH_SAMPLE_UUID,
     MLWH_LH_SOURCE_PLATE_UUID,
@@ -253,6 +254,35 @@ def map_mongo_sample_to_mysql(doc: SampleDoc, copy_date: bool = False) -> Dict[s
     return value
 
 
+def set_is_current_on_mysql_samples(samples: Iterable[Dict[str, str]]) -> List[Dict[str, str]]:
+    """Creates a copy of the samples passed in, adding is_current values to each sample.
+    is_current will be True for all samples unless there is a repeated RNA ID, in which case
+    only the last one is set to True.
+
+    Arguments:
+        samples: Iterable[Dict[str, str]] -- An iterable containing dictionaries of sample data.
+
+    Returns:
+        A list containing new copies of the samples in the same order with is_current populated for each.
+    """
+    reversed_samples: List[Dict[str, Any]] = []
+    existing_rna_ids = set([""])
+
+    # Process samples in reverse order so that duplicate RNA IDs presented earlier in the file are processed later in
+    # the loop and can be set to is_current = False.  We will reverse the parsed samples again when returning to retain
+    # the original order.
+    for sample in reversed(list(samples)):
+        try:
+            rna_id = sample[MLWH_RNA_ID]
+            reversed_samples.append({**sample, MLWH_IS_CURRENT: rna_id not in existing_rna_ids})
+            existing_rna_ids.add(rna_id)
+        except KeyError:
+            # If there is no RNA ID (shouldn't happen) set is_current to False
+            reversed_samples.append({**sample, MLWH_IS_CURRENT: False})
+
+    return list(reversed(reversed_samples))
+
+
 def parse_decimal128(value: ModifiedRowValue) -> Optional[Decimal]:
     """Converts mongo Decimal128 to MySQL compatible Decimal format.
 
@@ -265,7 +295,7 @@ def parse_decimal128(value: ModifiedRowValue) -> Optional[Decimal]:
     if not isinstance(value, Decimal128):
         return None
 
-    return value.to_decimal()
+    return (Decimal)(value.to_decimal())
 
 
 def get_dart_well_index(coordinate: Optional[str]) -> Optional[int]:

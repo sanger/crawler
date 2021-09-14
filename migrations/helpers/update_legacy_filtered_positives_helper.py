@@ -65,7 +65,7 @@ def filtered_positive_fields_set(config: Config, start_datetime: datetime, end_d
         mongo_db = get_mongo_db(config, client)
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
-        num_versioned_samples = samples_collection.count_documents(
+        num_versioned_samples: int = samples_collection.count_documents(
             {
                 FIELD_CREATED_AT: {"$gte": start_datetime, "$lt": end_datetime},
                 FIELD_FILTERED_POSITIVE: {"$exists": True},

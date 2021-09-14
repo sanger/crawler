@@ -1,6 +1,6 @@
 # flake8: noqa
 
-from crawler.constants import FIELD_COORDINATE, FIELD_PLATE_BARCODE, FIELD_ROOT_SAMPLE_ID, MONGO_DATETIME_FORMAT
+from crawler.constants import FIELD_COORDINATE, FIELD_PLATE_BARCODE, FIELD_ROOT_SAMPLE_ID, MLWH_IS_CURRENT, MLWH_RNA_ID
 
 # SQL query to insert multiple rows into the MLWH
 SQL_MLWH_MULTIPLE_INSERT = """
@@ -34,7 +34,8 @@ lh_source_plate_uuid,
 must_sequence,
 preferentially_sequence,
 created_at,
-updated_at
+updated_at,
+is_current
 )
 VALUES (
 %(mongodb_id)s,
@@ -66,7 +67,8 @@ VALUES (
 %(must_sequence)s,
 %(preferentially_sequence)s,
 %(created_at)s,
-%(updated_at)s
+%(updated_at)s,
+%(is_current)s
 )
 ON DUPLICATE KEY UPDATE
 plate_barcode=VALUES(plate_barcode),
@@ -139,4 +141,8 @@ SQL_MLWH_GET_CP_SAMPLES_BY_DATE = (
     f" AND `{FIELD_PLATE_BARCODE}` IN %(plate_barcodes)s"
     f" AND created >= %(start_date)s"
     f" AND created < %(end_date)s"
+)
+
+SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT = (
+    f"UPDATE lighthouse_sample SET { MLWH_IS_CURRENT } = false WHERE { MLWH_RNA_ID } IN %s"
 )

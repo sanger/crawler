@@ -70,6 +70,7 @@ from crawler.constants import (
     MLWH_FILTERED_POSITIVE,
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
     MLWH_FILTERED_POSITIVE_VERSION,
+    MLWH_IS_CURRENT,
     MLWH_LAB_ID,
     MLWH_MONGODB_ID,
     MLWH_MUST_SEQUENCE,
@@ -1159,6 +1160,10 @@ def test_is_within_cq_range():
     assert CentreFile.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("-0.00000001")) is False
     assert CentreFile.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("100.00000001")) is False
 
+    assert CentreFile.is_within_cq_range(Decimal("NaN"), Decimal("100.0"), Decimal128("50.0")) is False
+    assert CentreFile.is_within_cq_range(Decimal("0.0"), Decimal("NaN"), Decimal128("50.0")) is False
+    assert CentreFile.is_within_cq_range(Decimal("0.0"), Decimal("100.0"), Decimal128("NaN")) is False
+
 
 def test_where_ct_channel_cq_value_is_not_within_range(config):
     centre = Centre(config, config.CENTRES[0])
@@ -2189,3 +2194,54 @@ def test_docs_to_insert_updated_with_source_plate_handles_duplicate_existing_bar
 
     assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
     assert centre_file.logging_collection.aggregator_types["TYPE 25"].count_errors == 1
+
+
+# Test is_current set to true for latest results only
+def test_is_current_correctly_set(config, mlwh_connection):
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some_file.csv", centre)
+
+    docs: List[SampleDoc] = [
+        {
+            "_id": ObjectId("5f562d9931d9959b92544721"),
+            FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_RNA_ID: "TC-rna-00000029_A01",
+            FIELD_PLATE_BARCODE: "TC-rna-00000029",
+            FIELD_COORDINATE: "H11",
+            FIELD_RESULT: "Negative",
+            FIELD_SOURCE: "Test Centre",
+            FIELD_LAB_ID: "TC",
+        },
+        {
+            "_id": ObjectId("5f562d9931d9959b92544722"),
+            FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_RNA_ID: "TC-rna-00000029_A01",
+            FIELD_PLATE_BARCODE: "TC-rna-00000029",
+            FIELD_COORDINATE: "H11",
+            FIELD_RESULT: "Positive",
+            FIELD_SOURCE: "Test Centre",
+            FIELD_LAB_ID: "TC",
+        },
+        {
+            "_id": ObjectId("5f562d9931d9959b92544723"),
+            FIELD_ROOT_SAMPLE_ID: "ABC00000005",
+            FIELD_RNA_ID: "TC-rna-00000029_B01",
+            FIELD_PLATE_BARCODE: "TC-rna-00000029",
+            FIELD_COORDINATE: "H11",
+            FIELD_RESULT: "Negative",
+            FIELD_SOURCE: "Test Centre",
+            FIELD_LAB_ID: "TC",
+        },
+    ]
+
+    centre_file.insert_samples_from_docs_into_mlwh(docs)
+
+    cursor = mlwh_connection.cursor(dictionary=True)
+    cursor.execute(f"SELECT * FROM {config.MLWH_DB_DBNAME}.{MLWH_TABLE_NAME}")
+    rows = cursor.fetchall()
+    cursor.close()
+
+    assert len(rows) == 3
+    assert rows[0][MLWH_IS_CURRENT] == 0
+    assert rows[1][MLWH_IS_CURRENT] == 1
+    assert rows[2][MLWH_IS_CURRENT] == 1
