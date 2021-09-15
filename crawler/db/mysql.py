@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from itertools import islice
 from typing import Any, Dict, Generator, Iterable, List, cast
 
@@ -224,19 +225,6 @@ def partition(iterable: Iterable, partition_size: int) -> Generator[List[Any], N
         yield part
 
 
-def format_sql_list_str(str_list: List[str]) -> str:
-    """Writes the provided list as a SQL list of strings.
-
-    Arguments:
-        str_list (List<str>): list of strings that we want to format in SQL
-
-    Example Output:
-        "('item_1','item_2')"
-    """
-    quoted_strings = [f"'{s}'" for s in str_list]
-    return f"({','.join(quoted_strings)})"
-
-
 def reset_is_current_flags(cursor: CMySQLCursor, rna_ids: List[str], chunk_size: int = 1000) -> None:
     """Receives a cursor with an active connection and a list of rna_ids and
     runs an update resetting any is_current flags to false for all the specified
@@ -251,8 +239,9 @@ def reset_is_current_flags(cursor: CMySQLCursor, rna_ids: List[str], chunk_size:
 
     total_rows_affected = 0
     for rna_ids_group in rna_ids_groups:
-        rna_ids_sql = format_sql_list_str(rna_ids_group)
-        cursor.execute(SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT % rna_ids_sql)
+        values = {"rna_ids": rna_ids_group, "updated_at": datetime.now()}
+        print(values)
+        cursor.execute(SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT, values)
         total_rows_affected += cursor.rowcount
 
     logger.info(f"Reset is_current to false for { total_rows_affected } rows.")

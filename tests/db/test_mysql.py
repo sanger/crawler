@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import mysql.connector as mysql
@@ -8,7 +9,6 @@ from sqlalchemy.engine.base import Engine
 from crawler.db.mysql import (
     create_mysql_connection,
     create_mysql_connection_engine,
-    format_sql_list_str,
     partition,
     reset_is_current_flags,
     run_mysql_execute_formatted_query,
@@ -148,12 +148,6 @@ def test_partition():
     assert list(partition([1, 2, 3, 4, 5, 6, 7, 8, 9], 4)) == [[1, 2, 3, 4], [5, 6, 7, 8], [9]]
 
 
-def test_format_sql_list_str():
-    assert format_sql_list_str([]) == "()"
-    assert format_sql_list_str(["1"]) == "('1')"
-    assert format_sql_list_str(["1", "2"]) == "('1','2')"
-
-
 def test_reset_is_current_flags(config):
     sql_engine = create_mysql_connection_engine(config.WAREHOUSES_RW_CONN_STRING, config.ML_WH_DB)
     connection = sql_engine.raw_connection()
@@ -163,8 +157,8 @@ def test_reset_is_current_flags(config):
     def insert_lighthouse_sample(cursor, root_sample_id, rna_id, result, is_current):
         cursor.execute(
             (
-                f"INSERT INTO lighthouse_sample (root_sample_id, rna_id, result, is_current)"
-                f" VALUES ('{root_sample_id}', '{rna_id}', '{result}', {is_current});"
+                f"INSERT INTO lighthouse_sample (root_sample_id, rna_id, result, updated_at, is_current)"
+                f" VALUES ('{root_sample_id}', '{rna_id}', '{result}', '2020-01-02 03:04:05', {is_current});"
             )
         )
 
@@ -187,6 +181,9 @@ def test_reset_is_current_flags(config):
         rows = [row[0] for row in cursor.fetchall()]
         assert rows == ["rna_2", "rna_4", "rna_5"]
 
+        cursor.execute("SELECT DISTINCT(updated_at) FROM lighthouse_sample;")
+        assert len(cursor.fetchall()) == 1
+
         reset_is_current_flags(cursor, ["rna_A01", "rna_A03"])
         connection.commit()
 
@@ -197,6 +194,9 @@ def test_reset_is_current_flags(config):
         cursor.execute("SELECT root_sample_id FROM lighthouse_sample WHERE is_current=1;")
         rows = [row[0] for row in cursor.fetchall()]
         assert rows == ["rna_4"]
+
+        cursor.execute("SELECT DISTINCT(updated_at) FROM lighthouse_sample;")
+        assert len(cursor.fetchall()) == 2
 
     finally:
         cursor.execute("DELETE FROM lighthouse_sample;")
