@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
@@ -199,7 +200,7 @@ def test_reset_is_current_flags(mlwh_rw_db):
 def test_insert_samples_in_mlwh_inserts_one_complete_sample_correctly(config, mlwh_rw_db, logging_messages):
     _, cursor = mlwh_rw_db
 
-    with patch("crawler.db.mysql.map_mongo_sample_to_mysql") as mapper:
+    with patch("crawler.db.mysql.map_mongo_sample_to_mysql"):
         with patch("crawler.db.mysql.set_is_current_on_mysql_samples") as make_mysql_samples:
             make_mysql_samples.return_value = [MLWH_SAMPLE_COMPLETE]
             insert_or_update_samples_in_mlwh(["pseudo_sample"], config, LoggingCollection(), logging_messages)
@@ -234,23 +235,40 @@ def test_insert_samples_in_mlwh_inserts_one_complete_sample_correctly(config, ml
         "rna_id",
         "root_sample_id",
         "source",
-        "created_at",
-        "updated_at",
     ]
     cursor.execute(f"SELECT {','.join(fields)} FROM lighthouse_sample;")
     rows = [row for row in cursor.fetchall()]
     assert len(rows) == 1
 
     row = rows[0]
-    assert row[0] == Decimal("24.67")
-    assert row[1] == "Positive"
-    assert row[2] == "A gene"
-    assert row[3] == Decimal("23.92")
-    assert row[4] == "Negative"
-    assert row[5] == "B gene"
-    assert row[6] == Decimal("25.12")
-    assert row[7] == "Positive"
-    assert row[8] == "C gene"
-    assert row[9] == Decimal("22.86")
-    assert row[10] == "Negative"
-    assert row[11] == "D gene"
+    assert row == (
+        Decimal("24.67"),
+        "Positive",
+        "A gene",
+        Decimal("23.92"),
+        "Negative",
+        "B gene",
+        Decimal("25.12"),
+        "Positive",
+        "C gene",
+        Decimal("22.86"),
+        "Negative",
+        "D gene",
+        "C3",
+        datetime(2021, 2, 3, 4, 5, 6),
+        True,
+        datetime(2021, 2, 3, 5, 6, 7),
+        "v3",
+        True,
+        "BB",
+        "233223d5-9015-4646-add0-f358ff2688c7",
+        "c6410270-5cbf-4233-a8d1-b08445bbac5e",
+        "6140f388800f8fe309689124",
+        True,
+        "95123456789012345",
+        False,
+        "Positive",
+        "95123456789012345_C03",
+        "BAA94123456",
+        "Bob's Biotech",
+    )
