@@ -1,3 +1,4 @@
+from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 import mysql.connector as mysql
@@ -196,9 +197,60 @@ def test_reset_is_current_flags(mlwh_rw_db):
 
 
 def test_insert_samples_in_mlwh_inserts_one_complete_sample_correctly(config, mlwh_rw_db, logging_messages):
-    connection, cursor = mlwh_rw_db
+    _, cursor = mlwh_rw_db
 
     with patch("crawler.db.mysql.map_mongo_sample_to_mysql") as mapper:
         with patch("crawler.db.mysql.set_is_current_on_mysql_samples") as make_mysql_samples:
             make_mysql_samples.return_value = [MLWH_SAMPLE_COMPLETE]
             insert_or_update_samples_in_mlwh(["pseudo_sample"], config, LoggingCollection(), logging_messages)
+
+    fields = [
+        "ch1_cq",
+        "ch1_result",
+        "ch1_target",
+        "ch2_cq",
+        "ch2_result",
+        "ch2_target",
+        "ch3_cq",
+        "ch3_result",
+        "ch3_target",
+        "ch4_cq",
+        "ch4_result",
+        "ch4_target",
+        "coordinate",
+        "date_tested",
+        "filtered_positive",
+        "filtered_positive_timestamp",
+        "filtered_positive_version",
+        "is_current",
+        "lab_id",
+        "lh_sample_uuid",
+        "lh_source_plate_uuid",
+        "mongodb_id",
+        "must_sequence",
+        "plate_barcode",
+        "preferentially_sequence",
+        "result",
+        "rna_id",
+        "root_sample_id",
+        "source",
+        "created_at",
+        "updated_at",
+    ]
+    cursor.execute(f"SELECT {','.join(fields)} FROM lighthouse_sample;")
+    rows = [row for row in cursor.fetchall()]
+    assert len(rows) == 1
+
+    row = rows[0]
+    assert row[0] == Decimal("24.67")
+    assert row[1] == "Positive"
+    assert row[2] == "A gene"
+    assert row[3] == Decimal("23.92")
+    assert row[4] == "Negative"
+    assert row[5] == "B gene"
+    assert row[6] == Decimal("25.12")
+    assert row[7] == "Positive"
+    assert row[8] == "C gene"
+    assert row[9] == Decimal("22.86")
+    assert row[10] == "Negative"
+    assert row[11] == "D gene"
