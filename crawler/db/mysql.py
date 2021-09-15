@@ -239,8 +239,9 @@ def reset_is_current_flags(cursor: CMySQLCursor, rna_ids: List[str], chunk_size:
 
     total_rows_affected = 0
     for rna_ids_group in rna_ids_groups:
-        values = {"rna_ids": ",".join(rna_ids_group), "updated_at": datetime.now()}
-        cursor.execute(SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT, values)
+        in_array = ",".join(["%s"] * len(rna_ids_group))
+        sql_statement = SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT % ("%s", in_array)
+        cursor.execute(sql_statement, [datetime.now()] + rna_ids_group)
         total_rows_affected += cursor.rowcount
 
     logger.info(f"Reset is_current to false for { total_rows_affected } rows.")
