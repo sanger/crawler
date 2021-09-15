@@ -155,5 +155,5 @@ SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT = (
     f" SET"
     f" { MLWH_IS_CURRENT } = false,"
     f" { MLWH_UPDATED_AT } = %(updated_at)s"
-    f" WHERE { MLWH_RNA_ID } IN %(rna_ids)s"
+    f" WHERE { MLWH_RNA_ID } IN (%(rna_ids)s)"
 )
