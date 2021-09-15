@@ -18,7 +18,7 @@ from crawler.constants import (
     MLWH_TABLE_NAME,
 )
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
-from crawler.db.mysql import create_mysql_connection
+from crawler.db.mysql import create_mysql_connection, create_mysql_connection_engine
 from crawler.file_processing import Centre, CentreFile
 from crawler.helpers.general_helpers import get_config
 from tests.testing_objects import (
@@ -101,6 +101,15 @@ def mlwh_connection(config):
     finally:
         # close the connection
         mysql_conn.close()
+
+
+@pytest.fixture
+def mlwh_rw_db(mlwh_connection):
+    try:
+        cursor = mlwh_connection.cursor()
+        yield (mlwh_connection, cursor)
+    finally:
+        cursor.close()
 
 
 @pytest.fixture
@@ -397,3 +406,22 @@ def generate_new_object_for_string(original_str):
     part2 = original_str[2:]
     new_str = part1 + part2
     return new_str
+
+
+@pytest.fixture
+def logging_messages():
+    return {
+        "success": {
+            "msg": "Success",
+        },
+        "insert_failure": {
+            "error_type": "TYPE 14",
+            "msg": "Insert Failure",
+            "critical_msg": "Insert Critical",
+        },
+        "connection_failure": {
+            "error_type": "TYPE 15",
+            "msg": "Connection Failure",
+            "critical_msg": "Connection Critical",
+        },
+    }
