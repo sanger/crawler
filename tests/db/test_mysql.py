@@ -7,6 +7,7 @@ import pytest
 from mysql.connector.connection_cext import CMySQLConnection
 from sqlalchemy.engine.base import Engine
 
+from crawler.constants import MLWH_IS_CURRENT
 from crawler.db.mysql import (
     create_mysql_connection,
     create_mysql_connection_engine,
@@ -272,3 +273,23 @@ def test_insert_samples_in_mlwh_inserts_one_complete_sample_correctly(config, ml
         "BAA94123456",
         "Bob's Biotech",
     )
+
+
+def test_update_samples_in_mlwh_sets_is_current_correctly(config, mlwh_rw_db, logging_messages):
+    _, cursor = mlwh_rw_db
+
+    # Run two insert_or_updates back to back for the same document
+    # This may seem like a redundant test, but because the second call is an update rather than in insert
+    # the way it is processed is different.  It was observed that samples being updated to be priority samples
+    # were losing the flag for is_current.  This was set explicitly to False as part of the insert preparation and
+    # then the update was not pushing the value back to True again.
+    with patch("crawler.db.mysql.map_mongo_sample_to_mysql"):
+        with patch("crawler.db.mysql.set_is_current_on_mysql_samples") as make_mysql_samples:
+            make_mysql_samples.return_value = [MLWH_SAMPLE_COMPLETE]
+            insert_or_update_samples_in_mlwh(["pseudo_sample"], config, LoggingCollection(), logging_messages)
+            insert_or_update_samples_in_mlwh(["pseudo_sample"], config, LoggingCollection(), logging_messages)
+
+    cursor.execute(f"SELECT {MLWH_IS_CURRENT} FROM lighthouse_sample;")
+    rows = [row for row in cursor.fetchall()]
+    assert len(rows) == 1
+    assert rows[0][0] == 1
