@@ -204,7 +204,7 @@ def test_insert_samples_in_mlwh_inserts_one_complete_sample_correctly(config, ml
     with patch("crawler.db.mysql.map_mongo_sample_to_mysql"):
         with patch("crawler.db.mysql.set_is_current_on_mysql_samples") as make_mysql_samples:
             make_mysql_samples.return_value = [MLWH_SAMPLE_COMPLETE]
-            insert_or_update_samples_in_mlwh(["pseudo_sample"], config, LoggingCollection(), logging_messages)
+            insert_or_update_samples_in_mlwh([{"pseudo": "sample"}], config, LoggingCollection(), logging_messages)
 
     fields = [
         "ch1_cq",
@@ -286,8 +286,8 @@ def test_update_samples_in_mlwh_sets_is_current_correctly(config, mlwh_rw_db, lo
     with patch("crawler.db.mysql.map_mongo_sample_to_mysql"):
         with patch("crawler.db.mysql.set_is_current_on_mysql_samples") as make_mysql_samples:
             make_mysql_samples.return_value = [MLWH_SAMPLE_COMPLETE]
-            insert_or_update_samples_in_mlwh(["pseudo_sample"], config, LoggingCollection(), logging_messages)
-            insert_or_update_samples_in_mlwh(["pseudo_sample"], config, LoggingCollection(), logging_messages)
+            insert_or_update_samples_in_mlwh([{"pseudo": "sample"}], config, LoggingCollection(), logging_messages)
+            insert_or_update_samples_in_mlwh([{"pseudo": "sample"}], config, LoggingCollection(), logging_messages)
 
     cursor.execute(f"SELECT {MLWH_IS_CURRENT} FROM lighthouse_sample;")
     rows = [row for row in cursor.fetchall()]

@@ -18,7 +18,7 @@ from crawler.constants import (
     MLWH_TABLE_NAME,
 )
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
-from crawler.db.mysql import create_mysql_connection, create_mysql_connection_engine
+from crawler.db.mysql import create_mysql_connection
 from crawler.file_processing import Centre, CentreFile
 from crawler.helpers.general_helpers import get_config
 from tests.testing_objects import (
