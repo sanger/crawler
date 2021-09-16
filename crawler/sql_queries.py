@@ -1,6 +1,13 @@
 # flake8: noqa
 
-from crawler.constants import FIELD_COORDINATE, FIELD_PLATE_BARCODE, FIELD_ROOT_SAMPLE_ID, MLWH_IS_CURRENT, MLWH_RNA_ID
+from crawler.constants import (
+    FIELD_COORDINATE,
+    FIELD_PLATE_BARCODE,
+    FIELD_ROOT_SAMPLE_ID,
+    MLWH_IS_CURRENT,
+    MLWH_RNA_ID,
+    MLWH_UPDATED_AT,
+)
 
 # SQL query to insert multiple rows into the MLWH
 SQL_MLWH_MULTIPLE_INSERT = """
@@ -80,7 +87,8 @@ updated_at=VALUES(updated_at),
 lh_sample_uuid=VALUES(lh_sample_uuid),
 lh_source_plate_uuid=VALUES(lh_source_plate_uuid),
 must_sequence=VALUES(must_sequence),
-preferentially_sequence=VALUES(preferentially_sequence);
+preferentially_sequence=VALUES(preferentially_sequence),
+is_current=VALUES(is_current);
 """
 
 SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE = """\
@@ -144,5 +152,9 @@ SQL_MLWH_GET_CP_SAMPLES_BY_DATE = (
 )
 
 SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT = (
-    f"UPDATE lighthouse_sample SET { MLWH_IS_CURRENT } = false WHERE { MLWH_RNA_ID } IN %s"
+    f"UPDATE lighthouse_sample"
+    f" SET"
+    f" { MLWH_IS_CURRENT } = false,"
+    f" { MLWH_UPDATED_AT } = %s"
+    f" WHERE { MLWH_RNA_ID } IN (%s)"
 )

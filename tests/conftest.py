@@ -104,6 +104,15 @@ def mlwh_connection(config):
 
 
 @pytest.fixture
+def mlwh_rw_db(mlwh_connection):
+    try:
+        cursor = mlwh_connection.cursor()
+        yield (mlwh_connection, cursor)
+    finally:
+        cursor.close()
+
+
+@pytest.fixture
 def pyodbc_conn(config):
     with patch("pyodbc.connect") as mock_connect:
         yield mock_connect
@@ -397,3 +406,22 @@ def generate_new_object_for_string(original_str):
     part2 = original_str[2:]
     new_str = part1 + part2
     return new_str
+
+
+@pytest.fixture
+def logging_messages():
+    return {
+        "success": {
+            "msg": "Success",
+        },
+        "insert_failure": {
+            "error_type": "TYPE 14",
+            "msg": "Insert Failure",
+            "critical_msg": "Insert Critical",
+        },
+        "connection_failure": {
+            "error_type": "TYPE 15",
+            "msg": "Connection Failure",
+            "critical_msg": "Connection Critical",
+        },
+    }
