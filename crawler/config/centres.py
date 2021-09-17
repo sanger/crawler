@@ -165,7 +165,7 @@ CENTRES: List[CentreConf] = [
         "lab_id_default": "BRBR",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/BRBR",
         "sftp_file_regex_unconsolidated_surveillance": r"^$",
-        "sftp_file_regex_consolidated_surveillance": r"^BB_\d+\.csv$",
+        "sftp_file_regex_consolidated_surveillance": r"^BB[-_]\d+\.csv$",
         "sftp_file_regex_consolidated_eagle": r"^$",
         "sftp_root_read": "project-heron_brbr",
         "file_names_to_ignore": [],
