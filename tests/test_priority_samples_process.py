@@ -1,35 +1,37 @@
-from unittest.mock import patch
-from crawler.db.mongo import get_mongo_collection
-from crawler.priority_samples_process import (
-    update_priority_samples,
-    centre_config_for_samples,
-    logging_collection,
-    get_all_unprocessed_priority_samples_records,
-    print_summary,
-)
-from crawler.helpers.logging_helpers import LoggingCollection
 from typing import Dict, Tuple
-from crawler.constants import (
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_MUST_SEQUENCE,
-    FIELD_PREFERENTIALLY_SEQUENCE,
-    COLLECTION_PRIORITY_SAMPLES,
-    COLLECTION_SAMPLES,
-    MLWH_TABLE_NAME,
-    MLWH_ROOT_SAMPLE_ID,
-    MLWH_PREFERENTIALLY_SEQUENCE,
-    MLWH_MUST_SEQUENCE,
-    MLWH_MONGODB_ID,
-    DART_STATE_PENDING,
-    FIELD_COORDINATE,
-    FIELD_PROCESSED,
-    FIELD_PLATE_BARCODE,
-    FIELD_SOURCE,
-    FIELD_MONGODB_ID,
-    FIELD_SAMPLE_ID,
-)
+from unittest.mock import patch
+
 import pytest
 from bson.objectid import ObjectId
+
+from crawler.constants import (
+    COLLECTION_PRIORITY_SAMPLES,
+    COLLECTION_SAMPLES,
+    DART_STATE_PENDING,
+    FIELD_COORDINATE,
+    FIELD_MONGODB_ID,
+    FIELD_MUST_SEQUENCE,
+    FIELD_PLATE_BARCODE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
+    FIELD_PROCESSED,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_SAMPLE_ID,
+    FIELD_SOURCE,
+    MLWH_MONGODB_ID,
+    MLWH_MUST_SEQUENCE,
+    MLWH_PREFERENTIALLY_SEQUENCE,
+    MLWH_ROOT_SAMPLE_ID,
+    MLWH_TABLE_NAME,
+)
+from crawler.db.mongo import get_mongo_collection
+from crawler.helpers.logging_helpers import LoggingCollection
+from crawler.priority_samples_process import (
+    centre_config_for_samples,
+    get_all_unprocessed_priority_samples_records,
+    logging_collection,
+    print_summary,
+    update_priority_samples,
+)
 
 
 class TestPrioritySamplesProcess:
