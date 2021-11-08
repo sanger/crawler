@@ -27,7 +27,7 @@ RUN apt-get update && \
 
 # Install the package manager - pipenv
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir pipenv
+    pip install --no-cache-dir pipenv==2021.5.29
 
 # Change the working directory for all proceeding operations
 #   https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#workdir

@@ -51,7 +51,7 @@ jobs:
             ${{ runner.os }}-pip-
       - name: Install pipenv
         run: |
-          pip install pipenv
+          pip install pipenv==2021.5.29
       - name: Install dependencies
         run: |
           pipenv sync --dev --system
@@ -75,7 +75,7 @@ jobs:
             ${{ runner.os }}-pip-
       - name: Install pipenv
         run: |
-          pip install pipenv
+          pip install pipenv==2021.5.29
       - name: Install dependencies
         run: |
           pipenv sync --dev --system
@@ -110,7 +110,7 @@ jobs:
             ${{ runner.os }}-pip-
       - name: Install pipenv
         run: |
-          pip install pipenv
+          pip install pipenv==2021.5.29
       - name: Install dependencies
         run: |
           pipenv sync --dev --system
