@@ -218,7 +218,7 @@ def update_dart_fields(config: Config, samples: List[SampleDoc]) -> bool:
         cursor = sql_server_connection.cursor()
 
         for plate_barcode, samples_in_plate in groupby_transform(
-            samples, lambda x: x[FIELD_PLATE_BARCODE], valuefunc=None, reducefunc=lambda x: list(x)
+            samples, lambda x: x[FIELD_PLATE_BARCODE], None, lambda x: list(x)
         ):
             try:
                 labware_class = labclass_by_centre_name[(str)(samples_in_plate[0][FIELD_SOURCE])]
