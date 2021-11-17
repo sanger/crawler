@@ -4,9 +4,9 @@
 #
 import logging
 import logging.config
+from itertools import groupby
 from typing import Any, Dict, Final, Iterator, List, Mapping, Tuple
 
-from more_itertools import groupby_transform
 from pymongo.database import Database
 
 from crawler.constants import (
@@ -196,16 +196,13 @@ def insert_plates_and_wells_into_dart(docs_to_insert: List[SampleDoc], config: C
         {bool} -- True if the insert was successful; otherwise False
     """
 
-    def extract_plate_barcode(sample: SampleDoc) -> ModifiedRowValue:
-        return sample[FIELD_PLATE_BARCODE]
-
     logger.info("Adding to DART")
 
     if (sql_server_connection := create_dart_sql_server_conn(config)) is not None:
         try:
             cursor = sql_server_connection.cursor()
 
-            group_iterator: Iterator[Tuple[Any, Any]] = groupby_transform(docs_to_insert, extract_plate_barcode)
+            group_iterator: Iterator[Tuple[Any, Any]] = groupby(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE])
 
             for plate_barcode, samples in group_iterator:
                 try:
