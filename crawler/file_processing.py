@@ -78,17 +78,7 @@ from crawler.filtered_positive_identifier import current_filtered_positive_ident
 from crawler.helpers.enums import CentreFileState
 from crawler.helpers.general_helpers import create_source_plate_doc, current_time, get_sftp_connection, pad_coordinate
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.types import (
-    CentreConf,
-    CentreDoc,
-    Config,
-    CSVRow,
-    ModifiedRow,
-    ModifiedRowValue,
-    RowSignature,
-    SampleDoc,
-    SourcePlateDoc,
-)
+from crawler.types import CentreConf, CentreDoc, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc
 
 logger = logging.getLogger(__name__)
 
