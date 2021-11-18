@@ -9,12 +9,12 @@ from csv import DictReader
 from datetime import datetime, timezone
 from decimal import Decimal
 from hashlib import md5
+from itertools import groupby
 from logging import INFO, WARN
 from pathlib import Path
 from typing import Any, Dict, Final, Iterator, List, Optional, Set, Tuple, cast
 
 from bson.decimal128 import Decimal128
-from more_itertools import groupby_transform
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
@@ -78,17 +78,7 @@ from crawler.filtered_positive_identifier import current_filtered_positive_ident
 from crawler.helpers.enums import CentreFileState
 from crawler.helpers.general_helpers import create_source_plate_doc, current_time, get_sftp_connection, pad_coordinate
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.types import (
-    CentreConf,
-    CentreDoc,
-    Config,
-    CSVRow,
-    ModifiedRow,
-    ModifiedRowValue,
-    RowSignature,
-    SampleDoc,
-    SourcePlateDoc,
-)
+from crawler.types import CentreConf, CentreDoc, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc
 
 logger = logging.getLogger(__name__)
 
@@ -738,16 +728,13 @@ class CentreFile:
             {bool} -- True if the insert was successful; otherwise False
         """
 
-        def extract_plate_barcode(sample: SampleDoc) -> ModifiedRowValue:
-            return sample[FIELD_PLATE_BARCODE]
-
         logger.info("Adding to DART")
 
         if (sql_server_connection := create_dart_sql_server_conn(self.config)) is not None:
             try:
                 cursor = sql_server_connection.cursor()
 
-                group_iterator: Iterator[Tuple[Any, Any]] = groupby_transform(docs_to_insert, extract_plate_barcode)
+                group_iterator: Iterator[Tuple[Any, Any]] = groupby(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE])
 
                 for plate_barcode, samples in group_iterator:
                     try:
