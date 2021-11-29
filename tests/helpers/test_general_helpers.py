@@ -252,14 +252,12 @@ def test_get_dart_well_index(config):
     coordinate = "A00"
     assert (
         get_dart_well_index(coordinate) is None
-    ), "Expected to be unable to determine a well index for sample with coordinate column "
-    "below accepted range"
+    ), "Expected to be unable to determine a well index for sample with coordinate column below accepted range"
 
     coordinate = "B15"
     assert (
         get_dart_well_index(coordinate) is None
-    ), "Expected to be unable to determine a well index for sample with coordinate column "
-    "above accepted range"
+    ), "Expected to be unable to determine a well index for sample with coordinate column above accepted range"
 
     coordinate = "Q01"
     assert (
