@@ -1244,11 +1244,11 @@
         },
         "flake8-bugbear": {
             "hashes": [
-                "sha256:35e6333c37d9e9806d9919acd10740cd4de111c180afe9921c8f4410fbb76e1c",
-                "sha256:5d7aad75b270ab93d64d479f4285909aaceae177b3fee482a80d2affe904ab01"
+                "sha256:179e41ddae5de5e3c20d1f61736feeb234e70958fbb56ab3c28a67739c8e9a82",
+                "sha256:8b04cb2fafc6a78e1a9d873bd3988e4282f7959bb6b0d7c1ae648ec09b937a7b"
             ],
             "index": "pypi",
-            "version": "==21.11.28"
+            "version": "==21.11.29"
         },
         "freezegun": {
             "hashes": [
