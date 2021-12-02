@@ -41,7 +41,7 @@ BARACODA_BASE_URL = "http://uat.baracoda.psd.sanger.ac.uk"
 ###
 # mongo details
 ###
-MONGO_DB = "lighthouseDevelopmentDB"
+MONGO_DB = "crawlerDevelopmentDB"
 MONGO_HOST = LOCALHOST
 MONGO_PASSWORD = ""
 MONGO_PORT = 27017
@@ -74,7 +74,7 @@ DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
 # SFTP details
 ###
 SFTP_UPLOAD = False  # upload files to SFTP server
-SFTP_HOST = "localhost"
+SFTP_HOST = "sftp"
 SFTP_PORT = 22
 SFTP_READ_PASSWORD = "pass"
 SFTP_READ_USERNAME = "foo"
