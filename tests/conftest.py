@@ -1,6 +1,7 @@
 import copy
 import logging
 import logging.config
+import os
 import shutil
 from unittest.mock import patch
 
@@ -425,3 +426,20 @@ def logging_messages():
             "critical_msg": "Connection Critical",
         },
     }
+
+
+@pytest.fixture
+def downloadable_files():
+    filenames = [
+        "./test/sftp/AP_sanger_report_200423_2214.csv",
+        "./test/sftp/AP_sanger_report_200423_2215.csv",
+        "./test/sftp/AP_sanger_report_200423_2216.csv",
+        "./test/sftp/AP_sanger_report_200423_2217.csv",
+        "./test/sftp/AP_sanger_report_200423_2218.csv",
+    ]
+
+    # Reset to current time
+    for filename in filenames:
+        os.utime(filename)
+
+    return filenames

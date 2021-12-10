@@ -4,6 +4,9 @@
 # Any files from SFTP
 data/*
 
+# Mysql local copy
+dependencies/dockermysql/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -13,10 +13,11 @@ services:
 
     volumes:
       - ".:/code"
-  sftp:
-    image: atmoz/sftp
-    volumes:
-        - ./upload:/home/foo
-    ports:
-        - "1022:22"
-    command: foo:pass:1001
+
+    networks:
+      - default
+      - heron_databases_external
+
+networks:
+  heron_databases_external:
+    external: true
