@@ -99,9 +99,7 @@ jobs:
       sftp_server:
         image: atmoz/sftp
         volumes:
-          - type: bind
-            source: ../test
-            target: /home/foo
+            - ${PWD}/../test:/home/foo
         env:
           SFTP_USERS: foo:pass:1001
     steps:
