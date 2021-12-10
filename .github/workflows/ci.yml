@@ -100,7 +100,8 @@ jobs:
         image: atmoz/sftp
         volumes:
             - ../test:/home/foo
-        options: foo:pass:1001
+        env:
+          SFTP_USERS: foo:pass:1001
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
