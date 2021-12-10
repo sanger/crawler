@@ -96,6 +96,11 @@ jobs:
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
           MYSQL_DATABASE: unified_warehouse_test
+      sftp_server:
+        image: atmoz/sftp
+        volumes:
+            - ../test:/home/foo
+        command: foo:pass:1001
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
