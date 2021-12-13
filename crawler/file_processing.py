@@ -66,6 +66,7 @@ from crawler.constants import (
     MAX_CQ_VALUE,
     MIN_CQ_VALUE,
     RESULT_VALUE_POSITIVE,
+    FILE_AGE_IN_DAYS,
 )
 from crawler.db.dart import (
     add_dart_plate_if_doesnt_exist,
@@ -193,9 +194,17 @@ class Centre:
             logger.debug(f"ls {self.config.SFTP_HOST}/{sftp_root_read}")
             logger.debug(sftp.listdir(sftp_root_read))
 
-            # download all plate map files
+            # download recent plate map files
             logger.info("Downloading plate map files")
-            sftp.get_d(self.centre_config["sftp_root_read"], self.get_download_dir())
+            for csv_file in sftp.listdir(sftp_root_read):
+                sftp.chdir(sftp_root_read)
+                timestamp = sftp.stat(csv_file).st_mtime  # get timestamp of file
+                createtime = datetime.fromtimestamp(timestamp)
+                now = datetime.now()
+                delta = now - createtime
+
+                if delta.days < FILE_AGE_IN_DAYS:
+                    sftp.get(csv_file, os.path.join(self.get_download_dir(), csv_file))
 
         return None
 
