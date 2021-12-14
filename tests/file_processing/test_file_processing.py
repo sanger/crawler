@@ -2250,7 +2250,7 @@ def test_is_current_correctly_set(config, mlwh_connection):
 def test_center_can_download_only_all_files(config, tmpdir, downloadable_files):
     centre = Centre(config, config.CENTRES[0])
 
-    centre.centre_config["sftp_root_read"] = "./sftp"
+    centre.centre_config["sftp_root_read"] = "/sftp"
 
     with patch("crawler.file_processing.Centre.get_download_dir", return_value=tmpdir.realpath()):
         centre.download_csv_files()
@@ -2274,7 +2274,7 @@ def test_center_not_download_if_nothing_recent(config, tmpdir, downloadable_file
 
     centre = Centre(config, config.CENTRES[0])
 
-    centre.centre_config["sftp_root_read"] = "./sftp"
+    centre.centre_config["sftp_root_read"] = "/sftp"
 
     with patch("crawler.file_processing.Centre.get_download_dir", return_value=tmpdir.realpath()):
         centre.download_csv_files()
@@ -2292,7 +2292,7 @@ def test_center_can_download_only_recent_files(config, tmpdir, downloadable_file
 
     centre = Centre(config, config.CENTRES[0])
 
-    centre.centre_config["sftp_root_read"] = "./sftp"
+    centre.centre_config["sftp_root_read"] = "/sftp"
 
     with patch("crawler.file_processing.Centre.get_download_dir", return_value=tmpdir.realpath()):
         centre.download_csv_files()
