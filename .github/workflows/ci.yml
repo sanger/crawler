@@ -120,6 +120,6 @@ jobs:
       - name: Test with pytest (using a testing sftp server)
         run: |
           docker run -p "3010:22" -v ${PWD}/test:/home/foo -d atmoz/sftp foo:pass:1001
-          SFTP_SERVER=host.docker.internal SFTP_PORT=3010 python -m pytest -vx
+          SFTP_SERVER=localhost SFTP_PORT=3010 python -m pytest -vx
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
