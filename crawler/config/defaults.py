@@ -74,8 +74,8 @@ DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
 # SFTP details
 ###
 SFTP_UPLOAD = False  # upload files to SFTP server
-SFTP_HOST = "sftp_server"
-SFTP_PORT = 22
+SFTP_HOST = os.environ.get("SFTP_SERVER", "sftp_server")
+SFTP_PORT = int(os.environ.get("SFTP_PORT", 22))
 SFTP_READ_PASSWORD = "pass"
 SFTP_READ_USERNAME = "foo"
 SFTP_WRITE_PASSWORD = "pass"
