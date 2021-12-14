@@ -4,7 +4,6 @@ services:
   # we need to set the localhost and root password as they can be different
   crawler:
     build: .
-    image: crawler_local_image
     ports:
       - "8100:8000"
     environment:
