@@ -3,7 +3,8 @@ services:
   # Setup the runner
   # we need to set the localhost and root password as they can be different
   crawler:
-    image: ghcr.io/sanger/crawler/crawler:1.28.0-1516149682-develop
+    build: .
+    image: crawler_local_image
     ports:
       - "8100:8000"
     environment:
