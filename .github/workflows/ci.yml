@@ -117,11 +117,9 @@ jobs:
       - name: Setup the test MLWH and Events databases
         run: |
           python setup_test_db.py
-      - name: Run testing sftp server
+      - name: Test with pytest (using a testing sftp server)
         run: |
           docker run -p "3010:22" -v ${PWD}/test:/home/foo -d atmoz/sftp foo:pass:1001
-      - name: Test with pytest
-        run: |
           SFTP_SERVER=host.docker.internal SFTP_PORT=3010 python -m pytest -vx
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
