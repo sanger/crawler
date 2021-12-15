@@ -199,9 +199,9 @@ class Centre:
             for csv_file in sftp.listdir(sftp_root_read):
                 sftp.chdir(sftp_root_read)
                 timestamp = sftp.stat(csv_file).st_mtime  # get timestamp of file
-                createtime = datetime.fromtimestamp(timestamp)
+                modified_time = datetime.fromtimestamp(timestamp)
                 now = datetime.now()
-                delta = now - createtime
+                delta = now - modified_time
 
                 if delta.days < FILE_AGE_IN_DAYS:
                     sftp.get(csv_file, os.path.join(self.get_download_dir(), csv_file))
