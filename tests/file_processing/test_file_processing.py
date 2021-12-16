@@ -2245,3 +2245,61 @@ def test_is_current_correctly_set(config, mlwh_connection):
     assert rows[0][MLWH_IS_CURRENT] == 0
     assert rows[1][MLWH_IS_CURRENT] == 1
     assert rows[2][MLWH_IS_CURRENT] == 1
+
+
+def test_center_can_download_only_all_files(config, tmpdir, downloadable_files):
+    centre = Centre(config, config.CENTRES[0])
+
+    centre.centre_config["sftp_root_read"] = "/sftp"
+
+    with patch("crawler.file_processing.Centre.get_download_dir", return_value=tmpdir.realpath()):
+        centre.download_csv_files()
+
+        file_list = sorted([os.path.basename(file_path) for file_path in tmpdir.listdir()])
+        assert file_list == [
+            "AP_sanger_report_200423_2214.csv",
+            "AP_sanger_report_200423_2215.csv",
+            "AP_sanger_report_200423_2216.csv",
+            "AP_sanger_report_200423_2217.csv",
+            "AP_sanger_report_200423_2218.csv",
+        ]
+
+
+def test_center_not_download_if_nothing_recent(config, tmpdir, downloadable_files):
+    very_old_time = datetime.now().replace(year=1979)
+    tuple_time = (very_old_time.timestamp(), very_old_time.timestamp())
+
+    for filename in downloadable_files:
+        os.utime(filename, tuple_time)
+
+    centre = Centre(config, config.CENTRES[0])
+
+    centre.centre_config["sftp_root_read"] = "/sftp"
+
+    with patch("crawler.file_processing.Centre.get_download_dir", return_value=tmpdir.realpath()):
+        centre.download_csv_files()
+
+        file_list = sorted([os.path.basename(file_path) for file_path in tmpdir.listdir()])
+        assert file_list == []
+
+
+def test_center_can_download_only_recent_files(config, tmpdir, downloadable_files):
+    very_old_time = datetime.now().replace(year=1979)
+    tuple_time = (very_old_time.timestamp(), very_old_time.timestamp())
+
+    os.utime(downloadable_files[1], tuple_time)
+    os.utime(downloadable_files[3], tuple_time)
+
+    centre = Centre(config, config.CENTRES[0])
+
+    centre.centre_config["sftp_root_read"] = "/sftp"
+
+    with patch("crawler.file_processing.Centre.get_download_dir", return_value=tmpdir.realpath()):
+        centre.download_csv_files()
+
+        file_list = sorted([os.path.basename(file_path) for file_path in tmpdir.listdir()])
+        assert file_list == [
+            "AP_sanger_report_200423_2214.csv",
+            "AP_sanger_report_200423_2216.csv",
+            "AP_sanger_report_200423_2218.csv",
+        ]

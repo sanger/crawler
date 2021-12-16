@@ -239,3 +239,6 @@ PLATE_EVENT_DESTINATION_CREATED: Final[str] = "lh_beckman_cp_destination_created
 # general
 FLASK_ERROR_UNEXPECTED: Final[str] = "An unexpected error occurred"
 FLASK_ERROR_MISSING_PARAMETERS: Final[str] = "Missing required parameters"
+
+# Set Download file age
+FILE_AGE_IN_DAYS = 14

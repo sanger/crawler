@@ -1,4 +1,4 @@
-version: "3.8"
+version: "3.3"
 services:
   # A MySQL service as close to production as currently possible
   # To run it as a standalone container:
@@ -35,7 +35,18 @@ services:
     volumes:
       - mssql-volume:/var/opt/mssql
 
+  sftp_server:
+    image: atmoz/sftp
+    volumes:
+        - ../test:/home/foo
+    command: foo:pass:1001
+    networks:
+      - external
+
 volumes:
   mongo-volume:
   mysql-volume:
   mssql-volume:
+
+networks:
+  external:
