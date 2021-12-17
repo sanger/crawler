@@ -199,6 +199,7 @@ class Centre:
             for csv_file in sftp.listdir(sftp_root_read):
                 sftp.chdir(sftp_root_read)
                 timestamp = sftp.stat(csv_file).st_mtime  # get timestamp of file
+                print(timestamp)
                 modified_time = datetime.fromtimestamp(timestamp)
                 now = datetime.now()
                 delta = now - modified_time

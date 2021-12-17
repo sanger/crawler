@@ -2271,7 +2271,6 @@ def test_center_not_download_if_nothing_recent(config, tmpdir, downloadable_file
 
     for filename in downloadable_files:
         os.utime(filename, tuple_time)
-        print(os.stat(filename))
 
     centre = Centre(config, config.CENTRES[0])
 
