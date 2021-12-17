@@ -86,6 +86,7 @@ from crawler.constants import (
 )
 from crawler.db.mongo import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
+from crawler.helpers.general_helpers import get_sftp_connection
 from crawler.types import Config, ModifiedRow, SampleDoc
 from tests.conftest import generate_new_object_for_string
 
@@ -2269,8 +2270,9 @@ def test_center_not_download_if_nothing_recent(config, tmpdir, downloadable_file
     very_old_time = datetime.now().replace(year=1979)
     tuple_time = (very_old_time.timestamp(), very_old_time.timestamp())
 
-    for filename in downloadable_files:
-        os.utime(filename, tuple_time)
+    with get_sftp_connection(config) as sftp:
+        for filename in downloadable_files:
+            sftp.sftp_client.utime(os.path.join('sftp', os.path.basename(filename)), tuple_time)
 
     centre = Centre(config, config.CENTRES[0])
 
@@ -2287,8 +2289,9 @@ def test_center_can_download_only_recent_files(config, tmpdir, downloadable_file
     very_old_time = datetime.now().replace(year=1979)
     tuple_time = (very_old_time.timestamp(), very_old_time.timestamp())
 
-    os.utime(downloadable_files[1], tuple_time)
-    os.utime(downloadable_files[3], tuple_time)
+    with get_sftp_connection(config) as sftp:
+        sftp.sftp_client.utime(os.path.join('sftp', os.path.basename(downloadable_files[1])), tuple_time)
+        sftp.sftp_client.utime(os.path.join('sftp', os.path.basename(downloadable_files[3])), tuple_time)
 
     centre = Centre(config, config.CENTRES[0])
 
