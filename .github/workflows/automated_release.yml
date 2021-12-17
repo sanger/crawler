@@ -11,7 +11,7 @@ env:
 
 jobs:
   build_test_release_push:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     services:
       mongodb:
         image: mongo:4.2.5
@@ -44,11 +44,17 @@ jobs:
           docker.pkg.github.com/${IMAGE_NAME}:${BRANCH_NAME}
           python setup_test_db.py
 
+      - name: Start a testing SFTP server
+        run: |
+          docker run -p "3010:22" -v ${PWD}/test:/home/foo -d atmoz/sftp foo:pass:1001
+
       - name: Run tests against the image
         run: >-
           docker run
           --network host
           --entrypoint ''
+          --env SFTP_SERVER=localhost
+          --env SFTP_PORT=3010
           docker.pkg.github.com/${IMAGE_NAME}:${BRANCH_NAME}
           python -m pytest --no-cov -vx
 
