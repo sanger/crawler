@@ -2272,7 +2272,7 @@ def test_center_not_download_if_nothing_recent(config, tmpdir, downloadable_file
 
     with get_sftp_connection(config) as sftp:
         for filename in downloadable_files:
-            sftp.sftp_client.utime(os.path.join('sftp', os.path.basename(filename)), tuple_time)
+            sftp.sftp_client.utime(filename, tuple_time)
 
     centre = Centre(config, config.CENTRES[0])
 
@@ -2290,8 +2290,8 @@ def test_center_can_download_only_recent_files(config, tmpdir, downloadable_file
     tuple_time = (very_old_time.timestamp(), very_old_time.timestamp())
 
     with get_sftp_connection(config) as sftp:
-        sftp.sftp_client.utime(os.path.join('sftp', os.path.basename(downloadable_files[1])), tuple_time)
-        sftp.sftp_client.utime(os.path.join('sftp', os.path.basename(downloadable_files[3])), tuple_time)
+        sftp.sftp_client.utime(downloadable_files[1], tuple_time)
+        sftp.sftp_client.utime(downloadable_files[3], tuple_time)
 
     centre = Centre(config, config.CENTRES[0])
 
