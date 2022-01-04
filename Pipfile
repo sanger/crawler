@@ -28,7 +28,7 @@ pymysql = "~=1.0"
 pyodbc = "~=4.0"
 pysftp = "~=0.2"
 python-dotenv = "~=0.19"
-requests = "~=2.25"
+requests = "~=2.27"
 slackclient = "~=2.5"
 sqlalchemy = "~=1.4"
 
