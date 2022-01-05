@@ -2306,3 +2306,16 @@ def test_center_can_download_only_recent_files(config, tmpdir, downloadable_file
             "AP_sanger_report_200423_2216.csv",
             "AP_sanger_report_200423_2218.csv",
         ]
+
+
+@mark.parametrize(
+    "filename, mode, expected_value",
+    [
+        ["AP_sanger_report_200423_2218.csv", 33188, True],
+        ["AP-123456.txt", 33188, False],
+        ["/project-heron_cambridge-az", 16877, False],
+    ],
+)
+def test_can_identify_is_csv_file(config, filename, mode, expected_value):
+    centre = Centre(config, config.CENTRES[0])
+    assert centre.is_csv_file(mode, filename) is expected_value
