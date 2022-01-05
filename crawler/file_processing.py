@@ -1,6 +1,7 @@
 import csv
 import logging
 import os
+import stat
 import pathlib
 import re
 import shutil
@@ -196,17 +197,27 @@ class Centre:
 
             # download recent plate map files
             logger.info("Downloading plate map files")
-            for csv_file in sftp.listdir(sftp_root_read):
-                sftp.chdir(sftp_root_read)
-                timestamp = sftp.stat(csv_file).st_mtime  # get timestamp of file
-                modified_time = datetime.fromtimestamp(timestamp)
-                now = datetime.now()
-                delta = now - modified_time
+            for file_name in sftp.listdir(sftp_root_read):
+                source_path = os.path.join("/", sftp_root_read)
+                sftp.chdir(source_path)
+                mode = sftp.stat(file_name).st_mode
+                if self.is_csv_file(mode, file_name):
+                    timestamp = sftp.stat(file_name).st_mtime  # get timestamp of file
+                    modified_time = datetime.fromtimestamp(timestamp)
+                    now = datetime.now()
+                    delta = now - modified_time
 
-                if delta.days < FILE_AGE_IN_DAYS:
-                    sftp.get(csv_file, os.path.join(self.get_download_dir(), csv_file))
+                    if delta.days < FILE_AGE_IN_DAYS:
+                        sftp.get(file_name, os.path.join(self.get_download_dir(), file_name))
 
         return None
+
+    def is_csv_file(self, mode: int, file_name: str) -> bool:
+        if stat.S_ISREG(mode):
+            file_name, file_extension = os.path.splitext(file_name)
+            return file_extension == ".csv"
+
+        return False
 
     def is_valid_filename(self, filename: str) -> bool:
         return self.is_eagle_filename(filename) or self.is_surveillance_filename(filename)
