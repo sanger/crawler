@@ -218,17 +218,17 @@ def update_dart_fields(config: Config, samples: List[SampleDoc]) -> bool:
         cursor = sql_server_connection.cursor()
 
         for plate_barcode, samples_in_plate in groupby_transform(
-            samples, lambda x: x[FIELD_PLATE_BARCODE], reducefunc=lambda x: list(x)
+            iterable=samples, keyfunc=lambda x: x[FIELD_PLATE_BARCODE], valuefunc=None, reducefunc=lambda x: list(x)
         ):
             try:
-                labware_class = labclass_by_centre_name[samples_in_plate[0][FIELD_SOURCE]]
+                labware_class = labclass_by_centre_name[(str)(samples_in_plate[0][FIELD_SOURCE])]
                 plate_state = add_dart_plate_if_doesnt_exist(
                     cursor, plate_barcode, labware_class  # type:ignore
                 )
                 if plate_state == DART_STATE_PENDING:
                     for sample in samples_in_plate:
                         if sample[FIELD_RESULT] == RESULT_VALUE_POSITIVE:
-                            well_index = get_dart_well_index(sample.get(FIELD_COORDINATE, None))
+                            well_index = get_dart_well_index((str)(sample.get(FIELD_COORDINATE, None)))
                             if well_index is not None:
                                 well_props = map_mongo_doc_to_dart_well_props(sample)
                                 set_dart_well_properties(

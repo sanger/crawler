@@ -1,4 +1,4 @@
-version: "3.8"
+version: "3.3"
 services:
   # Setup the runner
   # we need to set the localhost and root password as they can be different
@@ -13,3 +13,11 @@ services:
 
     volumes:
       - ".:/code"
+
+    networks:
+      - default
+      - heron_databases_external
+
+networks:
+  heron_databases_external:
+    external: true

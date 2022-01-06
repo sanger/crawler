@@ -2,6 +2,7 @@ import copy
 import logging
 import logging.config
 import shutil
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
@@ -20,7 +21,7 @@ from crawler.constants import (
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import create_mysql_connection
 from crawler.file_processing import Centre, CentreFile
-from crawler.helpers.general_helpers import get_config
+from crawler.helpers.general_helpers import get_config, get_sftp_connection
 from tests.testing_objects import (
     EVENT_WH_DATA,
     FILTERED_POSITIVE_TESTING_SAMPLES,
@@ -425,3 +426,21 @@ def logging_messages():
             "critical_msg": "Connection Critical",
         },
     }
+
+
+@pytest.fixture
+def downloadable_files(config):
+    filenames = [
+        "sftp/AP_sanger_report_200423_2214.csv",
+        "sftp/AP_sanger_report_200423_2215.csv",
+        "sftp/AP_sanger_report_200423_2216.csv",
+        "sftp/AP_sanger_report_200423_2217.csv",
+        "sftp/AP_sanger_report_200423_2218.csv",
+    ]
+
+    # Reset to current time
+    with get_sftp_connection(config) as sftp:
+        for filename in filenames:
+            sftp.sftp_client.utime(filename, (datetime.now().timestamp(), datetime.now().timestamp()))
+
+    return filenames

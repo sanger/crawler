@@ -1,6 +1,7 @@
 import csv
 import logging
 import os
+import stat
 import pathlib
 import re
 import shutil
@@ -9,12 +10,12 @@ from csv import DictReader
 from datetime import datetime, timezone
 from decimal import Decimal
 from hashlib import md5
+from itertools import groupby
 from logging import INFO, WARN
 from pathlib import Path
 from typing import Any, Dict, Final, Iterator, List, Optional, Set, Tuple, cast
 
 from bson.decimal128 import Decimal128
-from more_itertools import groupby_transform
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
@@ -66,6 +67,7 @@ from crawler.constants import (
     MAX_CQ_VALUE,
     MIN_CQ_VALUE,
     RESULT_VALUE_POSITIVE,
+    FILE_AGE_IN_DAYS,
 )
 from crawler.db.dart import (
     add_dart_plate_if_doesnt_exist,
@@ -78,17 +80,7 @@ from crawler.filtered_positive_identifier import current_filtered_positive_ident
 from crawler.helpers.enums import CentreFileState
 from crawler.helpers.general_helpers import create_source_plate_doc, current_time, get_sftp_connection, pad_coordinate
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.types import (
-    CentreConf,
-    CentreDoc,
-    Config,
-    CSVRow,
-    ModifiedRow,
-    ModifiedRowValue,
-    RowSignature,
-    SampleDoc,
-    SourcePlateDoc,
-)
+from crawler.types import CentreConf, CentreDoc, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc
 
 logger = logging.getLogger(__name__)
 
@@ -203,11 +195,29 @@ class Centre:
             logger.debug(f"ls {self.config.SFTP_HOST}/{sftp_root_read}")
             logger.debug(sftp.listdir(sftp_root_read))
 
-            # download all plate map files
+            # download recent plate map files
             logger.info("Downloading plate map files")
-            sftp.get_d(self.centre_config["sftp_root_read"], self.get_download_dir())
+            for file_name in sftp.listdir(sftp_root_read):
+                source_path = os.path.join("/", sftp_root_read)
+                sftp.chdir(source_path)
+                mode = sftp.stat(file_name).st_mode
+                if self.is_csv_file(mode, file_name):
+                    timestamp = sftp.stat(file_name).st_mtime  # get timestamp of file
+                    modified_time = datetime.fromtimestamp(timestamp)
+                    now = datetime.now()
+                    delta = now - modified_time
+
+                    if delta.days < FILE_AGE_IN_DAYS:
+                        sftp.get(file_name, os.path.join(self.get_download_dir(), file_name))
 
         return None
+
+    def is_csv_file(self, mode: int, file_name: str) -> bool:
+        if stat.S_ISREG(mode):
+            file_name, file_extension = os.path.splitext(file_name)
+            return file_extension == ".csv"
+
+        return False
 
     def is_valid_filename(self, filename: str) -> bool:
         return self.is_eagle_filename(filename) or self.is_surveillance_filename(filename)
@@ -738,16 +748,13 @@ class CentreFile:
             {bool} -- True if the insert was successful; otherwise False
         """
 
-        def extract_plate_barcode(sample: SampleDoc) -> ModifiedRowValue:
-            return sample[FIELD_PLATE_BARCODE]
-
         logger.info("Adding to DART")
 
         if (sql_server_connection := create_dart_sql_server_conn(self.config)) is not None:
             try:
                 cursor = sql_server_connection.cursor()
 
-                group_iterator: Iterator[Tuple[Any, Any]] = groupby_transform(docs_to_insert, extract_plate_barcode)
+                group_iterator: Iterator[Tuple[Any, Any]] = groupby(docs_to_insert, lambda x: x[FIELD_PLATE_BARCODE])
 
                 for plate_barcode, samples in group_iterator:
                     try:
