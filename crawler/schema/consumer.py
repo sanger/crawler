@@ -1,8 +1,14 @@
 import pika
+from time import sleep
 
 def callback(ch, method, properties, body):
+    if body:
         print(f"Doing something with the message: {body}.")
+        sleep(1)
         print(f"I did something with the message: {body}.")
+    else: 
+        print("I'm not working :(")
+
 if __name__ == "__main__":
 
     print("Starting to receive...")
