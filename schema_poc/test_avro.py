@@ -1,7 +1,7 @@
 from datetime import datetime
+from io import BytesIO
 
-from avro.datafile import DataFileReader, DataFileWriter
-from avro.io import DatumReader, DatumWriter
+from avro.io import BinaryDecoder, BinaryEncoder, DatumReader, DatumWriter
 from avro.schema import parse as parse_schema
 
 
@@ -23,12 +23,27 @@ sample1 = {
 }
 
 schema = parse_schema(open("plate_map_sample_v1.avsc", "rb").read())
+writer = DatumWriter(schema)
+bytes_writer = BytesIO()
+encoder = BinaryEncoder(bytes_writer)
+writer.write(sample1, encoder)
+writer.write(sample1, encoder)
 
-writer = DataFileWriter(open("plate_map_samples_v1.avro", "wb"), DatumWriter(), schema)
-writer.append(sample1)
-writer.close()
+raw_bytes = bytes_writer.getvalue()
 
-reader = DataFileReader(open("plate_map_samples_v1.avro", "rb"), DatumReader())
-for sample in reader:
+# Send to RabbitMQ at this point
+# Let's now assume we just read raw_bytes from RabbitMQ
+
+bytes_reader = BytesIO(raw_bytes)
+decoder = BinaryDecoder(bytes_reader)
+reader = DatumReader(schema)
+try:
+  while(True):
+    sample = reader.read(decoder)
     print(sample)
-reader.close()
+except TypeError as ex:
+  if "string of length 0 found" in str(ex):
+    # This happens when we get to the end of the binary data
+    pass
+  else:
+    raise
