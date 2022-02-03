@@ -17,6 +17,7 @@ pytest-freezegun = "*"
 types-python-dateutil = "*"
 
 [packages]
+avro = "~=1.11"
 colorlog = "~=6.6"
 flask = "~=2.0"
 flask-apscheduler = "~=1.12"
