@@ -13,6 +13,6 @@
      {"name": "mustSequence", "type": "boolean"},
      {"name": "fitToPick", "type": "boolean"},
      {"name": "testedDateUtc", "type": "long", "logicalType": "timestamp-millis"},
-     {"name": "messageCreateTimeUtc", "type": "long", "logicalType": "timestamp-millis"}
+     {"name": "messageCreateDateUtc", "type": "long", "logicalType": "timestamp-millis"}
   ]
 }
