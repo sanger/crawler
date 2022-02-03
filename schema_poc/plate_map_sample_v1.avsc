@@ -3,23 +3,16 @@
   "type": "record",
   "name": "PlateMapSample",
   "fields": [
-     {"name": "rootSampleId", "type": "string"},
-     {"name": "rnaId",  "type": "string"},
-     {"name": "rnaPcrId", "type": "string"},
+     {"name": "labId", "type": "string"},
+     {"name": "sampleUuid", "type": "string"},
+     {"name": "cogUkId", "type": ["null", "string"], "default": null},
+     {"name": "plateBarcode", "type": "string"},
+     {"name": "plateCoordinate",  "type": "string"},
      {"name": "result", "type": "string"},
-     {"name": "dateTestedUtc", "type": ["null", "string"], "default": null},
-     {"name": "labId", "type": ["null", "string"], "default": null},
-     {"name": "ch1Target", "type": ["null", "string"], "default": null},
-     {"name": "ch1Result", "type": ["null", "string"], "default": null},
-     {"name": "ch1Cq", "type": ["null", "string"], "default": null},
-     {"name": "ch2Target", "type": ["null", "string"], "default": null},
-     {"name": "ch2Result", "type": ["null", "string"], "default": null},
-     {"name": "ch2Cq", "type": ["null", "string"], "default": null},
-     {"name": "ch3Target", "type": ["null", "string"], "default": null},
-     {"name": "ch3Result", "type": ["null", "string"], "default": null},
-     {"name": "ch3Cq", "type": ["null", "string"], "default": null},
-     {"name": "ch4Target", "type": ["null", "string"], "default": null},
-     {"name": "ch4Result", "type": ["null", "string"], "default": null},
-     {"name": "ch4Cq", "type": ["null", "string"], "default": null}
+     {"name": "preferentiallySequence", "type": "boolean"},
+     {"name": "mustSequence", "type": "boolean"},
+     {"name": "fitToPick", "type": "boolean"},
+     {"name": "testedDateUtc", "type": "long", "logicalType": "timestamp-millis"},
+     {"name": "messageCreateTimeUtc", "type": "long", "logicalType": "timestamp-millis"}
   ]
 }
