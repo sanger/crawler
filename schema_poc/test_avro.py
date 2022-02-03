@@ -5,8 +5,11 @@ from avro.io import BinaryDecoder, BinaryEncoder, DatumReader, DatumWriter
 from avro.schema import parse as parse_schema
 
 
-def convert_to_millis(dt):
-    return (int)(dt.timestamp() * 1000)
+def datetime_to_millis(dt):
+  return (int)(dt.timestamp() * 1000)
+
+def millis_to_datetime(millis):
+  return datetime.fromtimestamp(millis / 1000)
 
 
 sample1 = {
@@ -18,8 +21,8 @@ sample1 = {
     "preferentiallySequence": True,
     "mustSequence": True,
     "fitToPick": True,
-    "testedDateUtc": convert_to_millis(datetime(2022, 2, 1, 13, 45, 8)),
-    "messageCreateDateUtc": convert_to_millis(datetime.utcnow()),
+    "testedDateUtc": datetime_to_millis(datetime(2022, 2, 1, 13, 45, 8)),
+    "messageCreateDateUtc": datetime_to_millis(datetime.utcnow()),
 }
 
 schema = parse_schema(open("plate_map_sample_v1.avsc", "rb").read())
@@ -40,6 +43,8 @@ reader = DatumReader(schema)
 try:
   while(True):
     sample = reader.read(decoder)
+    sample["testedDateUtc"] = millis_to_datetime(sample["testedDateUtc"])
+    sample["messageCreateDateUtc"] = millis_to_datetime(sample["messageCreateDateUtc"])
     print(sample)
 except TypeError as ex:
   if "string of length 0 found" in str(ex):
