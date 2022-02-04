@@ -1,8 +1,8 @@
-import json
 from datetime import datetime
 from io import StringIO
 
 from fastavro import json_reader, json_writer, parse_schema
+from schema_registry import SchemaRegistry
 
 sample1 = {
     "labId": "CPTD",
@@ -19,8 +19,9 @@ sample1 = {
 
 samples = [sample1, sample1]
 
-with open("plate_map_sample_v1.avsc", "r") as schema_file:
-    schema = parse_schema(json.load(schema_file))
+schema_registry = SchemaRegistry("http://localhost:8081")
+schema_json = schema_registry.get_schema("plate-map-sample", 1)
+schema = parse_schema(schema_json)
 
 string_writer = StringIO()
 json_writer(string_writer, schema, samples)
