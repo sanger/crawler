@@ -4,15 +4,6 @@ from io import StringIO
 
 from fastavro import json_reader, json_writer, parse_schema
 
-
-def datetime_to_millis(dt):
-    return (int)(dt.timestamp() * 1000)
-
-
-def millis_to_datetime(millis):
-    return datetime.fromtimestamp(millis / 1000)
-
-
 sample1 = {
     "labId": "CPTD",
     "sampleUuid": "UUID-123456-01",
@@ -22,8 +13,8 @@ sample1 = {
     "preferentiallySequence": True,
     "mustSequence": True,
     "fitToPick": True,
-    "testedDateUtc": datetime_to_millis(datetime(2022, 2, 1, 13, 45, 8)),
-    "messageCreateDateUtc": datetime_to_millis(datetime.utcnow()),
+    "testedDateUtc": datetime(2022, 2, 1, 13, 45, 8),
+    "messageCreateDateUtc": datetime.utcnow(),
 }
 
 samples = [sample1, sample1]
