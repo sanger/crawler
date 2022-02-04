@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from io import BytesIO
 
-from fastavro import parse_schema, reader, writer
+from fastavro import json_reader, json_writer, parse_schema
 
 
 def datetime_to_millis(dt):
@@ -28,9 +28,9 @@ samples = [{
 with open("plate_map_sample_v1.avsc", "r") as schema_file:
   schema = parse_schema(json.load(schema_file))
 
-with open("plate_map_samples_v1.avro", "wb") as out_file:
-  writer(out_file, schema, samples)
+with open("plate_map_samples_v1.avro", "w") as out_file:
+  json_writer(out_file, schema, samples)
 
-with open("plate_map_samples_v1.avro", "rb") as in_file:
-  for sample in reader(in_file):
+with open("plate_map_samples_v1.avro", "r") as in_file:
+  for sample in json_reader(in_file, schema):
     print(sample)
