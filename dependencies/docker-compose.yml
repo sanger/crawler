@@ -35,18 +35,40 @@ services:
     volumes:
       - mssql-volume:/var/opt/mssql
 
+  # An SFTP server for hosting unit test files
+  # To run it as a standalone container:
+  #   docker run -p "3010:22" -v ${PWD}/test:/home/foo -d atmoz/sftp foo:pass:1001
   sftp_server:
     image: atmoz/sftp
     volumes:
-        - ../test:/home/foo
+      - ../test:/home/foo
     command: foo:pass:1001
     networks:
       - external
+
+  # An instance of RedPanda Schema Registry
+  # To run it as a standalone container:
+  #   docker network create redpanda-network
+  #   docker volume create redpanda-volume
+  #   docker run --name=schema_registry --net=redpanda-network -v "redpanda-volume:/var/lib/redpanda/data" -p 8081:8081 \
+  #     docker.vectorized.io/vectorized/redpanda start --overprovisioned --smp 1 --memory 250M
+  schema_registry:
+    image: docker.vectorized.io/vectorized/redpanda
+    networks:
+      - redpanda-network
+    ports:
+      - "8081:8081"
+    volumes:
+      - redpanda-volume:/var/lib/redpanda/data
+    mem_limit: 250m
+    command: start --overprovisioned --smp 1 --memory 250M
 
 volumes:
   mongo-volume:
   mysql-volume:
   mssql-volume:
+  redpanda-volume:
 
 networks:
   external:
+  redpanda-network:
