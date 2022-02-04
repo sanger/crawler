@@ -1,8 +1,8 @@
+import json
 from datetime import datetime
 from io import BytesIO
 
-from avro.io import BinaryDecoder, BinaryEncoder, DatumReader, DatumWriter
-from avro.schema import parse as parse_schema
+from fastavro import parse_schema, reader, writer
 
 
 def datetime_to_millis(dt):
@@ -12,7 +12,7 @@ def millis_to_datetime(millis):
   return datetime.fromtimestamp(millis / 1000)
 
 
-sample1 = {
+samples = [{
     "labId": "CPTD",
     "sampleUuid": "UUID-123456-01",
     "plateBarcode": "BARCODE001",
@@ -23,32 +23,14 @@ sample1 = {
     "fitToPick": True,
     "testedDateUtc": datetime_to_millis(datetime(2022, 2, 1, 13, 45, 8)),
     "messageCreateDateUtc": datetime_to_millis(datetime.utcnow()),
-}
+}]
 
-schema = parse_schema(open("plate_map_sample_v1.avsc", "rb").read())
-writer = DatumWriter(schema)
-bytes_writer = BytesIO()
-encoder = BinaryEncoder(bytes_writer)
-writer.write(sample1, encoder)
-writer.write(sample1, encoder)
+with open("plate_map_sample_v1.avsc", "r") as schema_file:
+  schema = parse_schema(json.load(schema_file))
 
-raw_bytes = bytes_writer.getvalue()
+with open("plate_map_samples_v1.avro", "wb") as out_file:
+  writer(out_file, schema, samples)
 
-# Send to RabbitMQ at this point
-# Let's now assume we just read raw_bytes from RabbitMQ
-
-bytes_reader = BytesIO(raw_bytes)
-decoder = BinaryDecoder(bytes_reader)
-reader = DatumReader(schema)
-try:
-  while(True):
-    sample = reader.read(decoder)
-    sample["testedDateUtc"] = millis_to_datetime(sample["testedDateUtc"])
-    sample["messageCreateDateUtc"] = millis_to_datetime(sample["messageCreateDateUtc"])
+with open("plate_map_samples_v1.avro", "rb") as in_file:
+  for sample in reader(in_file):
     print(sample)
-except TypeError as ex:
-  if "string of length 0 found" in str(ex):
-    # This happens when we get to the end of the binary data
-    pass
-  else:
-    raise
