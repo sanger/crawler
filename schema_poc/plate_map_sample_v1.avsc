@@ -2,6 +2,7 @@
   "namespace": "uk.ac.sanger.psd",
   "type": "record",
   "name": "PlateMapSample",
+  "doc": "Schema for a plate map sample.",
   "fields": [
     {  
       "name": "labId", 
