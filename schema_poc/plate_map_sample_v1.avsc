@@ -1,5 +1,5 @@
 {
-  "namespace": "uk.ac.sanger",
+  "namespace": "uk.ac.sanger.psd",
   "type": "record",
   "name": "PlateMapSample",
   "fields": [
