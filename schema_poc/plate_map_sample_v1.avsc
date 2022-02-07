@@ -4,77 +4,77 @@
   "name": "PlateMapSample",
   "doc": "Schema for a plate map sample.",
   "fields": [
-    {  
-      "name": "labId", 
-      "doc": "ID for the lighthouse where the sample originated.", 
+    {
+      "name": "labId",
+      "doc": "ID for the lighthouse where the sample originated.",
       "type": "string"
     },
     {
-      "name": "rootSampleId", 
-      "doc": "Internal ID for the sample from the lighthouse."
-      "type": "string", 
+      "name": "rootSampleId",
+      "doc": "Internal ID for the sample from the lighthouse.",
+      "type": "string"
     },
     {
-      "name": "sampleUuid", 
-      "doc": "Unique sample ID, assigned by PAM."
-      "type": "string", 
+      "name": "sampleUuid",
+      "doc": "Unique sample ID, assigned by PAM.",
+      "type": "string"
     },
     {
-      "name": "cogUkId", 
-      "doc": "Covid-19 Genomics UK consortium ID."
-      "type": ["null", "string"], 
-      "default": null, 
+      "name": "cogUkId",
+      "doc": "Covid-19 Genomics UK consortium ID.",
+      "type": ["null", "string"],
+      "default": null
     },
     {
-      "name": "plateBarcode", 
-      "doc": "Barcode for the sample plate."
-      "type": "string", 
+      "name": "plateBarcode",
+      "doc": "Barcode for the sample plate.",
+      "type": "string"
     },
     {
-      "name": "plateCoordinate",  
-      "doc": "Location of the sample on the plate."
-      "type": "string", 
+      "name": "plateCoordinate",
+      "doc": "Location of the sample on the plate.",
+      "type": "string"
     },
     {
-      "name": "result", 
-      "doc": "Result of the test."
-      "type": "string", 
+      "name": "result",
+      "doc": "Result of the test.",
+      "type": "string"
     },
     {
-      "name": "preferentiallySequence", 
-      "doc": "Sample should be sequenced sooner than others."
-      "type": "boolean", 
+      "name": "preferentiallySequence",
+      "doc": "Sample should be sequenced sooner than others.",
+      "type": "boolean"
     },
     {
-      "name": "mustSequence", 
-      "doc": "Must be sequenced."
-      "type": "boolean", 
+      "name": "mustSequence",
+      "doc": "Must be sequenced.",
+      "type": "boolean"
     },
     {
-      "name": "fitToPick", 
-      "doc": "Does sample need to be picked."
-      "type": "boolean", 
+      "name": "fitToPick",
+      "doc": "Does sample need to be picked.",
+      "type": "boolean"
     },
     {
-      "name": "testedDateUtc", 
-      "doc": "Date (UTC) of the test."
+      "name": "testedDateUtc",
+      "doc": "Date (UTC) of the test.",
       "type": {
-        "type": "long", 
+        "type": "long",
         "logicalType": "timestamp-millis"
-        }, 
+      }
     },
     {
-      "name": "messageCreateDateUtc", 
-      "doc": "Date (UTC) that the message was created."
-      "type": { 
-        "type": "long", 
+      "name": "messageCreateDateUtc",
+      "doc": "Date (UTC) that the message was created.",
+      "type": {
+        "type": "long",
         "logicalType": "timestamp-millis"
-        }, 
+      }
     },
     {
-      "name": "messageUuid", 
-      "doc": "Unique message ID."
-      "type": "string", 
+      "name": "messageUuid",
+      "doc": "Unique message ID.",
+      "type": "string"
     }
   ]
 }
