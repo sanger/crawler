@@ -18,6 +18,7 @@ sample1 = {
     "labId": "CPTD",
     "sampleUuid": "UUID-123456-01",
     "plateBarcode": "BARCODE001",
+    "rootSampleId": "R00T-S4MPL3-1D",
     "plateCoordinate": "A6",
     "result": "positive",
     "preferentiallySequence": True,
@@ -25,6 +26,7 @@ sample1 = {
     "fitToPick": True,
     "testedDateUtc": datetime(2022, 2, 1, 13, 45, 8),
     "messageCreateDateUtc": datetime.utcnow(),
+    "messageUuid": "UUID-789012-23"
 }
 
 samples = [sample1, sample1]
