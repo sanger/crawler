@@ -1,18 +1,100 @@
 {
-  "namespace": "uk.ac.sanger",
+  "namespace": "uk.ac.sanger.psd",
   "type": "record",
-  "name": "PlateMapSample",
+  "name": "PlateMapSampleMessage",
+  "doc": "A CRUD operation message to perform with specified plate map sample data.",
   "fields": [
-     {"name": "labId", "type": "string"},
-     {"name": "sampleUuid", "type": "string"},
-     {"name": "cogUkId", "type": ["null", "string"], "default": null},
-     {"name": "plateBarcode", "type": "string"},
-     {"name": "plateCoordinate",  "type": "string"},
-     {"name": "result", "type": "string"},
-     {"name": "preferentiallySequence", "type": "boolean"},
-     {"name": "mustSequence", "type": "boolean"},
-     {"name": "fitToPick", "type": "boolean"},
-     {"name": "testedDateUtc", "type": {"type": "long", "logicalType": "timestamp-millis"}},
-     {"name": "messageCreateDateUtc", "type": { "type": "long", "logicalType": "timestamp-millis"}}
+    {
+      "name": "messageUuid",
+      "doc": "Unique message ID.",
+      "type": "string"
+    },
+    {
+      "name": "messageCreateDateUtc",
+      "doc": "Date (UTC) that the message was created.",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    },
+    {
+      "name": "operation",
+      "doc": "The operation to perform with the provided sample data.",
+      "type": {
+        "name": "operationType",
+        "type": "enum",
+        "symbols": ["create", "update"]
+      }
+    },
+    {
+      "name": "sample",
+      "doc": "The sample object data.",
+      "type": {
+        "type": "record",
+        "name": "PlateMapSample",
+        "doc": "Plate map sample data.",
+        "fields": [
+          {
+            "name": "labId",
+            "doc": "ID for the lighthouse where the sample originated.",
+            "type": "string"
+          },
+          {
+            "name": "rootSampleId",
+            "doc": "Internal ID for the sample from the lighthouse.",
+            "type": "string"
+          },
+          {
+            "name": "sampleUuid",
+            "doc": "Unique sample ID, assigned by PAM.",
+            "type": "string"
+          },
+          {
+            "name": "cogUkId",
+            "doc": "Covid-19 Genomics UK consortium ID.",
+            "type": ["null", "string"],
+            "default": null
+          },
+          {
+            "name": "plateBarcode",
+            "doc": "Barcode for the sample plate.",
+            "type": "string"
+          },
+          {
+            "name": "plateCoordinate",
+            "doc": "Location of the sample on the plate.",
+            "type": "string"
+          },
+          {
+            "name": "result",
+            "doc": "Result of the test.",
+            "type": "string"
+          },
+          {
+            "name": "preferentiallySequence",
+            "doc": "Sample should be sequenced sooner than others.",
+            "type": "boolean"
+          },
+          {
+            "name": "mustSequence",
+            "doc": "Must be sequenced.",
+            "type": "boolean"
+          },
+          {
+            "name": "fitToPick",
+            "doc": "Does sample need to be picked.",
+            "type": "boolean"
+          },
+          {
+            "name": "testedDateUtc",
+            "doc": "Date (UTC) of the test.",
+            "type": {
+              "type": "long",
+              "logicalType": "timestamp-millis"
+            }
+          }
+        ]
+      }
+    }
   ]
 }
