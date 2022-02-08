@@ -15,18 +15,21 @@ from schema_registry import RESPONSE_KEY_SCHEMA, RESPONSE_KEY_VERSION, SchemaReg
 # }
 
 sample1 = {
-    "labId": "CPTD",
-    "sampleUuid": "UUID-123456-01",
-    "plateBarcode": "BARCODE001",
-    "rootSampleId": "R00T-S4MPL3-1D",
-    "plateCoordinate": "A6",
-    "result": "positive",
-    "preferentiallySequence": True,
-    "mustSequence": True,
-    "fitToPick": True,
-    "testedDateUtc": datetime(2022, 2, 1, 13, 45, 8),
+    "messageUuid": "UUID-789012-23",
     "messageCreateDateUtc": datetime.utcnow(),
-    "messageUuid": "UUID-789012-23"
+    "operation": "create",
+    "sample": {
+        "labId": "CPTD",
+        "sampleUuid": "UUID-123456-01",
+        "plateBarcode": "BARCODE001",
+        "rootSampleId": "R00T-S4MPL3-1D",
+        "plateCoordinate": "A6",
+        "result": "positive",
+        "preferentiallySequence": True,
+        "mustSequence": True,
+        "fitToPick": True,
+        "testedDateUtc": datetime(2022, 2, 1, 13, 45, 8),
+    },
 }
 
 samples = [sample1, sample1]

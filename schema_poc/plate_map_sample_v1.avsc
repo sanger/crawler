@@ -20,8 +20,11 @@
     {
       "name": "operation",
       "doc": "The operation to perform with the provided sample data.",
-      "type": "enum",
-      "symbols": ["create", "update"]
+      "type": {
+        "name": "operationType",
+        "type": "enum",
+        "symbols": ["create", "update"]
+      }
     },
     {
       "name": "sample",
