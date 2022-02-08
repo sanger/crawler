@@ -34,14 +34,12 @@
           {
             "name": "labId",
             "doc": "ID for the lighthouse where the sample originated.",
-            "type": ["null", "string"],
-            "default": null
+            "type": "string"
           },
           {
             "name": "rootSampleId",
             "doc": "Internal ID for the sample from the lighthouse.",
-            "type": ["null", "string"],
-            "default": null
+            "type": "string"
           },
           {
             "name": "sampleUuid",
@@ -57,50 +55,40 @@
           {
             "name": "plateBarcode",
             "doc": "Barcode for the sample plate.",
-            "type": ["null", "string"],
-            "default": null
+            "type": "string"
           },
           {
             "name": "plateCoordinate",
             "doc": "Location of the sample on the plate.",
-            "type": ["null", "string"],
-            "default": null
+            "type": "string"
           },
           {
             "name": "result",
             "doc": "Result of the test.",
-            "type": ["null", "string"],
-            "default": null
+            "type": "string"
           },
           {
             "name": "preferentiallySequence",
             "doc": "Sample should be sequenced sooner than others.",
-            "type": ["null", "boolean"],
-            "default": null
+            "type": "boolean"
           },
           {
             "name": "mustSequence",
             "doc": "Must be sequenced.",
-            "type": ["null", "boolean"],
-            "default": null
+            "type": "boolean"
           },
           {
             "name": "fitToPick",
             "doc": "Does sample need to be picked.",
-            "type": ["null", "boolean"],
-            "default": null
+            "type": "boolean"
           },
           {
             "name": "testedDateUtc",
             "doc": "Date (UTC) of the test.",
-            "type": [
-              "null",
-              {
-                "type": "long",
-                "logicalType": "timestamp-millis"
-              }
-            ],
-            "default": null
+            "type": {
+              "type": "long",
+              "logicalType": "timestamp-millis"
+            }
           }
         ]
       }
