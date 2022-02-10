@@ -1,0 +1,107 @@
+{
+  "namespace": "uk.ac.sanger.psd",
+  "type": "record",
+  "name": "PlateMapSampleFeedbackMessage",
+  "doc": "A CRUD operation message to perform with specified plate map sample data.",
+  "fields": [
+    {
+      "name": "messageUuid",
+      "doc": "The message ID of the original plate map sample message.",
+      "type": "string"
+    },
+    {
+      "name": "operation",
+      "doc": "The operation to perform with the provided sample data.",
+      "type": {
+        "name": "operationType",
+        "type": "enum",
+        "symbols": ["createPlateFeedback"]
+      }
+    },
+    {
+      "name": "operationSuccessful",
+      "doc": "Boolean indicating whether or not the message was read successfully.",
+      "type": "boolean"
+    },
+    {
+      "name": "feedback",
+      "doc": "Data relating to the plate message that was received.",
+      "type": {
+        "type": "record",
+        "name": "PlateMapSampleFeedback",
+        "doc": "Plate map sample feedback.",
+        "fields": [
+          {
+            "name": "plateErrors",
+            "type": {
+              "type": "array",
+              "items": [
+                {
+                  "name": "plateError",
+                  "type": "record",
+                  "fields": [
+                    {
+                      "name": "errorMessage",
+                      "doc": "An error message related to a failed plate map sample.",
+                      "type": "string"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "successCount",
+            "doc": "Total count of samples that were processed without errors.",
+            "type": "int"
+          },
+          {
+            "name": "failureCount",
+            "doc": "Total count of samples that caused an error.",
+            "type": "int"
+          },
+          {
+            "name": "samples",
+            "doc": "Information about individual samples.",
+            "type": {
+              "type": "record",
+              "name": "sampleInfo",
+              "doc": "Information about individual samples.",
+              "fields": [
+                {
+                  "name": "sampleUuid",
+                  "doc": "Unique sample ID, assigned by PAM.",
+                  "type": "string"
+                },
+                {
+                  "name": "sampleSuccessfullyProcessed",
+                  "doc": "Boolean indicating if the sample was processed succesfully.",
+                  "type": "boolean"
+                },
+                {
+                  "name": "sampleErrors",
+                  "type": {
+                    "type": "array",
+                    "items": [
+                      {
+                        "name": "sampleError",
+                        "type": "record",
+                        "fields": [
+                          {
+                            "name": "errorMessage",
+                            "doc": "An error message related to a failed plate map sample.",
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
