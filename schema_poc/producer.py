@@ -39,5 +39,5 @@ class Producer:
             properties=BasicProperties(headers={"subject": subject, "version": version}),
             body=message,
         )
-        print(f"Sent the message.")
+        print("Sent the message.")
         connection.close()

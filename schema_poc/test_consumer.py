@@ -1,4 +1,4 @@
-from schema_registry import RESPONSE_KEY_SCHEMA, RESPONSE_KEY_VERSION, SchemaRegistry
+from schema_registry import SchemaRegistry
 from consumer import Consumer
 
 # Before running this test, the schema is going to need to be loaded into RedPanda schema registry.
