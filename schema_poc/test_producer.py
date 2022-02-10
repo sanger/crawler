@@ -35,4 +35,4 @@ schema_registry = SchemaRegistry("http://localhost:8081")
 
 producer = Producer(schema_registry)
 message_and_info = producer.prepare_message(test_msg)
-producer.send_message(message_and_info)
+producer.send_message(message_and_info, exchange="", queue = "sample-messenger")

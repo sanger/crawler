@@ -20,10 +20,9 @@ class Consumer:
         else:
             print("There was no body with the message - try again.")
 
-    def receive_messages(self):
+    def receive_messages(self, queue):
         connection = BlockingConnection(ConnectionParameters("localhost"))
         channel = connection.channel()
-        queue = "sample-messenger"
         channel.queue_declare(queue=queue)
         channel.basic_consume(queue=queue, on_message_callback=self.callback, auto_ack=True)
 

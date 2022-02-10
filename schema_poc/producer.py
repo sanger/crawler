@@ -28,17 +28,16 @@ class Producer:
 
         return(prepared_message)
 
-    def send_message(self, message_and_info):
+    def send_message(self, message_and_info, exchange, queue):
         message = message_and_info["message"]
         version = message_and_info["version"]
         subject = message_and_info["subject"]
 
         connection = BlockingConnection(ConnectionParameters("localhost"))
         channel = connection.channel()
-        queue = "sample-messenger"
         channel.queue_declare(queue=queue)
         channel.basic_publish(
-            exchange="",
+            exchange=exchange,
             routing_key=queue,
             properties = BasicProperties(headers = {"version": version, "subject": subject}),
             body=message)

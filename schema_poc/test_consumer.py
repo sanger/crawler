@@ -14,4 +14,4 @@ schema_registry = SchemaRegistry("http://localhost:8081")
 
 # Read from RabbitMQ
 consumer = Consumer(schema_registry)
-consumer.receive_messages()
+consumer.receive_messages(queue="sample-messenger")
