@@ -1,16 +1,40 @@
 from pika import BlockingConnection, ConnectionParameters
 
-if __name__ == "__main__":
+import json
+from io import StringIO
+from schema_registry import RESPONSE_KEY_SCHEMA, RESPONSE_KEY_VERSION, SchemaRegistry
 
-    connection = BlockingConnection(ConnectionParameters("localhost"))
-    channel = connection.channel()
+from fastavro import json_writer, parse_schema
 
-    queue = "sample-messenger-test"
-    channel.queue_declare(queue=queue)
+class Producer:
+    def __init__(self, schema_registry: SchemaRegistry):
+        self._schema_registry = schema_registry
 
-    message = "hello this is a message"
-    channel.basic_publish(exchange="", routing_key=queue, body=message.encode("utf-8"))
+    def prepare_message(self, message):
+        subject = "plate-map-sample"
+        write_schema_response = self._schema_registry.get_latest_schema(subject)
+        write_schema_obj = json.loads(write_schema_response[RESPONSE_KEY_SCHEMA])
 
-    print(f"Sent the message: '{message}'.")
+        write_schema = parse_schema(write_schema_obj)
+        string_writer = StringIO()
+        json_writer(string_writer, write_schema, message)
 
-    connection.close()
+        prepared_message = {
+            'message': string_writer.getvalue()
+        }
+
+        return(prepared_message)
+
+    def send_message(self, message_and_info):
+        message = message_and_info["message"]
+
+        connection = BlockingConnection(ConnectionParameters("localhost"))
+        channel = connection.channel()
+        queue = "sample-messenger"
+        channel.queue_declare(queue=queue)
+        channel.basic_publish(
+            exchange="",
+            routing_key=queue,
+            body=message)
+        print(f"Sent the message.")
+        connection.close()
