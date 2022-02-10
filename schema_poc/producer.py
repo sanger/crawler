@@ -29,9 +29,9 @@ class Producer:
         return(prepared_message)
 
     def send_message(self, message_and_info, exchange, queue):
-        message = message_and_info["message"]
-        version = message_and_info["version"]
         subject = message_and_info["subject"]
+        version = message_and_info["version"]
+        message = message_and_info["message"]
 
         connection = BlockingConnection(ConnectionParameters("localhost"))
         channel = connection.channel()
@@ -39,7 +39,7 @@ class Producer:
         channel.basic_publish(
             exchange=exchange,
             routing_key=queue,
-            properties = BasicProperties(headers = {"version": version, "subject": subject}),
+            properties = BasicProperties(headers = { "subject": subject, "version": version }),
             body=message)
         print(f"Sent the message.")
         connection.close()
