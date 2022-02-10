@@ -17,18 +17,31 @@ from schema_registry import SchemaRegistry
 create_message = {
     "messageUuid": "UUID-789012-23",
     "messageCreateDateUtc": datetime.utcnow(),
-    "operation": "create",
-    "sample": {
+    "plate": {
         "labId": "CPTD",
-        "sampleUuid": "UUID-123456-01",
         "plateBarcode": "BARCODE001",
-        "rootSampleId": "R00T-S4MPL3-1D",
-        "plateCoordinate": "A6",
-        "result": "positive",
-        "preferentiallySequence": True,
-        "mustSequence": True,
-        "fitToPick": True,
-        "testedDateUtc": datetime(2022, 2, 1, 13, 45, 8),
+        "samples": [
+            {
+                "sampleUuid": "UUID-123456-01",
+                "rootSampleId": "R00T-S4MPL3-01",
+                "plateCoordinate": "A6",
+                "result": "positive",
+                "preferentiallySequence": True,
+                "mustSequence": True,
+                "fitToPick": True,
+                "testedDateUtc": datetime(2022, 2, 1, 13, 45, 8),
+            },
+            {
+                "sampleUuid": "UUID-123456-02",
+                "rootSampleId": "R00T-S4MPL3-02",
+                "plateCoordinate": "B9",
+                "result": "negative",
+                "preferentiallySequence": False,
+                "mustSequence": False,
+                "fitToPick": True,
+                "testedDateUtc": datetime(2022, 2, 1, 13, 45, 14),
+            },
+        ],
     },
 }
 
@@ -52,12 +65,12 @@ update_message = {
     },
 }
 
-MESSAGES = {"create-plate-map-sample": [create_message], "update-plate-map-sample": [update_message]}
+MESSAGES = {"create-plate-map": [create_message], "update-plate-map-sample": [update_message]}
 
 schema_registry = SchemaRegistry("http://localhost:8081")
 
 producer = Producer(schema_registry)
-subject = getenv("AVRO_TEST_SUBJECT", "create-plate-map-sample")
+subject = getenv("AVRO_TEST_SUBJECT", "create-plate-map")
 test_msg = MESSAGES[subject]
 prepared_message = producer.prepare_message(test_msg, subject)
 producer.send_message(prepared_message, queue=subject)

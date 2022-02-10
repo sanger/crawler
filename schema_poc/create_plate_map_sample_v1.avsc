@@ -1,0 +1,89 @@
+{
+  "namespace": "uk.ac.sanger.psd",
+  "type": "record",
+  "name": "CreatePlateMapMessage",
+  "doc": "A create message to process specified plate map data.",
+  "fields": [
+    {
+      "name": "messageUuid", "type": "string",
+      "doc": "Unique message ID."
+    },
+    {
+      "name": "messageCreateDateUtc",
+      "doc": "Date (UTC) that the message was created.",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    },
+    {
+      "name": "plate",
+      "doc": "The plate to process.",
+      "type": {
+        "name": "PlateMap", "type": "record",
+        "doc": "Plate map data.",
+        "fields": [
+          {
+            "name": "labId", "type": "string",
+            "doc": "ID for the lighthouse where the plate originated."
+          },
+          {
+            "name": "plateBarcode", "type": "string",
+            "doc": "The barcode for this plate."
+          },
+          {
+            "name": "samples",
+            "doc": "An array of data for samples on the plate.",
+            "type": {
+              "type": "array",
+              "items": {
+                "name": "PlateMapSample", "type": "record",
+                "doc": "A plate map sample.",
+                "fields": [
+                  {
+                    "name": "sampleUuid", "type": "string",
+                    "doc": "Unique sample ID, assigned by PAM."
+                  },
+                  {
+                    "name": "rootSampleId", "type": "string",
+                    "doc": "Internal ID for the sample from the lighthouse."
+                  },
+                  {
+                    "name": "cogUkId", "type": ["null", "string"], "default": null,
+                    "doc": "Covid-19 Genomics UK consortium ID (optional)."
+                  },
+                  {
+                    "name": "plateCoordinate", "type": "string",
+                    "doc": "Location of the sample on the plate."
+                  },
+                  {
+                    "name": "preferentiallySequence", "type": "boolean",
+                    "doc": "Sample should be sequenced sooner than others."
+                  },
+                  {
+                    "name": "mustSequence", "type": "boolean",
+                    "doc": "Must be sequenced."
+                  },
+                  {
+                    "name": "fitToPick", "type": "boolean",
+                    "doc": "Does sample need to be picked."
+                  },
+                  {
+                    "name": "result",
+                    "doc": "Result of the test on the sample. One of positive, negative or void.",
+                    "type": { "name": "resultValue", "type": "enum", "symbols": ["positive", "negative", "void"] }
+                  },
+                  {
+                    "name": "testedDateUtc",
+                    "doc": "Date (UTC) of the test.",
+                    "type": { "type": "long", "logicalType": "timestamp-millis" }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
