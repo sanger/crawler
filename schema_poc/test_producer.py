@@ -52,12 +52,12 @@ update_message = {
     },
 }
 
-MESSAGES = {"plate-map-sample": [create_message], "update-plate-map-sample": [update_message]}
+MESSAGES = {"create-plate-map-sample": [create_message], "update-plate-map-sample": [update_message]}
 
 schema_registry = SchemaRegistry("http://localhost:8081")
 
 producer = Producer(schema_registry)
-subject = getenv("AVRO_TEST_SUBJECT", "plate-map-sample")
+subject = getenv("AVRO_TEST_SUBJECT", "create-plate-map-sample")
 test_msg = MESSAGES[subject]
-message_and_info = producer.prepare_message(test_msg, subject)
-producer.send_message(message_and_info, exchange="", queue=subject)
+prepared_message = producer.prepare_message(test_msg, subject)
+producer.send_message(prepared_message, queue=subject)

@@ -23,7 +23,7 @@ class Producer:
 
         return prepared_message
 
-    def send_message(self, message_and_info, exchange, queue):
+    def send_message(self, message_and_info, queue, exchange=""):
         subject = message_and_info["subject"]
         version = message_and_info["version"]
         message = message_and_info["message"]
