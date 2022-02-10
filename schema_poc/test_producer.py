@@ -21,18 +21,20 @@ sample = {
     "preferentiallySequence": True,
     "mustSequence": True,
     "fitToPick": True,
-    "testedDateUtc": datetime(2022, 2, 1, 13, 45, 8)
+    "testedDateUtc": datetime(2022, 2, 1, 13, 45, 8),
 }
 
-test_msg = [{
-    "messageUuid": "UUID-789012-23",
-    "messageCreateDateUtc": datetime.utcnow(),
-    "operation": "create",
-    "sample": sample
-}]
+test_msg = [
+    {
+        "messageUuid": "UUID-789012-23",
+        "messageCreateDateUtc": datetime.utcnow(),
+        "operation": "create",
+        "sample": sample,
+    }
+]
 
 schema_registry = SchemaRegistry("http://localhost:8081")
 
 producer = Producer(schema_registry)
 message_and_info = producer.prepare_message(test_msg)
-producer.send_message(message_and_info, exchange="", queue = "sample-messenger")
+producer.send_message(message_and_info, exchange="", queue="sample-messenger")

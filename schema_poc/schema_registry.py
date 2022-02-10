@@ -6,6 +6,7 @@ RESPONSE_KEY_VERSION = "version"
 RESPONSE_KEY_SCHEMA = "schema"
 RESPONSE_KEY_SUBJECT = "subject"
 
+
 class SchemaRegistry:
     def __init__(self, base_uri: str):
         self._base_uri = base_uri

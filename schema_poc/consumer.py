@@ -4,17 +4,19 @@ import json
 from fastavro import parse_schema, json_reader
 from io import StringIO
 
+
 class Consumer:
     def __init__(self, schema_registry: SchemaRegistry):
         self._schema_registry = schema_registry
 
     def callback(self, ch, method, properties, body):
         if body:
-            read_schema_response = self._schema_registry.get_schema(properties.headers[RESPONSE_KEY_SUBJECT],
-                                                                    properties.headers[RESPONSE_KEY_VERSION])
+            read_schema_response = self._schema_registry.get_schema(
+                properties.headers[RESPONSE_KEY_SUBJECT], properties.headers[RESPONSE_KEY_VERSION]
+            )
             read_schema_obj = json.loads(read_schema_response[RESPONSE_KEY_SCHEMA])
             read_schema = parse_schema(read_schema_obj)
-            string_reader = StringIO(body.decode('utf-8'))
+            string_reader = StringIO(body.decode("utf-8"))
             for sample in json_reader(string_reader, read_schema):
                 print(sample)
         else:
