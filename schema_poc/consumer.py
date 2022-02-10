@@ -1,28 +1,36 @@
-from time import sleep
-
 from pika import BlockingConnection, ConnectionParameters
+from schema_registry import SchemaRegistry, RESPONSE_KEY_VERSION, RESPONSE_KEY_SCHEMA, RESPONSE_KEY_SUBJECT
+import json
+from fastavro import parse_schema, json_reader
+from io import StringIO
 
+class Consumer:
+    def __init__(self, schema_registry: SchemaRegistry):
+        self._schema_registry = schema_registry
 
-def callback(ch, method, properties, body):
-    if body:
-        print(f"Doing something with the message: {body}.")
-        sleep(1)
-        print(f"I did something with the message: {body}.")
-    else:
-        print("I'm not working :(")
+    def callback(self, ch, method, properties, body):
+        if body:
+            read_schema_response = self._schema_registry.get_schema(properties.headers[RESPONSE_KEY_SUBJECT],
+                                                                    properties.headers[RESPONSE_KEY_VERSION])
+            read_schema_obj = json.loads(read_schema_response[RESPONSE_KEY_SCHEMA])
+            read_schema = parse_schema(read_schema_obj)
+            string_reader = StringIO(body.decode('utf-8'))
+            for sample in json_reader(string_reader, read_schema):
+                print(sample)
+        else:
+            print("There was no body with the message - try again.")
 
+    def receive_messages(self):
+        connection = BlockingConnection(ConnectionParameters("localhost"))
+        channel = connection.channel()
+        queue = "sample-messenger"
+        channel.queue_declare(queue=queue)
+        channel.basic_consume(queue=queue, on_message_callback=self.callback, auto_ack=True)
 
-if __name__ == "__main__":
+        try:
+            channel.start_consuming()
+        except KeyboardInterrupt:
+            channel.stop_consuming()
 
-    print("Starting to receive...")
-
-    connection = BlockingConnection(ConnectionParameters("localhost"))
-    channel = connection.channel()
-
-    queue = "sample-messenger-test"
-    channel.queue_declare(queue=queue)
-
-    channel.basic_consume(queue=queue, on_message_callback=callback, auto_ack=True)
-    channel.start_consuming()
-
-    print("Finished consuming.")
+        connection.close()
+        print("Finished consuming.")
