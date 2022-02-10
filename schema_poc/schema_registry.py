@@ -4,7 +4,6 @@ from requests import get
 
 RESPONSE_KEY_VERSION = "version"
 RESPONSE_KEY_SCHEMA = "schema"
-RESPONSE_KEY_SUBJECT = "subject"
 
 
 class SchemaRegistry:
