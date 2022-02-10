@@ -1,18 +1,16 @@
-from pika import BlockingConnection, ConnectionParameters, BasicProperties
-
 import json
 from io import StringIO
-from schema_registry import RESPONSE_KEY_SCHEMA, RESPONSE_KEY_VERSION, SchemaRegistry
 
 from fastavro import json_writer, parse_schema
+from pika import BasicProperties, BlockingConnection, ConnectionParameters
+from schema_registry import RESPONSE_KEY_SCHEMA, RESPONSE_KEY_VERSION, SchemaRegistry
 
 
 class Producer:
     def __init__(self, schema_registry: SchemaRegistry):
         self._schema_registry = schema_registry
 
-    def prepare_message(self, message):
-        subject = "plate-map-sample"
+    def prepare_message(self, message, subject):
         write_schema_response = self._schema_registry.get_latest_schema(subject)
         write_schema_version = write_schema_response[RESPONSE_KEY_VERSION]
         write_schema_obj = json.loads(write_schema_response[RESPONSE_KEY_SCHEMA])

@@ -1,0 +1,75 @@
+{
+  "namespace": "uk.ac.sanger.psd",
+  "type": "record",
+  "name": "UpdatePlateMapSampleMessage",
+  "doc": "A message describing the field level updates needed to be applied to a plate map sample.",
+  "fields": [
+    {
+      "name": "messageUuid", "type": "string",
+      "doc": "Unique message ID."
+    },
+    {
+      "name": "messageCreateDateUtc",
+      "doc": "Date (UTC) that the message was created.",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    },
+    {
+      "name": "sample",
+      "doc": "Sample object data.",
+      "type": {
+        "name": "PlateMapSample", "type": "record",
+        "doc": "Plate map sample data.",
+        "fields": [
+          {
+            "name": "sampleUuid", "type": "string",
+            "doc": "Unique sample ID, assigned by PAM."
+          },
+          {
+            "name": "updatedFields",
+            "doc": "An array of field data to update. All included fields will be updated. Missing fields will be left unchanged.",
+            "type": {
+              "type": "array",
+              "items": [
+                {
+                  "name": "stringField", "type": "record",
+                  "doc": "A field with a required string value.",
+                  "fields": [
+                    { "name": "name", "type": { "name": "requiredStringFields", "type": "enum", "symbols": ["labId", "rootSampleId", "plateBarcode", "plateCoordinate", "result"] }},
+                    { "name": "value", "type": "string" }
+                  ]
+                },
+                {
+                  "name": "optionalStringField", "type": "record",
+                  "doc": "A field with a string value which can be deleted by passing null as the value.",
+                  "fields": [
+                    { "name": "name", "type": { "name": "optionalStringFields", "type": "enum", "symbols": ["cogUkId"] }},
+                    { "name": "value", "type": ["null", "string"] }
+                  ]
+                },
+                {
+                  "name": "booleanField", "type": "record",
+                  "doc": "A field with a required boolean value.",
+                  "fields": [
+                    { "name": "name", "type": { "name": "requiredBooleanFields", "type": "enum", "symbols": ["preferentiallySequence", "mustSequence", "fitToPick"] }},
+                    { "name": "value", "type": "boolean" }
+                  ]
+                },
+                {
+                  "name": "timestampField", "type": "record",
+                  "doc": "A field with a required UTC timestamp value.",
+                  "fields": [
+                    { "name": "name", "type": { "name": "requiredTimestampFields", "type": "enum", "symbols": ["testedDateUtc"] }},
+                    { "name": "value", "type": { "type": "long", "logicalType": "timestamp-millis" } }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

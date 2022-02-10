@@ -1,5 +1,7 @@
-from schema_registry import SchemaRegistry
+from os import getenv
+
 from consumer import Consumer
+from schema_registry import SchemaRegistry
 
 # Before running this test, the schema is going to need to be loaded into RedPanda schema registry.
 # The test here assume RedPanda is running on local host port 8081, which it will be if you used the dependencies
@@ -14,4 +16,5 @@ schema_registry = SchemaRegistry("http://localhost:8081")
 
 # Read from RabbitMQ
 consumer = Consumer(schema_registry)
-consumer.receive_messages(queue="sample-messenger")
+subject = getenv("AVRO_TEST_SUBJECT", "plate-map-sample")
+consumer.receive_messages(queue=subject)
