@@ -24,7 +24,7 @@ sample = {
     "testedDateUtc": datetime(2022, 2, 1, 13, 45, 8),
 }
 
-test_msg = [
+test_sample_message = [
     {
         "messageUuid": "UUID-789012-23",
         "messageCreateDateUtc": datetime.utcnow(),
@@ -33,8 +33,49 @@ test_msg = [
     }
 ]
 
+test_feedback_message = [
+    {
+        "messageUuid": "UUID-789012-23",
+        "operation": "createPlateFeedback",
+        "operationSuccessful": False,
+        "feedback": {
+            "plateErrors": {
+                    "errorMessage": "ERROR MESSAGE: SOMETHING HAPPENED"
+            },
+            "successCount": 1,
+            "failureCount": 2,
+            "samples": [
+                {
+                    "sampleUuid": "id1",
+                    "sampleSuccessfullyProcessed": True,
+                    "sampleErrors": {
+                        "200"
+                    }
+                },
+                {
+                    "sampleUuid": "id2",
+                    "sampleSuccessfullyProcessed": True,
+                    "sampleErrors": {
+                        "404: SAMPLE NOT FOUND."
+                    }
+                },
+                {
+                    "sampleUuid": "id1",
+                    "sampleSuccessfullyProcessed": True,
+                    "sampleErrors": {
+                        "403: CAN'T DO THAT."
+                    }
+                }
+            ]
+        }
+    }
+]
+
+
+
 schema_registry = SchemaRegistry("http://localhost:8081")
 
 producer = Producer(schema_registry)
-message_and_info = producer.prepare_message(test_msg)
+subject = "plate-map-sample-feedback"
+message_and_info = producer.prepare_message(test_feedback_message, subject)
 producer.send_message(message_and_info, exchange="", queue="sample-messenger")

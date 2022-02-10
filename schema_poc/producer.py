@@ -11,12 +11,11 @@ class Producer:
     def __init__(self, schema_registry: SchemaRegistry):
         self._schema_registry = schema_registry
 
-    def prepare_message(self, message):
-        subject = "plate-map-sample"
+    def prepare_message(self, message, subject):
         write_schema_response = self._schema_registry.get_latest_schema(subject)
         write_schema_version = write_schema_response[RESPONSE_KEY_VERSION]
         write_schema_obj = json.loads(write_schema_response[RESPONSE_KEY_SCHEMA])
-
+        print(write_schema_obj)
         write_schema = parse_schema(write_schema_obj)
         string_writer = StringIO()
         json_writer(string_writer, write_schema, message)
