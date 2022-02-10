@@ -1,4 +1,4 @@
-from pika import BlockingConnection, ConnectionParameters
+from pika import BlockingConnection, ConnectionParameters, BasicProperties
 
 import json
 from io import StringIO
@@ -13,6 +13,7 @@ class Producer:
     def prepare_message(self, message):
         subject = "plate-map-sample"
         write_schema_response = self._schema_registry.get_latest_schema(subject)
+        write_schema_version = write_schema_response[RESPONSE_KEY_VERSION]
         write_schema_obj = json.loads(write_schema_response[RESPONSE_KEY_SCHEMA])
 
         write_schema = parse_schema(write_schema_obj)
@@ -20,6 +21,8 @@ class Producer:
         json_writer(string_writer, write_schema, message)
 
         prepared_message = {
+            'subject': subject,
+            'version': write_schema_version,
             'message': string_writer.getvalue()
         }
 
@@ -27,6 +30,8 @@ class Producer:
 
     def send_message(self, message_and_info):
         message = message_and_info["message"]
+        version = message_and_info["version"]
+        subject = message_and_info["subject"]
 
         connection = BlockingConnection(ConnectionParameters("localhost"))
         channel = connection.channel()
@@ -35,6 +40,7 @@ class Producer:
         channel.basic_publish(
             exchange="",
             routing_key=queue,
+            properties = BasicProperties(headers = {"version": version, "subject": subject}),
             body=message)
         print(f"Sent the message.")
         connection.close()
