@@ -1,8 +1,10 @@
-from pika import BlockingConnection, ConnectionParameters
-from schema_registry import SchemaRegistry, RESPONSE_KEY_VERSION, RESPONSE_KEY_SCHEMA, RESPONSE_KEY_SUBJECT
 import json
-from fastavro import parse_schema, json_reader
 from io import StringIO
+
+from constants import MESSAGE_PROPERTY_SUBJECT, MESSAGE_PROPERTY_VERSION
+from fastavro import json_reader, parse_schema
+from pika import BlockingConnection, ConnectionParameters
+from schema_registry import RESPONSE_KEY_SCHEMA, SchemaRegistry
 
 
 class Consumer:
@@ -12,7 +14,7 @@ class Consumer:
     def callback(self, ch, method, properties, body):
         if body:
             read_schema_response = self._schema_registry.get_schema(
-                properties.headers[RESPONSE_KEY_SUBJECT], properties.headers[RESPONSE_KEY_VERSION]
+                properties.headers[MESSAGE_PROPERTY_SUBJECT], properties.headers[MESSAGE_PROPERTY_VERSION]
             )
             read_schema_obj = json.loads(read_schema_response[RESPONSE_KEY_SCHEMA])
             read_schema = parse_schema(read_schema_obj)
