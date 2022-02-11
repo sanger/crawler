@@ -98,11 +98,35 @@ update_message = {
     },
 }
 
+update_feedback_message = {
+    "sourceMessageUuid": "INVALID_UUID",
+    "operationWasErrorFree": False,
+    "errors": [
+        {
+            "origin": "root",
+            "sampleUuid": None,
+            "field": "messageUuid",
+            "description": "Provided UUID 'INVALID_UUID' is invalid.",
+        },
+        {
+            "origin": "field",
+            "field": "plateCoordinate",
+            "description": "Value given 'K15' is invalid.",
+        },
+        {
+            "origin": "field",
+            "field": "testedDateUtc",
+            "description": "Value given '2016-10-08' is not in the allowed range.",
+        },
+    ],
+}
+
 
 MESSAGES = {
     "create-plate-map": [create_message],
     "create-plate-map-feedback": [create_feedback_message],
     "update-plate-map-sample": [update_message],
+    "update-plate-map-sample-feedback": [update_feedback_message],
 }
 
 schema_registry = SchemaRegistry("http://localhost:8081")
