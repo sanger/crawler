@@ -46,19 +46,36 @@ create_message = {
 }
 
 create_feedback_message = {
-    "messageUuid": "UUID-789012-23",
-    "operation": "createPlateFeedback",
-    "operationSuccessful": False,
-    "feedback": {
-        "plateErrors": {"errorMessage": "ERROR MESSAGE: SOMETHING HAPPENED"},
-        "successCount": 1,
-        "failureCount": 2,
-        "samples": [
-            {"sampleUuid": "id1", "sampleSuccessfullyProcessed": True, "sampleErrors": {"200"}},
-            {"sampleUuid": "id2", "sampleSuccessfullyProcessed": True, "sampleErrors": {"404: SAMPLE NOT FOUND."}},
-            {"sampleUuid": "id1", "sampleSuccessfullyProcessed": True, "sampleErrors": {"403: CAN'T DO THAT."}},
-        ],
-    },
+    "sourceMessageUuid": "INVALID_UUID",
+    "countOfTotalSamples": 94,
+    "countOfValidSamples": 92,
+    "operationWasErrorFree": False,
+    "errors": [
+        {
+            "origin": "root",
+            "sampleUuid": None,
+            "field": "messageUuid",
+            "description": "Provided UUID 'INVALID_UUID' is invalid.",
+        },
+        {
+            "origin": "plate",
+            "sampleUuid": None,
+            "field": "labId",
+            "description": "Value given 'undefined' is unrecognised.",
+        },
+        {
+            "origin": "sample",
+            "sampleUuid": "SAMPLE-UUID-002",
+            "field": "plateCoordinate",
+            "description": "Value given 'K15' is invalid.",
+        },
+        {
+            "origin": "sample",
+            "sampleUuid": "SAMPLE-UUID-008",
+            "field": "testedDateUtc",
+            "description": "Value given '2016-10-08' is not in the allowed range.",
+        },
+    ],
 }
 
 update_message = {
