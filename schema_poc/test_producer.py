@@ -15,14 +15,14 @@ from schema_registry import SchemaRegistry
 # }
 
 create_message = {
-    "messageUuid": "UUID-789012-23",
+    "messageUuid": b"b01aa0ad-7b19-4f94-87e9-70d74fb8783c",
     "messageCreateDateUtc": datetime.utcnow(),
     "plate": {
         "labId": "CPTD",
         "plateBarcode": "BARCODE001",
         "samples": [
             {
-                "sampleUuid": "UUID-123456-01",
+                "sampleUuid": b"dd490ee5-fd1d-456d-99fd-eb9d3861e0f6",
                 "rootSampleId": "R00T-S4MPL3-01",
                 "plateCoordinate": "A6",
                 "result": "positive",
@@ -32,7 +32,7 @@ create_message = {
                 "testedDateUtc": datetime(2022, 2, 1, 13, 45, 8),
             },
             {
-                "sampleUuid": "UUID-123456-02",
+                "sampleUuid": b"d1631fe4-6fd3-4f35-add1-8de2f54802c2",
                 "rootSampleId": "R00T-S4MPL3-02",
                 "plateCoordinate": "B9",
                 "result": "negative",
@@ -62,10 +62,10 @@ create_feedback_message = {
 }
 
 update_message = {
-    "messageUuid": "UUID-789012-23",
+    "messageUuid": b"78fedc85-fa9d-494d-951e-779d208e8c0e",
     "messageCreateDateUtc": datetime.utcnow(),
     "sample": {
-        "sampleUuid": "UUID-123456-01",
+        "sampleUuid": b"3f51febc-aeb7-4aee-a730-20d6d308df60",
         "updatedFields": [
             {"name": "labId", "value": "CPTD"},
             {"name": "rootSampleId", "value": "R00T-S4MPL3-1D"},
