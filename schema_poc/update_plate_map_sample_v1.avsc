@@ -39,7 +39,7 @@
                   "name": "stringField", "type": "record",
                   "doc": "A field with a required string value.",
                   "fields": [
-                    { "name": "name", "type": { "name": "requiredStringFields", "type": "enum", "symbols": ["labId", "rootSampleId", "plateBarcode", "plateCoordinate"] } },
+                    { "name": "name", "type": { "name": "requiredStringFields", "type": "enum", "symbols": ["labId", "rootSampleId", "rnaId", "plateBarcode", "plateCoordinate"] } },
                     { "name": "value", "type": "string" }
                   ]
                 },
