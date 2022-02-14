@@ -49,6 +49,10 @@
                     "doc": "Internal ID for the sample from the lighthouse."
                   },
                   {
+                    "name": "rnaId", "type": "string",
+                    "doc": "The RNA ID for the sample. Used later as the sample name."
+                  },
+                  {
                     "name": "cogUkId", "type": ["null", "string"], "default": null,
                     "doc": "Covid-19 Genomics UK consortium ID (optional)."
                   },

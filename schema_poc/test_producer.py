@@ -24,6 +24,7 @@ create_message = {
             {
                 "sampleUuid": "UUID-123456-01",
                 "rootSampleId": "R00T-S4MPL3-01",
+                "rnaId": "BARCODE001_A6",
                 "plateCoordinate": "A6",
                 "result": "positive",
                 "preferentiallySequence": True,
@@ -34,6 +35,7 @@ create_message = {
             {
                 "sampleUuid": "UUID-123456-02",
                 "rootSampleId": "R00T-S4MPL3-02",
+                "rnaId": "BARCODE001_B9",
                 "plateCoordinate": "B9",
                 "result": "negative",
                 "preferentiallySequence": False,
@@ -55,6 +57,7 @@ update_message = {
             {"name": "rootSampleId", "value": "R00T-S4MPL3-1D"},
             {"name": "plateBarcode", "value": "BARCODE001"},
             {"name": "plateCoordinate", "value": "A6"},
+            {"name": "rnaId", "value": "BARCODE001_A6"},
             {"name": "result", "value": "positive"},
             {"name": "cogUkId", "value": None},
             {"name": "preferentiallySequence", "value": True},
