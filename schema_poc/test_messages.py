@@ -1,5 +1,16 @@
 from datetime import datetime
 
+cherrypicked_message = {
+    "samples": [
+        {"sampleUuid": b"35d81426-2438-4a38-ae1b-97501d597362"},
+        {"sampleUuid": b"e2f6484e-7133-4987-ae38-e0d65089f80b"},
+        {"sampleUuid": b"35d81426-2438-4a38-ae1b-97501d597363"},
+        {"sampleUuid": b"e2f6484e-7133-4987-ae38-e0d65089f80c"},
+        {"sampleUuid": b"35d81426-2438-4a38-ae1b-97501d597364"},
+        {"sampleUuid": b"e2f6484e-7133-4987-ae38-e0d65089f80d"},
+    ]
+}
+
 create_message = {
     "messageUuid": b"b01aa0ad-7b19-4f94-87e9-70d74fb8783c",
     "messageCreateDateUtc": datetime.utcnow(),
@@ -108,6 +119,7 @@ update_feedback_message = {
 }
 
 MESSAGES = {
+    "cherrypicked-samples": [cherrypicked_message],
     "create-plate-map": [create_message],
     "create-plate-map-feedback": [create_feedback_message],
     "update-plate-map-sample": [update_message],

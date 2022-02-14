@@ -1,0 +1,25 @@
+{
+  "namespace": "uk.ac.sanger.psd",
+  "type": "record",
+  "name": "CherrypickedSamplesMessage",
+  "doc": "A message notifying the cherrypicked state of a list of samples.",
+  "fields": [
+    {
+      "name": "samples",
+      "doc": "An array of samples that have been cherrypicked.",
+      "type": {
+        "type": "array",
+        "items": {
+          "name": "Sample", "type": "record",
+          "fields": [
+            {
+              "name": "sampleUuid",
+              "doc": "Unique sample UUID.",
+              "type": {"name": "version4SampleUuid", "type": "fixed", "size": 36}
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
