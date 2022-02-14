@@ -14,8 +14,7 @@ class Producer:
     def __init__(self, schema_registry: SchemaRegistry):
         self._schema_registry = schema_registry
 
-    def prepare_message(self, message):
-        subject = "plate-map-sample"
+    def prepare_message(self, message, subject):
         write_schema_response = self._schema_registry.get_latest_schema(subject)
         write_schema_obj = json.loads(write_schema_response[RESPONSE_KEY_SCHEMA])
 
@@ -32,7 +31,7 @@ class Producer:
 
         return {MESSAGE_KEY_PROPERTIES: properties, MESSAGE_KEY_BODY: string_writer.getvalue()}
 
-    def send_message(self, prepared_message, exchange, queue):
+    def send_message(self, prepared_message, queue, exchange=""):
         connection = BlockingConnection(ConnectionParameters("localhost"))
         channel = connection.channel()
         channel.queue_declare(queue=queue)
