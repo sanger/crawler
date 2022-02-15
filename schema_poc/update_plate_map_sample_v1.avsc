@@ -5,8 +5,9 @@
   "doc": "A message describing the field level updates needed to be applied to a plate map sample.",
   "fields": [
     {
-      "name": "messageUuid", "type": "string",
-      "doc": "Unique message ID."
+      "name": "messageUuid",
+      "doc": "Unique message ID.",
+      "type": {"name": "version4MessageUuid", "type": "fixed", "size": 36}
     },
     {
       "name": "messageCreateDateUtc",
@@ -24,8 +25,9 @@
         "doc": "Plate map sample data.",
         "fields": [
           {
-            "name": "sampleUuid", "type": "string",
-            "doc": "Unique sample ID, assigned by PAM."
+            "name": "sampleUuid",
+            "doc": "Unique sample ID, assigned by PAM.",
+            "type": {"name": "version4SampleUuid", "type": "fixed", "size": 36}
           },
           {
             "name": "updatedFields",

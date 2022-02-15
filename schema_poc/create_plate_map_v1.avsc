@@ -5,16 +5,14 @@
   "doc": "A create message to process specified plate map data.",
   "fields": [
     {
-      "name": "messageUuid", "type": "string",
-      "doc": "Unique message ID."
+      "name": "messageUuid",
+      "doc": "Unique message ID.",
+      "type": {"name": "version4MessageUuid", "type": "fixed", "size": 36}
     },
     {
       "name": "messageCreateDateUtc",
       "doc": "Date (UTC) that the message was created.",
-      "type": {
-        "type": "long",
-        "logicalType": "timestamp-millis"
-      }
+      "type": { "type": "long", "logicalType": "timestamp-millis" }
     },
     {
       "name": "plate",
@@ -41,8 +39,9 @@
                 "doc": "A plate map sample.",
                 "fields": [
                   {
-                    "name": "sampleUuid", "type": "string",
-                    "doc": "Unique sample ID, assigned by PAM."
+                    "name": "sampleUuid",
+                    "doc": "Unique sample ID, assigned by PAM.",
+                    "type": {"name": "version4SampleUuid", "type": "fixed", "size": 36}
                   },
                   {
                     "name": "rootSampleId", "type": "string",

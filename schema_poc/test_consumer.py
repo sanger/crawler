@@ -16,5 +16,5 @@ schema_registry = SchemaRegistry("http://localhost:8081")
 
 # Read from RabbitMQ
 consumer = Consumer(schema_registry)
-subject = getenv("AVRO_TEST_SUBJECT", "plate-map-sample")
+subject = getenv("AVRO_TEST_SUBJECT", "create-plate-map")
 consumer.receive_messages(queue=subject)
