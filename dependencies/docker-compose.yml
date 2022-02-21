@@ -61,7 +61,25 @@ services:
     volumes:
       - redpanda-volume:/var/lib/redpanda/data
     mem_limit: 250m
-    command: start --overprovisioned --smp 1 --memory 250M
+    command:
+      - start
+      - --overprovisioned
+      - --smp 1
+      - --memory 250M
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: heron-rabbitmq
+    ports:
+      - "5672:5672"
+      - "8080:15672"
+    configs:
+      - source: rabbitmq-conf
+        target: /etc/rabbitmq/rabbitmq.conf
+
+configs:
+  rabbitmq-conf:
+    file: ./rabbitmq.conf
 
 volumes:
   mongo-volume:
