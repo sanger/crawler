@@ -55,6 +55,11 @@ The following tools are required for development:
         brew install mongodb-community@4.2
         brew services start mongodb-community@4.2
 
+- To support the parsing of messages from RabbitMQ instead of via SFTP, both
+  RabbitMQ and Redpanda must be available.  Running these from Docker is highly
+  recommended.  Follow the instructions under the Docker section of this
+  document to bringing up the dependencies and ensure these are available.
+
 ## Getting Started
 
 ### Configuring Environment
@@ -281,15 +286,15 @@ If you do not have root access pyodbc will not work if you use brew. Using the
 docker compose you can set up the full stack and it will also set the correct
 environment variables.
 
-To run the database dependencies used by Crawler and also Lighthouse, there is a
-separate configuration for Docker Compose. This is shared with Lighthouse so if
-you start these dependencies here, there's no need to also attempt to do so in
-the Lighthouse repository. They are the same resources in both and the second
-one to be started will show exceptions about ports already being allocated:
+To run the dependencies used by Crawler and also Lighthouse, there is a separate
+configuration for Docker Compose. This is shared with Lighthouse so if you start
+these dependencies here, there's no need to also attempt to do so in the
+Lighthouse repository. They are the same resources in both and the second one to
+be started will show exceptions about ports already being allocated:
 
     ./dependencies/up.sh
 
-When you want to shut the databases back down, you can do so with:
+When you want to shut the dependencies back down, you can do so with:
 
     ./dependencies/down.sh
 
