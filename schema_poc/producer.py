@@ -1,9 +1,10 @@
 import json
 from io import StringIO
+from ssl import create_default_context
 
 from constants import MESSAGE_PROPERTY_SUBJECT, MESSAGE_PROPERTY_VERSION
 from fastavro import json_writer, parse_schema
-from pika import BasicProperties, BlockingConnection, ConnectionParameters
+from pika import BasicProperties, BlockingConnection, ConnectionParameters, PlainCredentials, SSLOptions
 from schema_registry import RESPONSE_KEY_SCHEMA, RESPONSE_KEY_VERSION, SchemaRegistry
 
 MESSAGE_KEY_PROPERTIES = "properties"
@@ -31,9 +32,17 @@ class Producer:
         return {MESSAGE_KEY_PROPERTIES: properties, MESSAGE_KEY_BODY: string_writer.getvalue()}
 
     def send_message(self, prepared_message, queue, exchange=""):
-        connection = BlockingConnection(ConnectionParameters("localhost"))
+        credentials = PlainCredentials("sm49", "poc-test")
+        ssl_options = SSLOptions(create_default_context())
+        connection_params = ConnectionParameters(
+            "heron-rabbitmq-training.psd.sanger.ac.uk",
+            port=5671,
+            credentials=credentials,
+            ssl_options=ssl_options,
+        )
+        connection = BlockingConnection(connection_params)
         channel = connection.channel()
-        channel.queue_declare(queue=queue)
+        # channel.queue_declare(queue=queue)
         channel.basic_publish(
             exchange=exchange,
             routing_key=queue,
