@@ -23,6 +23,7 @@ from crawler.config.centres import (
     CENTRE_KEY_BACKUPS_FOLDER,
     CENTRE_KEY_BARCODE_FIELD,
     CENTRE_KEY_BARCODE_REGEX,
+    CENTRE_KEY_BIOMEK_LABWARE_CLASS,
     CENTRE_KEY_FILE_NAMES_TO_IGNORE,
     CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE,
     CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE,
@@ -773,7 +774,7 @@ class CentreFile:
                 for plate_barcode, samples in group_iterator:
                     try:
                         plate_state = add_dart_plate_if_doesnt_exist(
-                            cursor, plate_barcode, self.centre_config["biomek_labware_class"]
+                            cursor, plate_barcode, self.centre_config[CENTRE_KEY_BIOMEK_LABWARE_CLASS]
                         )
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:

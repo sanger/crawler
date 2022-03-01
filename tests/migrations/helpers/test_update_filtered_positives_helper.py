@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from crawler.config.centres import CENTRE_KEY_NAME
+from crawler.config.centres import CENTRE_KEY_BIOMEK_LABWARE_CLASS, CENTRE_KEY_NAME
 from crawler.constants import (
     DART_STATE_PENDING,
     FIELD_COORDINATE,
@@ -314,8 +314,8 @@ def test_update_mlwh_filtered_positive_fields_calls_to_update_samples(config, ml
 
 def test_biomek_labclass_by_centre_name(config):
     centres = [
-        {CENTRE_KEY_NAME: "test centre 1", "biomek_labware_class": "test class 1"},
-        {CENTRE_KEY_NAME: "test centre 2", "biomek_labware_class": "test class 2"},
+        {CENTRE_KEY_NAME: "test centre 1", CENTRE_KEY_BIOMEK_LABWARE_CLASS: "test class 1"},
+        {CENTRE_KEY_NAME: "test centre 2", CENTRE_KEY_BIOMEK_LABWARE_CLASS: "test class 2"},
     ]
     labclass_by_name = biomek_labclass_by_centre_name(centres)  # type: ignore
 
@@ -453,7 +453,7 @@ def test_update_dart_fields_returns_true_multiple_new_plates(config, mock_dart_c
                     "migrations.helpers.update_filtered_positives_helper.set_dart_well_properties"
                 ) as mock_set_well_props:
                     test_centre_name = config.CENTRES[0][CENTRE_KEY_NAME]
-                    test_labware_class = config.CENTRES[0]["biomek_labware_class"]
+                    test_labware_class = config.CENTRES[0][CENTRE_KEY_BIOMEK_LABWARE_CLASS]
                     samples = [
                         {
                             FIELD_PLATE_BARCODE: "123",
@@ -516,7 +516,7 @@ def test_update_dart_fields_returns_true_single_new_plate_multiple_wells(config,
                 ) as mock_set_well_props:
                     test_plate_barcode = "123"
                     test_centre_name = config.CENTRES[0][CENTRE_KEY_NAME]
-                    test_labware_class = config.CENTRES[0]["biomek_labware_class"]
+                    test_labware_class = config.CENTRES[0][CENTRE_KEY_BIOMEK_LABWARE_CLASS]
                     samples = [
                         {
                             FIELD_PLATE_BARCODE: test_plate_barcode,

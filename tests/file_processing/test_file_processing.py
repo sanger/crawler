@@ -16,8 +16,9 @@ from crawler.config.centres import (
     CENTRE_KEY_BACKUPS_FOLDER,
     CENTRE_KEY_BARCODE_FIELD,
     CENTRE_KEY_BARCODE_REGEX,
-    CENTRE_KEY_SFTP_ROOT_READ,
+    CENTRE_KEY_BIOMEK_LABWARE_CLASS,
     CENTRE_KEY_PREFIX,
+    CENTRE_KEY_SFTP_ROOT_READ,
 )
 from crawler.constants import (
     COLLECTION_IMPORTS,
@@ -1911,7 +1912,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
                             mock_add_plate.assert_any_call(
                                 mock_conn().cursor(),
                                 doc[FIELD_PLATE_BARCODE],
-                                centre_file.centre_config["biomek_labware_class"],
+                                centre_file.centre_config[CENTRE_KEY_BIOMEK_LABWARE_CLASS],
                             )
 
                         # well helper method call checks
@@ -1999,7 +2000,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
                         mock_add_plate.assert_any_call(
                             mock_conn().cursor(),
                             plate_barcode,
-                            centre_file.centre_config["biomek_labware_class"],
+                            centre_file.centre_config[CENTRE_KEY_BIOMEK_LABWARE_CLASS],
                         )
 
                         # calls for well index and to map as expected
