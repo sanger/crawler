@@ -19,7 +19,11 @@ from bson.decimal128 import Decimal128
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
-from crawler.config.centres import CENTRE_KEY_BARCODE_FIELD, CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES
+from crawler.config.centres import (
+    CENTRE_KEY_BARCODE_FIELD,
+    CENTRE_KEY_BARCODE_REGEX,
+    CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES,
+)
 from crawler.constants import (
     ALLOWED_CH_RESULT_VALUES,
     ALLOWED_CH_TARGET_VALUES,
@@ -1178,7 +1182,7 @@ class CentreFile:
         barcode_field = self.centre_config[CENTRE_KEY_BARCODE_FIELD]
 
         modified_row[FIELD_PLATE_BARCODE] = None
-        if modified_row.get(barcode_field) and (barcode_regex := self.centre_config["barcode_regex"]):
+        if modified_row.get(barcode_field) and (barcode_regex := self.centre_config[CENTRE_KEY_BARCODE_REGEX]):
             (
                 modified_row[FIELD_PLATE_BARCODE],
                 modified_row[FIELD_COORDINATE],

@@ -25,7 +25,7 @@ for centre in CENTRES:
 CENTRES.append(
     {
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
-        "barcode_regex": CENTRE_REGEX_BARCODE,
+        CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
         "name": "Test Centre",
         "prefix": "TEST",
         "lab_id_default": "TE",

@@ -12,7 +12,7 @@ from bson.objectid import ObjectId
 from mysql.connector.connection_cext import CMySQLConnection
 from pytest import mark
 
-from crawler.config.centres import CENTRE_KEY_BARCODE_FIELD
+from crawler.config.centres import CENTRE_KEY_BARCODE_FIELD, CENTRE_KEY_BARCODE_REGEX
 from crawler.constants import (
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
@@ -459,7 +459,7 @@ def test_extract_plate_barcode_and_coordinate(config):
     centre_file = CentreFile("some file", centre)
 
     barcode_field = test_centre[CENTRE_KEY_BARCODE_FIELD]
-    barcode_regex = test_centre["barcode_regex"]
+    barcode_regex = test_centre[CENTRE_KEY_BARCODE_REGEX]
 
     # typical format
     typical = {"RNA ID": "AP-abc-12345678_H01"}
