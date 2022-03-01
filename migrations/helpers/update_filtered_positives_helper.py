@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from more_itertools import groupby_transform
+from crawler.config.centres import CENTRE_KEY_NAME
 
 from crawler.constants import (
     BIOMEK_LABWARE_CLASS_KINGFISHER,
@@ -267,4 +268,7 @@ def biomek_labclass_by_centre_name(centres: List[CentreConf]) -> Dict[str, str]:
     Returns:
         Dict[str, str] -- biomek labware class by centre name
     """
-    return {centre["name"]: centre.get("biomek_labware_class", BIOMEK_LABWARE_CLASS_KINGFISHER) for centre in centres}
+    return {
+        centre[CENTRE_KEY_NAME]: centre.get("biomek_labware_class", BIOMEK_LABWARE_CLASS_KINGFISHER)
+        for centre in centres
+    }

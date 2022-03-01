@@ -3,6 +3,7 @@ from datetime import datetime
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
+from crawler.config.centres import CENTRE_KEY_NAME
 
 from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.helpers.logging_helpers import LoggingCollection
@@ -46,7 +47,7 @@ def test_create_import_record(freezer, mongo_database):
         import_doc = import_collection.find_one({FIELD_MONGODB_ID: result.inserted_id})
 
         assert import_doc["date"].replace(microsecond=0) == now.replace(microsecond=0)
-        assert import_doc["centre_name"] == centre["name"]
+        assert import_doc["centre_name"] == centre[CENTRE_KEY_NAME]
         assert import_doc["csv_file_used"] == "test"
         assert import_doc["number_of_records"] == len(docs)
         assert import_doc["errors"] == error_collection.get_messages_for_import()

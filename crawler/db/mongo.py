@@ -7,6 +7,7 @@ from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.results import InsertOneResult
+from crawler.config.centres import CENTRE_KEY_NAME
 
 from crawler.types import CentreConf, Config
 
@@ -108,11 +109,11 @@ def create_import_record(
     Returns:
         InsertOneResult: the result of inserting this document
     """
-    logger.debug(f"Creating the import record for {centre['name']}")
+    logger.debug(f"Creating the import record for {centre[CENTRE_KEY_NAME]}")
 
     import_doc = {
         "date": datetime.utcnow(),  # https://pymongo.readthedocs.io/en/stable/examples/datetimes.html
-        "centre_name": centre["name"],
+        "centre_name": centre[CENTRE_KEY_NAME],
         "csv_file_used": file_name,
         "number_of_records": docs_inserted,
         "errors": errors,

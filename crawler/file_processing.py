@@ -22,6 +22,7 @@ from pymongo.errors import BulkWriteError
 from crawler.config.centres import (
     CENTRE_KEY_BARCODE_FIELD,
     CENTRE_KEY_BARCODE_REGEX,
+    CENTRE_KEY_NAME,
     CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES,
 )
 from crawler.constants import (
@@ -34,6 +35,7 @@ from crawler.constants import (
     COLLECTION_SOURCE_PLATES,
     DART_STATE_PENDING,
     FIELD_BARCODE,
+    FIELD_CENTRE_NAME,
     FIELD_CH1_CQ,
     FIELD_CH1_RESULT,
     FIELD_CH1_TARGET,
@@ -112,7 +114,7 @@ class Centre:
         """Get all the files in the download directory for this centre and filter the file names using the
         sftp_file_regex_* described in the centre's config
         """
-        logger.info(f"Fetching files of centre {self.centre_config['name']}")
+        logger.info(f"Fetching files of centre {self.centre_config[CENTRE_KEY_NAME]}")
         # get a list of files in the download directory
         # https://stackoverflow.com/a/3207973
         path_to_walk = PROJECT_ROOT.joinpath(self.get_download_dir())
@@ -374,7 +376,7 @@ class CentreFile:
         """
         centre_collection = get_mongo_collection(self.get_db(), COLLECTION_CENTRES)
 
-        if centre := centre_collection.find_one(filter={"name": self.centre_config["name"]}):
+        if centre := centre_collection.find_one(filter={FIELD_CENTRE_NAME: self.centre_config[CENTRE_KEY_NAME]}):
             return cast(CentreDoc, centre)
 
         raise Exception("Unable to find the centre in the centre collection.")
@@ -1176,7 +1178,7 @@ class CentreFile:
 
         # ---- add a few additional, computed or derived fields ----
         # add the centre name as source
-        modified_row[FIELD_SOURCE] = self.centre_config["name"]
+        modified_row[FIELD_SOURCE] = self.centre_config[CENTRE_KEY_NAME]
 
         # extract the barcode and well coordinate
         barcode_field = self.centre_config[CENTRE_KEY_BARCODE_FIELD]

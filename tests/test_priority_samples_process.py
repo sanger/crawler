@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import pytest
 from bson.objectid import ObjectId
+from crawler.config.centres import CENTRE_KEY_NAME
 
 from crawler.constants import (
     COLLECTION_PRIORITY_SAMPLES,
@@ -343,7 +344,7 @@ class TestPrioritySamplesProcess:
 
     def test_centre_config_for_samples(self, config):
         result = centre_config_for_samples(config, [{FIELD_SOURCE: "Test Centre"}])
-        assert result["name"] == "Test Centre"
+        assert result[CENTRE_KEY_NAME] == "Test Centre"
         assert result["prefix"] == "TEST"
         assert result["lab_id_default"] == "TE"
 

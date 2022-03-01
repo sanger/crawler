@@ -26,7 +26,7 @@ CENTRES.append(
     {
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
-        "name": "Test Centre",
+        CENTRE_KEY_NAME: "Test Centre",
         "prefix": "TEST",
         "lab_id_default": "TE",
         "backups_folder": "tmp/backups/TEST",

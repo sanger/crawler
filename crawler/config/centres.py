@@ -48,6 +48,7 @@ REGEX_SURVEILLANCE_GLS_2 = r"^[a-zA-Z]{3}-[a-zA-Z]{2}-\d+\.csv$"
 
 CENTRE_KEY_BARCODE_FIELD: Final = "barcode_field"
 CENTRE_KEY_BARCODE_REGEX: Final = "barcode_regex"
+CENTRE_KEY_NAME: Final = "name"
 CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: Final = "include_in_scheduled_runs"
 CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: Final = "skip_unconsolidated_surveillance_files"
 
@@ -55,7 +56,7 @@ CENTRES: List[CentreConf] = [
     {
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
-        "name": "Alderley",
+        CENTRE_KEY_NAME: "Alderley",
         "prefix": "ALDP",
         "lab_id_default": "AP",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/ALDP",
@@ -71,7 +72,7 @@ CENTRES: List[CentreConf] = [
     {
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
-        "name": "UK Biocentre",
+        CENTRE_KEY_NAME: "UK Biocentre",
         "prefix": "MILK",
         "lab_id_default": "MK",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/MILK",
@@ -87,7 +88,7 @@ CENTRES: List[CentreConf] = [
     {
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
-        "name": "Queen Elizabeth University Hospital",
+        CENTRE_KEY_NAME: "Queen Elizabeth University Hospital",
         "prefix": "QEUH",
         "lab_id_default": "GLS",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/QEUH",
@@ -103,7 +104,7 @@ CENTRES: List[CentreConf] = [
     {
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
-        "name": "Cambridge-az",
+        CENTRE_KEY_NAME: "Cambridge-az",
         "prefix": "CAMC",
         "lab_id_default": "CB",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/CAMC",
@@ -119,7 +120,7 @@ CENTRES: List[CentreConf] = [
     {
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
-        "name": "Randox",
+        CENTRE_KEY_NAME: "Randox",
         "prefix": "RAND",
         "lab_id_default": "Randox",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/RAND",
@@ -135,7 +136,7 @@ CENTRES: List[CentreConf] = [
     {
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
-        "name": "Health Services Laboratories",
+        CENTRE_KEY_NAME: "Health Services Laboratories",
         "prefix": "HSLL",
         "lab_id_default": "HSLL",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/HSL",
@@ -151,7 +152,7 @@ CENTRES: List[CentreConf] = [
     {
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
-        "name": "Plymouth",
+        CENTRE_KEY_NAME: "Plymouth",
         "prefix": "PLYM",
         "lab_id_default": "PLYM",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/PLYM",
@@ -167,7 +168,7 @@ CENTRES: List[CentreConf] = [
     {
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
-        "name": "Brants Bridge",
+        CENTRE_KEY_NAME: "Brants Bridge",
         "prefix": "BRBR",
         "lab_id_default": "BRBR",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/BRBR",
@@ -183,7 +184,7 @@ CENTRES: List[CentreConf] = [
     {
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
-        "name": "Leamington Spa",
+        CENTRE_KEY_NAME: "Leamington Spa",
         "prefix": "LSPA",
         "lab_id_default": "LML",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/LSPA",
@@ -199,7 +200,7 @@ CENTRES: List[CentreConf] = [
     {
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
-        "name": "Newcastle",
+        CENTRE_KEY_NAME: "Newcastle",
         "prefix": "NEWC",
         "lab_id_default": "NCL",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/NEWC",
@@ -215,7 +216,7 @@ CENTRES: List[CentreConf] = [
     {
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
-        "name": "Cherrypick Test Data",
+        CENTRE_KEY_NAME: "Cherrypick Test Data",
         "prefix": TEST_DATA_CENTRE_PREFIX,
         "lab_id_default": "CPTD",
         "backups_folder": f"{CENTRE_DIR_BACKUPS}/CPTD",
