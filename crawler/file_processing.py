@@ -23,6 +23,7 @@ from crawler.config.centres import (
     CENTRE_KEY_BACKUPS_FOLDER,
     CENTRE_KEY_BARCODE_FIELD,
     CENTRE_KEY_BARCODE_REGEX,
+    CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE,
     CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE,
     CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE,
     CENTRE_KEY_LAB_ID_DEFAULT,
@@ -237,7 +238,7 @@ class Centre:
         return self.is_eagle_filename(filename) or self.is_consolidated_surveillance_filename(filename)
 
     def is_eagle_filename(self, filename: str) -> bool:
-        eagle = re.compile(self.centre_config["sftp_file_regex_consolidated_eagle"])
+        eagle = re.compile(self.centre_config[CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE])
         return bool(eagle.match(filename))
 
     # This method should not be used with a not() in front of it as it can
