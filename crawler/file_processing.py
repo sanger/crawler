@@ -20,6 +20,7 @@ from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
 from crawler.config.centres import (
+    CENTRE_KEY_BACKUPS_FOLDER,
     CENTRE_KEY_BARCODE_FIELD,
     CENTRE_KEY_BARCODE_REGEX,
     CENTRE_KEY_LAB_ID_DEFAULT,
@@ -106,8 +107,8 @@ class Centre:
         self._files: List[str] = []
 
         # create backup directories for files
-        os.makedirs(f"{self.centre_config['backups_folder']}/{ERRORS_DIR}", exist_ok=True)
-        os.makedirs(f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}", exist_ok=True)
+        os.makedirs(f"{self.centre_config[CENTRE_KEY_BACKUPS_FOLDER]}/{ERRORS_DIR}", exist_ok=True)
+        os.makedirs(f"{self.centre_config[CENTRE_KEY_BACKUPS_FOLDER]}/{SUCCESSES_DIR}", exist_ok=True)
 
     def sorted_files(self):
         return sorted(self._files)
@@ -349,7 +350,7 @@ class CentreFile:
         checksum_for_file = self.checksum()
         logger.debug(f"Checksum for file = {checksum_for_file}")
 
-        backup_folder = f"{self.centre_config['backups_folder']}/{dir_path}"
+        backup_folder = f"{self.centre_config[CENTRE_KEY_BACKUPS_FOLDER]}/{dir_path}"
         files_from_backup_folder = os.listdir(backup_folder)
 
         for backup_copy_file in files_from_backup_folder:
@@ -499,9 +500,9 @@ class CentreFile:
             str -- the filepath of the file backup
         """
         if self.logging_collection.get_count_of_all_errors_and_criticals() > 0:
-            return f"{self.centre_config['backups_folder']}/{ERRORS_DIR}/{self.timestamped_filename()}"
+            return f"{self.centre_config[CENTRE_KEY_BACKUPS_FOLDER]}/{ERRORS_DIR}/{self.timestamped_filename()}"
         else:
-            return f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}/{self.timestamped_filename()}"
+            return f"{self.centre_config[CENTRE_KEY_BACKUPS_FOLDER]}/{SUCCESSES_DIR}/{self.timestamped_filename()}"
 
     def timestamped_filename(self) -> str:
         return f"{current_time()}_{self.file_name}_{self.checksum()}"

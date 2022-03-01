@@ -19,7 +19,7 @@ ENABLE_CHERRYPICKER_ENDPOINTS = True
 ###
 # change all the backup folder entries for the centres during testing
 for centre in CENTRES:
-    centre["backups_folder"] = centre["backups_folder"].replace(CENTRE_DIR_BACKUPS, "tmp/backups")
+    centre[CENTRE_KEY_BACKUPS_FOLDER] = centre[CENTRE_KEY_BACKUPS_FOLDER].replace(CENTRE_DIR_BACKUPS, "tmp/backups")
 
 # add a test centre to those defined in defaults.py
 CENTRES.append(
@@ -29,7 +29,7 @@ CENTRES.append(
         CENTRE_KEY_NAME: "Test Centre",
         CENTRE_KEY_PREFIX: "TEST",
         CENTRE_KEY_LAB_ID_DEFAULT: "TE",
-        "backups_folder": "tmp/backups/TEST",
+        CENTRE_KEY_BACKUPS_FOLDER: "tmp/backups/TEST",
         "sftp_file_regex_unconsolidated_surveillance": f"^TEST_{CENTRE_REGEX_SFTP_FILE_HERON}",
         "sftp_file_regex_consolidated_surveillance": r"^Test-\d+\.csv$",
         "sftp_file_regex_consolidated_eagle": r"^TE\d+\.csv$",
