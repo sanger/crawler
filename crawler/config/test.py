@@ -27,7 +27,7 @@ CENTRES.append(
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
         CENTRE_KEY_NAME: "Test Centre",
-        "prefix": "TEST",
+        CENTRE_KEY_PREFIX: "TEST",
         "lab_id_default": "TE",
         "backups_folder": "tmp/backups/TEST",
         "sftp_file_regex_unconsolidated_surveillance": f"^TEST_{CENTRE_REGEX_SFTP_FILE_HERON}",

@@ -8,6 +8,7 @@ from typing import Any, List
 from bson.objectid import ObjectId
 from pymongo.collection import Collection
 
+from crawler.config.centres import CENTRE_KEY_PREFIX
 from crawler.constants import (
     COLLECTION_CHERRYPICK_TEST_DATA,
     FIELD_ADD_TO_DART,
@@ -30,11 +31,7 @@ from crawler.constants import (
     TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES,
     TEST_DATA_ERROR_WRONG_STATE,
 )
-from crawler.db.mongo import (
-    create_mongo_client,
-    get_mongo_collection,
-    get_mongo_db,
-)
+from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.helpers.cherrypicker_test_data import (
     create_barcode_meta,
     create_barcodes,
@@ -180,7 +177,7 @@ def parse_bool_field(value: Any, default_value: bool) -> bool:
 
 
 def prepare_data(plate_specs, dt, barcodes, config):
-    test_centre = next(filter(lambda c: c["prefix"] == TEST_DATA_CENTRE_PREFIX, config.CENTRES))
+    test_centre = next(filter(lambda c: c[CENTRE_KEY_PREFIX] == TEST_DATA_CENTRE_PREFIX, config.CENTRES))
     downloaded_data_path = config.DIR_DOWNLOADED_DATA
 
     csv_rows = create_csv_rows(plate_specs, dt, barcodes, test_centre["lab_id_default"])

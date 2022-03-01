@@ -12,7 +12,7 @@ from bson.objectid import ObjectId
 from mysql.connector.connection_cext import CMySQLConnection
 from pytest import mark
 
-from crawler.config.centres import CENTRE_KEY_BARCODE_FIELD, CENTRE_KEY_BARCODE_REGEX
+from crawler.config.centres import CENTRE_KEY_BARCODE_FIELD, CENTRE_KEY_BARCODE_REGEX, CENTRE_KEY_PREFIX
 from crawler.constants import (
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
@@ -109,7 +109,7 @@ def test_get_download_dir(config):
     for centre_config in config.CENTRES:
         centre = Centre(config, centre_config)
 
-        assert centre.get_download_dir() == f"{config.DIR_DOWNLOADED_DATA}{centre_config['prefix']}/"
+        assert centre.get_download_dir() == f"{config.DIR_DOWNLOADED_DATA}{centre_config[CENTRE_KEY_PREFIX]}/"
 
 
 def test_process_files(mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn):
@@ -201,7 +201,7 @@ def test_process_files_one_wrong_format(mongo_database, config, testing_files_fo
     _, mongo_database = mongo_database
 
     # get the TEST centre
-    centre_config = next(filter(lambda centre: centre["prefix"] == "TEST", config.CENTRES))
+    centre_config = next(filter(lambda centre: centre[CENTRE_KEY_PREFIX] == "TEST", config.CENTRES))
     centre_config["sftp_root_read"] = "tmp/files"
     centre = Centre(config, centre_config)
     centre.process_files(add_to_dart=False)
@@ -311,7 +311,7 @@ def test_process_files_with_whitespace(mongo_database, config, testing_files_for
     _, mongo_database = mongo_database
 
     # get the TEST centre
-    centre_config = next(filter(lambda centre: centre["prefix"] == "TEST", config.CENTRES))
+    centre_config = next(filter(lambda centre: centre[CENTRE_KEY_PREFIX] == "TEST", config.CENTRES))
     centre_config["sftp_root_read"] = "tmp/files"
     centre = Centre(config, centre_config)
     centre.process_files(add_to_dart=False)

@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 import pytest
 from bson.objectid import ObjectId
 
+from crawler.config.centres import CENTRE_KEY_PREFIX
 from crawler.constants import (
     COLLECTION_CHERRYPICK_TEST_DATA,
     FIELD_ADD_TO_DART,
@@ -344,7 +345,7 @@ def test_prepare_data_calls_create_csv_rows_with_correct_parameters(config, mock
     with patch("crawler.jobs.cherrypicker_test_data.create_csv_rows") as create_csv_rows:
         prepare_data(plate_specs, mocked_utc_now, created_barcodes, config)
 
-    test_centre = next(filter(lambda c: c["prefix"] == TEST_DATA_CENTRE_PREFIX, config.CENTRES))
+    test_centre = next(filter(lambda c: c[CENTRE_KEY_PREFIX] == TEST_DATA_CENTRE_PREFIX, config.CENTRES))
     create_csv_rows.assert_called_with(plate_specs, mocked_utc_now, created_barcodes, test_centre["lab_id_default"])
 
 

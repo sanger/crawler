@@ -23,6 +23,7 @@ from crawler.config.centres import (
     CENTRE_KEY_BARCODE_FIELD,
     CENTRE_KEY_BARCODE_REGEX,
     CENTRE_KEY_NAME,
+    CENTRE_KEY_PREFIX,
     CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES,
 )
 from crawler.constants import (
@@ -181,7 +182,7 @@ class Centre:
         Returns:
             str -- the download directory
         """
-        return f"{self.config.DIR_DOWNLOADED_DATA}{self.centre_config['prefix']}/"
+        return f"{self.config.DIR_DOWNLOADED_DATA}{self.centre_config[CENTRE_KEY_PREFIX]}/"
 
     def download_csv_files(self) -> None:
         """Downloads the centre's file from the SFTP server"""
