@@ -8,32 +8,37 @@ from crawler.constants import (
 )
 from crawler.types import CentreConf
 
-# centre details
-# This information will also be persisted in the mongo database
+# Centre Details
+#
+# This information is persisted in the MongoDB as the single source of truth, but where the Mongo collection is missing,
+# it will be recreated from the values listed here.
+#
 # Field information:
-# barcode_field: The header of the column containing barcode/well information
-# barcode_regex: Regular expression for extracting barcodes and well co-ordinates
-#                from barcode_field
-# merge_required: True for centres delivering incremental updates. Indicates that
-#                 the individual csv files need to be merged into a single master
-#                 file. False indicates that the latest CSV will contain a full
-#                 dump.
-# name: The name of the centre
-# prefix: The COG-UK prefix. Used for naming the download directory, but also
-#         stored in the database for later use by other processes.
-#        ie. lighthouse and barcoda
-# merge_start_date: Used for centres which switch from full dumps to incremental
-#                   updates. Files before this date will be ignored. Please ensure
-#                   that at least one complete dump is included in the timeframe.
-# sftp_file_regex_unconsolidated_surveillance: Regex to identify files for unconsolidated plates for project Heron
-# sftp_file_regex_consolidated_surveillance: Regex to identify files for consolidated plates for project Heron
-# sftp_file_regex_consolidated_eagle: Regex to identify files for consolidated plates for project Eagle
-# sftp_master_file_regex: Regexp to identify the master file for incremental updates
-# sftp_root_read: directory on sftp from which to load csv files.
-# sftp_root_write: directory on sftp in which to upload master files
-# file_names_to_ignore: array of files to exclude from processing, such as those
-#                       containing invalid headers
-# skip_unconsolidated_surveillance_files: Sanger will not be processing unconsolidated files to prevents duplicates
+#   barcode_field:                               The header of the column containing barcode/well information.
+#   barcode_regex:                               Regular expression for extracting barcodes and well co-ordinates from
+#                                                barcode_field.
+#   merge_required:                              True for centres delivering incremental updates. Indicates that the
+#                                                individual csv files need to be merged into a single master file. False
+#                                                indicates that the latest CSV will contain a full dump.
+#   name:                                        The name of the centre.
+#   prefix:                                      The COG-UK prefix. Used for naming the download directory, but also
+#                                                stored in the database for later use by
+#                                                other processes. ie. lighthouse and barcoda.
+#   merge_start_date:                            Used for centres which switch from full dumps to incremental updates.
+#                                                Files before this date will be ignored. Please ensure that at least one
+#                                                complete dump is included in the timeframe.
+#   sftp_file_regex_unconsolidated_surveillance: Regex to identify files for unconsolidated plates for project Heron.
+#   sftp_file_regex_consolidated_surveillance:   Regex to identify files for consolidated plates for project Heron.
+#   sftp_file_regex_consolidated_eagle:          Regex to identify files for consolidated plates for project Eagle.
+#   sftp_master_file_regex:                      Regexp to identify the master file for incremental updates.
+#   sftp_root_read:                              Directory on sftp from which to load csv files.
+#   sftp_root_write:                             Directory on sftp in which to upload master files.
+#   file_names_to_ignore:                        Array of files to exclude from processing, such as those containing
+#                                                invalid headers.
+#   skip_unconsolidated_surveillance_files:      Sanger will not be processing unconsolidated files to prevents
+#                                                duplicates.
+#   include_in_scheduled_runs:                   True when a centre should be processed as part of a batch run of all
+#                                                centres.
 
 CENTRE_REGEX_BARCODE = r"^[\W_]*([\w-]*)_([A-Z]\d{0,1}\d)[\W_]*$"
 CENTRE_DIR_BACKUPS = "data/backups"
