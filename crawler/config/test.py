@@ -28,7 +28,7 @@ CENTRES.append(
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
         CENTRE_KEY_NAME: "Test Centre",
         CENTRE_KEY_PREFIX: "TEST",
-        "lab_id_default": "TE",
+        CENTRE_KEY_LAB_ID_DEFAULT: "TE",
         "backups_folder": "tmp/backups/TEST",
         "sftp_file_regex_unconsolidated_surveillance": f"^TEST_{CENTRE_REGEX_SFTP_FILE_HERON}",
         "sftp_file_regex_consolidated_surveillance": r"^Test-\d+\.csv$",

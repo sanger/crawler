@@ -8,7 +8,7 @@ from typing import Any, List
 from bson.objectid import ObjectId
 from pymongo.collection import Collection
 
-from crawler.config.centres import CENTRE_KEY_PREFIX
+from crawler.config.centres import CENTRE_KEY_LAB_ID_DEFAULT, CENTRE_KEY_PREFIX
 from crawler.constants import (
     COLLECTION_CHERRYPICK_TEST_DATA,
     FIELD_ADD_TO_DART,
@@ -180,7 +180,7 @@ def prepare_data(plate_specs, dt, barcodes, config):
     test_centre = next(filter(lambda c: c[CENTRE_KEY_PREFIX] == TEST_DATA_CENTRE_PREFIX, config.CENTRES))
     downloaded_data_path = config.DIR_DOWNLOADED_DATA
 
-    csv_rows = create_csv_rows(plate_specs, dt, barcodes, test_centre["lab_id_default"])
+    csv_rows = create_csv_rows(plate_specs, dt, barcodes, test_centre[CENTRE_KEY_LAB_ID_DEFAULT])
     plates_path = os.path.join(downloaded_data_path, TEST_DATA_CENTRE_PREFIX)
     plates_filename = f"{TEST_DATA_CENTRE_PREFIX}_{dt.strftime('%y%m%d_%H%M%S_%f')}.csv"
     write_plates_file(csv_rows, plates_path, plates_filename)

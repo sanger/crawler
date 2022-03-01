@@ -22,6 +22,7 @@ from pymongo.errors import BulkWriteError
 from crawler.config.centres import (
     CENTRE_KEY_BARCODE_FIELD,
     CENTRE_KEY_BARCODE_REGEX,
+    CENTRE_KEY_LAB_ID_DEFAULT,
     CENTRE_KEY_NAME,
     CENTRE_KEY_PREFIX,
     CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES,
@@ -1015,17 +1016,19 @@ class CentreFile:
             # if the lab id field is already present but it might be an empty string
             if not lab_id:
                 # if no value (empty string) we add the default value and log that it was missing
-                modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
+                modified_row[FIELD_LAB_ID] = self.centre_config[CENTRE_KEY_LAB_ID_DEFAULT]
                 log_adding_default_lab_id(row, line_number)
             else:
-                if not self.is_consolidated and lab_id != self.centre_config["lab_id_default"]:
+                if not self.is_consolidated and lab_id != self.centre_config[CENTRE_KEY_LAB_ID_DEFAULT]:
                     # if the lab id is different to what is configured for the lab
-                    logger.warning(f"Different lab id setting: {lab_id} != {self.centre_config['lab_id_default']}")
+                    logger.warning(
+                        f"Different lab id setting: {lab_id} != {self.centre_config[CENTRE_KEY_LAB_ID_DEFAULT]}"
+                    )
                 # copy the lab id across
                 modified_row[FIELD_LAB_ID] = lab_id
         else:
             # if the lab id field is not present we add the default and log it was missing
-            modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
+            modified_row[FIELD_LAB_ID] = self.centre_config[CENTRE_KEY_LAB_ID_DEFAULT]
             log_adding_default_lab_id(row, line_number)
 
         return modified_row
