@@ -31,7 +31,7 @@ CENTRES.append(
         CENTRE_KEY_LAB_ID_DEFAULT: "TE",
         CENTRE_KEY_BACKUPS_FOLDER: "tmp/backups/TEST",
         CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE: f"^TEST_{CENTRE_REGEX_SFTP_FILE_HERON}",
-        "sftp_file_regex_consolidated_surveillance": r"^Test-\d+\.csv$",
+        CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: r"^Test-\d+\.csv$",
         "sftp_file_regex_consolidated_eagle": r"^TE\d+\.csv$",
         "sftp_root_read": "tests/test_files/good",
         "file_names_to_ignore": ["TEST_sanger_report_200518_2205.csv"],
