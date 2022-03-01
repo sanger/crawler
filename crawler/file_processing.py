@@ -23,6 +23,7 @@ from crawler.config.centres import (
     CENTRE_KEY_BACKUPS_FOLDER,
     CENTRE_KEY_BARCODE_FIELD,
     CENTRE_KEY_BARCODE_REGEX,
+    CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE,
     CENTRE_KEY_LAB_ID_DEFAULT,
     CENTRE_KEY_NAME,
     CENTRE_KEY_PREFIX,
@@ -247,7 +248,7 @@ class Centre:
         return bool(consolidated_surveillance.match(filename))
 
     def is_surveillance_filename(self, filename: str) -> bool:
-        unconsolidated_surveillance = re.compile(self.centre_config["sftp_file_regex_unconsolidated_surveillance"])
+        unconsolidated_surveillance = re.compile(self.centre_config[CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE])
         return bool(unconsolidated_surveillance.match(filename)) or self.is_consolidated_surveillance_filename(filename)
 
 
@@ -392,7 +393,7 @@ class CentreFile:
                   in the centre's configuration. False otherwise.
         """
         centre = self.get_centre_from_db()
-        compiled_regex = re.compile(centre["sftp_file_regex_unconsolidated_surveillance"])
+        compiled_regex = re.compile(centre[CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE])
         return bool(compiled_regex.match(self.file_name))
 
     def set_state_for_file(self) -> CentreFileState:
