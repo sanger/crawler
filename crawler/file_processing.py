@@ -23,13 +23,14 @@ from crawler.config.centres import (
     CENTRE_KEY_BACKUPS_FOLDER,
     CENTRE_KEY_BARCODE_FIELD,
     CENTRE_KEY_BARCODE_REGEX,
+    CENTRE_KEY_FILE_NAMES_TO_IGNORE,
     CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE,
     CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE,
     CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE,
-    CENTRE_KEY_SFTP_ROOT_READ,
     CENTRE_KEY_LAB_ID_DEFAULT,
     CENTRE_KEY_NAME,
     CENTRE_KEY_PREFIX,
+    CENTRE_KEY_SFTP_ROOT_READ,
     CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES,
 )
 from crawler.constants import (
@@ -408,7 +409,7 @@ class CentreFile:
         centre = self.get_centre_from_db()
 
         # check whether file is on the blacklist and should be ignored
-        if "file_names_to_ignore" in centre and self.file_name in centre["file_names_to_ignore"]:
+        if CENTRE_KEY_FILE_NAMES_TO_IGNORE in centre and self.file_name in centre[CENTRE_KEY_FILE_NAMES_TO_IGNORE]:
             self.file_state = CentreFileState.FILE_IN_BLACKLIST
 
         # check whether file has already been processed to error directory

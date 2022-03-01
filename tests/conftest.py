@@ -10,6 +10,7 @@ import sqlalchemy
 from sqlalchemy import MetaData
 
 from crawler import create_app
+from crawler.config.centres import CENTRE_KEY_FILE_NAMES_TO_IGNORE
 from crawler.constants import (
     COLLECTION_CENTRES,
     COLLECTION_PRIORITY_SAMPLES,
@@ -387,10 +388,10 @@ def cleanup_backups():
 @pytest.fixture
 def blacklist_for_centre(config):
     try:
-        config.CENTRES[0]["file_names_to_ignore"] = ["AP_sanger_report_200503_2338.csv"]
+        config.CENTRES[0][CENTRE_KEY_FILE_NAMES_TO_IGNORE] = ["AP_sanger_report_200503_2338.csv"]
         yield config
     finally:
-        config.CENTRES[0]["file_names_to_ignore"] = []
+        config.CENTRES[0][CENTRE_KEY_FILE_NAMES_TO_IGNORE] = []
 
 
 def generate_new_object_for_string(original_str):
