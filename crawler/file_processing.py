@@ -26,6 +26,7 @@ from crawler.config.centres import (
     CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE,
     CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE,
     CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE,
+    CENTRE_KEY_SFTP_ROOT_READ,
     CENTRE_KEY_LAB_ID_DEFAULT,
     CENTRE_KEY_NAME,
     CENTRE_KEY_PREFIX,
@@ -203,7 +204,7 @@ class Centre:
             logger.info("Connected to SFTP")
             logger.debug("Listing centre's root directory")
 
-            sftp_root_read = self.centre_config["sftp_root_read"]
+            sftp_root_read = self.centre_config[CENTRE_KEY_SFTP_ROOT_READ]
             logger.debug(f"ls {self.config.SFTP_HOST}/{sftp_root_read}")
             logger.debug(sftp.listdir(sftp_root_read))
 

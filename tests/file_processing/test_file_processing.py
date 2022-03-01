@@ -16,6 +16,7 @@ from crawler.config.centres import (
     CENTRE_KEY_BACKUPS_FOLDER,
     CENTRE_KEY_BARCODE_FIELD,
     CENTRE_KEY_BARCODE_REGEX,
+    CENTRE_KEY_SFTP_ROOT_READ,
     CENTRE_KEY_PREFIX,
 )
 from crawler.constants import (
@@ -121,7 +122,7 @@ def test_process_files(mongo_database, config, testing_files_for_process, testin
     _, mongo_database = mongo_database
 
     centre_config = config.CENTRES[3]
-    centre_config["sftp_root_read"] = "tmp/files"
+    centre_config[CENTRE_KEY_SFTP_ROOT_READ] = "tmp/files"
     centre = Centre(config, centre_config)
     centre.process_files(True)
 

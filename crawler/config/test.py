@@ -33,7 +33,7 @@ CENTRES.append(
         CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE: f"^TEST_{CENTRE_REGEX_SFTP_FILE_HERON}",
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: r"^Test-\d+\.csv$",
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: r"^TE\d+\.csv$",
-        "sftp_root_read": "tests/test_files/good",
+        CENTRE_KEY_SFTP_ROOT_READ: "tests/test_files/good",
         "file_names_to_ignore": ["TEST_sanger_report_200518_2205.csv"],
         "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
         CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: False,
