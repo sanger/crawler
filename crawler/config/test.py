@@ -24,7 +24,7 @@ for centre in CENTRES:
 # add a test centre to those defined in defaults.py
 CENTRES.append(
     {
-        "barcode_field": FIELD_RNA_ID,
+        CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Test Centre",
         "prefix": "TEST",

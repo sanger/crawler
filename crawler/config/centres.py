@@ -46,12 +46,13 @@ CENTRE_REGEX_SFTP_FILE_HERON = r"sanger_report_(\d{6}_\d{4}).*\.csv$"
 REGEX_SURVEILLANCE_GLS_1 = r"^GLA\d+[A-Za-z]\.csv$"
 REGEX_SURVEILLANCE_GLS_2 = r"^[a-zA-Z]{3}-[a-zA-Z]{2}-\d+\.csv$"
 
+CENTRE_KEY_BARCODE_FIELD: Final = "barcode_field"
 CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: Final = "include_in_scheduled_runs"
 CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: Final = "skip_unconsolidated_surveillance_files"
 
 CENTRES: List[CentreConf] = [
     {
-        "barcode_field": FIELD_RNA_ID,
+        CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Alderley",
         "prefix": "ALDP",
@@ -67,7 +68,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
-        "barcode_field": FIELD_RNA_ID,
+        CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "UK Biocentre",
         "prefix": "MILK",
@@ -83,7 +84,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
-        "barcode_field": FIELD_RNA_ID,
+        CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Queen Elizabeth University Hospital",
         "prefix": "QEUH",
@@ -99,7 +100,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
-        "barcode_field": FIELD_RNA_ID,
+        CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Cambridge-az",
         "prefix": "CAMC",
@@ -115,7 +116,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
-        "barcode_field": FIELD_RNA_ID,
+        CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Randox",
         "prefix": "RAND",
@@ -131,7 +132,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
-        "barcode_field": FIELD_RNA_ID,
+        CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Health Services Laboratories",
         "prefix": "HSLL",
@@ -147,7 +148,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
-        "barcode_field": FIELD_RNA_ID,
+        CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Plymouth",
         "prefix": "PLYM",
@@ -163,7 +164,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
-        "barcode_field": FIELD_RNA_ID,
+        CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Brants Bridge",
         "prefix": "BRBR",
@@ -179,7 +180,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
-        "barcode_field": FIELD_RNA_ID,
+        CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Leamington Spa",
         "prefix": "LSPA",
@@ -195,7 +196,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
-        "barcode_field": FIELD_RNA_ID,
+        CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Newcastle",
         "prefix": "NEWC",
@@ -211,7 +212,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
     },
     {
-        "barcode_field": FIELD_RNA_ID,
+        CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         "barcode_regex": CENTRE_REGEX_BARCODE,
         "name": "Cherrypick Test Data",
         "prefix": TEST_DATA_CENTRE_PREFIX,

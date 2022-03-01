@@ -1,10 +1,10 @@
 import csv
 import logging
 import os
-import stat
 import pathlib
 import re
 import shutil
+import stat
 import uuid
 from csv import DictReader
 from datetime import datetime, timezone
@@ -19,7 +19,7 @@ from bson.decimal128 import Decimal128
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
-from crawler.config.centres import CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES
+from crawler.config.centres import CENTRE_KEY_BARCODE_FIELD, CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES
 from crawler.constants import (
     ALLOWED_CH_RESULT_VALUES,
     ALLOWED_CH_TARGET_VALUES,
@@ -63,11 +63,11 @@ from crawler.constants import (
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
+    FILE_AGE_IN_DAYS,
     IGNORED_HEADERS,
     MAX_CQ_VALUE,
     MIN_CQ_VALUE,
     RESULT_VALUE_POSITIVE,
-    FILE_AGE_IN_DAYS,
 )
 from crawler.db.dart import (
     add_dart_plate_if_doesnt_exist,
@@ -1175,7 +1175,7 @@ class CentreFile:
         modified_row[FIELD_SOURCE] = self.centre_config["name"]
 
         # extract the barcode and well coordinate
-        barcode_field = self.centre_config["barcode_field"]
+        barcode_field = self.centre_config[CENTRE_KEY_BARCODE_FIELD]
 
         modified_row[FIELD_PLATE_BARCODE] = None
         if modified_row.get(barcode_field) and (barcode_regex := self.centre_config["barcode_regex"]):
@@ -1549,7 +1549,7 @@ class CentreFile:
             return False
 
         # check barcode is present
-        barcode_field = self.centre_config["barcode_field"]
+        barcode_field = self.centre_config[CENTRE_KEY_BARCODE_FIELD]
         if not row.get(barcode_field):
             self.logging_collection.add_error("TYPE 4", f"{barcode_field} missing, line: {line_number}")
 
