@@ -3,7 +3,13 @@ import shutil
 from importlib import import_module, invalidate_caches
 from unittest.mock import patch
 
-from crawler.constants import COLLECTION_CENTRES, COLLECTION_IMPORTS, COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES
+from crawler.constants import (
+    COLLECTION_CENTRES,
+    COLLECTION_IMPORTS,
+    COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
+    FIELD_CENTRE_NAME,
+)
 from crawler.db.mongo import get_mongo_collection
 from crawler.main import run
 
@@ -35,7 +41,7 @@ def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
 
     # We record our test centres
     assert centres_collection.count_documents({}) == NUMBER_CENTRES
-    assert centres_collection.count_documents({"name": "Test Centre"}) == 1
+    assert centres_collection.count_documents({FIELD_CENTRE_NAME: "Test Centre"}) == 1
 
     # We record all our source plates
     assert source_plates_collection.count_documents({}) == NUMBER_ACCEPTED_SOURCE_PLATES

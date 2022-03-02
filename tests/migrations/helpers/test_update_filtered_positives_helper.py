@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from crawler.config.centres import CENTRE_KEY_BIOMEK_LABWARE_CLASS, CENTRE_KEY_NAME
 from crawler.constants import (
     DART_STATE_PENDING,
     FIELD_COORDINATE,
@@ -313,8 +314,8 @@ def test_update_mlwh_filtered_positive_fields_calls_to_update_samples(config, ml
 
 def test_biomek_labclass_by_centre_name(config):
     centres = [
-        {"name": "test centre 1", "biomek_labware_class": "test class 1"},
-        {"name": "test centre 2", "biomek_labware_class": "test class 2"},
+        {CENTRE_KEY_NAME: "test centre 1", CENTRE_KEY_BIOMEK_LABWARE_CLASS: "test class 1"},
+        {CENTRE_KEY_NAME: "test centre 2", CENTRE_KEY_BIOMEK_LABWARE_CLASS: "test class 2"},
     ]
     labclass_by_name = biomek_labclass_by_centre_name(centres)  # type: ignore
 
@@ -349,7 +350,7 @@ def test_update_dart_fields_returns_false_error_adding_plate(config, mock_dart_c
         "migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist",
         side_effect=Exception("Boom!"),
     ):
-        samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0]["name"]}]
+        samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0][CENTRE_KEY_NAME]}]
         result = update_dart_fields(config, samples)
         assert result is False
 
@@ -362,7 +363,7 @@ def test_update_dart_fields_non_pending_plate_does_not_update_wells(config, mock
         with patch(
             "migrations.helpers.update_filtered_positives_helper.set_dart_well_properties"
         ) as mock_update_well_props:
-            samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0]["name"]}]
+            samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0][CENTRE_KEY_NAME]}]
             result = update_dart_fields(config, samples)
 
             mock_dart_conn().cursor().commit.assert_called_once()
@@ -382,7 +383,7 @@ def test_update_dart_fields_returns_false_unable_to_determine_well_index(config,
             with patch(
                 "migrations.helpers.update_filtered_positives_helper.set_dart_well_properties"
             ) as mock_update_well_props:
-                samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0]["name"]}]
+                samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0][CENTRE_KEY_NAME]}]
                 result = update_dart_fields(config, samples)
 
                 mock_dart_conn().cursor().rollback.assert_called_once()
@@ -406,7 +407,7 @@ def test_update_dart_fields_returns_false_error_mapping_to_well_props(config, mo
                 with patch(
                     "migrations.helpers.update_filtered_positives_helper.set_dart_well_properties"
                 ) as mock_update_well_props:
-                    samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0]["name"]}]
+                    samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0][CENTRE_KEY_NAME]}]
                     result = update_dart_fields(config, samples)
 
                     mock_dart_conn().cursor().rollback.assert_called_once()
@@ -430,7 +431,7 @@ def test_update_dart_fields_returns_false_error_adding_well_properties(config, m
                     "migrations.helpers.update_filtered_positives_helper.set_dart_well_properties",
                     side_effect=NotImplementedError("Boom!"),
                 ):
-                    samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0]["name"]}]
+                    samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0][CENTRE_KEY_NAME]}]
                     result = update_dart_fields(config, samples)
 
                     mock_dart_conn().cursor().rollback.assert_called_once()
@@ -451,8 +452,8 @@ def test_update_dart_fields_returns_true_multiple_new_plates(config, mock_dart_c
                 with patch(
                     "migrations.helpers.update_filtered_positives_helper.set_dart_well_properties"
                 ) as mock_set_well_props:
-                    test_centre_name = config.CENTRES[0]["name"]
-                    test_labware_class = config.CENTRES[0]["biomek_labware_class"]
+                    test_centre_name = config.CENTRES[0][CENTRE_KEY_NAME]
+                    test_labware_class = config.CENTRES[0][CENTRE_KEY_BIOMEK_LABWARE_CLASS]
                     samples = [
                         {
                             FIELD_PLATE_BARCODE: "123",
@@ -514,8 +515,8 @@ def test_update_dart_fields_returns_true_single_new_plate_multiple_wells(config,
                     "migrations.helpers.update_filtered_positives_helper.set_dart_well_properties"
                 ) as mock_set_well_props:
                     test_plate_barcode = "123"
-                    test_centre_name = config.CENTRES[0]["name"]
-                    test_labware_class = config.CENTRES[0]["biomek_labware_class"]
+                    test_centre_name = config.CENTRES[0][CENTRE_KEY_NAME]
+                    test_labware_class = config.CENTRES[0][CENTRE_KEY_BIOMEK_LABWARE_CLASS]
                     samples = [
                         {
                             FIELD_PLATE_BARCODE: test_plate_barcode,

@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from crawler.config.centres import CENTRE_KEY_BACKUPS_FOLDER
 from crawler.file_processing import ERRORS_DIR, Centre, CentreFile
 from crawler.helpers.enums import CentreFileState
 
@@ -29,7 +30,7 @@ def test_set_state_for_file_when_never_seen_before(config, testing_centres):
 
 
 def test_set_state_for_file_when_in_error_folder(config, tmpdir, testing_centres):
-    with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
+    with patch.dict(config.CENTRES[0], {CENTRE_KEY_BACKUPS_FOLDER: tmpdir.realpath()}):
         errors_folder = tmpdir.mkdir(ERRORS_DIR)
 
         # configure to use the backups folder for this test
