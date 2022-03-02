@@ -4,6 +4,7 @@ from unittest.mock import patch
 import pytest
 from bson.objectid import ObjectId
 
+from crawler.config.centres import CENTRE_KEY_LAB_ID_DEFAULT, CENTRE_KEY_NAME, CENTRE_KEY_PREFIX
 from crawler.constants import (
     COLLECTION_PRIORITY_SAMPLES,
     COLLECTION_SAMPLES,
@@ -343,9 +344,9 @@ class TestPrioritySamplesProcess:
 
     def test_centre_config_for_samples(self, config):
         result = centre_config_for_samples(config, [{FIELD_SOURCE: "Test Centre"}])
-        assert result["name"] == "Test Centre"
-        assert result["prefix"] == "TEST"
-        assert result["lab_id_default"] == "TE"
+        assert result[CENTRE_KEY_NAME] == "Test Centre"
+        assert result[CENTRE_KEY_PREFIX] == "TEST"
+        assert result[CENTRE_KEY_LAB_ID_DEFAULT] == "TE"
 
     def test_print_summary_writes_error_line_if_failed(self):
         with patch("crawler.priority_samples_process.logger") as mock_logger:

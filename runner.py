@@ -1,7 +1,7 @@
 import argparse
 
 from crawler import main
-from crawler.config.centres import CENTRES
+from crawler.config.centres import CENTRE_KEY_PREFIX, CENTRES
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--centre-prefix",
         dest="centre_prefix",
-        choices=[centre["prefix"] for centre in CENTRES],
+        choices=[centre[CENTRE_KEY_PREFIX] for centre in CENTRES],
         help="process only this centre's plate map files",
     )
 

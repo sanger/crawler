@@ -9,6 +9,7 @@ from typing import Any, Dict, Final, Iterator, List, Mapping, Tuple
 
 from pymongo.database import Database
 
+from crawler.config.centres import CENTRE_KEY_BIOMEK_LABWARE_CLASS, CENTRE_KEY_NAME
 from crawler.constants import (
     COLLECTION_PRIORITY_SAMPLES,
     DART_STATE_PENDING,
@@ -209,7 +210,7 @@ def insert_plates_and_wells_into_dart(docs_to_insert: List[SampleDoc], config: C
                     samples = list(samples)
                     centre_config = centre_config_for_samples(config, samples)
                     plate_state = add_dart_plate_if_doesnt_exist(
-                        cursor, plate_barcode, centre_config["biomek_labware_class"]
+                        cursor, plate_barcode, centre_config[CENTRE_KEY_BIOMEK_LABWARE_CLASS]
                     )
                     if plate_state == DART_STATE_PENDING:
                         for sample in samples:
@@ -249,4 +250,4 @@ def insert_plates_and_wells_into_dart(docs_to_insert: List[SampleDoc], config: C
 def centre_config_for_samples(config, samples):
     centre_name = samples[0][FIELD_SOURCE]
 
-    return list(filter(lambda x: x["name"] == centre_name, config.CENTRES))[0]
+    return list(filter(lambda x: x[CENTRE_KEY_NAME] == centre_name, config.CENTRES))[0]
