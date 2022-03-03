@@ -1,6 +1,7 @@
 import logging
 import logging.config
 import time
+from typing import cast
 
 import pymongo
 
@@ -20,6 +21,7 @@ from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
 )
 from crawler.db.mongo import (
+    collection_exists,
     create_mongo_client,
     get_mongo_collection,
     get_mongo_db,
@@ -29,6 +31,7 @@ from crawler.db.mongo import (
 from crawler.file_processing import Centre
 from crawler.helpers.general_helpers import get_config
 from crawler.priority_samples_process import update_priority_samples
+from crawler.types import CentreConf
 
 logger = logging.getLogger(__name__)
 
@@ -44,17 +47,23 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
         logger.info("START")
         logger.info(f"Using settings from {settings_module}")
 
-        centres = config.CENTRES
-
         with create_mongo_client(config) as client:
             db = get_mongo_db(config, client)
 
             # get or create the centres collection
+            centres_collection_exists = collection_exists(db, COLLECTION_CENTRES)
             centres_collection = get_mongo_collection(db, COLLECTION_CENTRES)
 
-            logger.debug(f"Creating index '{FIELD_CENTRE_NAME}' on '{centres_collection.full_name}'")
-            centres_collection.create_index(FIELD_CENTRE_NAME, unique=True)
-            populate_collection(centres_collection, centres, FIELD_CENTRE_NAME)  # type: ignore
+            if centres_collection_exists:
+                # Get the centres collection from MongoDB
+                cursor = centres_collection.find()
+                centres = list(map(lambda x: cast(CentreConf, x), cursor))
+            else:
+                # Populate the centres collection from the config values
+                centres = config.CENTRES
+                logger.debug(f"Creating index '{FIELD_CENTRE_NAME}' on '{centres_collection.full_name}'")
+                centres_collection.create_index(FIELD_CENTRE_NAME, unique=True)
+                populate_collection(centres_collection, centres, FIELD_CENTRE_NAME)  # type: ignore
 
             # get or create the source plates collection
             source_plates_collection = get_mongo_collection(db, COLLECTION_SOURCE_PLATES)
