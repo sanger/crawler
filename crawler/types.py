@@ -1,9 +1,16 @@
 from datetime import datetime
+from enum import Enum
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
 
 from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
+
+
+class DataSource(Enum):
+    SFTP = 1
+    RabbitMQ = 2
+
 
 # Type aliases
 CentreDoc = Dict[str, Any]  #  mongo document that represents a centre
@@ -32,6 +39,7 @@ class CentreConf(TypedDict):
     biomek_labware_class: str
     skip_unconsolidated_surveillance_files: bool
     include_in_scheduled_runs: bool
+    data_source: DataSource
 
 
 class Config(ModuleType):
