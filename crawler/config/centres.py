@@ -6,7 +6,7 @@ from crawler.constants import (
     FIELD_RNA_ID,
     TEST_DATA_CENTRE_PREFIX,
 )
-from crawler.types import CentreConf, DataSource
+from crawler.types import CentreConf
 
 # Centre Details
 #
@@ -39,9 +39,9 @@ from crawler.types import CentreConf, DataSource
 #                                                duplicates.
 #   include_in_scheduled_runs:                   True when a centre should be processed as part of a batch run of all
 #                                                centres.
-#   data_source:                                 Either DataSource.SFTP or DataSource.RabbitMQ to indicate whether this
-#                                                centre gets its data from either the legacy SFTP mechanism or from the
-#                                                newer RabbitMQ system from PAM.
+#   data_source:                                 Either "SFTP" or "RabbitMQ" to indicate whether this centre gets its
+#                                                data from either the legacy SFTP mechanism or from the newer RabbitMQ
+#                                                system from PAM. Unrecognised values are treated as "RabbitMQ".
 
 CENTRE_REGEX_BARCODE = r"^[\W_]*([\w-]*)_([A-Z]\d{0,1}\d)[\W_]*$"
 CENTRE_DIR_BACKUPS = "data/backups"
@@ -71,7 +71,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
         CENTRE_KEY_BIOMEK_LABWARE_CLASS: BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRE_KEY_DATA_SOURCE: DataSource.SFTP,
+        CENTRE_KEY_DATA_SOURCE: "SFTP",
         CENTRE_KEY_FILE_NAMES_TO_IGNORE: [],
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: r"^APE\d+\.csv$",
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: r"^[a-zA-Z]{2}-[a-zA-Z]{3}-\d+\.csv$",
@@ -88,7 +88,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
         CENTRE_KEY_BIOMEK_LABWARE_CLASS: BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRE_KEY_DATA_SOURCE: DataSource.SFTP,
+        CENTRE_KEY_DATA_SOURCE: "SFTP",
         CENTRE_KEY_FILE_NAMES_TO_IGNORE: ["MK_sanger_report_200715_2000_master.csv"],
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: r"^(EGL|EMK)\d+\.csv$",
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: r"^(cp)?RNA\d+\.csv$",
@@ -105,7 +105,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
         CENTRE_KEY_BIOMEK_LABWARE_CLASS: BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRE_KEY_DATA_SOURCE: DataSource.SFTP,
+        CENTRE_KEY_DATA_SOURCE: "SFTP",
         CENTRE_KEY_FILE_NAMES_TO_IGNORE: ["GLS_sanger_report_200713_0001_master.csv"],
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: r"^(EGG|GLS)\d+\.csv$",
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: f"({REGEX_SURVEILLANCE_GLS_1}|{REGEX_SURVEILLANCE_GLS_2})",
@@ -122,7 +122,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
         CENTRE_KEY_BIOMEK_LABWARE_CLASS: BIOMEK_LABWARE_CLASS_BIO,
-        CENTRE_KEY_DATA_SOURCE: DataSource.SFTP,
+        CENTRE_KEY_DATA_SOURCE: "SFTP",
         CENTRE_KEY_FILE_NAMES_TO_IGNORE: ["CB_sanger_report_200714_0001_master.csv"],
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: r"^(EGC|CBE)\d+\.csv$",
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: r"^\d{9}\.csv$",
@@ -139,7 +139,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
         CENTRE_KEY_BIOMEK_LABWARE_CLASS: BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRE_KEY_DATA_SOURCE: DataSource.SFTP,
+        CENTRE_KEY_DATA_SOURCE: "SFTP",
         CENTRE_KEY_FILE_NAMES_TO_IGNORE: [r"^lw-randox-biocentre-box-((\d)|(1\d)|20)-.*$"],
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: r"^RXE\d+\.csv$",
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: r"^RDX-[a-zA-Z0-9]{2}-\d+\.csv$",
@@ -156,7 +156,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
         CENTRE_KEY_BIOMEK_LABWARE_CLASS: BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRE_KEY_DATA_SOURCE: DataSource.SFTP,
+        CENTRE_KEY_DATA_SOURCE: "SFTP",
         CENTRE_KEY_FILE_NAMES_TO_IGNORE: [],
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: r"^$",
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: r"^HSL\d+\.csv$",
@@ -173,7 +173,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
         CENTRE_KEY_BIOMEK_LABWARE_CLASS: BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRE_KEY_DATA_SOURCE: DataSource.SFTP,
+        CENTRE_KEY_DATA_SOURCE: "SFTP",
         CENTRE_KEY_FILE_NAMES_TO_IGNORE: [],
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: r"^$",
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: r"^PLY-chp-\d+\.csv$",
@@ -190,7 +190,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
         CENTRE_KEY_BIOMEK_LABWARE_CLASS: BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRE_KEY_DATA_SOURCE: DataSource.SFTP,
+        CENTRE_KEY_DATA_SOURCE: "SFTP",
         CENTRE_KEY_FILE_NAMES_TO_IGNORE: [],
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: r"^$",
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: r"^BB[-_]\d+\.csv$",
@@ -207,7 +207,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
         CENTRE_KEY_BIOMEK_LABWARE_CLASS: BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRE_KEY_DATA_SOURCE: DataSource.SFTP,
+        CENTRE_KEY_DATA_SOURCE: "SFTP",
         CENTRE_KEY_FILE_NAMES_TO_IGNORE: [],
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: r"^$",
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: r"^LML_CHERY\d+\.csv$",
@@ -224,7 +224,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
         CENTRE_KEY_BIOMEK_LABWARE_CLASS: BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRE_KEY_DATA_SOURCE: DataSource.SFTP,
+        CENTRE_KEY_DATA_SOURCE: "SFTP",
         CENTRE_KEY_FILE_NAMES_TO_IGNORE: [],
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: r"^$",
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: r"^ICHNE\d+[A-Z|a-z]{1}\.csv$",
@@ -241,7 +241,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
         CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
         CENTRE_KEY_BIOMEK_LABWARE_CLASS: BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRE_KEY_DATA_SOURCE: DataSource.SFTP,
+        CENTRE_KEY_DATA_SOURCE: "SFTP",
         CENTRE_KEY_FILE_NAMES_TO_IGNORE: [],
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: r"^$",
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: r"^$",
