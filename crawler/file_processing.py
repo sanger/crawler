@@ -91,7 +91,7 @@ from crawler.filtered_positive_identifier import current_filtered_positive_ident
 from crawler.helpers.enums import CentreFileState
 from crawler.helpers.general_helpers import create_source_plate_doc, current_time, get_sftp_connection, pad_coordinate
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.types import CentreConf, CentreDoc, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc
+from crawler.types import CentreConf, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +161,7 @@ class Centre:
             # create an instance of the file class to handle the file
             centre_file = CentreFile(filename, self)
 
-            centre_file.set_state_for_file(self.centre_config)
+            centre_file.set_state_for_file()
             logger.debug(f"File state: {CentreFileState[centre_file.file_state.name]}")
 
             # Process depending on file state
@@ -370,24 +370,27 @@ class CentreFile:
                     return True
         return False
 
-    def is_unconsolidated_surveillance_file(self, centre: CentreConf) -> bool:
+    def is_unconsolidated_surveillance_file(self) -> bool:
         """Identifies whether this file is from the batch of unconsolidated surveillance files for the centre that uploaded it.
 
         Returns:
             bool: True if the filename matches the unconsolidated surveillance regex specified
                   in the centre's configuration. False otherwise.
         """
-        compiled_regex = re.compile(centre[CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE])
+        compiled_regex = re.compile(self.centre_config[CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE])
         return bool(compiled_regex.match(self.file_name))
 
-    def set_state_for_file(self, centre: CentreConf) -> CentreFileState:
+    def set_state_for_file(self) -> CentreFileState:
         """Determines what state the file is in and whether it needs to be processed.
 
         Returns:
             CentreFileState - enum representation of file state
         """
         # check whether file is on the blacklist and should be ignored
-        if CENTRE_KEY_FILE_NAMES_TO_IGNORE in centre and self.file_name in centre[CENTRE_KEY_FILE_NAMES_TO_IGNORE]:
+        if (
+            CENTRE_KEY_FILE_NAMES_TO_IGNORE in self.centre_config
+            and self.file_name in self.centre_config[CENTRE_KEY_FILE_NAMES_TO_IGNORE]
+        ):
             self.file_state = CentreFileState.FILE_IN_BLACKLIST
 
         # check whether file has already been processed to error directory
@@ -400,9 +403,10 @@ class CentreFile:
             self.file_state = CentreFileState.FILE_PROCESSED_WITH_SUCCESS
 
         # check for this being an unconsolidated samples file where the centre doesn't support those
-        elif centre.get(
-            CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES, False
-        ) and self.is_unconsolidated_surveillance_file(centre):
+        elif (
+            self.centre_config.get(CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES, False)
+            and self.is_unconsolidated_surveillance_file()
+        ):
             self.file_state = CentreFileState.FILE_SHOULD_NOT_BE_PROCESSED
 
         # if checksum(s) differs or if the file was not present in success directory, process it
