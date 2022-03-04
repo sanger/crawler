@@ -66,7 +66,7 @@ from crawler.types import CentreConf, Config
 #                                                centres.
 #   data_source:                                 Either "SFTP" or "RabbitMQ" to indicate whether this centre gets its
 #                                                data from either the legacy SFTP mechanism or from the newer RabbitMQ
-#                                                system from PAM. Unrecognised values are treated as "RabbitMQ".
+#                                                system from PAM.
 
 CENTRE_REGEX_BARCODE = r"^[\W_]*([\w-]*)_([A-Z]\d{0,1}\d)[\W_]*$"
 CENTRE_DIR_BACKUPS = "data/backups"
@@ -265,7 +265,17 @@ CENTRES: List[CentreConf] = [
 ]
 
 
-def get_centres_config(config: Config) -> List[CentreConf]:
+def get_centres_config(config: Config, data_source: str = None) -> List[CentreConf]:
+    """Get the centres config from MongoDB. If MongoDB does not contain any centres config, it will become populated
+    with the values in the app config for centres.
+
+    Arguments:
+        config: Config - The configuration object for the whole application.
+        data_source: str - The data source filter to apply to centre configs, or None to apply no filter.
+
+    Return:
+        A List of CentreConf from MongoDB matching the given data source.
+    """
     with create_mongo_client(config) as client:
         db = get_mongo_db(config, client)
 
@@ -279,4 +289,9 @@ def get_centres_config(config: Config) -> List[CentreConf]:
 
         # Get the centres collection from MongoDB
         cursor = centres_collection.find()
-        return list(map(lambda x: cast(CentreConf, x), cursor))
+        centres = list(map(lambda x: cast(CentreConf, x), cursor))
+
+        if data_source:
+            centres = list(filter(lambda c: c.get(CENTRE_KEY_DATA_SOURCE).lower() == data_source.lower(), centres))
+
+        return centres

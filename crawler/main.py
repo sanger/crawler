@@ -6,6 +6,7 @@ import pymongo
 
 from crawler.config.centres import get_centres_config
 from crawler.constants import (
+    CENTRE_KEY_DATA_SOURCE,
     CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS,
     CENTRE_KEY_NAME,
     CENTRE_KEY_PREFIX,
@@ -39,8 +40,8 @@ def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = 
         logger.info("START")
         logger.info(f"Using settings from {settings_module}")
 
-        # get or create the centres collection
-        centres = get_centres_config(config)
+        # get or create the centres collection and filter down to only those with an SFTP data source
+        centres = get_centres_config(config, "SFTP")
 
         with create_mongo_client(config) as client:
             db = get_mongo_db(config, client)

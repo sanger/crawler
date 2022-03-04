@@ -1,8 +1,17 @@
 import argparse
 
 from crawler import main
-from crawler.config.centres import CENTRES
-from crawler.constants import CENTRE_KEY_PREFIX
+from crawler.config.centres import CENTRES, get_centres_config
+from crawler.constants import CENTRE_KEY_DATA_SOURCE, CENTRE_KEY_PREFIX
+from crawler.helpers.general_helpers import get_config
+
+
+def centre_prefix_choices():
+    config, _ = get_config("")
+    centres = get_centres_config(config, "SFTP")
+
+    return [centre[CENTRE_KEY_PREFIX] for centre in centres]
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -30,9 +39,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--centre-prefix",
         dest="centre_prefix",
-        # Note that the choices are based on the local CENTRES config but filtering will be done based on
-        # centres config in the MongoDB instance.
-        choices=[centre[CENTRE_KEY_PREFIX] for centre in CENTRES],
+        choices=centre_prefix_choices(),
         help="process only this centre's plate map files",
     )
 
