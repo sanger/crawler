@@ -265,7 +265,7 @@ CENTRES: List[CentreConf] = [
 ]
 
 
-def get_centres_config(config: Config, data_source: str = None) -> List[CentreConf]:
+def get_centres_config(config: Config, data_source: str = "") -> List[CentreConf]:
     """Get the centres config from MongoDB. If MongoDB does not contain any centres config, it will become populated
     with the values in the app config for centres.
 
@@ -292,6 +292,13 @@ def get_centres_config(config: Config, data_source: str = None) -> List[CentreCo
         centres = list(map(lambda x: cast(CentreConf, x), cursor))
 
         if data_source:
-            centres = list(filter(lambda c: c.get(CENTRE_KEY_DATA_SOURCE).lower() == data_source.lower(), centres))
+
+            def test_data_source(centre):
+                try:
+                    return centre.get(CENTRE_KEY_DATA_SOURCE).lower() == data_source.lower()
+                except (AttributeError):
+                    return False
+
+            centres = list(filter(test_data_source, centres))
 
         return centres

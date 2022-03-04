@@ -1,8 +1,8 @@
 import argparse
 
 from crawler import main
-from crawler.config.centres import CENTRES, get_centres_config
-from crawler.constants import CENTRE_KEY_DATA_SOURCE, CENTRE_KEY_PREFIX
+from crawler.config.centres import get_centres_config
+from crawler.constants import CENTRE_KEY_PREFIX
 from crawler.helpers.general_helpers import get_config
 
 

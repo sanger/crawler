@@ -6,7 +6,6 @@ import pymongo
 
 from crawler.config.centres import get_centres_config
 from crawler.constants import (
-    CENTRE_KEY_DATA_SOURCE,
     CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS,
     CENTRE_KEY_NAME,
     CENTRE_KEY_PREFIX,
