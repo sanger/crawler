@@ -1,4 +1,4 @@
-from typing import Final, List, cast
+from typing import List, cast
 
 from crawler.constants import (
     BIOMEK_LABWARE_CLASS_BIO,

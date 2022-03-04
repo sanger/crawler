@@ -97,9 +97,9 @@ def collection_exists(database: Database, collection_name: str) -> bool:
     return collection_name in database.list_collection_names()
 
 
-def create_index(collection: Collection, key: str, **kwargs: Any):
+def create_index(collection: Collection, key: str, unique: bool = True) -> None:
     logger.debug(f"Creating index '{key}' on '{collection.full_name}'")
-    collection.create_index(key, *kwargs)
+    collection.create_index(key, unique=unique)
 
 
 @contextmanager
