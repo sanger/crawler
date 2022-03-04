@@ -270,11 +270,11 @@ def get_centres_config(config: Config, data_source: str = "") -> List[CentreConf
     with the values in the app config for centres.
 
     Arguments:
-        config: Config - The configuration object for the whole application.
-        data_source: str - The data source filter to apply to centre configs, or None to apply no filter.
+        config {Config}: The configuration object for the whole application.
+        data_source {str}: The data source filter to apply to centre configs, or None to apply no filter.
 
     Return:
-        A List of CentreConf from MongoDB matching the given data source.
+        List[CentreConf]: A List of CentreConf from MongoDB matching the given data source.
     """
     with create_mongo_client(config) as client:
         db = get_mongo_db(config, client)
