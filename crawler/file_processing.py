@@ -19,7 +19,10 @@ from bson.decimal128 import Decimal128
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
-from crawler.config.centres import (
+from crawler.constants import (
+    ALLOWED_CH_RESULT_VALUES,
+    ALLOWED_CH_TARGET_VALUES,
+    ALLOWED_RESULT_VALUES,
     CENTRE_KEY_BACKUPS_FOLDER,
     CENTRE_KEY_BARCODE_FIELD,
     CENTRE_KEY_BARCODE_REGEX,
@@ -33,18 +36,11 @@ from crawler.config.centres import (
     CENTRE_KEY_PREFIX,
     CENTRE_KEY_SFTP_ROOT_READ,
     CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES,
-)
-from crawler.constants import (
-    ALLOWED_CH_RESULT_VALUES,
-    ALLOWED_CH_TARGET_VALUES,
-    ALLOWED_RESULT_VALUES,
-    COLLECTION_CENTRES,
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
     DART_STATE_PENDING,
     FIELD_BARCODE,
-    FIELD_CENTRE_NAME,
     FIELD_CH1_CQ,
     FIELD_CH1_RESULT,
     FIELD_CH1_TARGET,

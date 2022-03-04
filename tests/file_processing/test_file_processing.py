@@ -12,15 +12,13 @@ from bson.objectid import ObjectId
 from mysql.connector.connection_cext import CMySQLConnection
 from pytest import mark
 
-from crawler.config.centres import (
+from crawler.constants import (
     CENTRE_KEY_BACKUPS_FOLDER,
     CENTRE_KEY_BARCODE_FIELD,
     CENTRE_KEY_BARCODE_REGEX,
     CENTRE_KEY_BIOMEK_LABWARE_CLASS,
     CENTRE_KEY_PREFIX,
     CENTRE_KEY_SFTP_ROOT_READ,
-)
-from crawler.constants import (
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,

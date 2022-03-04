@@ -10,8 +10,8 @@ import sqlalchemy
 from sqlalchemy import MetaData
 
 from crawler import create_app
-from crawler.config.centres import CENTRE_KEY_FILE_NAMES_TO_IGNORE
 from crawler.constants import (
+    CENTRE_KEY_FILE_NAMES_TO_IGNORE,
     COLLECTION_CENTRES,
     COLLECTION_PRIORITY_SAMPLES,
     COLLECTION_SAMPLES,

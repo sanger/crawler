@@ -3,12 +3,10 @@ from datetime import datetime
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
-from crawler.config.centres import CENTRE_KEY_NAME
 
+from crawler.constants import CENTRE_KEY_NAME, FIELD_MONGODB_ID
 from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.helpers.logging_helpers import LoggingCollection
-
-from crawler.constants import FIELD_MONGODB_ID
 
 
 def test_create_mongo_client(config):

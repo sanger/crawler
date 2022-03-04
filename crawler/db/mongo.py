@@ -8,7 +8,7 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.results import InsertOneResult
 
-from crawler.config.centres import CENTRE_KEY_NAME
+from crawler.constants import CENTRE_KEY_NAME
 from crawler.types import CentreConf, Config
 
 logger = logging.getLogger(__name__)
@@ -95,6 +95,11 @@ def collection_exists(database: Database, collection_name: str) -> bool:
     logger.debug(f"Checking whether collection exists '{collection_name}'")
 
     return collection_name in database.list_collection_names()
+
+
+def create_index(collection: Collection, key: str, **kwargs: Any):
+    logger.debug(f"Creating index '{key}' on '{collection.full_name}'")
+    collection.create_index(key, *kwargs)
 
 
 @contextmanager

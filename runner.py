@@ -1,7 +1,8 @@
 import argparse
 
 from crawler import main
-from crawler.config.centres import CENTRE_KEY_PREFIX, CENTRES
+from crawler.config.centres import CENTRES
+from crawler.constants import CENTRE_KEY_PREFIX
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -29,6 +30,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--centre-prefix",
         dest="centre_prefix",
+        # Note that the choices are based on the local CENTRES config but filtering will be done based on
+        # centres config in the MongoDB instance.
         choices=[centre[CENTRE_KEY_PREFIX] for centre in CENTRES],
         help="process only this centre's plate map files",
     )

@@ -1,12 +1,37 @@
-from typing import Final, List
+from typing import Final, List, cast
 
 from crawler.constants import (
     BIOMEK_LABWARE_CLASS_BIO,
     BIOMEK_LABWARE_CLASS_KINGFISHER,
+    CENTRE_KEY_BACKUPS_FOLDER,
+    CENTRE_KEY_BARCODE_FIELD,
+    CENTRE_KEY_BARCODE_REGEX,
+    CENTRE_KEY_BIOMEK_LABWARE_CLASS,
+    CENTRE_KEY_DATA_SOURCE,
+    CENTRE_KEY_FILE_NAMES_TO_IGNORE,
+    CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE,
+    CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE,
+    CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE,
+    CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS,
+    CENTRE_KEY_LAB_ID_DEFAULT,
+    CENTRE_KEY_NAME,
+    CENTRE_KEY_PREFIX,
+    CENTRE_KEY_SFTP_ROOT_READ,
+    CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES,
+    COLLECTION_CENTRES,
+    FIELD_CENTRE_NAME,
     FIELD_RNA_ID,
     TEST_DATA_CENTRE_PREFIX,
 )
-from crawler.types import CentreConf
+from crawler.db.mongo import (
+    collection_exists,
+    create_index,
+    create_mongo_client,
+    get_mongo_collection,
+    get_mongo_db,
+    populate_collection,
+)
+from crawler.types import CentreConf, Config
 
 # Centre Details
 #
@@ -48,22 +73,6 @@ CENTRE_DIR_BACKUPS = "data/backups"
 CENTRE_REGEX_SFTP_FILE_HERON = r"sanger_report_(\d{6}_\d{4}).*\.csv$"
 REGEX_SURVEILLANCE_GLS_1 = r"^GLA\d+[A-Za-z]\.csv$"
 REGEX_SURVEILLANCE_GLS_2 = r"^[a-zA-Z]{3}-[a-zA-Z]{2}-\d+\.csv$"
-
-CENTRE_KEY_BACKUPS_FOLDER: Final = "backups_folder"
-CENTRE_KEY_BARCODE_FIELD: Final = "barcode_field"
-CENTRE_KEY_BARCODE_REGEX: Final = "barcode_regex"
-CENTRE_KEY_BIOMEK_LABWARE_CLASS: Final = "biomek_labware_class"
-CENTRE_KEY_DATA_SOURCE: Final = "data_source"
-CENTRE_KEY_FILE_NAMES_TO_IGNORE: Final = "file_names_to_ignore"
-CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: Final = "sftp_file_regex_consolidated_eagle"
-CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: Final = "sftp_file_regex_consolidated_surveillance"
-CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE: Final = "sftp_file_regex_unconsolidated_surveillance"
-CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: Final = "include_in_scheduled_runs"
-CENTRE_KEY_LAB_ID_DEFAULT: Final = "lab_id_default"
-CENTRE_KEY_NAME: Final = "name"
-CENTRE_KEY_PREFIX: Final = "prefix"
-CENTRE_KEY_SFTP_ROOT_READ: Final = "sftp_root_read"
-CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: Final = "skip_unconsolidated_surveillance_files"
 
 CENTRES: List[CentreConf] = [
     {
@@ -254,3 +263,20 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: False,
     },
 ]
+
+
+def get_centres_config(config: Config) -> List[CentreConf]:
+    with create_mongo_client(config) as client:
+        db = get_mongo_db(config, client)
+
+        centres_collection_exists = collection_exists(db, COLLECTION_CENTRES)
+        centres_collection = get_mongo_collection(db, COLLECTION_CENTRES)
+
+        if not centres_collection_exists:
+            # Populate the centres collection from the config values
+            create_index(centres_collection, FIELD_CENTRE_NAME, unique=True)
+            populate_collection(centres_collection, config.CENTRES, FIELD_CENTRE_NAME)  # type: ignore
+
+        # Get the centres collection from MongoDB
+        cursor = centres_collection.find()
+        return list(map(lambda x: cast(CentreConf, x), cursor))

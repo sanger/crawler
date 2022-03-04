@@ -4,9 +4,10 @@ from typing import Dict, List, Optional
 
 from more_itertools import groupby_transform
 
-from crawler.config.centres import CENTRE_KEY_BIOMEK_LABWARE_CLASS, CENTRE_KEY_NAME
 from crawler.constants import (
     BIOMEK_LABWARE_CLASS_KINGFISHER,
+    CENTRE_KEY_BIOMEK_LABWARE_CLASS,
+    CENTRE_KEY_NAME,
     COLLECTION_SAMPLES,
     DART_STATE_PENDING,
     FIELD_COORDINATE,
