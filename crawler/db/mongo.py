@@ -98,6 +98,13 @@ def collection_exists(database: Database, collection_name: str) -> bool:
 
 
 def create_index(collection: Collection, key: str, unique: bool = True) -> None:
+    """Create an index for a specified key on a collection.
+
+    Arguments:
+        collection {Collection}: The collection to create an index on.
+        key {str}: The key to create an index for.
+        unique {bool}: Whether the index may only contain unique values.
+    """
     logger.debug(f"Creating index '{key}' on '{collection.full_name}'")
     collection.create_index(key, unique=unique)
 
