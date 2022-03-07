@@ -22,6 +22,6 @@ jobs:
 
       - name: Compare releases
         run: >-
-          if [ "${{ steps.last_release.outputs.release }}" = "$(printf 'v%s\n' $(cat .release-version))" ]; then
+          if [ "${{ steps.last_release.outputs.release }}" = "$(printf '%s\n' $(cat .release-version))" ]; then
             exit 1;
           fi
