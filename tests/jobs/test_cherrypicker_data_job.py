@@ -8,8 +8,9 @@ from unittest.mock import Mock, patch
 import pytest
 from bson.objectid import ObjectId
 
-from crawler.config.centres import CENTRE_KEY_LAB_ID_DEFAULT, CENTRE_KEY_PREFIX
 from crawler.constants import (
+    CENTRE_KEY_LAB_ID_DEFAULT,
+    CENTRE_KEY_PREFIX,
     COLLECTION_CHERRYPICK_TEST_DATA,
     FIELD_ADD_TO_DART,
     FIELD_BARCODES,

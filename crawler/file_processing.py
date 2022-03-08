@@ -19,7 +19,10 @@ from bson.decimal128 import Decimal128
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
-from crawler.config.centres import (
+from crawler.constants import (
+    ALLOWED_CH_RESULT_VALUES,
+    ALLOWED_CH_TARGET_VALUES,
+    ALLOWED_RESULT_VALUES,
     CENTRE_KEY_BACKUPS_FOLDER,
     CENTRE_KEY_BARCODE_FIELD,
     CENTRE_KEY_BARCODE_REGEX,
@@ -33,18 +36,11 @@ from crawler.config.centres import (
     CENTRE_KEY_PREFIX,
     CENTRE_KEY_SFTP_ROOT_READ,
     CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES,
-)
-from crawler.constants import (
-    ALLOWED_CH_RESULT_VALUES,
-    ALLOWED_CH_TARGET_VALUES,
-    ALLOWED_RESULT_VALUES,
-    COLLECTION_CENTRES,
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
     DART_STATE_PENDING,
     FIELD_BARCODE,
-    FIELD_CENTRE_NAME,
     FIELD_CH1_CQ,
     FIELD_CH1_RESULT,
     FIELD_CH1_TARGET,
@@ -95,7 +91,7 @@ from crawler.filtered_positive_identifier import current_filtered_positive_ident
 from crawler.helpers.enums import CentreFileState
 from crawler.helpers.general_helpers import create_source_plate_doc, current_time, get_sftp_connection, pad_coordinate
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.types import CentreConf, CentreDoc, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc
+from crawler.types import CentreConf, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc
 
 logger = logging.getLogger(__name__)
 
@@ -374,22 +370,6 @@ class CentreFile:
                     return True
         return False
 
-    def get_centre_from_db(self) -> CentreDoc:
-        """Gets a document from the mongo centre collection which describes a lighthouse centre.
-
-        Raises:
-            Exception: if no centre is found, raise an exception
-
-        Returns:
-            CentreDoc: mongo document describing a centre
-        """
-        centre_collection = get_mongo_collection(self.get_db(), COLLECTION_CENTRES)
-
-        if centre := centre_collection.find_one(filter={FIELD_CENTRE_NAME: self.centre_config[CENTRE_KEY_NAME]}):
-            return cast(CentreDoc, centre)
-
-        raise Exception("Unable to find the centre in the centre collection.")
-
     def is_unconsolidated_surveillance_file(self) -> bool:
         """Identifies whether this file is from the batch of unconsolidated surveillance files for the centre that uploaded it.
 
@@ -397,8 +377,7 @@ class CentreFile:
             bool: True if the filename matches the unconsolidated surveillance regex specified
                   in the centre's configuration. False otherwise.
         """
-        centre = self.get_centre_from_db()
-        compiled_regex = re.compile(centre[CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE])
+        compiled_regex = re.compile(self.centre_config[CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE])
         return bool(compiled_regex.match(self.file_name))
 
     def set_state_for_file(self) -> CentreFileState:
@@ -407,10 +386,11 @@ class CentreFile:
         Returns:
             CentreFileState - enum representation of file state
         """
-        centre = self.get_centre_from_db()
-
         # check whether file is on the blacklist and should be ignored
-        if CENTRE_KEY_FILE_NAMES_TO_IGNORE in centre and self.file_name in centre[CENTRE_KEY_FILE_NAMES_TO_IGNORE]:
+        if (
+            CENTRE_KEY_FILE_NAMES_TO_IGNORE in self.centre_config
+            and self.file_name in self.centre_config[CENTRE_KEY_FILE_NAMES_TO_IGNORE]
+        ):
             self.file_state = CentreFileState.FILE_IN_BLACKLIST
 
         # check whether file has already been processed to error directory
@@ -424,7 +404,7 @@ class CentreFile:
 
         # check for this being an unconsolidated samples file where the centre doesn't support those
         elif (
-            centre.get(CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES, False)
+            self.centre_config.get(CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES, False)
             and self.is_unconsolidated_surveillance_file()
         ):
             self.file_state = CentreFileState.FILE_SHOULD_NOT_BE_PROCESSED

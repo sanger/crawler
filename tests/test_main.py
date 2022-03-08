@@ -248,6 +248,10 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     invalidate_caches()
 
     try:
+        # Delete the mongo centres collection so that it gets repopulated from the new config this run
+        centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
+        centres_collection.drop()
+
         # Run with a different config that does not blacklist one of the files
         with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
             run(False, False, False, "crawler.config.integration_with_blacklist_change")

@@ -4,9 +4,11 @@ from typing import Dict, List, Optional
 
 from more_itertools import groupby_transform
 
-from crawler.config.centres import CENTRE_KEY_BIOMEK_LABWARE_CLASS, CENTRE_KEY_NAME
+from crawler.config.centres import get_centres_config
 from crawler.constants import (
     BIOMEK_LABWARE_CLASS_KINGFISHER,
+    CENTRE_KEY_BIOMEK_LABWARE_CLASS,
+    CENTRE_KEY_NAME,
     COLLECTION_SAMPLES,
     DART_STATE_PENDING,
     FIELD_COORDINATE,
@@ -212,7 +214,8 @@ def update_dart_fields(config: Config, samples: List[SampleDoc]) -> bool:
         raise ValueError("Unable to establish DART SQL Server connection")
 
     dart_updated_successfully = True
-    labclass_by_centre_name = biomek_labclass_by_centre_name(config.CENTRES)
+    centres = get_centres_config(config)
+    labclass_by_centre_name = biomek_labclass_by_centre_name(centres)
     try:
         logger.info("Writing to DART")
 

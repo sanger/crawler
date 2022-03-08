@@ -4,8 +4,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from crawler.config.centres import CENTRE_KEY_BIOMEK_LABWARE_CLASS, CENTRE_KEY_NAME
 from crawler.constants import (
+    CENTRE_KEY_BIOMEK_LABWARE_CLASS,
+    CENTRE_KEY_NAME,
     DART_STATE_PENDING,
     FIELD_COORDINATE,
     FIELD_FILTERED_POSITIVE,

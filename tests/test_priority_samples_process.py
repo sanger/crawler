@@ -4,8 +4,10 @@ from unittest.mock import patch
 import pytest
 from bson.objectid import ObjectId
 
-from crawler.config.centres import CENTRE_KEY_LAB_ID_DEFAULT, CENTRE_KEY_NAME, CENTRE_KEY_PREFIX
 from crawler.constants import (
+    CENTRE_KEY_LAB_ID_DEFAULT,
+    CENTRE_KEY_NAME,
+    CENTRE_KEY_PREFIX,
     COLLECTION_PRIORITY_SAMPLES,
     COLLECTION_SAMPLES,
     DART_STATE_PENDING,

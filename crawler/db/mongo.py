@@ -7,8 +7,8 @@ from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.results import InsertOneResult
-from crawler.config.centres import CENTRE_KEY_NAME
 
+from crawler.constants import CENTRE_KEY_NAME
 from crawler.types import CentreConf, Config
 
 logger = logging.getLogger(__name__)
@@ -80,6 +80,33 @@ def get_mongo_collection(database: Database, collection_name: str) -> Collection
     logger.debug(f"Get collection '{collection_name}'")
 
     return database[collection_name]
+
+
+def collection_exists(database: Database, collection_name: str) -> bool:
+    """Identify whether the specified collection existing in MongoDB already.
+
+    Arguments:
+        database {Database}: the database to check for the collection's existance.
+        collection_name {str}: the name of the collection to check the existance of.
+
+    Returns:
+        bool: True if the collection exists; otherwise False.
+    """
+    logger.debug(f"Checking whether collection exists '{collection_name}'")
+
+    return collection_name in database.list_collection_names()
+
+
+def create_index(collection: Collection, key: str, unique: bool = True) -> None:
+    """Create an index for a specified key on a collection.
+
+    Arguments:
+        collection {Collection}: The collection to create an index on.
+        key {str}: The key to create an index for.
+        unique {bool}: Whether the index may only contain unique values.
+    """
+    logger.debug(f"Creating index '{key}' on '{collection.full_name}'")
+    collection.create_index(key, unique=unique)
 
 
 @contextmanager
