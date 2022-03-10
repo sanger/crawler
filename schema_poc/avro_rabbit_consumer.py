@@ -8,8 +8,10 @@ from pika import BlockingConnection, ConnectionParameters, PlainCredentials, SSL
 from schema_registry import RESPONSE_KEY_SCHEMA, SchemaRegistry
 
 
-class Consumer:
-    def __init__(self, schema_registry: SchemaRegistry):
+class AvroRabbitConsumer:
+    def __init__(self, host: str, port: int, schema_registry: SchemaRegistry):
+        self._host = host
+        self._port = port
         self._schema_registry = schema_registry
 
     def callback(self, ch, method, properties, body):
@@ -25,14 +27,11 @@ class Consumer:
         else:
             print("There was no body with the message - try again.")
 
-    def receive_messages(self, queue):
-        credentials = PlainCredentials("sm49", "poc-test")
+    def receive_messages(self, vhost, queue, username_password):
+        credentials = PlainCredentials(username_password[0], username_password[1])
         ssl_options = SSLOptions(create_default_context())
         connection_params = ConnectionParameters(
-            "heron-rabbitmq-training.psd.sanger.ac.uk",
-            port=5671,
-            credentials=credentials,
-            ssl_options=ssl_options,
+            host=self._host, port=self._port, virtual_host=vhost, credentials=credentials, ssl_options=ssl_options
         )
         connection = BlockingConnection(connection_params)
         channel = connection.channel()

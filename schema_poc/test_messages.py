@@ -136,3 +136,11 @@ EXCHANGES = {
     "update-plate-map-sample": "psd.heron.crud-operations",
     "update-plate-map-sample-feedback": "psd.heron.feedback",
 }
+
+QUEUES = {
+    "cherrypicked-samples": "psd.heron.feedback",
+    "create-plate-map": "psd.heron.crud-operations",
+    "create-plate-map-feedback": "psd.heron.feedback",
+    "update-plate-map-sample": "psd.heron.crud-operations",
+    "update-plate-map-sample-feedback": "psd.heron.feedback",
+}

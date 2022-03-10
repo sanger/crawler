@@ -1,7 +1,7 @@
 from os import getenv
 
 from avro_rabbit_producer import AvroRabbitProducer
-from credentials import CREDENTIAL_KEY_API_KEY, CREDENTIAL_KEY_RABBITMQ, CREDENTIALS
+from credentials import CREDENTIAL_KEY_API_KEY, CREDENTIAL_KEY_RABBITMQ, PUBLISH_CREDENTIALS
 from hosts import RABBITMQ_HOST, REDPANDA_URL
 from schema_registry import SchemaRegistry
 from test_messages import EXCHANGES, MESSAGES
@@ -20,7 +20,7 @@ from test_messages import EXCHANGES, MESSAGES
 subject = getenv("AVRO_TEST_SUBJECT", "create-plate-map")
 test_msg = MESSAGES[subject]
 exchange = EXCHANGES[subject]
-credentials = CREDENTIALS[subject]()
+credentials = PUBLISH_CREDENTIALS[subject]()
 
 schema_registry = SchemaRegistry(REDPANDA_URL, credentials[CREDENTIAL_KEY_API_KEY])
 
