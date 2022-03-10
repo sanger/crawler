@@ -11,8 +11,10 @@ MESSAGE_KEY_PROPERTIES = "properties"
 MESSAGE_KEY_BODY = "body"
 
 
-class Producer:
-    def __init__(self, schema_registry: SchemaRegistry):
+class AvroRabbitProducer:
+    def __init__(self, host: str, port: int, schema_registry: SchemaRegistry):
+        self._host = host
+        self._port = port
         self._schema_registry = schema_registry
 
     def prepare_message(self, message, subject):
@@ -31,21 +33,17 @@ class Producer:
 
         return {MESSAGE_KEY_PROPERTIES: properties, MESSAGE_KEY_BODY: string_writer.getvalue()}
 
-    def send_message(self, prepared_message, queue, exchange=""):
-        credentials = PlainCredentials("sm49", "poc-test")
+    def send_message(self, prepared_message, vhost, exchange, routing_key, username_password):
+        credentials = PlainCredentials(username_password[0], username_password[1])
         ssl_options = SSLOptions(create_default_context())
         connection_params = ConnectionParameters(
-            "heron-rabbitmq-training.psd.sanger.ac.uk",
-            port=5671,
-            credentials=credentials,
-            ssl_options=ssl_options,
+            host=self._host, port=self._port, virtual_host=vhost, credentials=credentials, ssl_options=ssl_options
         )
         connection = BlockingConnection(connection_params)
         channel = connection.channel()
-        # channel.queue_declare(queue=queue)
         channel.basic_publish(
             exchange=exchange,
-            routing_key=queue,
+            routing_key=routing_key,
             properties=prepared_message[MESSAGE_KEY_PROPERTIES],
             body=prepared_message[MESSAGE_KEY_BODY],
         )
