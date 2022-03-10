@@ -137,6 +137,14 @@ EXCHANGES = {
     "update-plate-map-sample-feedback": "psd.heron.feedback",
 }
 
+ROUTING_KEYS = {
+    "cherrypicked-samples": "feedback.cherrypicked.sample",
+    "create-plate-map": "crud.create.plate",
+    "create-plate-map-feedback": "feedback.created.plate",
+    "update-plate-map-sample": "crud.update.sample",
+    "update-plate-map-sample-feedback": "feedback.updated.sample",
+}
+
 QUEUES = {
     "cherrypicked-samples": "psd.heron.feedback",
     "create-plate-map": "psd.heron.crud-operations",

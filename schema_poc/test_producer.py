@@ -4,7 +4,7 @@ from avro_rabbit_producer import AvroRabbitProducer
 from credentials import CREDENTIAL_KEY_API_KEY, CREDENTIAL_KEY_RABBITMQ, PUBLISH_CREDENTIALS
 from hosts import RABBITMQ_HOST, REDPANDA_URL
 from schema_registry import SchemaRegistry
-from test_messages import EXCHANGES, MESSAGES
+from test_messages import EXCHANGES, MESSAGES, ROUTING_KEYS
 
 # Before running this test, the schema is going to need to be loaded into RedPanda schema registry.
 # The test here assume RedPanda is running on local host port 8081, which it will be if you used the dependencies
@@ -21,6 +21,7 @@ subject = getenv("AVRO_TEST_SUBJECT", "create-plate-map")
 test_msg = MESSAGES[subject]
 exchange = EXCHANGES[subject]
 credentials = PUBLISH_CREDENTIALS[subject]()
+routing_key = ROUTING_KEYS[subject]
 
 schema_registry = SchemaRegistry(REDPANDA_URL, credentials[CREDENTIAL_KEY_API_KEY])
 
@@ -30,6 +31,6 @@ producer.send_message(
     prepared_message,
     vhost="heron",
     exchange=exchange,
-    routing_key=subject,
+    routing_key=routing_key,
     username_password=credentials[CREDENTIAL_KEY_RABBITMQ],
 )
