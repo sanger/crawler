@@ -16,7 +16,7 @@ class SchemaRegistry:
             get(
                 f"{self._base_uri}/subjects/{subject}/versions/{version_num}",
                 headers={"X-API-KEY": self._api_key},
-                verify="sanger_certs.pem",
+                verify="cert.pem",
             ).json()
         )
 
