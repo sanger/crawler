@@ -130,11 +130,11 @@ MESSAGES = {
 }
 
 EXCHANGES = {
-    "cherrypicked-samples": "psd.heron.feedback",
-    "create-plate-map": "psd.heron.crud-operations",
-    "create-plate-map-feedback": "psd.heron.feedback",
-    "update-plate-map-sample": "psd.heron.crud-operations",
-    "update-plate-map-sample-feedback": "psd.heron.feedback",
+    "cherrypicked-samples": "psd.heron",
+    "create-plate-map": "pam.heron",
+    "create-plate-map-feedback": "psd.heron",
+    "update-plate-map-sample": "pam.heron",
+    "update-plate-map-sample-feedback": "psd.heron",
 }
 
 ROUTING_KEYS = {
@@ -146,9 +146,9 @@ ROUTING_KEYS = {
 }
 
 QUEUES = {
-    "cherrypicked-samples": "psd.heron.feedback",
-    "create-plate-map": "psd.heron.crud-operations",
-    "create-plate-map-feedback": "psd.heron.feedback",
-    "update-plate-map-sample": "psd.heron.crud-operations",
-    "update-plate-map-sample-feedback": "psd.heron.feedback",
+    "cherrypicked-samples": "heron.feedback",
+    "create-plate-map": "heron.crud-operations",
+    "create-plate-map-feedback": "heron.feedback",
+    "update-plate-map-sample": "heron.crud-operations",
+    "update-plate-map-sample-feedback": "heron.feedback",
 }
