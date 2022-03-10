@@ -128,3 +128,11 @@ MESSAGES = {
     "update-plate-map-sample": [update_message],
     "update-plate-map-sample-feedback": [update_feedback_message],
 }
+
+EXCHANGES = {
+    "cherrypicked-samples": "psd.heron.feedback",
+    "create-plate-map": "psd.heron.crud-operations",
+    "create-plate-map-feedback": "psd.heron.feedback",
+    "update-plate-map-sample": "psd.heron.crud-operations",
+    "update-plate-map-sample-feedback": "psd.heron.feedback",
+}

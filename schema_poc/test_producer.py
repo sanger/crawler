@@ -1,8 +1,10 @@
 from os import getenv
 
-from producer import Producer
+from avro_rabbit_producer import AvroRabbitProducer
+from credentials import CREDENTIAL_KEY_API_KEY, CREDENTIAL_KEY_RABBITMQ, CREDENTIALS
+from hosts import RABBITMQ_HOST, REDPANDA_URL
 from schema_registry import SchemaRegistry
-from test_messages import MESSAGES
+from test_messages import EXCHANGES, MESSAGES
 
 # Before running this test, the schema is going to need to be loaded into RedPanda schema registry.
 # The test here assume RedPanda is running on local host port 8081, which it will be if you used the dependencies
@@ -14,10 +16,20 @@ from test_messages import MESSAGES
 #     "schema": "slash_escaped_string_of_schema_json"
 # }
 
-schema_registry = SchemaRegistry("http://localhost:8081")
 
-producer = Producer(schema_registry)
 subject = getenv("AVRO_TEST_SUBJECT", "create-plate-map")
 test_msg = MESSAGES[subject]
+exchange = EXCHANGES[subject]
+credentials = CREDENTIALS[subject]()
+
+schema_registry = SchemaRegistry(REDPANDA_URL, credentials[CREDENTIAL_KEY_API_KEY])
+
+producer = AvroRabbitProducer(RABBITMQ_HOST, 5671, schema_registry)
 prepared_message = producer.prepare_message(test_msg, subject)
-producer.send_message(prepared_message, queue=subject)
+producer.send_message(
+    prepared_message,
+    vhost="heron",
+    exchange=exchange,
+    routing_key=subject,
+    username_password=credentials[CREDENTIAL_KEY_RABBITMQ],
+)
