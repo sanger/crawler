@@ -97,8 +97,8 @@ def test_generate_baracoda_barcodes_working_fine(config, count, mocked_responses
         status=HTTPStatus.CREATED,
     )
 
-    generate_baracoda_barcodes(config, count)
-
+    out = generate_baracoda_barcodes(config, count)
+    assert out == expected
     assert len(mocked_responses.calls) == 1
 
 
