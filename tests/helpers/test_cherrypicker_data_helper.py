@@ -64,16 +64,6 @@ def test_flatten_reduces_one_level_only():
     assert actual == expected
 
 
-# @pytest.mark.parametrize("count", [2, 3])
-# def test_generate_baracoda_barcodes_calls_correct_baracoda_endpoint(request_post_mock, config, count):
-#     expected = ["TEST-012345", "TEST-012346", "TEST-012347"]
-#     request_post_mock.return_value.json.return_value = {"barcodes_group": {"barcodes": expected}}
-#     actual = generate_baracoda_barcodes(config, count)
-
-#     assert request_post_mock.called_with(f"{config.BARACODA_BASE_URL}/barcodes_group/TEST/new?count={count}")
-#     assert actual == expected
-
-
 @pytest.mark.parametrize("count", [2, 3])
 def test_create_barcodes(config, count):
     expected = ["TEST-012345", "TEST-012346", "TEST-012347"]
