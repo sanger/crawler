@@ -120,17 +120,18 @@ def test_generate_baracoda_barcodes_will_retry_if_fail(config, count, mocked_res
 
 
 @pytest.mark.parametrize("count", [2, 3])
-def test_generate_baracoda_barcodes_will_retry_if_exception(config, count, mocked_responses):
+@pytest.mark.parametrize("exception_type", [ConnectionError, Exception])
+def test_generate_baracoda_barcodes_will_retry_if_exception(config, count, exception_type, mocked_responses):
     baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/TEST/new?count={count}"
 
     mocked_responses.add(
         responses.POST,
         baracoda_url,
-        body=ConnectionError("Some error"),
+        body=exception_type("Some error"),
         status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
 
-    with pytest.raises(ConnectionError):
+    with pytest.raises(exception_type):
         generate_baracoda_barcodes(config, count)
 
     assert len(mocked_responses.calls) == config.BARACODA_RETRY_ATTEMPTS

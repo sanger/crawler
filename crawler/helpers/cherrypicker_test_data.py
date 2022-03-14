@@ -51,7 +51,6 @@ def generate_baracoda_barcodes(config: Config, num_required: int) -> list:
     baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{BARACODA_PREFIX}/new?count={num_required}"
 
     retries = config.BARACODA_RETRY_ATTEMPTS
-    success_operation = False
     except_obj = None
     response_json = None
     while retries > 0:
@@ -70,10 +69,12 @@ def generate_baracoda_barcodes(config: Config, num_required: int) -> list:
             retries = retries - 1
             logger.error("Unable to access baracoda")
             except_obj = requests.ConnectionError("Unable to access baracoda")
+        except Exception:
+            retries = retries - 1
+            logger.error("Unknown error accessing baracoda")
 
-    if not success_operation and except_obj is not None:
+    if except_obj is not None:
         raise except_obj
-
     raise Exception("Unknown error accessing baracoda")
 
 
