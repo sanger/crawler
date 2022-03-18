@@ -3,13 +3,15 @@ CREDENTIAL_KEY_RABBITMQ = "rabbit-mq-user-pass"
 
 
 def pam_credentials():
-    from credentials_pam import RABBITMQ_PASSWORD, RABBITMQ_USERNAME, SCHEMA_API_KEY
+    # credentials_pam.py is not in the default repository clone and will need creating
+    from credentials_pam import RABBITMQ_PASSWORD, RABBITMQ_USERNAME, SCHEMA_API_KEY  # type: ignore
 
     return {CREDENTIAL_KEY_API_KEY: SCHEMA_API_KEY, CREDENTIAL_KEY_RABBITMQ: (RABBITMQ_USERNAME, RABBITMQ_PASSWORD)}
 
 
 def psd_credentials():
-    from credentials_psd import RABBITMQ_PASSWORD, RABBITMQ_USERNAME, SCHEMA_API_KEY
+    # credentials_psd.py is not in the default repository clone and will need creating
+    from credentials_psd import RABBITMQ_PASSWORD, RABBITMQ_USERNAME, SCHEMA_API_KEY  # type: ignore
 
     return {CREDENTIAL_KEY_API_KEY: SCHEMA_API_KEY, CREDENTIAL_KEY_RABBITMQ: (RABBITMQ_USERNAME, RABBITMQ_PASSWORD)}
 
