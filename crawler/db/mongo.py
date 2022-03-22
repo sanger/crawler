@@ -83,7 +83,7 @@ def get_mongo_collection(database: Database, collection_name: str) -> Collection
 
 
 def collection_exists(database: Database, collection_name: str) -> bool:
-    """Identify whether the specified collection existing in MongoDB already.
+    """Identify whether the specified collection exists in MongoDB already.
 
     Arguments:
         database {Database}: the database to check for the collection's existance.
