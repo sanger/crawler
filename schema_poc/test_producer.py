@@ -2,7 +2,9 @@ from os import getenv
 
 from avro_rabbit_producer import AvroRabbitProducer
 from credentials import CREDENTIAL_KEY_API_KEY, CREDENTIAL_KEY_RABBITMQ, PUBLISH_CREDENTIALS
-from hosts import RABBITMQ_HOST, REDPANDA_URL
+
+# hosts.py is not in the default repository clone and will need creating
+from hosts import RABBITMQ_HOST, REDPANDA_URL  # type: ignore
 from schema_registry import SchemaRegistry
 from test_messages import EXCHANGES, MESSAGES, ROUTING_KEYS
 
