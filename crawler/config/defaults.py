@@ -42,6 +42,7 @@ ROOT_PASSWORD = os.environ.get("ROOT_PASSWORD", "")
 # Baracoda
 ###
 BARACODA_BASE_URL = "https://uat.baracoda.psd.sanger.ac.uk"
+BARACODA_RETRY_ATTEMPTS = 3
 
 ###
 # mongo details

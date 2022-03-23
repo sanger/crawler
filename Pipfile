@@ -15,6 +15,7 @@ pytest = "*"
 pytest-cov = "*"
 pytest-freezegun = "*"
 types-python-dateutil = "*"
+responses = "*"
 
 [packages]
 colorlog = "~=6.6"
