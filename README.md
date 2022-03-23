@@ -60,6 +60,15 @@ The following tools are required for development:
   recommended.  Follow the instructions under the Docker section of this
   document to bringing up the dependencies and ensure these are available.
 
+### Additional Dependencies
+
+If you intend to test/develop/use the test data generation functionality of
+Crawler at the `/v1/cherrypick-test-data` endpoint, you will also need to be
+running a local instance of [Baracoda](https://github.com/sanger/baracoda).  The
+default port of Baracoda is 8000, but if you need to use a different port,
+change the port specified for Baracoda in the `crawler/config/defaults.py` file
+in this repository.
+
 ## Getting Started
 
 ### Configuring Environment
