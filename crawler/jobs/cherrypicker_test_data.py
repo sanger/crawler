@@ -39,16 +39,12 @@ from crawler.helpers.cherrypicker_test_data import (
     create_csv_rows,
     write_plates_file,
 )
+from crawler.helpers.exceptions import CherrypickerDataError
 from crawler.helpers.general_helpers import get_config
 from crawler.main import run as run_crawler
 from crawler.types import Config
 
 logger = logging.getLogger(__name__)
-
-
-class CherrypickerDataError(Exception):
-    def __init__(self, message):
-        self.message = message
 
 
 def process(run_id: str, config: Config = None) -> List[List[str]]:

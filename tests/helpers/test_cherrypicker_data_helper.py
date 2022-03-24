@@ -27,6 +27,7 @@ from crawler.helpers.cherrypicker_test_data import (
     generate_baracoda_barcodes,
     write_plates_file,
 )
+from crawler.helpers.exceptions import CherrypickerDataError
 from crawler.helpers.general_helpers import is_found_in_list
 
 LoggerMessages = namedtuple("LoggerMessages", ["info", "error"])
@@ -131,7 +132,7 @@ def test_generate_baracoda_barcodes_will_retry_if_exception(config, count, excep
         status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
 
-    with pytest.raises(exception_type):
+    with pytest.raises(CherrypickerDataError):
         generate_baracoda_barcodes(config, count)
 
     assert len(mocked_responses.calls) == config.BARACODA_RETRY_ATTEMPTS

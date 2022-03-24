@@ -116,6 +116,9 @@ TEST_DATA_ERROR_NUMBER_OF_PLATES: Final[str] = "Number of plates to generate mus
 TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES: Final[
     str
 ] = "One or more plates expected fewer than 0 or more than 96 positive samples."
+TEST_DATA_ERROR_BARACODA_COG_BARCODES: Final[str] = "Unable to create COG barcodes"
+TEST_DATA_ERROR_BARACODA_CONNECTION: Final[str] = "Unable to access baracoda"
+TEST_DATA_ERROR_BARACODA_UNKNOWN: Final[str] = "Unknown error accessing baracoda"
 
 
 ##

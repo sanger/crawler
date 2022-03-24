@@ -56,6 +56,7 @@ class Config(ModuleType):
 
     # Baracoda
     BARACODA_BASE_URL: str
+    BARACODA_RETRY_ATTEMPTS: int
 
     # Mongo
     MONGO_URI: str
