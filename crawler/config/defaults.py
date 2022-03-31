@@ -76,6 +76,14 @@ DART_DB_RW_PASSWORD = "MyS3cr3tPassw0rd"
 DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
 
 ###
+# RabbitMQ details
+###
+RABBITMQ_HOST = os.environ.get("LOCALHOST", "127.0.0.1")
+RABBITMQ_USERNAME = ""
+RABBITMQ_PASSWORD = ""
+RABBITMQ_CRUD_QUEUE = ""
+
+###
 # SFTP details
 ###
 SFTP_UPLOAD = False  # upload files to SFTP server
