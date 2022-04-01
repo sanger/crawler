@@ -1,14 +1,20 @@
+import atexit
 import logging
 import logging.config
 import os
+import threading
 from http import HTTPStatus
 
 from flask import Flask
 from flask_apscheduler import APScheduler
 
 from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
+from crawler.rabbit import reconnecting_consumer
+from crawler.rabbit.reconnecting_consumer import ReconnectingConsumer
 
 scheduler = APScheduler()
+rabbit_consumer = ReconnectingConsumer("", "")
+rabbit_consumer_thread = threading.Thread()
 
 
 def create_app(config_object: str = None) -> Flask:
@@ -26,6 +32,7 @@ def create_app(config_object: str = None) -> Flask:
         scheduler.init_app(app)
         scheduler.start()
 
+    start_rabbit_consumer()
     setup_routes(app)
 
     @app.get("/health")
@@ -44,3 +51,12 @@ def setup_routes(app):
         from crawler.routes.v1 import routes as v1_routes
 
         app.register_blueprint(v1_routes.bp, url_prefix="/v1")
+
+
+def start_rabbit_consumer():
+    def run_consumer():
+        rabbit_consumer.run()
+
+    global rabbit_consumer_thread
+    rabbit_consumer_thread = threading.Thread(target=run_consumer, daemon=True)
+    rabbit_consumer_thread.start()

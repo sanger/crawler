@@ -15,6 +15,7 @@ class ReconnectingConsumer(object):
         self._reconnect_delay = 0
         self._amqp_url = amqp_url
         self._queue = queue
+        self._consumer_var = None
 
     def run(self):
         while True:
