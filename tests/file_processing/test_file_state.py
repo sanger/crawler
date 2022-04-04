@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from crawler.config.centres import CENTRE_KEY_BACKUPS_FOLDER
+from crawler.constants import CENTRE_KEY_BACKUPS_FOLDER
 from crawler.file_processing import ERRORS_DIR, Centre, CentreFile
 from crawler.helpers.enums import CentreFileState
 

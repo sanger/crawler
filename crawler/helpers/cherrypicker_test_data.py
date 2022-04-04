@@ -15,7 +15,11 @@ from crawler.constants import (
     FIELD_RNA_PCR_ID,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_VIRAL_PREP_ID,
+    TEST_DATA_ERROR_BARACODA_COG_BARCODES,
+    TEST_DATA_ERROR_BARACODA_CONNECTION,
+    TEST_DATA_ERROR_BARACODA_UNKNOWN,
 )
+from crawler.helpers.exceptions import CherrypickerDataError
 from crawler.types import Config
 
 logger = logging.getLogger(__name__)
@@ -62,20 +66,20 @@ def generate_baracoda_barcodes(config: Config, num_required: int) -> list:
                 return barcodes
             else:
                 retries = retries - 1
-                logger.error("Unable to create COG barcodes")
+                logger.error(TEST_DATA_ERROR_BARACODA_COG_BARCODES)
                 logger.error(response.json())
-                except_obj = Exception("Unable to create COG barcodes")
-        except requests.ConnectionError:
+                except_obj = CherrypickerDataError(TEST_DATA_ERROR_BARACODA_COG_BARCODES)
+        except requests.ConnectionError as e:
             retries = retries - 1
-            logger.error("Unable to access baracoda")
-            except_obj = requests.ConnectionError("Unable to access baracoda")
+            logger.error(TEST_DATA_ERROR_BARACODA_CONNECTION)
+            except_obj = CherrypickerDataError(f"{TEST_DATA_ERROR_BARACODA_CONNECTION} -- {str(e)}")
         except Exception:
             retries = retries - 1
-            logger.error("Unknown error accessing baracoda")
+            logger.error(TEST_DATA_ERROR_BARACODA_UNKNOWN)
 
     if except_obj is not None:
         raise except_obj
-    raise Exception("Unknown error accessing baracoda")
+    raise CherrypickerDataError(TEST_DATA_ERROR_BARACODA_UNKNOWN)
 
 
 def create_barcodes(config: Config, num_required: int) -> list:

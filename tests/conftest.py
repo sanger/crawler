@@ -10,8 +10,9 @@ import sqlalchemy
 from sqlalchemy import MetaData
 
 from crawler import create_app
-from crawler.config.centres import CENTRE_KEY_FILE_NAMES_TO_IGNORE
 from crawler.constants import (
+    CENTRE_KEY_DATA_SOURCE,
+    CENTRE_KEY_FILE_NAMES_TO_IGNORE,
     COLLECTION_CENTRES,
     COLLECTION_PRIORITY_SAMPLES,
     COLLECTION_SAMPLES,
@@ -372,6 +373,24 @@ def testing_centres(centres_collection_accessor, config):
     result = centres_collection_accessor.insert_many(config.CENTRES)
     try:
         yield result
+    finally:
+        centres_collection_accessor.delete_many({})
+
+
+@pytest.fixture
+def test_data_source_centres(centres_collection_accessor, config):
+    data_source_centres = [
+        {
+            CENTRE_KEY_DATA_SOURCE: "SFTP",
+        },
+        {
+            CENTRE_KEY_DATA_SOURCE: "RabbitMQ",
+        },
+    ]
+
+    centres_collection_accessor.insert_many(data_source_centres)
+    try:
+        yield centres_collection_accessor, config
     finally:
         centres_collection_accessor.delete_many({})
 

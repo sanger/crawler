@@ -32,6 +32,7 @@ class CentreConf(TypedDict):
     biomek_labware_class: str
     skip_unconsolidated_surveillance_files: bool
     include_in_scheduled_runs: bool
+    data_source: str
 
 
 class Config(ModuleType):
@@ -55,6 +56,7 @@ class Config(ModuleType):
 
     # Baracoda
     BARACODA_BASE_URL: str
+    BARACODA_RETRY_ATTEMPTS: int
 
     # Mongo
     MONGO_URI: str

@@ -8,6 +8,25 @@ from typing import Final, Set, Tuple
 SCHEDULER_JOB_ID_RUN_CRAWLER: Final[str] = "run_crawler"
 
 ###
+# CentreConf dictionary keys
+###
+CENTRE_KEY_BACKUPS_FOLDER: Final = "backups_folder"
+CENTRE_KEY_BARCODE_FIELD: Final = "barcode_field"
+CENTRE_KEY_BARCODE_REGEX: Final = "barcode_regex"
+CENTRE_KEY_BIOMEK_LABWARE_CLASS: Final = "biomek_labware_class"
+CENTRE_KEY_DATA_SOURCE: Final = "data_source"
+CENTRE_KEY_FILE_NAMES_TO_IGNORE: Final = "file_names_to_ignore"
+CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: Final = "sftp_file_regex_consolidated_eagle"
+CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: Final = "sftp_file_regex_consolidated_surveillance"
+CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE: Final = "sftp_file_regex_unconsolidated_surveillance"
+CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: Final = "include_in_scheduled_runs"
+CENTRE_KEY_LAB_ID_DEFAULT: Final = "lab_id_default"
+CENTRE_KEY_NAME: Final = "name"
+CENTRE_KEY_PREFIX: Final = "prefix"
+CENTRE_KEY_SFTP_ROOT_READ: Final = "sftp_root_read"
+CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: Final = "skip_unconsolidated_surveillance_files"
+
+###
 # mongo collections
 ###
 COLLECTION_CENTRES: Final[str] = "centres"
@@ -97,6 +116,9 @@ TEST_DATA_ERROR_NUMBER_OF_PLATES: Final[str] = "Number of plates to generate mus
 TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES: Final[
     str
 ] = "One or more plates expected fewer than 0 or more than 96 positive samples."
+TEST_DATA_ERROR_BARACODA_COG_BARCODES: Final[str] = "Unable to create COG barcodes"
+TEST_DATA_ERROR_BARACODA_CONNECTION: Final[str] = "Unable to access baracoda"
+TEST_DATA_ERROR_BARACODA_UNKNOWN: Final[str] = "Unknown error accessing baracoda"
 
 
 ##
