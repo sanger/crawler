@@ -1,24 +1,21 @@
-import atexit
 import logging
 import logging.config
 import os
 import threading
 from http import HTTPStatus
 
-from flask import Flask
+import flask
+import werkzeug
 from flask_apscheduler import APScheduler
 
 from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
-from crawler.rabbit import reconnecting_consumer
 from crawler.rabbit.reconnecting_consumer import ReconnectingConsumer
 
 scheduler = APScheduler()
-rabbit_consumer = ReconnectingConsumer("", "")
-rabbit_consumer_thread = threading.Thread()
 
 
-def create_app(config_object: str = None) -> Flask:
-    app = Flask(__name__)
+def create_app(config_object: str = None) -> flask.Flask:
+    app = flask.Flask(__name__)
 
     if config_object is None:
         app.config.from_object(os.environ["SETTINGS_MODULE"])
@@ -54,9 +51,14 @@ def setup_routes(app):
 
 
 def start_rabbit_consumer():
+    # Flask in debug mode spawns a child process so that it can restart the process each time your code changes,
+    # the new child process initializes and starts a new APScheduler causing the jobs to run twice.
+    if flask.helpers.get_debug_flag() and not werkzeug.serving.is_running_from_reloader():
+        return
+
     def run_consumer():
+        rabbit_consumer = ReconnectingConsumer("", "")
         rabbit_consumer.run()
 
-    global rabbit_consumer_thread
     rabbit_consumer_thread = threading.Thread(target=run_consumer, daemon=True)
     rabbit_consumer_thread.start()
