@@ -60,6 +60,14 @@ The following tools are required for development:
   recommended.  Follow the instructions under the Docker section of this
   document to bringing up the dependencies and ensure these are available.
 
+### Additional Dependencies
+
+If you intend to test/develop/use the test data generation functionality of
+Crawler at the `/v1/cherrypick-test-data` endpoint, you will also need to be
+running a local instance of [Baracoda](https://github.com/sanger/baracoda).  If
+you need to change the port Crawler uses to contact Baracoda, you can do so in
+the `BARACODA_BASE_URL` in the config file `crawler/config/defaults.py`.
+
 ## Getting Started
 
 ### Configuring Environment
@@ -297,12 +305,14 @@ docker compose you can set up the full stack and it will also set the correct
 environment variables.
 
 To run the dependencies used by Crawler and also Lighthouse, there is a separate
-configuration for Docker Compose. This is shared with Lighthouse so if you start
-these dependencies here, there's no need to also attempt to do so in the
-Lighthouse repository. They are the same resources in both and the second one to
-be started will show exceptions about ports already being allocated:
+configuration for Docker Compose:
 
     ./dependencies/up.sh
+
+**Note:** *These dependencies are shared with Lighthouse so if you start these
+dependencies here, there's no need to also attempt to do so in the Lighthouse
+repository. They are the same resources in both and the second one to be started
+will show exceptions about ports already being allocated.*
 
 When you want to shut the dependencies back down, you can do so with:
 
