@@ -8,7 +8,6 @@ import werkzeug
 from flask_apscheduler import APScheduler
 
 from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
-from crawler.helpers.general_helpers import get_config
 from crawler.rabbit.background_consumer import BackgroundConsumer
 
 scheduler = APScheduler()
