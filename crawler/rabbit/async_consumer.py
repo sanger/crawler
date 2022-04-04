@@ -1,13 +1,14 @@
 import functools
 import logging
+from ssl import create_default_context
 
-import pika
+from pika import ConnectionParameters, PlainCredentials, SelectConnection, SSLOptions
 
 LOGGER = logging.getLogger(__name__)
 
 
 class AsyncConsumer(object):
-    """This is an example consumer that will handle unexpected interactions
+    """This is an async consumer that will handle unexpected interactions
     with RabbitMQ such as channel and connection closures.
     If RabbitMQ closes the connection, this class will stop and indicate
     that reconnection is necessary. You should look at the output, as
@@ -17,10 +18,16 @@ class AsyncConsumer(object):
     commands that were issued and that should surface in the output as well.
     """
 
-    def __init__(self, amqp_url, queue):
+    def __init__(self, use_ssl, host, port, username, password, vhost, queue):
         """Create a new instance of the consumer class, passing in the AMQP
         URL used to connect to RabbitMQ.
-        :param str amqp_url: The AMQP url to connect with
+        :param bool use_ssl: Whether to use SSL when connecting to the AMQP endpoint.
+        :param str host: The AMQP host to connect to.
+        :param int port: The AMQP port to connect with.
+        :param str username: The AMQP username with read access to the queue.
+        :param str password: The AMQP password for the username.
+        :param str password: The AMQP virtual host to consume from.
+        :param str queue: The AMQP queue to consume from.
         """
         self.should_reconnect = False
         self.was_consuming = False
@@ -29,7 +36,12 @@ class AsyncConsumer(object):
         self._channel = None
         self._closing = False
         self._consumer_tag = None
-        self._url = amqp_url
+        self._use_ssl = use_ssl
+        self._host = host
+        self._port = port
+        self._username = username
+        self._password = password
+        self._vhost = vhost
         self._queue = queue
         self._consuming = False
         # In production, experiment with higher prefetch values
@@ -42,9 +54,17 @@ class AsyncConsumer(object):
         will be invoked by pika.
         :rtype: pika.SelectConnection
         """
-        LOGGER.info("Connecting to %s", self._url)
-        return pika.SelectConnection(
-            parameters=pika.URLParameters(self._url),
+        LOGGER.info("Connecting to %s", self._host)
+        credentials = PlainCredentials(self._username, self._password)
+        ssl_options = None
+        if self._use_ssl:
+            ssl_options = SSLOptions(create_default_context())
+        connection_params = ConnectionParameters(
+            host=self._host, port=self._port, virtual_host=self._vhost, credentials=credentials, ssl_options=ssl_options
+        )
+
+        return SelectConnection(
+            parameters=connection_params,
             on_open_callback=self.on_connection_open,
             on_open_error_callback=self.on_connection_open_error,
             on_close_callback=self.on_connection_closed,

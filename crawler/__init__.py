@@ -8,6 +8,7 @@ import werkzeug
 from flask_apscheduler import APScheduler
 
 from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
+from crawler.helpers.general_helpers import get_config
 from crawler.rabbit.background_consumer import BackgroundConsumer
 
 scheduler = APScheduler()
@@ -28,7 +29,7 @@ def create_app(config_object: str = None) -> flask.Flask:
         scheduler.init_app(app)
         scheduler.start()
 
-    start_rabbit_consumer()
+    start_rabbit_consumer(app)
     setup_routes(app)
 
     @app.get("/health")
@@ -49,10 +50,19 @@ def setup_routes(app):
         app.register_blueprint(v1_routes.bp, url_prefix="/v1")
 
 
-def start_rabbit_consumer():
+def start_rabbit_consumer(app):
     # Flask in debug mode spawns a child process so that it can restart the process each time your code changes,
     # the new child process initializes and starts a new consumer causing more than one to exist.
     if flask.helpers.get_debug_flag() and not werkzeug.serving.is_running_from_reloader():
         return
 
-    BackgroundConsumer("", "").start()
+    use_ssl = app.config["RABBITMQ_SSL"]
+    rabbit_host = app.config["RABBITMQ_HOST"]
+    rabbit_port = app.config["RABBITMQ_PORT"]
+    rabbit_username = app.config["RABBITMQ_USERNAME"]
+    rabbit_password = app.config["RABBITMQ_PASSWORD"]
+    rabbit_vhost = app.config["RABBITMQ_VHOST"]
+    rabbit_queue = app.config["RABBITMQ_CRUD_QUEUE"]
+    BackgroundConsumer(
+        use_ssl, rabbit_host, rabbit_port, rabbit_username, rabbit_password, rabbit_vhost, rabbit_queue
+    ).start()

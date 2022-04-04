@@ -12,12 +12,17 @@ class BackgroundConsumer(Thread):
     ExampleConsumer indicates that a reconnect is necessary.
     """
 
-    def __init__(self, amqp_url, queue):
+    def __init__(self, use_ssl, host, port, username, password, vhost, queue):
         super().__init__()
         self.name = type(self).__name__
         self.daemon = True
         self._reconnect_delay = 0
-        self._amqp_url = amqp_url
+        self._use_ssl = use_ssl
+        self._host = host
+        self._port = port
+        self._username = username
+        self._password = password
+        self._vhost = vhost
         self._queue = queue
         self._consumer_var = None
 
@@ -33,7 +38,9 @@ class BackgroundConsumer(Thread):
     @property
     def _consumer(self):
         if self._consumer_var is None:
-            self._consumer_var = AsyncConsumer(self._amqp_url, self._queue)
+            self._consumer_var = AsyncConsumer(
+                self._use_ssl, self._host, self._port, self._username, self._password, self._vhost, self._queue
+            )
 
         return self._consumer_var
 

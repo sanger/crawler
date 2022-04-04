@@ -81,8 +81,9 @@ DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
 RABBITMQ_HOST = os.environ.get("LOCALHOST", "127.0.0.1")
 RABBITMQ_SSL = False
 RABBITMQ_PORT = 5672
-RABBITMQ_USERNAME = "guest"
-RABBITMQ_PASSWORD = "guest"
+RABBITMQ_USERNAME = "admin"
+RABBITMQ_PASSWORD = "development"
+RABBITMQ_VHOST = "heron"
 RABBITMQ_CRUD_QUEUE = "heron.crud-operations"
 
 ###
