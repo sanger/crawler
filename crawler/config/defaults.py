@@ -81,9 +81,9 @@ DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
 RABBITMQ_HOST = os.environ.get("LOCALHOST", "127.0.0.1")
 RABBITMQ_SSL = False
 RABBITMQ_PORT = 5672
-RABBITMQ_USERNAME = ""
-RABBITMQ_PASSWORD = ""
-RABBITMQ_CRUD_QUEUE = ""
+RABBITMQ_USERNAME = "guest"
+RABBITMQ_PASSWORD = "guest"
+RABBITMQ_CRUD_QUEUE = "heron.crud-operations"
 
 ###
 # SFTP details
