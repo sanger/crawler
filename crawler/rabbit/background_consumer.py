@@ -1,17 +1,21 @@
 import logging
 import time
+from threading import Thread
 
 from crawler.rabbit.async_consumer import AsyncConsumer
 
 LOGGER = logging.getLogger(__name__)
 
 
-class ReconnectingConsumer(object):
+class BackgroundConsumer(Thread):
     """This is an example consumer that will reconnect if the nested
     ExampleConsumer indicates that a reconnect is necessary.
     """
 
     def __init__(self, amqp_url, queue):
+        super().__init__()
+        self.name = type(self).__name__
+        self.daemon = True
         self._reconnect_delay = 0
         self._amqp_url = amqp_url
         self._queue = queue

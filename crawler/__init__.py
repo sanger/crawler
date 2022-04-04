@@ -1,7 +1,6 @@
 import logging
 import logging.config
 import os
-import threading
 from http import HTTPStatus
 
 import flask
@@ -9,7 +8,7 @@ import werkzeug
 from flask_apscheduler import APScheduler
 
 from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
-from crawler.rabbit.reconnecting_consumer import ReconnectingConsumer
+from crawler.rabbit.background_consumer import BackgroundConsumer
 
 scheduler = APScheduler()
 
@@ -52,13 +51,8 @@ def setup_routes(app):
 
 def start_rabbit_consumer():
     # Flask in debug mode spawns a child process so that it can restart the process each time your code changes,
-    # the new child process initializes and starts a new APScheduler causing the jobs to run twice.
+    # the new child process initializes and starts a new consumer causing more than one to exist.
     if flask.helpers.get_debug_flag() and not werkzeug.serving.is_running_from_reloader():
         return
 
-    def run_consumer():
-        rabbit_consumer = ReconnectingConsumer("", "")
-        rabbit_consumer.run()
-
-    rabbit_consumer_thread = threading.Thread(target=run_consumer, daemon=True)
-    rabbit_consumer_thread.start()
+    BackgroundConsumer("", "").start()
