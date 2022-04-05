@@ -1,7 +1,6 @@
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import patch
 
 import pytest
-from more_itertools import side_effect
 
 from crawler.rabbit.background_consumer import BackgroundConsumer
 
@@ -13,7 +12,7 @@ def test_init_sets_the_correct_name():
 
 def test_init_sets_daemon_thread_true():
     subject = BackgroundConsumer(False, "host", 5672, "username", "password", "vhost", "queue")
-    assert subject.daemon == True
+    assert subject.daemon
 
 
 @pytest.mark.parametrize("use_ssl", [True, False])
@@ -78,7 +77,7 @@ def test_maybe_reconnect_sleeps_zero_seconds_if_consumer_was_consuming():
             consumer.return_value.was_consuming = True
             consumer.return_value.should_reconnect = True
 
-            for x in range(5):
+            for _ in range(5):
                 subject._maybe_reconnect()
                 sleep_func.assert_called_with(0)
 
