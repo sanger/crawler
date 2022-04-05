@@ -11,6 +11,7 @@ import pytest
 import responses
 from requests import ConnectionError
 
+from crawler.exceptions import CherrypickerDataError
 from crawler.helpers.cherrypicker_test_data import (
     create_barcode_meta,
     create_barcodes,
@@ -27,7 +28,6 @@ from crawler.helpers.cherrypicker_test_data import (
     generate_baracoda_barcodes,
     write_plates_file,
 )
-from crawler.helpers.exceptions import CherrypickerDataError
 from crawler.helpers.general_helpers import is_found_in_list
 
 LoggerMessages = namedtuple("LoggerMessages", ["info", "error"])

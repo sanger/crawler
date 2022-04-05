@@ -33,13 +33,13 @@ from crawler.constants import (
     TEST_DATA_ERROR_WRONG_STATE,
 )
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.exceptions import CherrypickerDataError
 from crawler.helpers.cherrypicker_test_data import (
     create_barcode_meta,
     create_barcodes,
     create_csv_rows,
     write_plates_file,
 )
-from crawler.helpers.exceptions import CherrypickerDataError
 from crawler.helpers.general_helpers import get_config
 from crawler.main import run as run_crawler
 from crawler.types import Config
