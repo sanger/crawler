@@ -8,8 +8,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 class BackgroundConsumer(Thread):
-    """This is an example consumer that will reconnect if the nested
-    ExampleConsumer indicates that a reconnect is necessary.
+    """This is a RabbitMQ consumer that runs in a background thread and will reconnect
+    after a time delay if the AsyncConsumer indicates that a reconnect is necessary.
     """
 
     def __init__(self, use_ssl, host, port, username, password, vhost, queue):
