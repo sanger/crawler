@@ -9,6 +9,7 @@ from flask_apscheduler import APScheduler
 
 from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
 from crawler.rabbit.background_consumer import BackgroundConsumer
+from crawler.types import RabbitServerDetails
 
 scheduler = APScheduler()
 
@@ -55,13 +56,13 @@ def start_rabbit_consumer(app):
     if flask.helpers.get_debug_flag() and not werkzeug.serving.is_running_from_reloader():
         return
 
-    use_ssl = app.config["RABBITMQ_SSL"]
-    rabbit_host = app.config["RABBITMQ_HOST"]
-    rabbit_port = app.config["RABBITMQ_PORT"]
-    rabbit_username = app.config["RABBITMQ_USERNAME"]
-    rabbit_password = app.config["RABBITMQ_PASSWORD"]
+    rabbit_server = RabbitServerDetails(
+        uses_ssl=app.config["RABBITMQ_SSL"],
+        host=app.config["RABBITMQ_HOST"],
+        port=app.config["RABBITMQ_PORT"],
+        username=app.config["RABBITMQ_USERNAME"],
+        password=app.config["RABBITMQ_PASSWORD"],
+    )
     rabbit_vhost = app.config["RABBITMQ_VHOST"]
     rabbit_queue = app.config["RABBITMQ_CRUD_QUEUE"]
-    BackgroundConsumer(
-        use_ssl, rabbit_host, rabbit_port, rabbit_username, rabbit_password, rabbit_vhost, rabbit_queue
-    ).start()
+    BackgroundConsumer(rabbit_server, rabbit_vhost, rabbit_queue).start()

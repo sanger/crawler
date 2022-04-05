@@ -18,7 +18,7 @@ class AsyncConsumer(object):
     commands that were issued and that should surface in the output as well.
     """
 
-    def __init__(self, use_ssl, host, port, username, password, vhost, queue):
+    def __init__(self, server_details, vhost, queue):
         """Create a new instance of the consumer class, passing in the AMQP
         URL used to connect to RabbitMQ.
         :param bool use_ssl: Whether to use SSL when connecting to the AMQP endpoint.
@@ -36,11 +36,7 @@ class AsyncConsumer(object):
         self._channel = None
         self._closing = False
         self._consumer_tag = None
-        self._use_ssl = use_ssl
-        self._host = host
-        self._port = port
-        self._username = username
-        self._password = password
+        self._server_details = server_details
         self._vhost = vhost
         self._queue = queue
         self._consuming = False
@@ -55,11 +51,14 @@ class AsyncConsumer(object):
         :rtype: pika.SelectConnection
         """
         LOGGER.info("Connecting to %s", self._host)
-        credentials = PlainCredentials(self._username, self._password)
+        credentials = PlainCredentials(self._server_details.username, self._server_details.password)
         connection_params = ConnectionParameters(
-            host=self._host, port=self._port, virtual_host=self._vhost, credentials=credentials
+            host=self._server_details.host,
+            port=self._server_details.port,
+            virtual_host=self._vhost,
+            credentials=credentials,
         )
-        if self._use_ssl:
+        if self._server_details.uses_ssl:
             connection_params.ssl_options = SSLOptions(create_default_context())
 
         return SelectConnection(

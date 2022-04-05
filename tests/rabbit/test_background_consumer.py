@@ -3,37 +3,39 @@ from unittest.mock import patch
 import pytest
 
 from crawler.rabbit.background_consumer import BackgroundConsumer
+from crawler.types import RabbitServerDetails
 
 
 def test_init_sets_the_correct_name():
-    subject = BackgroundConsumer(False, "host", 5672, "username", "password", "vhost", "queue")
+    subject = BackgroundConsumer(RabbitServerDetails(), "vhost", "queue")
     assert subject.name == "BackgroundConsumer"
 
 
 def test_init_sets_daemon_thread_true():
-    subject = BackgroundConsumer(False, "host", 5672, "username", "password", "vhost", "queue")
+    subject = BackgroundConsumer(RabbitServerDetails(), "vhost", "queue")
     assert subject.daemon
 
 
-@pytest.mark.parametrize("use_ssl", [True, False])
+@pytest.mark.parametrize("uses_ssl", [True, False])
 @pytest.mark.parametrize("host", ["", "host"])
 @pytest.mark.parametrize("port", [8080, 5672])
 @pytest.mark.parametrize("username", ["", "username"])
 @pytest.mark.parametrize("password", ["", "password"])
 @pytest.mark.parametrize("vhost", ["", "vhost"])
 @pytest.mark.parametrize("queue", ["", "queue"])
-def test_consumer_is_passed_correct_parameters(use_ssl, host, port, username, password, vhost, queue):
-    subject = BackgroundConsumer(use_ssl, host, port, username, password, vhost, queue)
+def test_consumer_is_passed_correct_parameters(uses_ssl, host, port, username, password, vhost, queue):
+    server_details = RabbitServerDetails(uses_ssl=uses_ssl, host=host, port=port, username=username, password=password)
+    subject = BackgroundConsumer(server_details, vhost, queue)
 
     with patch("crawler.rabbit.background_consumer.AsyncConsumer.__init__", return_value=None) as async_consumer_init:
         # Initiate creation of the AsyncConsumer
         subject._consumer
 
-    async_consumer_init.assert_called_once_with(use_ssl, host, port, username, password, vhost, queue)
+    async_consumer_init.assert_called_once_with(server_details, vhost, queue)
 
 
 def test_run_starts_consumer_and_stops_on_keyboard_interrupt():
-    subject = BackgroundConsumer(False, "host", 5672, "username", "password", "vhost", "queue")
+    subject = BackgroundConsumer(RabbitServerDetails(), "vhost", "queue")
 
     with patch("crawler.rabbit.background_consumer.AsyncConsumer") as consumer:
         consumer.return_value.run.side_effect = KeyboardInterrupt()
@@ -44,7 +46,7 @@ def test_run_starts_consumer_and_stops_on_keyboard_interrupt():
 
 
 def test_maybe_reconnect_sleeps_longer_each_time():
-    subject = BackgroundConsumer(False, "host", 5672, "username", "password", "vhost", "queue")
+    subject = BackgroundConsumer(RabbitServerDetails(), "vhost", "queue")
 
     with patch("crawler.rabbit.background_consumer.time.sleep") as sleep_func:
         with patch("crawler.rabbit.background_consumer.AsyncConsumer") as consumer:
@@ -70,7 +72,7 @@ def test_maybe_reconnect_sleeps_longer_each_time():
 
 
 def test_maybe_reconnect_sleeps_zero_seconds_if_consumer_was_consuming():
-    subject = BackgroundConsumer(False, "host", 5672, "username", "password", "vhost", "queue")
+    subject = BackgroundConsumer(RabbitServerDetails(), "vhost", "queue")
 
     with patch("crawler.rabbit.background_consumer.time.sleep") as sleep_func:
         with patch("crawler.rabbit.background_consumer.AsyncConsumer") as consumer:

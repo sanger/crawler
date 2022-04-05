@@ -95,3 +95,11 @@ class Config(ModuleType):
     SCHEDULER_TIMEZONE: str
     SCHEDULER_API_ENABLED: bool
     JOBS: List[Dict[str, str]]
+
+
+class RabbitServerDetails(TypedDict):
+    uses_ssl: bool
+    host: str
+    port: int
+    username: str
+    password: str
