@@ -62,7 +62,7 @@ def start_rabbit_consumer(app):
         port=app.config["RABBITMQ_PORT"],
         username=app.config["RABBITMQ_USERNAME"],
         password=app.config["RABBITMQ_PASSWORD"],
+        vhost=app.config["RABBITMQ_VHOST"],
     )
-    rabbit_vhost = app.config["RABBITMQ_VHOST"]
     rabbit_queue = app.config["RABBITMQ_CRUD_QUEUE"]
-    BackgroundConsumer(rabbit_server, rabbit_vhost, rabbit_queue).start()
+    BackgroundConsumer(rabbit_server, rabbit_queue).start()

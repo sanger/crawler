@@ -18,7 +18,7 @@ class AsyncConsumer(object):
     commands that were issued and that should surface in the output as well.
     """
 
-    def __init__(self, server_details, vhost, queue):
+    def __init__(self, server_details, queue):
         """Create a new instance of the consumer class, passing in the AMQP
         URL used to connect to RabbitMQ.
         :param bool use_ssl: Whether to use SSL when connecting to the AMQP endpoint.
@@ -37,7 +37,6 @@ class AsyncConsumer(object):
         self._closing = False
         self._consumer_tag = None
         self._server_details = server_details
-        self._vhost = vhost
         self._queue = queue
         self._consuming = False
         # In production, experiment with higher prefetch values
@@ -55,7 +54,7 @@ class AsyncConsumer(object):
         connection_params = ConnectionParameters(
             host=self._server_details.host,
             port=self._server_details.port,
-            virtual_host=self._vhost,
+            virtual_host=self._server_details.vhost,
             credentials=credentials,
         )
         if self._server_details.uses_ssl:
