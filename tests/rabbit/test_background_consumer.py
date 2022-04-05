@@ -66,3 +66,20 @@ def test_maybe_reconnect_sleeps_longer_each_time():
             sleep_func.assert_called_with(30)
             subject._maybe_reconnect()  # Maximum delay is 30 seconds
             sleep_func.assert_called_with(30)
+
+            assert consumer.return_value.stop.call_count == 6
+
+
+def test_maybe_reconnect_sleeps_zero_seconds_if_consumer_was_consuming():
+    subject = BackgroundConsumer(False, "host", 5672, "username", "password", "vhost", "queue")
+
+    with patch("crawler.rabbit.background_consumer.time.sleep") as sleep_func:
+        with patch("crawler.rabbit.background_consumer.AsyncConsumer") as consumer:
+            consumer.return_value.was_consuming = True
+            consumer.return_value.should_reconnect = True
+
+            for x in range(5):
+                subject._maybe_reconnect()
+                sleep_func.assert_called_with(0)
+
+            assert consumer.return_value.stop.call_count == 5
