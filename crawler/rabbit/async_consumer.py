@@ -50,7 +50,7 @@ class AsyncConsumer(object):
         will be invoked by pika.
         :rtype: pika.SelectConnection
         """
-        LOGGER.info("Connecting to %s", self._host)
+        LOGGER.info("Connecting to %s", self._server_details.host)
         credentials = PlainCredentials(self._server_details.username, self._server_details.password)
         connection_params = ConnectionParameters(
             host=self._server_details.host,

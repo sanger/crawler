@@ -5,14 +5,18 @@ import pytest
 from crawler.rabbit.background_consumer import BackgroundConsumer
 from crawler.types import RabbitServerDetails
 
+DEFAULT_SERVER_DETAILS = RabbitServerDetails(
+    uses_ssl=False, host="host", port=5672, username="username", password="password"
+)
+
 
 def test_init_sets_the_correct_name():
-    subject = BackgroundConsumer(RabbitServerDetails(), "vhost", "queue")
+    subject = BackgroundConsumer(DEFAULT_SERVER_DETAILS, "vhost", "queue")
     assert subject.name == "BackgroundConsumer"
 
 
 def test_init_sets_daemon_thread_true():
-    subject = BackgroundConsumer(RabbitServerDetails(), "vhost", "queue")
+    subject = BackgroundConsumer(DEFAULT_SERVER_DETAILS, "vhost", "queue")
     assert subject.daemon
 
 
@@ -35,7 +39,7 @@ def test_consumer_is_passed_correct_parameters(uses_ssl, host, port, username, p
 
 
 def test_run_starts_consumer_and_stops_on_keyboard_interrupt():
-    subject = BackgroundConsumer(RabbitServerDetails(), "vhost", "queue")
+    subject = BackgroundConsumer(DEFAULT_SERVER_DETAILS, "vhost", "queue")
 
     with patch("crawler.rabbit.background_consumer.AsyncConsumer") as consumer:
         consumer.return_value.run.side_effect = KeyboardInterrupt()
@@ -46,7 +50,7 @@ def test_run_starts_consumer_and_stops_on_keyboard_interrupt():
 
 
 def test_maybe_reconnect_sleeps_longer_each_time():
-    subject = BackgroundConsumer(RabbitServerDetails(), "vhost", "queue")
+    subject = BackgroundConsumer(DEFAULT_SERVER_DETAILS, "vhost", "queue")
 
     with patch("crawler.rabbit.background_consumer.time.sleep") as sleep_func:
         with patch("crawler.rabbit.background_consumer.AsyncConsumer") as consumer:
@@ -72,7 +76,7 @@ def test_maybe_reconnect_sleeps_longer_each_time():
 
 
 def test_maybe_reconnect_sleeps_zero_seconds_if_consumer_was_consuming():
-    subject = BackgroundConsumer(RabbitServerDetails(), "vhost", "queue")
+    subject = BackgroundConsumer(DEFAULT_SERVER_DETAILS, "vhost", "queue")
 
     with patch("crawler.rabbit.background_consumer.time.sleep") as sleep_func:
         with patch("crawler.rabbit.background_consumer.AsyncConsumer") as consumer:
