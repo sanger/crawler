@@ -12,12 +12,12 @@ DEFAULT_SERVER_DETAILS = RabbitServerDetails(
 
 def test_init_sets_the_correct_name():
     subject = BackgroundConsumer(DEFAULT_SERVER_DETAILS, "queue")
-    assert subject.name == "BackgroundConsumer"
+    assert subject.name is "BackgroundConsumer"
 
 
 def test_init_sets_daemon_thread_true():
     subject = BackgroundConsumer(DEFAULT_SERVER_DETAILS, "queue")
-    assert subject.daemon
+    assert subject.daemon is True
 
 
 @pytest.mark.parametrize("uses_ssl", [True, False])
