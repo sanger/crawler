@@ -12,7 +12,7 @@ DEFAULT_SERVER_DETAILS = RabbitServerDetails(
 
 def test_init_sets_the_correct_name():
     subject = BackgroundConsumer(DEFAULT_SERVER_DETAILS, "queue")
-    assert subject.name is "BackgroundConsumer"
+    assert subject.name == "BackgroundConsumer"
 
 
 def test_init_sets_daemon_thread_true():

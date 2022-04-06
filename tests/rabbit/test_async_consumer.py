@@ -138,9 +138,9 @@ def test_on_channel_open_sets_the_channel_and_calls_follow_up_methods(subject, m
             subject.on_channel_open(fake_channel)
 
     mock_logger.info.assert_called_once()
-    assert subject._channel is fake_channel
-    add_callback.assert_called_once
-    set_qos.assert_called_once
+    assert subject._channel == fake_channel
+    add_callback.assert_called_once()
+    set_qos.assert_called_once()
 
 
 def test_add_on_channel_close_callback_calls_the_channel_method(subject, mock_logger):
