@@ -11,6 +11,8 @@ from sqlalchemy import MetaData
 
 from crawler import create_app
 from crawler.constants import (
+    CENTRE_KEY_DATA_SOURCE,
+    CENTRE_KEY_FILE_NAMES_TO_IGNORE,
     COLLECTION_CENTRES,
     COLLECTION_PRIORITY_SAMPLES,
     COLLECTION_SAMPLES,
@@ -376,6 +378,24 @@ def testing_centres(centres_collection_accessor, config):
 
 
 @pytest.fixture
+def test_data_source_centres(centres_collection_accessor, config):
+    data_source_centres = [
+        {
+            CENTRE_KEY_DATA_SOURCE: "SFTP",
+        },
+        {
+            CENTRE_KEY_DATA_SOURCE: "RabbitMQ",
+        },
+    ]
+
+    centres_collection_accessor.insert_many(data_source_centres)
+    try:
+        yield centres_collection_accessor, config
+    finally:
+        centres_collection_accessor.delete_many({})
+
+
+@pytest.fixture
 def cleanup_backups():
     """Fixture to remove the tmp/backups directory when complete."""
     try:
@@ -387,10 +407,10 @@ def cleanup_backups():
 @pytest.fixture
 def blacklist_for_centre(config):
     try:
-        config.CENTRES[0]["file_names_to_ignore"] = ["AP_sanger_report_200503_2338.csv"]
+        config.CENTRES[0][CENTRE_KEY_FILE_NAMES_TO_IGNORE] = ["AP_sanger_report_200503_2338.csv"]
         yield config
     finally:
-        config.CENTRES[0]["file_names_to_ignore"] = []
+        config.CENTRES[0][CENTRE_KEY_FILE_NAMES_TO_IGNORE] = []
 
 
 def generate_new_object_for_string(original_str):

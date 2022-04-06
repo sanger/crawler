@@ -1,6 +1,31 @@
 # flake8: noqa
+from crawler.config.centres import (
+    BIOMEK_LABWARE_CLASS_KINGFISHER,
+    CENTRE_DATA_SOURCE_SFTP,
+    CENTRE_DIR_BACKUPS,
+    CENTRE_REGEX_BARCODE,
+    CENTRE_REGEX_SFTP_FILE_HERON,
+    CENTRES,
+)
 from crawler.config.defaults import *
-from crawler.constants import FIELD_RNA_ID
+from crawler.constants import (
+    CENTRE_KEY_BACKUPS_FOLDER,
+    CENTRE_KEY_BARCODE_FIELD,
+    CENTRE_KEY_BARCODE_REGEX,
+    CENTRE_KEY_BIOMEK_LABWARE_CLASS,
+    CENTRE_KEY_DATA_SOURCE,
+    CENTRE_KEY_FILE_NAMES_TO_IGNORE,
+    CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE,
+    CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE,
+    CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE,
+    CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS,
+    CENTRE_KEY_LAB_ID_DEFAULT,
+    CENTRE_KEY_NAME,
+    CENTRE_KEY_PREFIX,
+    CENTRE_KEY_SFTP_ROOT_READ,
+    CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES,
+    FIELD_RNA_ID,
+)
 
 # settings here overwrite those in 'defaults.py'
 
@@ -19,25 +44,26 @@ ENABLE_CHERRYPICKER_ENDPOINTS = True
 ###
 # change all the backup folder entries for the centres during testing
 for centre in CENTRES:
-    centre["backups_folder"] = centre["backups_folder"].replace(CENTRE_DIR_BACKUPS, "tmp/backups")
+    centre[CENTRE_KEY_BACKUPS_FOLDER] = centre[CENTRE_KEY_BACKUPS_FOLDER].replace(CENTRE_DIR_BACKUPS, "tmp/backups")
 
 # add a test centre to those defined in defaults.py
 CENTRES.append(
     {
-        "barcode_field": FIELD_RNA_ID,
-        "barcode_regex": CENTRE_REGEX_BARCODE,
-        "name": "Test Centre",
-        "prefix": "TEST",
-        "lab_id_default": "TE",
-        "backups_folder": "tmp/backups/TEST",
-        "sftp_file_regex_unconsolidated_surveillance": f"^TEST_{CENTRE_REGEX_SFTP_FILE_HERON}",
-        "sftp_file_regex_consolidated_surveillance": r"^Test-\d+\.csv$",
-        "sftp_file_regex_consolidated_eagle": r"^TE\d+\.csv$",
-        "sftp_root_read": "tests/test_files/good",
-        "file_names_to_ignore": ["TEST_sanger_report_200518_2205.csv"],
-        "biomek_labware_class": BIOMEK_LABWARE_CLASS_KINGFISHER,
-        CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: False,
+        CENTRE_KEY_BACKUPS_FOLDER: "tmp/backups/TEST",
+        CENTRE_KEY_BARCODE_FIELD: FIELD_RNA_ID,
+        CENTRE_KEY_BARCODE_REGEX: CENTRE_REGEX_BARCODE,
+        CENTRE_KEY_BIOMEK_LABWARE_CLASS: BIOMEK_LABWARE_CLASS_KINGFISHER,
+        CENTRE_KEY_DATA_SOURCE: CENTRE_DATA_SOURCE_SFTP,
+        CENTRE_KEY_FILE_NAMES_TO_IGNORE: ["TEST_sanger_report_200518_2205.csv"],
+        CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: r"^TE\d+\.csv$",
+        CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: r"^Test-\d+\.csv$",
+        CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE: f"^TEST_{CENTRE_REGEX_SFTP_FILE_HERON}",
         CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: True,
+        CENTRE_KEY_LAB_ID_DEFAULT: "TE",
+        CENTRE_KEY_NAME: "Test Centre",
+        CENTRE_KEY_PREFIX: "TEST",
+        CENTRE_KEY_SFTP_ROOT_READ: "tests/test_files/good",
+        CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: False,
     }
 )
 

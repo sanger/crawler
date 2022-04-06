@@ -14,12 +14,12 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ develop, master ]
+    branches: [ develop-*, develop, master ]
     paths-ignore:
       - "README.md"
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: [ develop ]
+    branches: [ develop-*, develop ]
     paths-ignore:
       - "README.md"
   schedule:

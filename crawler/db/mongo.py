@@ -8,6 +8,7 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.results import InsertOneResult
 
+from crawler.constants import CENTRE_KEY_NAME
 from crawler.types import CentreConf, Config
 
 logger = logging.getLogger(__name__)
@@ -81,6 +82,33 @@ def get_mongo_collection(database: Database, collection_name: str) -> Collection
     return database[collection_name]
 
 
+def collection_exists(database: Database, collection_name: str) -> bool:
+    """Identify whether the specified collection exists in MongoDB already.
+
+    Arguments:
+        database {Database}: the database to check for the collection's existance.
+        collection_name {str}: the name of the collection to check the existance of.
+
+    Returns:
+        bool: True if the collection exists; otherwise False.
+    """
+    logger.debug(f"Checking whether collection exists '{collection_name}'")
+
+    return collection_name in database.list_collection_names()
+
+
+def create_index(collection: Collection, key: str, unique: bool = True) -> None:
+    """Create an index for a specified key on a collection.
+
+    Arguments:
+        collection {Collection}: The collection to create an index on.
+        key {str}: The key to create an index for.
+        unique {bool}: Whether the index may only contain unique values.
+    """
+    logger.debug(f"Creating index '{key}' on '{collection.full_name}'")
+    collection.create_index(key, unique=unique)
+
+
 @contextmanager
 def samples_collection_accessor(database: Database, collection_name: str) -> Iterator[Collection]:
     logger.debug(f"Opening collection: {collection_name}")
@@ -108,11 +136,11 @@ def create_import_record(
     Returns:
         InsertOneResult: the result of inserting this document
     """
-    logger.debug(f"Creating the import record for {centre['name']}")
+    logger.debug(f"Creating the import record for {centre[CENTRE_KEY_NAME]}")
 
     import_doc = {
         "date": datetime.utcnow(),  # https://pymongo.readthedocs.io/en/stable/examples/datetimes.html
-        "centre_name": centre["name"],
+        "centre_name": centre[CENTRE_KEY_NAME],
         "csv_file_used": file_name,
         "number_of_records": docs_inserted,
         "errors": errors,

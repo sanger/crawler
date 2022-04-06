@@ -4,8 +4,11 @@ from typing import Dict, List, Optional
 
 from more_itertools import groupby_transform
 
+from crawler.config.centres import get_centres_config
 from crawler.constants import (
     BIOMEK_LABWARE_CLASS_KINGFISHER,
+    CENTRE_KEY_BIOMEK_LABWARE_CLASS,
+    CENTRE_KEY_NAME,
     COLLECTION_SAMPLES,
     DART_STATE_PENDING,
     FIELD_COORDINATE,
@@ -211,7 +214,8 @@ def update_dart_fields(config: Config, samples: List[SampleDoc]) -> bool:
         raise ValueError("Unable to establish DART SQL Server connection")
 
     dart_updated_successfully = True
-    labclass_by_centre_name = biomek_labclass_by_centre_name(config.CENTRES)
+    centres = get_centres_config(config)
+    labclass_by_centre_name = biomek_labclass_by_centre_name(centres)
     try:
         logger.info("Writing to DART")
 
@@ -267,4 +271,7 @@ def biomek_labclass_by_centre_name(centres: List[CentreConf]) -> Dict[str, str]:
     Returns:
         Dict[str, str] -- biomek labware class by centre name
     """
-    return {centre["name"]: centre.get("biomek_labware_class", BIOMEK_LABWARE_CLASS_KINGFISHER) for centre in centres}
+    return {
+        centre[CENTRE_KEY_NAME]: centre.get(CENTRE_KEY_BIOMEK_LABWARE_CLASS, BIOMEK_LABWARE_CLASS_KINGFISHER)
+        for centre in centres
+    }

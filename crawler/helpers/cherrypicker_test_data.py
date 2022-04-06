@@ -3,6 +3,7 @@ import logging
 import os
 import random
 from datetime import datetime
+from http import HTTPStatus
 
 import requests
 
@@ -14,7 +15,11 @@ from crawler.constants import (
     FIELD_RNA_PCR_ID,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_VIRAL_PREP_ID,
+    TEST_DATA_ERROR_BARACODA_COG_BARCODES,
+    TEST_DATA_ERROR_BARACODA_CONNECTION,
+    TEST_DATA_ERROR_BARACODA_UNKNOWN,
 )
+from crawler.exceptions import CherrypickerDataError
 from crawler.types import Config
 
 logger = logging.getLogger(__name__)
@@ -48,10 +53,33 @@ def flatten(nested_list: list) -> list:
 
 def generate_baracoda_barcodes(config: Config, num_required: int) -> list:
     baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{BARACODA_PREFIX}/new?count={num_required}"
-    response = requests.post(baracoda_url)
-    response_json = response.json()
-    barcodes: list = response_json["barcodes_group"]["barcodes"]
-    return barcodes
+
+    retries = config.BARACODA_RETRY_ATTEMPTS
+    except_obj = None
+    response_json = None
+    while retries > 0:
+        try:
+            response = requests.post(baracoda_url)
+            if response.status_code == HTTPStatus.CREATED:
+                response_json = response.json()
+                barcodes: list = response_json["barcodes_group"]["barcodes"]
+                return barcodes
+            else:
+                retries = retries - 1
+                logger.error(TEST_DATA_ERROR_BARACODA_COG_BARCODES)
+                logger.error(response.json())
+                except_obj = CherrypickerDataError(TEST_DATA_ERROR_BARACODA_COG_BARCODES)
+        except requests.ConnectionError as e:
+            retries = retries - 1
+            logger.error(TEST_DATA_ERROR_BARACODA_CONNECTION)
+            except_obj = CherrypickerDataError(f"{TEST_DATA_ERROR_BARACODA_CONNECTION} -- {str(e)}")
+        except Exception:
+            retries = retries - 1
+            logger.error(TEST_DATA_ERROR_BARACODA_UNKNOWN)
+
+    if except_obj is not None:
+        raise except_obj
+    raise CherrypickerDataError(TEST_DATA_ERROR_BARACODA_UNKNOWN)
 
 
 def create_barcodes(config: Config, num_required: int) -> list:

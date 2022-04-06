@@ -9,6 +9,8 @@ import pytest
 from bson.objectid import ObjectId
 
 from crawler.constants import (
+    CENTRE_KEY_LAB_ID_DEFAULT,
+    CENTRE_KEY_PREFIX,
     COLLECTION_CHERRYPICK_TEST_DATA,
     FIELD_ADD_TO_DART,
     FIELD_BARCODES,
@@ -32,9 +34,9 @@ from crawler.constants import (
     TEST_DATA_ERROR_WRONG_STATE,
 )
 from crawler.db.mongo import get_mongo_collection
+from crawler.exceptions import CherrypickerDataError
 from crawler.helpers.general_helpers import is_found_in_list
 from crawler.jobs.cherrypicker_test_data import (
-    CherrypickerDataError,
     get_run_doc,
     prepare_data,
     process,
@@ -344,8 +346,10 @@ def test_prepare_data_calls_create_csv_rows_with_correct_parameters(config, mock
     with patch("crawler.jobs.cherrypicker_test_data.create_csv_rows") as create_csv_rows:
         prepare_data(plate_specs, mocked_utc_now, created_barcodes, config)
 
-    test_centre = next(filter(lambda c: c["prefix"] == TEST_DATA_CENTRE_PREFIX, config.CENTRES))
-    create_csv_rows.assert_called_with(plate_specs, mocked_utc_now, created_barcodes, test_centre["lab_id_default"])
+    test_centre = next(filter(lambda c: c[CENTRE_KEY_PREFIX] == TEST_DATA_CENTRE_PREFIX, config.CENTRES))
+    create_csv_rows.assert_called_with(
+        plate_specs, mocked_utc_now, created_barcodes, test_centre[CENTRE_KEY_LAB_ID_DEFAULT]
+    )
 
 
 def test_prepare_data_calls_write_plates_file_with_correct_parameters(config, mock_stack):

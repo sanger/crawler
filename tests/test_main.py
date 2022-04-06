@@ -3,7 +3,13 @@ import shutil
 from importlib import import_module, invalidate_caches
 from unittest.mock import patch
 
-from crawler.constants import COLLECTION_CENTRES, COLLECTION_IMPORTS, COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES
+from crawler.constants import (
+    COLLECTION_CENTRES,
+    COLLECTION_IMPORTS,
+    COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
+    FIELD_CENTRE_NAME,
+)
 from crawler.db.mongo import get_mongo_collection
 from crawler.main import run
 
@@ -35,7 +41,7 @@ def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
 
     # We record our test centres
     assert centres_collection.count_documents({}) == NUMBER_CENTRES
-    assert centres_collection.count_documents({"name": "Test Centre"}) == 1
+    assert centres_collection.count_documents({FIELD_CENTRE_NAME: "Test Centre"}) == 1
 
     # We record all our source plates
     assert source_plates_collection.count_documents({}) == NUMBER_ACCEPTED_SOURCE_PLATES
@@ -242,6 +248,10 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     invalidate_caches()
 
     try:
+        # Delete the mongo centres collection so that it gets repopulated from the new config this run
+        centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
+        centres_collection.drop()
+
         # Run with a different config that does not blacklist one of the files
         with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
             run(False, False, False, "crawler.config.integration_with_blacklist_change")

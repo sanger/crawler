@@ -4,8 +4,9 @@ from datetime import datetime, timezone
 from flask import request
 
 from crawler.constants import FIELD_STATUS_COMPLETED, FLASK_ERROR_MISSING_PARAMETERS, FLASK_ERROR_UNEXPECTED
+from crawler.exceptions import CherrypickerDataError
 from crawler.helpers.responses import bad_request, internal_server_error, ok
-from crawler.jobs.cherrypicker_test_data import CherrypickerDataError, process
+from crawler.jobs.cherrypicker_test_data import process
 from crawler.types import FlaskResponse
 
 logger = logging.getLogger(__name__)

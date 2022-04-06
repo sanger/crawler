@@ -13,6 +13,12 @@ from mysql.connector.connection_cext import CMySQLConnection
 from pytest import mark
 
 from crawler.constants import (
+    CENTRE_KEY_BACKUPS_FOLDER,
+    CENTRE_KEY_BARCODE_FIELD,
+    CENTRE_KEY_BARCODE_REGEX,
+    CENTRE_KEY_BIOMEK_LABWARE_CLASS,
+    CENTRE_KEY_PREFIX,
+    CENTRE_KEY_SFTP_ROOT_READ,
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
@@ -108,14 +114,14 @@ def test_get_download_dir(config):
     for centre_config in config.CENTRES:
         centre = Centre(config, centre_config)
 
-        assert centre.get_download_dir() == f"{config.DIR_DOWNLOADED_DATA}{centre_config['prefix']}/"
+        assert centre.get_download_dir() == f"{config.DIR_DOWNLOADED_DATA}{centre_config[CENTRE_KEY_PREFIX]}/"
 
 
 def test_process_files(mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn):
     _, mongo_database = mongo_database
 
     centre_config = config.CENTRES[3]
-    centre_config["sftp_root_read"] = "tmp/files"
+    centre_config[CENTRE_KEY_SFTP_ROOT_READ] = "tmp/files"
     centre = Centre(config, centre_config)
     centre.process_files(True)
 
@@ -191,7 +197,7 @@ def test_process_files_correctly_handles_files_not_to_be_processed(
         assert all("TYPE 34" in err for err in imp["errors"])
 
     # Assert that files were stored in backups as errors
-    errors_path = os.path.join(centre_config["backups_folder"], ERRORS_DIR)
+    errors_path = os.path.join(centre_config[CENTRE_KEY_BACKUPS_FOLDER], ERRORS_DIR)
     assert len(os.listdir(errors_path)) == 3
 
 
@@ -200,7 +206,7 @@ def test_process_files_one_wrong_format(mongo_database, config, testing_files_fo
     _, mongo_database = mongo_database
 
     # get the TEST centre
-    centre_config = next(filter(lambda centre: centre["prefix"] == "TEST", config.CENTRES))
+    centre_config = next(filter(lambda centre: centre[CENTRE_KEY_PREFIX] == "TEST", config.CENTRES))
     centre_config["sftp_root_read"] = "tmp/files"
     centre = Centre(config, centre_config)
     centre.process_files(add_to_dart=False)
@@ -310,7 +316,7 @@ def test_process_files_with_whitespace(mongo_database, config, testing_files_for
     _, mongo_database = mongo_database
 
     # get the TEST centre
-    centre_config = next(filter(lambda centre: centre["prefix"] == "TEST", config.CENTRES))
+    centre_config = next(filter(lambda centre: centre[CENTRE_KEY_PREFIX] == "TEST", config.CENTRES))
     centre_config["sftp_root_read"] = "tmp/files"
     centre = Centre(config, centre_config)
     centre.process_files(add_to_dart=False)
@@ -372,11 +378,11 @@ def create_checksum_files_for(filepath, filename, checksums, timestamp):
 
 
 def test_checksum_not_match(config, tmpdir):
-    with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
+    with patch.dict(config.CENTRES[0], {CENTRE_KEY_BACKUPS_FOLDER: tmpdir.realpath()}):
         tmpdir.mkdir(SUCCESSES_DIR)
 
         list_files = create_checksum_files_for(
-            f"{config.CENTRES[0]['backups_folder']}/successes/",
+            f"{config.CENTRES[0][CENTRE_KEY_BACKUPS_FOLDER]}/successes/",
             "AP_sanger_report_200503_2338.csv",
             ["adfsadf", "asdf"],
             "200601_1414",
@@ -393,12 +399,12 @@ def test_checksum_not_match(config, tmpdir):
 
 
 def test_checksum_match(config, tmpdir):
-    with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
+    with patch.dict(config.CENTRES[0], {CENTRE_KEY_BACKUPS_FOLDER: tmpdir.realpath()}):
 
         tmpdir.mkdir(SUCCESSES_DIR)
 
         list_files = create_checksum_files_for(
-            f"{config.CENTRES[0]['backups_folder']}/successes/",
+            f"{config.CENTRES[0][CENTRE_KEY_BACKUPS_FOLDER]}/successes/",
             "AP_sanger_report_200503_2338.csv",
             ["adfsadf", "d204bd7747d9ad505eee901830448578"],
             "200601_1414",
@@ -457,8 +463,8 @@ def test_extract_plate_barcode_and_coordinate(config):
     centre = Centre(config, test_centre)
     centre_file = CentreFile("some file", centre)
 
-    barcode_field = test_centre["barcode_field"]
-    barcode_regex = test_centre["barcode_regex"]
+    barcode_field = test_centre[CENTRE_KEY_BARCODE_FIELD]
+    barcode_regex = test_centre[CENTRE_KEY_BARCODE_REGEX]
 
     # typical format
     typical = {"RNA ID": "AP-abc-12345678_H01"}
@@ -1251,7 +1257,7 @@ def test_log_unprocessed_takes_needed_actions(mongo_database, config, testing_fi
     assert all("TYPE 34" in err for err in log_messages)
 
     # Assert that files were stored in backups as errors
-    errors_path = os.path.join(centre_config["backups_folder"], ERRORS_DIR)
+    errors_path = os.path.join(centre_config[CENTRE_KEY_BACKUPS_FOLDER], ERRORS_DIR)
     assert len(os.listdir(errors_path)) == 1
 
     # Assert that an import record was created
@@ -1403,7 +1409,7 @@ def test_check_for_required_headers_with_missing_lab_id_and_lab_id_true(config):
 
 
 def test_backup_good_file(config, tmpdir):
-    with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
+    with patch.dict(config.CENTRES[0], {CENTRE_KEY_BACKUPS_FOLDER: tmpdir.realpath()}):
         # create temporary success and errors folders for the files to end up in
         success_folder = tmpdir.mkdir(SUCCESSES_DIR)
         errors_folder = tmpdir.mkdir(ERRORS_DIR)
@@ -1430,7 +1436,7 @@ def test_backup_good_file(config, tmpdir):
 
 
 def test_backup_bad_file(config, tmpdir):
-    with patch.dict(config.CENTRES[0], {"backups_folder": tmpdir.realpath()}):
+    with patch.dict(config.CENTRES[0], {CENTRE_KEY_BACKUPS_FOLDER: tmpdir.realpath()}):
         # create temporary success and errors folders for the files to end up in
         success_folder = tmpdir.mkdir(SUCCESSES_DIR)
         errors_folder = tmpdir.mkdir(ERRORS_DIR)
@@ -1904,7 +1910,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
                             mock_add_plate.assert_any_call(
                                 mock_conn().cursor(),
                                 doc[FIELD_PLATE_BARCODE],
-                                centre_file.centre_config["biomek_labware_class"],
+                                centre_file.centre_config[CENTRE_KEY_BIOMEK_LABWARE_CLASS],
                             )
 
                         # well helper method call checks
@@ -1992,7 +1998,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
                         mock_add_plate.assert_any_call(
                             mock_conn().cursor(),
                             plate_barcode,
-                            centre_file.centre_config["biomek_labware_class"],
+                            centre_file.centre_config[CENTRE_KEY_BIOMEK_LABWARE_CLASS],
                         )
 
                         # calls for well index and to map as expected

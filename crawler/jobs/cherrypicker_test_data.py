@@ -9,6 +9,8 @@ from bson.objectid import ObjectId
 from pymongo.collection import Collection
 
 from crawler.constants import (
+    CENTRE_KEY_LAB_ID_DEFAULT,
+    CENTRE_KEY_PREFIX,
     COLLECTION_CHERRYPICK_TEST_DATA,
     FIELD_ADD_TO_DART,
     FIELD_BARCODES,
@@ -30,11 +32,8 @@ from crawler.constants import (
     TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES,
     TEST_DATA_ERROR_WRONG_STATE,
 )
-from crawler.db.mongo import (
-    create_mongo_client,
-    get_mongo_collection,
-    get_mongo_db,
-)
+from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.exceptions import CherrypickerDataError
 from crawler.helpers.cherrypicker_test_data import (
     create_barcode_meta,
     create_barcodes,
@@ -46,11 +45,6 @@ from crawler.main import run as run_crawler
 from crawler.types import Config
 
 logger = logging.getLogger(__name__)
-
-
-class CherrypickerDataError(Exception):
-    def __init__(self, message):
-        self.message = message
 
 
 def process(run_id: str, config: Config = None) -> List[List[str]]:
@@ -180,10 +174,10 @@ def parse_bool_field(value: Any, default_value: bool) -> bool:
 
 
 def prepare_data(plate_specs, dt, barcodes, config):
-    test_centre = next(filter(lambda c: c["prefix"] == TEST_DATA_CENTRE_PREFIX, config.CENTRES))
+    test_centre = next(filter(lambda c: c[CENTRE_KEY_PREFIX] == TEST_DATA_CENTRE_PREFIX, config.CENTRES))
     downloaded_data_path = config.DIR_DOWNLOADED_DATA
 
-    csv_rows = create_csv_rows(plate_specs, dt, barcodes, test_centre["lab_id_default"])
+    csv_rows = create_csv_rows(plate_specs, dt, barcodes, test_centre[CENTRE_KEY_LAB_ID_DEFAULT])
     plates_path = os.path.join(downloaded_data_path, TEST_DATA_CENTRE_PREFIX)
     plates_filename = f"{TEST_DATA_CENTRE_PREFIX}_{dt.strftime('%y%m%d_%H%M%S_%f')}.csv"
     write_plates_file(csv_rows, plates_path, plates_filename)

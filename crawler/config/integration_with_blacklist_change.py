@@ -17,4 +17,4 @@ ENABLE_CHERRYPICKER_ENDPOINTS = True
 # test with no black-listed files
 ###
 for centre in CENTRES:
-    centre["file_names_to_ignore"] = []
+    centre[CENTRE_KEY_FILE_NAMES_TO_IGNORE] = []

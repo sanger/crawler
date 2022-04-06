@@ -1,10 +1,10 @@
 import csv
 import logging
 import os
-import stat
 import pathlib
 import re
 import shutil
+import stat
 import uuid
 from csv import DictReader
 from datetime import datetime, timezone
@@ -19,12 +19,23 @@ from bson.decimal128 import Decimal128
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
-from crawler.config.centres import CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES
 from crawler.constants import (
     ALLOWED_CH_RESULT_VALUES,
     ALLOWED_CH_TARGET_VALUES,
     ALLOWED_RESULT_VALUES,
-    COLLECTION_CENTRES,
+    CENTRE_KEY_BACKUPS_FOLDER,
+    CENTRE_KEY_BARCODE_FIELD,
+    CENTRE_KEY_BARCODE_REGEX,
+    CENTRE_KEY_BIOMEK_LABWARE_CLASS,
+    CENTRE_KEY_FILE_NAMES_TO_IGNORE,
+    CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE,
+    CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE,
+    CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE,
+    CENTRE_KEY_LAB_ID_DEFAULT,
+    CENTRE_KEY_NAME,
+    CENTRE_KEY_PREFIX,
+    CENTRE_KEY_SFTP_ROOT_READ,
+    CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES,
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
@@ -63,11 +74,11 @@ from crawler.constants import (
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     FIELD_VIRAL_PREP_ID,
+    FILE_AGE_IN_DAYS,
     IGNORED_HEADERS,
     MAX_CQ_VALUE,
     MIN_CQ_VALUE,
     RESULT_VALUE_POSITIVE,
-    FILE_AGE_IN_DAYS,
 )
 from crawler.db.dart import (
     add_dart_plate_if_doesnt_exist,
@@ -80,7 +91,7 @@ from crawler.filtered_positive_identifier import current_filtered_positive_ident
 from crawler.helpers.enums import CentreFileState
 from crawler.helpers.general_helpers import create_source_plate_doc, current_time, get_sftp_connection, pad_coordinate
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.types import CentreConf, CentreDoc, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc
+from crawler.types import CentreConf, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc
 
 logger = logging.getLogger(__name__)
 
@@ -98,8 +109,8 @@ class Centre:
         self._files: List[str] = []
 
         # create backup directories for files
-        os.makedirs(f"{self.centre_config['backups_folder']}/{ERRORS_DIR}", exist_ok=True)
-        os.makedirs(f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}", exist_ok=True)
+        os.makedirs(f"{self.centre_config[CENTRE_KEY_BACKUPS_FOLDER]}/{ERRORS_DIR}", exist_ok=True)
+        os.makedirs(f"{self.centre_config[CENTRE_KEY_BACKUPS_FOLDER]}/{SUCCESSES_DIR}", exist_ok=True)
 
     def sorted_files(self):
         return sorted(self._files)
@@ -108,7 +119,7 @@ class Centre:
         """Get all the files in the download directory for this centre and filter the file names using the
         sftp_file_regex_* described in the centre's config
         """
-        logger.info(f"Fetching files of centre {self.centre_config['name']}")
+        logger.info(f"Fetching files of centre {self.centre_config[CENTRE_KEY_NAME]}")
         # get a list of files in the download directory
         # https://stackoverflow.com/a/3207973
         path_to_walk = PROJECT_ROOT.joinpath(self.get_download_dir())
@@ -175,7 +186,7 @@ class Centre:
         Returns:
             str -- the download directory
         """
-        return f"{self.config.DIR_DOWNLOADED_DATA}{self.centre_config['prefix']}/"
+        return f"{self.config.DIR_DOWNLOADED_DATA}{self.centre_config[CENTRE_KEY_PREFIX]}/"
 
     def download_csv_files(self) -> None:
         """Downloads the centre's file from the SFTP server"""
@@ -191,7 +202,7 @@ class Centre:
             logger.info("Connected to SFTP")
             logger.debug("Listing centre's root directory")
 
-            sftp_root_read = self.centre_config["sftp_root_read"]
+            sftp_root_read = self.centre_config[CENTRE_KEY_SFTP_ROOT_READ]
             logger.debug(f"ls {self.config.SFTP_HOST}/{sftp_root_read}")
             logger.debug(sftp.listdir(sftp_root_read))
 
@@ -226,7 +237,7 @@ class Centre:
         return self.is_eagle_filename(filename) or self.is_consolidated_surveillance_filename(filename)
 
     def is_eagle_filename(self, filename: str) -> bool:
-        eagle = re.compile(self.centre_config["sftp_file_regex_consolidated_eagle"])
+        eagle = re.compile(self.centre_config[CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE])
         return bool(eagle.match(filename))
 
     # This method should not be used with a not() in front of it as it can
@@ -234,11 +245,11 @@ class Centre:
     # Eg:
     #    not(consolidated_surveillance) != unconsolidated_surveillance
     def is_consolidated_surveillance_filename(self, filename: str) -> bool:
-        consolidated_surveillance = re.compile(self.centre_config["sftp_file_regex_consolidated_surveillance"])
+        consolidated_surveillance = re.compile(self.centre_config[CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE])
         return bool(consolidated_surveillance.match(filename))
 
     def is_surveillance_filename(self, filename: str) -> bool:
-        unconsolidated_surveillance = re.compile(self.centre_config["sftp_file_regex_unconsolidated_surveillance"])
+        unconsolidated_surveillance = re.compile(self.centre_config[CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE])
         return bool(unconsolidated_surveillance.match(filename)) or self.is_consolidated_surveillance_filename(filename)
 
 
@@ -341,7 +352,7 @@ class CentreFile:
         checksum_for_file = self.checksum()
         logger.debug(f"Checksum for file = {checksum_for_file}")
 
-        backup_folder = f"{self.centre_config['backups_folder']}/{dir_path}"
+        backup_folder = f"{self.centre_config[CENTRE_KEY_BACKUPS_FOLDER]}/{dir_path}"
         files_from_backup_folder = os.listdir(backup_folder)
 
         for backup_copy_file in files_from_backup_folder:
@@ -359,22 +370,6 @@ class CentreFile:
                     return True
         return False
 
-    def get_centre_from_db(self) -> CentreDoc:
-        """Gets a document from the mongo centre collection which describes a lighthouse centre.
-
-        Raises:
-            Exception: if no centre is found, raise an exception
-
-        Returns:
-            CentreDoc: mongo document describing a centre
-        """
-        centre_collection = get_mongo_collection(self.get_db(), COLLECTION_CENTRES)
-
-        if centre := centre_collection.find_one(filter={"name": self.centre_config["name"]}):
-            return cast(CentreDoc, centre)
-
-        raise Exception("Unable to find the centre in the centre collection.")
-
     def is_unconsolidated_surveillance_file(self) -> bool:
         """Identifies whether this file is from the batch of unconsolidated surveillance files for the centre that uploaded it.
 
@@ -382,8 +377,7 @@ class CentreFile:
             bool: True if the filename matches the unconsolidated surveillance regex specified
                   in the centre's configuration. False otherwise.
         """
-        centre = self.get_centre_from_db()
-        compiled_regex = re.compile(centre["sftp_file_regex_unconsolidated_surveillance"])
+        compiled_regex = re.compile(self.centre_config[CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE])
         return bool(compiled_regex.match(self.file_name))
 
     def set_state_for_file(self) -> CentreFileState:
@@ -392,10 +386,11 @@ class CentreFile:
         Returns:
             CentreFileState - enum representation of file state
         """
-        centre = self.get_centre_from_db()
-
         # check whether file is on the blacklist and should be ignored
-        if "file_names_to_ignore" in centre and self.file_name in centre["file_names_to_ignore"]:
+        if (
+            CENTRE_KEY_FILE_NAMES_TO_IGNORE in self.centre_config
+            and self.file_name in self.centre_config[CENTRE_KEY_FILE_NAMES_TO_IGNORE]
+        ):
             self.file_state = CentreFileState.FILE_IN_BLACKLIST
 
         # check whether file has already been processed to error directory
@@ -409,7 +404,7 @@ class CentreFile:
 
         # check for this being an unconsolidated samples file where the centre doesn't support those
         elif (
-            centre.get(CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES, False)
+            self.centre_config.get(CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES, False)
             and self.is_unconsolidated_surveillance_file()
         ):
             self.file_state = CentreFileState.FILE_SHOULD_NOT_BE_PROCESSED
@@ -491,9 +486,9 @@ class CentreFile:
             str -- the filepath of the file backup
         """
         if self.logging_collection.get_count_of_all_errors_and_criticals() > 0:
-            return f"{self.centre_config['backups_folder']}/{ERRORS_DIR}/{self.timestamped_filename()}"
+            return f"{self.centre_config[CENTRE_KEY_BACKUPS_FOLDER]}/{ERRORS_DIR}/{self.timestamped_filename()}"
         else:
-            return f"{self.centre_config['backups_folder']}/{SUCCESSES_DIR}/{self.timestamped_filename()}"
+            return f"{self.centre_config[CENTRE_KEY_BACKUPS_FOLDER]}/{SUCCESSES_DIR}/{self.timestamped_filename()}"
 
     def timestamped_filename(self) -> str:
         return f"{current_time()}_{self.file_name}_{self.checksum()}"
@@ -759,7 +754,7 @@ class CentreFile:
                 for plate_barcode, samples in group_iterator:
                     try:
                         plate_state = add_dart_plate_if_doesnt_exist(
-                            cursor, plate_barcode, self.centre_config["biomek_labware_class"]
+                            cursor, plate_barcode, self.centre_config[CENTRE_KEY_BIOMEK_LABWARE_CLASS]
                         )
                         if plate_state == DART_STATE_PENDING:
                             for sample in samples:
@@ -1008,17 +1003,19 @@ class CentreFile:
             # if the lab id field is already present but it might be an empty string
             if not lab_id:
                 # if no value (empty string) we add the default value and log that it was missing
-                modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
+                modified_row[FIELD_LAB_ID] = self.centre_config[CENTRE_KEY_LAB_ID_DEFAULT]
                 log_adding_default_lab_id(row, line_number)
             else:
-                if not self.is_consolidated and lab_id != self.centre_config["lab_id_default"]:
+                if not self.is_consolidated and lab_id != self.centre_config[CENTRE_KEY_LAB_ID_DEFAULT]:
                     # if the lab id is different to what is configured for the lab
-                    logger.warning(f"Different lab id setting: {lab_id} != {self.centre_config['lab_id_default']}")
+                    logger.warning(
+                        f"Different lab id setting: {lab_id} != {self.centre_config[CENTRE_KEY_LAB_ID_DEFAULT]}"
+                    )
                 # copy the lab id across
                 modified_row[FIELD_LAB_ID] = lab_id
         else:
             # if the lab id field is not present we add the default and log it was missing
-            modified_row[FIELD_LAB_ID] = self.centre_config["lab_id_default"]
+            modified_row[FIELD_LAB_ID] = self.centre_config[CENTRE_KEY_LAB_ID_DEFAULT]
             log_adding_default_lab_id(row, line_number)
 
         return modified_row
@@ -1172,13 +1169,13 @@ class CentreFile:
 
         # ---- add a few additional, computed or derived fields ----
         # add the centre name as source
-        modified_row[FIELD_SOURCE] = self.centre_config["name"]
+        modified_row[FIELD_SOURCE] = self.centre_config[CENTRE_KEY_NAME]
 
         # extract the barcode and well coordinate
-        barcode_field = self.centre_config["barcode_field"]
+        barcode_field = self.centre_config[CENTRE_KEY_BARCODE_FIELD]
 
         modified_row[FIELD_PLATE_BARCODE] = None
-        if modified_row.get(barcode_field) and (barcode_regex := self.centre_config["barcode_regex"]):
+        if modified_row.get(barcode_field) and (barcode_regex := self.centre_config[CENTRE_KEY_BARCODE_REGEX]):
             (
                 modified_row[FIELD_PLATE_BARCODE],
                 modified_row[FIELD_COORDINATE],
@@ -1549,7 +1546,7 @@ class CentreFile:
             return False
 
         # check barcode is present
-        barcode_field = self.centre_config["barcode_field"]
+        barcode_field = self.centre_config[CENTRE_KEY_BARCODE_FIELD]
         if not row.get(barcode_field):
             self.logging_collection.add_error("TYPE 4", f"{barcode_field} missing, line: {line_number}")
 
