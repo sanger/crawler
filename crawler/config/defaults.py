@@ -1,16 +1,11 @@
 # flake8: noqa
 import os
 
-from crawler.config.centres import CENTRES as centres_config
+from crawler.config.centres import *
 from crawler.config.logging import *
 from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
 
 # setting here will overwrite those in 'centres.py'
-
-###
-# centres config objects
-###
-CENTRES = centres_config
 
 ###
 # general details

@@ -34,9 +34,9 @@ from crawler.constants import (
     TEST_DATA_ERROR_WRONG_STATE,
 )
 from crawler.db.mongo import get_mongo_collection
+from crawler.exceptions import CherrypickerDataError
 from crawler.helpers.general_helpers import is_found_in_list
 from crawler.jobs.cherrypicker_test_data import (
-    CherrypickerDataError,
     get_run_doc,
     prepare_data,
     process,

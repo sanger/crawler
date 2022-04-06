@@ -32,3 +32,10 @@ class DartStateError(Error):
             return f"DartStateError: {self.message}"
         else:
             return f"DartStateError: {default_message}"
+
+
+class CherrypickerDataError(Exception):
+    """Raised during cherrypicker test data creation. The message is assumed to be user friendly."""
+
+    def __init__(self, message):
+        self.message = message
