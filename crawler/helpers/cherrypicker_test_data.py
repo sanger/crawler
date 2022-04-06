@@ -19,7 +19,7 @@ from crawler.constants import (
     TEST_DATA_ERROR_BARACODA_CONNECTION,
     TEST_DATA_ERROR_BARACODA_UNKNOWN,
 )
-from crawler.helpers.exceptions import CherrypickerDataError
+from crawler.exceptions import CherrypickerDataError
 from crawler.types import Config
 
 logger = logging.getLogger(__name__)

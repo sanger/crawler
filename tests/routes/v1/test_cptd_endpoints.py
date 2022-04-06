@@ -5,8 +5,8 @@ from unittest.mock import patch
 import pytest
 
 from crawler.constants import FIELD_STATUS_COMPLETED, FLASK_ERROR_MISSING_PARAMETERS, FLASK_ERROR_UNEXPECTED
+from crawler.exceptions import CherrypickerDataError
 from crawler.helpers.general_helpers import is_found_in_list
-from crawler.jobs.cherrypicker_test_data import CherrypickerDataError
 
 ENDPOINT = "/v1/cherrypick-test-data"
 BARCODE_METADATA = [
