@@ -53,9 +53,9 @@ def setup_routes(app):
 def start_rabbit_consumer(app):
     # Flask in debug mode spawns a child process so that it can restart the process each time your code changes,
     # the new child process initializes and starts a new consumer causing more than one to exist.
-    if (flask.helpers.get_debug_flag() and not werkzeug.serving.is_running_from_reloader()) or app.config[
+    if (flask.helpers.get_debug_flag() and not werkzeug.serving.is_running_from_reloader()) or not app.config[
         "RABBITMQ_HOST"
-    ] is None:
+    ]:
         return
 
     rabbit_server = RabbitServerDetails(

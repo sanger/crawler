@@ -133,7 +133,7 @@ EVENTS_WH_DB = "event_warehouse_test"
 ###
 # RabbitMQ details
 ###
-RABBITMQ_HOST = None
+RABBITMQ_HOST = ""
 
 ###
 # APScheduler
