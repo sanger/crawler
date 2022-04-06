@@ -1,4 +1,4 @@
-from unittest.mock import ANY, MagicMock, Mock, patch
+from unittest.mock import ANY, MagicMock, Mock, call, patch
 
 import pytest
 
@@ -64,7 +64,7 @@ def test_close_connection_calls_close_on_connection(subject, mock_logger):
 
 def test_on_connection_open_calls_open_channel(subject, mock_logger):
     with patch("crawler.rabbit.async_consumer.AsyncConsumer.open_channel") as open_channel:
-        subject.on_connection_open(None)
+        subject.on_connection_open(Mock())
 
     open_channel.assert_called_once()
     mock_logger.info.assert_called_once()
@@ -73,7 +73,7 @@ def test_on_connection_open_calls_open_channel(subject, mock_logger):
 def test_on_connection_open_error_calls_reconnect(subject, mock_logger):
     error = Exception("An error")
     with patch("crawler.rabbit.async_consumer.AsyncConsumer.reconnect") as reconnect:
-        subject.on_connection_open_error(None, error)
+        subject.on_connection_open_error(Mock(), error)
 
     reconnect.assert_called_once()
     mock_logger.error.assert_called_once_with(ANY, error)
@@ -82,7 +82,7 @@ def test_on_connection_open_error_calls_reconnect(subject, mock_logger):
 def test_on_connection_closed_sets_channel_to_none(subject):
     subject._connection = MagicMock()
     subject._channel = "Not none"
-    subject.on_connection_closed(None, "A reason")
+    subject.on_connection_closed(Mock(), "A reason")
 
     assert subject._channel is None
 
@@ -90,7 +90,7 @@ def test_on_connection_closed_sets_channel_to_none(subject):
 def test_on_connection_closed_stops_the_ioloop(subject):
     subject._connection = MagicMock()
     subject._closing = True
-    subject.on_connection_closed(None, "A reason")
+    subject.on_connection_closed(Mock(), "A reason")
 
     subject._connection.ioloop.stop.assert_called_once()
 
@@ -100,7 +100,7 @@ def test_on_connection_closed_reconnects_when_not_in_closing_state(subject, mock
     subject._closing = False
     reason = "A reason"
     with patch("crawler.rabbit.async_consumer.AsyncConsumer.reconnect") as reconnect:
-        subject.on_connection_closed(None, reason)
+        subject.on_connection_closed(Mock(), reason)
 
     reconnect.assert_called_once()
     mock_logger.warning.assert_called_once_with(ANY, reason)
@@ -175,3 +175,192 @@ def test_set_qos_applies_prefetch_count_to_channel(subject, prefetch_count):
     subject.set_qos()
 
     subject._channel.basic_qos.assert_called_once_with(prefetch_count=prefetch_count, callback=ANY)
+
+
+@pytest.mark.parametrize("prefetch_count", [1, 5, 10])
+def test_on_basic_qos_ok_calls_start_consuming(subject, mock_logger, prefetch_count):
+    subject._prefetch_count = prefetch_count
+    with patch("crawler.rabbit.async_consumer.AsyncConsumer.start_consuming") as start_consuming:
+        subject.on_basic_qos_ok(Mock())
+
+    start_consuming.assert_called_once()
+    mock_logger.info.assert_called_once_with(ANY, prefetch_count)
+
+
+def test_start_consuming_logs_when_no_channel(subject, mock_logger):
+    subject._channel = None
+    subject.start_consuming()
+
+    mock_logger.error.assert_called_once()
+
+
+def test_start_consuming_takes_necessary_actions(subject, mock_logger):
+    # Test objects
+    test_tag = "Test tag"
+    test_queue = "queue.name"
+
+    # Arrange
+    subject._queue = test_queue
+    subject._channel = MagicMock()
+    subject._channel.basic_consume = Mock(return_value=test_tag)
+    subject._consumer_tag = None
+    subject.was_consuming = False
+    subject._consuming = False
+
+    # Act
+    with patch("crawler.rabbit.async_consumer.AsyncConsumer.add_on_cancel_callback") as add_callback:
+        subject.start_consuming()
+
+    # Assert
+    mock_logger.info.assert_called_once()
+    add_callback.assert_called_once()
+    subject._channel.basic_consume.assert_called_once_with(test_queue, ANY)
+    assert subject._consumer_tag == test_tag
+    assert subject.was_consuming is True
+    assert subject._consuming is True
+
+
+def test_add_on_cancel_callback_calls_the_channel_method(subject, mock_logger):
+    subject._channel = MagicMock()
+    subject.add_on_cancel_callback()
+
+    subject._channel.add_on_cancel_callback.assert_called_once()
+    mock_logger.info.assert_called_once()
+
+
+def test_add_on_cancel_callback_logs_when_no_channel(subject, mock_logger):
+    subject._channel = None
+    subject.add_on_cancel_callback()
+
+    mock_logger.error.assert_called_once()
+
+
+def test_on_consumer_cancelled_logs(subject, mock_logger):
+    method_frame = Mock()
+    subject.on_consumer_cancelled(method_frame)
+
+    mock_logger.info.assert_called_once_with(ANY, method_frame)
+
+
+def test_on_consumer_cancelled_calls_channel_close(subject, mock_logger):
+    subject._channel = MagicMock()
+    subject.on_consumer_cancelled(Mock())
+
+    subject._channel.close.assert_called_once()
+
+
+###
+# No tests for on_message() yet because it will be updated with callbacks!
+###
+
+
+def test_acknowledge_message_calls_the_channel_method(subject, mock_logger):
+    subject._channel = MagicMock()
+    delivery_tag = Mock()
+    subject.acknowledge_message(delivery_tag)
+
+    subject._channel.basic_ack.assert_called_once_with(delivery_tag)
+    mock_logger.info.assert_called_once_with(ANY, delivery_tag)
+
+
+def test_acknowledge_message_logs_when_no_channel(subject, mock_logger):
+    subject._channel = None
+    subject.acknowledge_message(Mock())
+
+    mock_logger.error.assert_called_once()
+
+
+def test_stop_consuming_calls_the_channel_method(subject, mock_logger):
+    subject._channel = MagicMock()
+    subject._consumer_tag = Mock()
+    subject.stop_consuming()
+
+    subject._channel.basic_cancel.assert_called_once_with(subject._consumer_tag, ANY)
+    mock_logger.info.assert_called_once()
+
+
+def test_on_cancelok_calls_close_channel_method(subject, mock_logger):
+    subject._channel = MagicMock()
+    subject._consuming = True
+    userdata = Mock()
+
+    with patch("crawler.rabbit.async_consumer.AsyncConsumer.close_channel") as close_channel:
+        subject.on_cancelok(Mock(), userdata)
+
+    assert subject._consuming is False
+    mock_logger.info.assert_called_once_with(ANY, userdata)
+    close_channel.assert_called_once()
+
+
+def test_close_channel_calls_the_channel_method(subject, mock_logger):
+    subject._channel = MagicMock()
+    subject.close_channel()
+
+    subject._channel.close.assert_called_once()
+    mock_logger.info.assert_called_once()
+
+
+def test_close_channel_logs_when_no_channel(subject, mock_logger):
+    subject._channel = None
+    subject.close_channel()
+
+    mock_logger.error.assert_called_once()
+
+
+def test_run_starts_the_ioloop_when_connection_created(subject):
+    subject._connection = None
+    test_connection = MagicMock()
+    with patch("crawler.rabbit.async_consumer.AsyncConsumer.connect", return_value=test_connection):
+        subject.run()
+
+    assert subject._connection == test_connection
+    test_connection.ioloop.start.assert_called_once()
+
+
+def test_run_logs_error_when_connection_not_created(subject, mock_logger):
+    subject._connection = None
+    with patch("crawler.rabbit.async_consumer.AsyncConsumer.connect", return_value=None):
+        subject.run()
+
+    mock_logger.error.assert_called_once()
+
+
+def test_stop_logs_process(subject, mock_logger):
+    subject._closing = False
+    with patch("crawler.rabbit.async_consumer.AsyncConsumer.stop_consuming"):
+        subject.stop()
+
+    mock_logger.info.assert_has_calls([call("Stopping"), call("Stopped")])
+
+
+def test_stop_takes_correct_actions_when_consuming(subject):
+    subject._closing = False
+    subject._consuming = True
+    subject._connection = MagicMock()
+    with patch("crawler.rabbit.async_consumer.AsyncConsumer.stop_consuming") as stop_consuming:
+        subject.stop()
+
+    stop_consuming.assert_called_once()
+    subject._connection.ioloop.stop.assert_not_called()
+    subject._connection.ioloop.start.assert_called_once()
+
+
+def test_stop_takes_correct_actions_when_not_consuming(subject):
+    subject._closing = False
+    subject._consuming = False
+    subject._connection = MagicMock()
+    with patch("crawler.rabbit.async_consumer.AsyncConsumer.stop_consuming") as stop_consuming:
+        subject.stop()
+
+    stop_consuming.assert_not_called()
+    subject._connection.ioloop.stop.assert_called_once()
+    subject._connection.ioloop.start.assert_not_called()
+
+
+def test_stop_does_nothing_if_already_closing(subject, mock_logger):
+    subject._closing = True
+    with patch("crawler.rabbit.async_consumer.AsyncConsumer.stop_consuming") as stop_consuming:
+        subject.stop()
+
+    stop_consuming.assert_not_called()
+    mock_logger.info.assert_not_called()

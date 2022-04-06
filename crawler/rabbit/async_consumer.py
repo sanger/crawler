@@ -271,7 +271,7 @@ class AsyncConsumer(object):
             LOGGER.info("Closing the channel")
             self._channel.close()
         else:
-            LOGGER.info("No channel to close")
+            LOGGER.error("No channel to close")
 
     def run(self):
         """Run the example consumer by connecting to RabbitMQ and then
