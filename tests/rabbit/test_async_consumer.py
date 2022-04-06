@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
 
@@ -76,8 +76,7 @@ def test_on_connection_open_error_calls_reconnect(subject, mock_logger):
         subject.on_connection_open_error(None, error)
 
     reconnect.assert_called_once()
-    mock_logger.error.assert_called_once()
-    assert mock_logger.error.call_args[0][1] is error
+    mock_logger.error.assert_called_once_with(ANY, error)
 
 
 def test_on_connection_closed_sets_channel_to_none(subject):
@@ -104,8 +103,7 @@ def test_on_connection_closed_reconnects_when_not_in_closing_state(subject, mock
         subject.on_connection_closed(None, reason)
 
     reconnect.assert_called_once()
-    mock_logger.warning.assert_called_once()
-    assert mock_logger.warning.call_args[0][1] is reason
+    mock_logger.warning.assert_called_once_with(ANY, reason)
 
 
 def test_reconnect_prepares_for_reconnection(subject):
@@ -143,3 +141,37 @@ def test_on_channel_open_sets_the_channel_and_calls_follow_up_methods(subject, m
     assert subject._channel is fake_channel
     add_callback.assert_called_once
     set_qos.assert_called_once
+
+
+def test_add_on_channel_close_callback_calls_the_channel_method(subject, mock_logger):
+    subject._channel = MagicMock()
+    subject.add_on_channel_close_callback()
+
+    subject._channel.add_on_close_callback.assert_called_once()
+    mock_logger.info.assert_called_once()
+
+
+def test_add_on_channel_close_callback_logs_when_no_channel(subject, mock_logger):
+    subject._channel = None
+    subject.add_on_channel_close_callback()
+
+    mock_logger.error.assert_called_once()
+
+
+def test_on_channel_closed_calls_close_connection(subject, mock_logger):
+    channel = "A channel"
+    reason = "A reason"
+    with patch("crawler.rabbit.async_consumer.AsyncConsumer.close_connection") as close_connection:
+        subject.on_channel_closed(channel, reason)
+
+    close_connection.assert_called_once()
+    mock_logger.warning.assert_called_once_with(ANY, channel, reason)
+
+
+@pytest.mark.parametrize("prefetch_count", [1, 5, 10])
+def test_set_qos_applies_prefetch_count_to_channel(subject, prefetch_count):
+    subject._prefetch_count = prefetch_count
+    subject._channel = MagicMock()
+    subject.set_qos()
+
+    subject._channel.basic_qos.assert_called_once_with(prefetch_count=prefetch_count, callback=ANY)
