@@ -131,6 +131,11 @@ EVENT_WH_ROLE_TYPES_TABLE = "role_types"
 EVENTS_WH_DB = "event_warehouse_test"
 
 ###
+# RabbitMQ details
+###
+RABBITMQ_HOST = ""
+
+###
 # APScheduler
 ###
 SCHEDULER_RUN = False
