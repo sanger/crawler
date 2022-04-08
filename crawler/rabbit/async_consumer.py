@@ -1,6 +1,6 @@
 import functools
 import logging
-from ssl import create_default_context
+import ssl
 
 from pika import ConnectionParameters, PlainCredentials, SelectConnection, SSLOptions
 from pika.adapters.utils.connection_workflow import (
@@ -84,7 +84,8 @@ class AsyncConsumer(object):
             credentials=credentials,
         )
         if self._server_details.uses_ssl:
-            connection_params.ssl_options = SSLOptions(create_default_context())
+            ssl_context = ssl.create_default_context(cafile="ca_cert.pem")
+            connection_params.ssl_options = SSLOptions(ssl_context)
 
         return SelectConnection(
             parameters=connection_params,
