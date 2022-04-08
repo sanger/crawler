@@ -139,6 +139,3 @@ dmypy.json
 
 # RabbitMQ admin tool
 rabbitmqadmin
-
-# Certificate files
-*.pem

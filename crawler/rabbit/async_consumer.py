@@ -1,5 +1,6 @@
 import functools
 import logging
+import os
 import ssl
 
 from pika import ConnectionParameters, PlainCredentials, SelectConnection, SSLOptions
@@ -84,7 +85,8 @@ class AsyncConsumer(object):
             credentials=credentials,
         )
         if self._server_details.uses_ssl:
-            ssl_context = ssl.create_default_context(cafile="ca_cert.pem")
+            cafile = os.getenv("REQUESTS_CA_BUNDLE")
+            ssl_context = ssl.create_default_context(cafile=cafile)
             connection_params.ssl_options = SSLOptions(ssl_context)
 
         return SelectConnection(
