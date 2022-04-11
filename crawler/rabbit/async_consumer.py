@@ -119,6 +119,9 @@ class AsyncConsumer(object):
         :param pika.SelectConnection _unused_connection: The connection
         :param Exception err: The error
         """
+        # Note that err is likely to be an AMQPConnectionWorkflowFailed error.  Unfortunatley this means the actual
+        # cause of the error is wrapped a few layers deep and the type of err does not generate a useful string
+        # description.  As such, we'll use a static method pulled from Pika source code to extract the description.
         LOGGER.error("Connection open failed: %s", AsyncConsumer._reap_last_connection_workflow_error(err))
         self.reconnect()
 
