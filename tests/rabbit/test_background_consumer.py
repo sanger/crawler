@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -12,7 +12,7 @@ DEFAULT_SERVER_DETAILS = RabbitServerDetails(
 
 @pytest.fixture
 def subject():
-    return BackgroundConsumer(DEFAULT_SERVER_DETAILS, "queue")
+    return BackgroundConsumer(DEFAULT_SERVER_DETAILS, "queue", Mock())
 
 
 def test_init_sets_the_correct_name(subject):
@@ -34,13 +34,14 @@ def test_consumer_is_passed_correct_parameters(uses_ssl, host, port, username, p
     server_details = RabbitServerDetails(
         uses_ssl=uses_ssl, host=host, port=port, username=username, password=password, vhost=vhost
     )
-    subject = BackgroundConsumer(server_details, queue)
+    process_message = Mock()
+    subject = BackgroundConsumer(server_details, queue, process_message)
 
     with patch("crawler.rabbit.background_consumer.AsyncConsumer.__init__", return_value=None) as async_consumer_init:
         # Initiate creation of the AsyncConsumer
         subject._consumer
 
-    async_consumer_init.assert_called_once_with(server_details, queue)
+    async_consumer_init.assert_called_once_with(server_details, queue, process_message)
 
 
 def test_run_starts_consumer_and_stops_on_keyboard_interrupt(subject):

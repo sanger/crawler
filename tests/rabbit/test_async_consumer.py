@@ -18,7 +18,7 @@ def mock_logger():
 
 @pytest.fixture
 def subject():
-    return AsyncConsumer(DEFAULT_SERVER_DETAILS, "queue")
+    return AsyncConsumer(DEFAULT_SERVER_DETAILS, "queue", Mock())
 
 
 @pytest.mark.parametrize("uses_ssl", [True, False])
@@ -26,7 +26,7 @@ def test_connect_provides_correct_parameters(mock_logger, uses_ssl):
     server_details = RabbitServerDetails(
         uses_ssl=uses_ssl, host="host", port=5672, username="username", password="password", vhost="vhost"
     )
-    subject = AsyncConsumer(server_details, "queue")
+    subject = AsyncConsumer(server_details, "queue", Mock())
     select_connection = subject.connect()
     select_connection.close()  # Don't want async callbacks that will log during other tests
 
@@ -252,22 +252,6 @@ def test_on_consumer_cancelled_calls_channel_close(subject, mock_logger):
 ###
 # No tests for on_message() yet because it will be updated with callbacks!
 ###
-
-
-def test_acknowledge_message_calls_the_channel_method(subject, mock_logger):
-    subject._channel = MagicMock()
-    delivery_tag = Mock()
-    subject.acknowledge_message(delivery_tag)
-
-    subject._channel.basic_ack.assert_called_once_with(delivery_tag)
-    mock_logger.info.assert_called_once_with(ANY, delivery_tag)
-
-
-def test_acknowledge_message_logs_when_no_channel(subject, mock_logger):
-    subject._channel = None
-    subject.acknowledge_message(Mock())
-
-    mock_logger.error.assert_called_once()
 
 
 def test_stop_consuming_calls_the_channel_method(subject, mock_logger):
