@@ -8,9 +8,11 @@ import werkzeug
 from flask_apscheduler import APScheduler
 
 from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
+from crawler.processing.rabbit_message_processor import RabbitMessageProcessor
 from crawler.rabbit.background_consumer import BackgroundConsumer
 from crawler.types import RabbitServerDetails
 
+rabbit_message_processor = RabbitMessageProcessor()
 scheduler = APScheduler()
 
 
@@ -67,4 +69,5 @@ def start_rabbit_consumer(app):
         vhost=app.config["RABBITMQ_VHOST"],
     )
     rabbit_queue = app.config["RABBITMQ_CRUD_QUEUE"]
-    BackgroundConsumer(rabbit_server, rabbit_queue).start()
+    rabbit_message_processor.config = app.config
+    BackgroundConsumer(rabbit_server, rabbit_queue, rabbit_message_processor.process_message).start()

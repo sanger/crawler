@@ -25,16 +25,14 @@ class AsyncConsumer(object):
     commands that were issued and that should surface in the output as well.
     """
 
-    def __init__(self, server_details, queue):
+    def __init__(self, server_details, queue, process_message):
         """Create a new instance of the consumer class, passing in the AMQP
         URL used to connect to RabbitMQ.
-        :param bool use_ssl: Whether to use SSL when connecting to the AMQP endpoint.
-        :param str host: The AMQP host to connect to.
-        :param int port: The AMQP port to connect with.
-        :param str username: The AMQP username with read access to the queue.
-        :param str password: The AMQP password for the username.
-        :param str password: The AMQP virtual host to consume from.
+        :param RabbitServerDetails server_details: The RabbitMQ server connection details.
         :param str queue: The AMQP queue to consume from.
+        :param func process_message: A function to call with details of any messages consumed from the queue.
+                                     This function will be passed the message headers, message body and a function
+                                     to call to acknowledge that the message was processed.
         """
         self.should_reconnect = False
         self.was_consuming = False
@@ -45,6 +43,7 @@ class AsyncConsumer(object):
         self._consumer_tag = None
         self._server_details = server_details
         self._queue = queue
+        self._process_message = process_message
         self._consuming = False
         # In production, experiment with higher prefetch values
         # for higher consumer throughput
@@ -248,31 +247,30 @@ class AsyncConsumer(object):
         if self._channel:
             self._channel.close()
 
-    def on_message(self, _unused_channel, basic_deliver, properties, body):
+    def on_message(self, channel, basic_deliver, properties, body):
         """Invoked by pika when a message is delivered from RabbitMQ. The
         channel is passed for your convenience. The basic_deliver object that
         is passed in carries the exchange, routing key, delivery tag and
         a redelivered flag for the message. The properties passed in is an
         instance of BasicProperties with the message properties and the body
         is the message that was sent.
-        :param pika.channel.Channel _unused_channel: The channel object
+        :param pika.channel.Channel channel: The channel object
         :param pika.Spec.Basic.Deliver: basic_deliver method
         :param pika.Spec.BasicProperties: properties
         :param bytes body: The message body
         """
         LOGGER.info("Received message # %s from %s: %s", basic_deliver.delivery_tag, properties.app_id, body)
-        self.acknowledge_message(basic_deliver.delivery_tag)
 
-    def acknowledge_message(self, delivery_tag):
-        """Acknowledge the message delivery from RabbitMQ by sending a
-        Basic.Ack RPC method for the delivery tag.
-        :param int delivery_tag: The delivery tag from the Basic.Deliver frame
-        """
-        if self._channel:
-            LOGGER.info("Acknowledging message %s", delivery_tag)
-            self._channel.basic_ack(delivery_tag)
-        else:
-            LOGGER.error("No channel to perform basic acknowledgement on")
+        def acknowledge(success):
+            delivery_tag = basic_deliver.delivery_tag
+            if success:
+                LOGGER.info("Acknowledging message %s", delivery_tag)
+                channel.basic_ack(delivery_tag)
+            else:
+                LOGGER.info("Rejecting message %s", delivery_tag)
+                channel.basic_nack(delivery_tag, requeue=False)
+
+        self._process_message(properties.headers, body, acknowledge)
 
     def stop_consuming(self):
         """Tell RabbitMQ that you would like to stop consuming by sending the

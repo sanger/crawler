@@ -12,13 +12,14 @@ class BackgroundConsumer(Thread):
     after a time delay if the AsyncConsumer indicates that a reconnect is necessary.
     """
 
-    def __init__(self, server_details, queue):
+    def __init__(self, server_details, queue, process_message):
         super().__init__()
         self.name = type(self).__name__
         self.daemon = True
         self._reconnect_delay = 0
         self._server_details = server_details
         self._queue = queue
+        self._process_message = process_message
         self._consumer_var = None
 
     def run(self):
@@ -33,7 +34,7 @@ class BackgroundConsumer(Thread):
     @property
     def _consumer(self):
         if self._consumer_var is None:
-            self._consumer_var = AsyncConsumer(self._server_details, self._queue)
+            self._consumer_var = AsyncConsumer(self._server_details, self._queue, self._process_message)
 
         return self._consumer_var
 
