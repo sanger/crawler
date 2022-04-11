@@ -1,8 +1,15 @@
 import functools
 import logging
-from ssl import create_default_context
+import os
+import ssl
 
 from pika import ConnectionParameters, PlainCredentials, SelectConnection, SSLOptions
+from pika.adapters.utils.connection_workflow import (
+    AMQPConnectionWorkflowFailed,
+    AMQPConnectorPhaseErrorBase,
+    AMQPConnectorSocketConnectError,
+)
+from pika.exceptions import AMQPConnectionError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -43,6 +50,26 @@ class AsyncConsumer(object):
         # for higher consumer throughput
         self._prefetch_count = 1
 
+    @staticmethod
+    def _reap_last_connection_workflow_error(error):
+        """Extract exception value from the last connection attempt
+
+        :param Exception error: error passed by the `AMQPConnectionWorkflow`
+            completion callback.
+
+        :returns: Exception value from the last connection attempt
+        :rtype: Exception
+        """
+        if isinstance(error, AMQPConnectionWorkflowFailed):
+            # Extract exception value from the last connection attempt
+            error = error.exceptions[-1]
+            if isinstance(error, AMQPConnectorSocketConnectError):
+                error = AMQPConnectionError(error)
+            elif isinstance(error, AMQPConnectorPhaseErrorBase):
+                error = error.exception
+
+        return error
+
     def connect(self):
         """This method connects to RabbitMQ, returning the connection handle.
         When the connection is established, the on_connection_open method
@@ -58,7 +85,9 @@ class AsyncConsumer(object):
             credentials=credentials,
         )
         if self._server_details.uses_ssl:
-            connection_params.ssl_options = SSLOptions(create_default_context())
+            cafile = os.getenv("REQUESTS_CA_BUNDLE")
+            ssl_context = ssl.create_default_context(cafile=cafile)
+            connection_params.ssl_options = SSLOptions(ssl_context)
 
         return SelectConnection(
             parameters=connection_params,
@@ -90,7 +119,7 @@ class AsyncConsumer(object):
         :param pika.SelectConnection _unused_connection: The connection
         :param Exception err: The error
         """
-        LOGGER.error("Connection open failed: %s", err)
+        LOGGER.error("Connection open failed: %s", AsyncConsumer._reap_last_connection_workflow_error(err))
         self.reconnect()
 
     def on_connection_closed(self, _unused_connection, reason):
