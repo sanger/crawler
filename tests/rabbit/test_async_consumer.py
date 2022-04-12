@@ -249,9 +249,41 @@ def test_on_consumer_cancelled_calls_channel_close(subject, mock_logger):
     subject._channel.close.assert_called_once()
 
 
-###
-# No tests for on_message() yet because it will be updated with callbacks!
-###
+def test_on_message_passes_relevant_info_to_process_message(subject, mock_logger):
+    subject._process_message = MagicMock()
+
+    # Arrange arguments
+    channel = MagicMock()
+
+    delivery_tag = "Test tag"
+    basic_deliver = MagicMock()
+    basic_deliver.delivery_tag = delivery_tag
+
+    app_id = "Test app ID"
+    headers = {"header1": "value1"}
+    properties = MagicMock()
+    properties.app_id = app_id
+    properties.headers = headers
+
+    body = "A message body"
+
+    # Act on main function
+    subject.on_message(channel, basic_deliver, properties, body)
+
+    # Assert main function
+    mock_logger.info.assert_called_once_with(ANY, delivery_tag, app_id, body)
+    subject._process_message.assert_called_once_with(headers, body, ANY)
+    callback_function = subject._process_message.call_args[0][2]
+
+    # Act and assert on callback function with success
+    callback_function(True)
+    mock_logger.info.assert_called_with(ANY, delivery_tag)
+    channel.basic_ack.assert_called_once_with(delivery_tag)
+
+    # Act and assert on callback function with failure
+    callback_function(False)
+    mock_logger.info.assert_called_with(ANY, delivery_tag)
+    channel.basic_nack.assert_called_once_with(delivery_tag, requeue=False)
 
 
 def test_stop_consuming_calls_the_channel_method(subject, mock_logger):
