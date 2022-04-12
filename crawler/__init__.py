@@ -10,9 +10,10 @@ from flask_apscheduler import APScheduler
 from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
 from crawler.processing.rabbit_message_processor import RabbitMessageProcessor
 from crawler.rabbit.background_consumer import BackgroundConsumer
+from crawler.rabbit.basic_publisher import BasicPublisher
+from crawler.rabbit.schema_registry import SchemaRegistry
 from crawler.types import RabbitServerDetails
 
-rabbit_message_processor = RabbitMessageProcessor()
 scheduler = APScheduler()
 
 
@@ -52,6 +53,28 @@ def setup_routes(app):
         app.register_blueprint(v1_routes.bp, url_prefix="/v1")
 
 
+def rabbit_server_details(app):
+    return RabbitServerDetails(
+        uses_ssl=app.config["RABBITMQ_SSL"],
+        host=app.config["RABBITMQ_HOST"],
+        port=app.config["RABBITMQ_PORT"],
+        username=app.config["RABBITMQ_USERNAME"],
+        password=app.config["RABBITMQ_PASSWORD"],
+        vhost=app.config["RABBITMQ_VHOST"],
+    )
+
+
+def schema_registry(app):
+    redpanda_url = app.config["REDPANDA_BASE_URI"]
+    redpanda_api_key = app.config["REDPANDA_API_KEY"]
+    return SchemaRegistry(redpanda_url, redpanda_api_key)
+
+
+def rabbit_message_processor(app):
+    basic_publisher = BasicPublisher(rabbit_server_details(app))
+    return RabbitMessageProcessor(schema_registry(app), basic_publisher, app.config)
+
+
 def start_rabbit_consumer(app):
     # Flask in debug mode spawns a child process so that it can restart the process each time your code changes,
     # the new child process initializes and starts a new consumer causing more than one to exist.
@@ -60,14 +83,6 @@ def start_rabbit_consumer(app):
     ]:
         return
 
-    rabbit_server = RabbitServerDetails(
-        uses_ssl=app.config["RABBITMQ_SSL"],
-        host=app.config["RABBITMQ_HOST"],
-        port=app.config["RABBITMQ_PORT"],
-        username=app.config["RABBITMQ_USERNAME"],
-        password=app.config["RABBITMQ_PASSWORD"],
-        vhost=app.config["RABBITMQ_VHOST"],
-    )
-    rabbit_queue = app.config["RABBITMQ_CRUD_QUEUE"]
-    rabbit_message_processor.config = app.config
-    BackgroundConsumer(rabbit_server, rabbit_queue, rabbit_message_processor.process_message).start()
+    rabbit_crud_queue = app.config["RABBITMQ_CRUD_QUEUE"]
+    message_processor = rabbit_message_processor(app)
+    BackgroundConsumer(rabbit_server_details(app), rabbit_crud_queue, message_processor.process_message).start()

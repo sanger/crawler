@@ -83,6 +83,12 @@ RABBITMQ_VHOST = "heron"
 RABBITMQ_CRUD_QUEUE = "heron.crud-operations"
 
 ###
+# RedPanda details
+###
+REDPANDA_BASE_URI = f"http://{os.environ.get('LOCALHOST', '127.0.0.1')}:8081"
+REDPANDA_API_KEY = ""
+
+###
 # SFTP details
 ###
 SFTP_UPLOAD = False  # upload files to SFTP server
