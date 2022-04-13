@@ -60,7 +60,7 @@ class RabbitMessageProcessor:
 
         return Headers(subject, version)
 
-    def _publish_feedback(self, message_uuid="", errors=[]):
+    def _publish_feedback(self, message_uuid="", errors=()):
         message = CreateFeedbackMessage(
             sourceMessageUuid=message_uuid,
             countOfTotalSamples=0,
