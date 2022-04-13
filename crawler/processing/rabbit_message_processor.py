@@ -1,4 +1,5 @@
 import logging
+from collections import namedtuple
 
 from crawler.constants import (
     RABBITMQ_HEADER_KEY_SUBJECT,
@@ -13,6 +14,8 @@ MESSAGE_SUBJECTS = (RABBITMQ_SUBJECT_CREATE_PLATE_MAP, RABBITMQ_SUBJECT_CREATE_P
 
 LOGGER = logging.getLogger(__name__)
 
+Headers = namedtuple("Headers", ["subject", "version"])
+
 
 class RabbitMessageProcessor:
     def __init__(self, schema_registry, basic_publisher, config):
@@ -22,8 +25,8 @@ class RabbitMessageProcessor:
 
     def process_message(self, headers, body, acknowledge):
         try:
-            (subject, version) = RabbitMessageProcessor._parse_headers(headers)
-            LOGGER.info("Subject: %s, Version: %s", subject, version)
+            parsed_headers = RabbitMessageProcessor._parse_headers(headers)
+            LOGGER.info("Subject: %s, Version: %s", parsed_headers.subject, parsed_headers.version)
             acknowledge(True)
             self._publish_feedback_message()
         except RabbitProcessingError as ex:
@@ -46,7 +49,7 @@ class RabbitMessageProcessor:
         except KeyError as ex:
             raise RabbitProcessingError(f"Message headers did not include required key {str(ex)}.")
 
-        return (subject, version)
+        return Headers(subject, version)
 
     def _publish_feedback_message(self, *errors):
         pass
