@@ -22,7 +22,7 @@ class BasicPublisher:
             ssl_context = ssl.create_default_context(cafile=cafile)
             self._connection_params.ssl_options = SSLOptions(ssl_context)
 
-    def send_message(self, exchange, routing_key, body, subject, schema_version):
+    def publish_message(self, exchange, routing_key, body, subject, schema_version):
         properties = BasicProperties(
             headers={
                 RABBITMQ_HEADER_KEY_SUBJECT: subject,

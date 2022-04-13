@@ -1,9 +1,15 @@
 import json
 from io import StringIO
+from typing import Any, List, NamedTuple
 
 from fastavro import json_reader, json_writer, parse_schema
 
 from crawler.rabbit.schema_registry import RESPONSE_KEY_SCHEMA, RESPONSE_KEY_VERSION
+
+
+class EncodedMessage(NamedTuple):
+    body: bytes
+    version: str
 
 
 class AvroEncoder:
@@ -18,24 +24,20 @@ class AvroEncoder:
             return self._schema_registry.get_schema(self._subject, version)
 
     def _schema(self, schema_response):
-        try:
-            schema_obj = json.loads(schema_response[RESPONSE_KEY_SCHEMA])
-        except KeyError as ex:
-            raise ValueError("No valid schema returned from schema registry: %s", ex)
-
+        schema_obj = json.loads(schema_response[RESPONSE_KEY_SCHEMA])
         return parse_schema(schema_obj)
 
     def _schema_version(self, schema_response):
         return schema_response[RESPONSE_KEY_VERSION]
 
-    def encode(self, object, version=None):
+    def encode(self, records: List, version: str = None) -> EncodedMessage:
         schema_response = self._schema_response(version)
         string_writer = StringIO()
-        json_writer(string_writer, self._schema(schema_response), object)
+        json_writer(string_writer, self._schema(schema_response), records)
 
-        return (string_writer.getvalue(), self._schema_version(schema_response))
+        return EncodedMessage(body=string_writer.getvalue().encode(), version=self._schema_version(schema_response))
 
-    def decode(self, message, version):
+    def decode(self, message: bytes, version: str) -> Any:
         schema_response = self._schema_response(version)
         string_reader = StringIO(message.decode("utf-8"))
 
