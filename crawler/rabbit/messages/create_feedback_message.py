@@ -1,10 +1,12 @@
 from typing import List, TypedDict
 
+from typing_extensions import NotRequired
+
 
 class CreateFeedbackError(TypedDict):
     origin: str
-    sampleUuid: str
-    field: str
+    sampleUuid: NotRequired[str]
+    field: NotRequired[str]
     description: str
 
 

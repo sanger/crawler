@@ -42,15 +42,15 @@ class CherrypickerDataError(Error):
 
 
 class RabbitProcessingError(Error):
-    """Raised during intial processing of a RabbitMQ message, before the message has been deserialised."""
+    """Raised during processing of a RabbitMQ message."""
 
     def __init__(self, message, transient=False):
         """Constructs a new processing error message.
 
         Arguments:
             message {str} -- A message to log and possibly show to the user/caller.
-            recoverable {bool} -- True if this error is transient, or
-                                  False if the message will always cause this error.
+            transient {bool} -- True if this error is transient, or
+                                False if the message will always cause this error.
         """
         self.message = message
         self.is_transient = transient
