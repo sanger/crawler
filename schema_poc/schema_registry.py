@@ -7,7 +7,7 @@ RESPONSE_KEY_SCHEMA = "schema"
 
 
 class SchemaRegistry:
-    def __init__(self, base_uri: str, api_key: str):
+    def __init__(self, base_uri: str, api_key: str = ""):
         self._base_uri = base_uri
         self._api_key = api_key
 
