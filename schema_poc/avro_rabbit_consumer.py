@@ -3,7 +3,7 @@ from io import StringIO
 
 from constants import MESSAGE_PROPERTY_SUBJECT, MESSAGE_PROPERTY_VERSION
 from fastavro import json_reader, parse_schema
-from pika import BlockingConnection, ConnectionParameters, PlainCredentials, SSLOptions
+from pika import BlockingConnection, ConnectionParameters, PlainCredentials
 from schema_registry import RESPONSE_KEY_SCHEMA, SchemaRegistry
 
 

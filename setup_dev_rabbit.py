@@ -68,7 +68,7 @@ print_command_output(
     ]
 )
 
-print(f"Declaring CRUD binding")
+print("Declaring CRUD binding")
 print_command_output(
     [
         "declare",
@@ -100,7 +100,7 @@ print_command_output(
     ]
 )
 
-print(f"Declaring feedback binding")
+print("Declaring feedback binding")
 print_command_output(
     [
         "declare",
