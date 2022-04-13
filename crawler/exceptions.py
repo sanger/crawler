@@ -34,8 +34,23 @@ class DartStateError(Error):
             return f"DartStateError: {default_message}"
 
 
-class CherrypickerDataError(Exception):
+class CherrypickerDataError(Error):
     """Raised during cherrypicker test data creation. The message is assumed to be user friendly."""
 
     def __init__(self, message):
         self.message = message
+
+
+class RabbitProcessingError(Error):
+    """Raised during intial processing of a RabbitMQ message, before the message has been deserialised."""
+
+    def __init__(self, message, transient=False):
+        """Constructs a new processing error message.
+
+        Arguments:
+            message {str} -- A message to log and possibly show to the user/caller.
+            recoverable {bool} -- True if this error is transient, or
+                                  False if the message will always cause this error.
+        """
+        self.message = message
+        self.is_transient = transient
