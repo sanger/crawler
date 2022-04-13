@@ -12,8 +12,16 @@ USERNAME = "admin"
 PASSWORD = "development"
 
 VHOST = "heron"
+EXCHANGE_TYPE = "topic"
 QUEUE_TYPE = "classic"
+
+CRUD_EXCHANGE = "pam.heron"
 CRUD_QUEUE = "heron.crud-operations"
+CRUD_ROUTING_KEY = "crud.#"
+
+FEEDBACK_EXCHANGE = "psd.heron"
+FEEDBACK_QUEUE = "heron.feedback"
+FEEDBACK_ROUTING_KEY = "feedback.#"
 
 
 def print_command_output(specific_command):
@@ -39,6 +47,16 @@ print()
 print(f"Declaring vhost '{VHOST}'")
 print_command_output(["declare", "vhost", f"name={VHOST}"])
 
+print(f"Declaring CRUD exchange '{CRUD_EXCHANGE}'")
+print_command_output(
+    [
+        "declare",
+        "exchange",
+        f"name={CRUD_EXCHANGE}",
+        f"type={EXCHANGE_TYPE}",
+    ]
+)
+
 print(f"Declaring CRUD queue '{CRUD_QUEUE}'")
 print_command_output(
     [
@@ -47,5 +65,48 @@ print_command_output(
         f"name={CRUD_QUEUE}",
         f"queue_type={QUEUE_TYPE}",
         f'arguments={json.dumps({"x-queue-type": QUEUE_TYPE})}',
+    ]
+)
+
+print(f"Declaring CRUD binding")
+print_command_output(
+    [
+        "declare",
+        "binding",
+        f"source={CRUD_EXCHANGE}",
+        f"destination={CRUD_QUEUE}",
+        f"routing_key={CRUD_ROUTING_KEY}",
+    ]
+)
+
+print(f"Declaring feedback exchange '{FEEDBACK_EXCHANGE}'")
+print_command_output(
+    [
+        "declare",
+        "exchange",
+        f"name={FEEDBACK_EXCHANGE}",
+        f"type={EXCHANGE_TYPE}",
+    ]
+)
+
+print(f"Declaring feedback queue '{FEEDBACK_QUEUE}'")
+print_command_output(
+    [
+        "declare",
+        "queue",
+        f"name={FEEDBACK_QUEUE}",
+        f"queue_type={QUEUE_TYPE}",
+        f'arguments={json.dumps({"x-queue-type": QUEUE_TYPE})}',
+    ]
+)
+
+print(f"Declaring feedback binding")
+print_command_output(
+    [
+        "declare",
+        "binding",
+        f"source={FEEDBACK_EXCHANGE}",
+        f"destination={FEEDBACK_QUEUE}",
+        f"routing_key={FEEDBACK_ROUTING_KEY}",
     ]
 )
