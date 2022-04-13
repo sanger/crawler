@@ -258,10 +258,10 @@ PLATE_EVENT_DESTINATION_CREATED: Final[str] = "lh_beckman_cp_destination_created
 ###
 RABBITMQ_HEADER_KEY_SUBJECT = "subject"
 RABBITMQ_HEADER_KEY_VERSION = "version"
-RABBITMQ_SUBJECT_CREATE_PLATE_MAP = "create-plate-map"
-RABBITMQ_SUBJECT_CREATE_PLATE_MAP_FEEDBACK = "create-plate-map-feedback"
+RABBITMQ_SUBJECT_CREATE_PLATE = "create-plate-map"
+RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK = "create-plate-map-feedback"
 RABBITMQ_FEEDBACK_EXCHANGE_NAME = "psd.heron"
-RABBITMQ_ROUTING_KEY_CREATED_PLATE_FEEDBACK = "feedback.created.plate"
+RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK = "feedback.created.plate"
 
 ###
 # Flask endpoints

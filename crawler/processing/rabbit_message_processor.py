@@ -5,15 +5,15 @@ from crawler.constants import (
     RABBITMQ_FEEDBACK_EXCHANGE_NAME,
     RABBITMQ_HEADER_KEY_SUBJECT,
     RABBITMQ_HEADER_KEY_VERSION,
-    RABBITMQ_ROUTING_KEY_CREATED_PLATE_FEEDBACK,
-    RABBITMQ_SUBJECT_CREATE_PLATE_MAP,
-    RABBITMQ_SUBJECT_CREATE_PLATE_MAP_FEEDBACK,
+    RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
+    RABBITMQ_SUBJECT_CREATE_PLATE,
+    RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
 )
 from crawler.exceptions import RabbitProcessingError
 from crawler.rabbit.avro_encoder import AvroEncoder
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError, CreateFeedbackMessage
 
-MESSAGE_SUBJECTS = (RABBITMQ_SUBJECT_CREATE_PLATE_MAP, RABBITMQ_SUBJECT_CREATE_PLATE_MAP_FEEDBACK)
+MESSAGE_SUBJECTS = (RABBITMQ_SUBJECT_CREATE_PLATE, RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -68,11 +68,11 @@ class RabbitMessageProcessor:
             operationWasErrorFree=len(errors) == 0,
             errors=errors,
         )
-        encoded_message = self._encoders[RABBITMQ_SUBJECT_CREATE_PLATE_MAP_FEEDBACK].encode([message])
+        encoded_message = self._encoders[RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK].encode([message])
         self._basic_publisher.publish_message(
             RABBITMQ_FEEDBACK_EXCHANGE_NAME,
-            RABBITMQ_ROUTING_KEY_CREATED_PLATE_FEEDBACK,
+            RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
             encoded_message.body,
-            RABBITMQ_SUBJECT_CREATE_PLATE_MAP_FEEDBACK,
+            RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
             encoded_message.version,
         )
