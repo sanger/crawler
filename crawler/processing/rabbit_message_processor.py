@@ -1,26 +1,19 @@
 import logging
-from typing import NamedTuple
 
 from crawler.config.defaults import RABBITMQ_FEEDBACK_EXCHANGE
 from crawler.constants import (
-    RABBITMQ_HEADER_KEY_SUBJECT,
-    RABBITMQ_HEADER_KEY_VERSION,
     RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
     RABBITMQ_SUBJECT_CREATE_PLATE,
     RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
 )
 from crawler.exceptions import RabbitProcessingError
+from crawler.processing.rabbit_message import RabbitMessage
 from crawler.rabbit.avro_encoder import AvroEncoder
-from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError, CreateFeedbackMessage
+from crawler.rabbit.messages.create_feedback_message import CreateFeedbackMessage
 
 MESSAGE_SUBJECTS = (RABBITMQ_SUBJECT_CREATE_PLATE, RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK)
 
 LOGGER = logging.getLogger(__name__)
-
-
-class Headers(NamedTuple):
-    subject: str
-    version: str
 
 
 class RabbitMessageProcessor:
@@ -29,38 +22,35 @@ class RabbitMessageProcessor:
         self._basic_publisher = basic_publisher
         self._config = config
 
-    def process_message(self, headers, body, acknowledge):
+    def process_message(self, headers, body):
+        message = RabbitMessage(headers, body)
         try:
-            _ = RabbitMessageProcessor._parse_headers(headers)
-            self._publish_feedback(message_uuid="UUID not yet parsed")
-            acknowledge(True)
-        except RabbitProcessingError as ex:
-            LOGGER.error("RabbitMQ message failed to process correctly: %s", ex.message)
-            if ex.is_transient:
-                raise  # Restart the consumer to try the message again -- possibly need to add a delay somehow.
-            else:
-                # Reject the message and move on.
-                error = CreateFeedbackError(origin="parsing", description=ex.message)
-                self._publish_feedback(errors=[error])
-                acknowledge(False)
+            message.decode(self._encoders[message.subject])
         except Exception as ex:
-            description = f"Unexpected error while processing RabbitMQ message: {type(ex)} {str(ex)}"
-            LOGGER.error(description)
+            LOGGER.error(f"Unrecoverable error while decoding RabbitMQ message: {type(ex)} {str(ex)}")
+            return False  # Send the message to dead letters.
 
-            error = CreateFeedbackError(origin="parsing", description=description)
-            self._publish_feedback(errors=[error])
+        if not message.contains_single_message:
+            return False  # Send the message to dead letters.
 
-    @staticmethod
-    def _parse_headers(headers):
         try:
-            subject = headers[RABBITMQ_HEADER_KEY_SUBJECT]
-            version = headers[RABBITMQ_HEADER_KEY_VERSION]
-        except KeyError as ex:
-            raise RabbitProcessingError(f"Message headers did not include required key {str(ex)}.")
+            # At this point we can definitely read our message and start publishing feedback.
+            LOGGER.debug(message.message)
+        except RabbitProcessingError as ex:
+            LOGGER.error(f"Error while processing message: {ex.message}")
+            # TODO: Publish feedback about errors recorded in the message object.
+            if ex.is_transient:
+                raise  # Cause the consumer to restart and try this message again.  Ideally we will delay the consumer.
+            else:
+                return False  # Send the message to dead letters.
+        except Exception as ex:
+            LOGGER.error(f"Unexpected error type while processing RabbitMQ message: {type(ex)} {str(ex)}")
+            # TODO: Publish feedback about the unexpected error condition.
+            return False  # Send the message to dead letters
 
-        return Headers(subject, version)
+        return True  # For now acknowledge anything we successfully decode
 
-    def _publish_feedback(self, message_uuid="", errors=()):
+    def _publish_feedback(self, message_uuid, errors=()):
         message = CreateFeedbackMessage(
             sourceMessageUuid=message_uuid,
             countOfTotalSamples=0,

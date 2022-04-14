@@ -260,17 +260,14 @@ class AsyncConsumer(object):
         :param bytes body: The message body
         """
         LOGGER.info("Received message # %s from %s: %s", basic_deliver.delivery_tag, properties.app_id, body)
+        delivery_tag = basic_deliver.delivery_tag
 
-        def acknowledge(success):
-            delivery_tag = basic_deliver.delivery_tag
-            if success:
-                LOGGER.info("Acknowledging message %s", delivery_tag)
-                channel.basic_ack(delivery_tag)
-            else:
-                LOGGER.info("Rejecting message %s", delivery_tag)
-                channel.basic_nack(delivery_tag, requeue=False)
-
-        self._process_message(properties.headers, body, acknowledge)
+        if self._process_message(properties.headers, body):
+            LOGGER.info("Acknowledging message %s", delivery_tag)
+            channel.basic_ack(delivery_tag)
+        else:
+            LOGGER.info("Rejecting message %s", delivery_tag)
+            channel.basic_nack(delivery_tag, requeue=False)
 
     def stop_consuming(self):
         """Tell RabbitMQ that you would like to stop consuming by sending the
