@@ -14,7 +14,12 @@ PASSWORD = "development"
 VHOST = "heron"
 EXCHANGE_TYPE = "topic"
 AE_EXCHANGE_TYPE = "fanout"
+DL_EXCHANGE_TYPE = "topic"
 QUEUE_TYPE = "classic"
+
+DL_EXCHANGE = "heron.dead-letters"
+CRUD_DL_QUEUE = "heron.crud-operations.dead-letters"
+FEEDBACK_DL_QUEUE = "heron.feedback.dead-letters"
 
 PAM_AE_EXCHANGE = "pam.heron.unrouted"
 PAM_UNROUTED_QUEUE = "pam.heron.unrouted"
@@ -53,6 +58,60 @@ print()
 
 print(f"Declaring vhost '{VHOST}'")
 print_command_output(["declare", "vhost", f"name={VHOST}"])
+
+print(f"Declaring dead letter exchange '{DL_EXCHANGE}'")
+print_command_output(
+    [
+        "declare",
+        "exchange",
+        f"name={DL_EXCHANGE}",
+        f"type={DL_EXCHANGE_TYPE}",
+    ]
+)
+
+print(f"Declaring CRUD dead letters queue '{CRUD_DL_QUEUE}'")
+print_command_output(
+    [
+        "declare",
+        "queue",
+        f"name={CRUD_DL_QUEUE}",
+        f"queue_type={QUEUE_TYPE}",
+        f'arguments={json.dumps({"x-queue-type": QUEUE_TYPE})}',
+    ]
+)
+
+print("Declaring CRUD dead letters binding")
+print_command_output(
+    [
+        "declare",
+        "binding",
+        f"source={DL_EXCHANGE}",
+        f"destination={CRUD_DL_QUEUE}",
+        f"routing_key={CRUD_ROUTING_KEY}",
+    ]
+)
+
+print(f"Declaring feedback dead letters queue '{FEEDBACK_DL_QUEUE}'")
+print_command_output(
+    [
+        "declare",
+        "queue",
+        f"name={FEEDBACK_DL_QUEUE}",
+        f"queue_type={QUEUE_TYPE}",
+        f'arguments={json.dumps({"x-queue-type": QUEUE_TYPE})}',
+    ]
+)
+
+print("Declaring feedback dead letters binding")
+print_command_output(
+    [
+        "declare",
+        "binding",
+        f"source={DL_EXCHANGE}",
+        f"destination={FEEDBACK_DL_QUEUE}",
+        f"routing_key={FEEDBACK_ROUTING_KEY}",
+    ]
+)
 
 print(f"Declaring PAM alternate exchange '{PAM_AE_EXCHANGE}'")
 print_command_output(
@@ -103,7 +162,7 @@ print_command_output(
         "queue",
         f"name={CRUD_QUEUE}",
         f"queue_type={QUEUE_TYPE}",
-        f'arguments={json.dumps({"x-queue-type": QUEUE_TYPE})}',
+        f'arguments={json.dumps({"x-queue-type": QUEUE_TYPE, "x-dead-letter-exchange": DL_EXCHANGE})}',
     ]
 )
 
@@ -167,7 +226,7 @@ print_command_output(
         "queue",
         f"name={FEEDBACK_QUEUE}",
         f"queue_type={QUEUE_TYPE}",
-        f'arguments={json.dumps({"x-queue-type": QUEUE_TYPE})}',
+        f'arguments={json.dumps({"x-queue-type": QUEUE_TYPE, "x-dead-letter-exchange": DL_EXCHANGE})}',
     ]
 )
 
