@@ -13,13 +13,20 @@ PASSWORD = "development"
 
 VHOST = "heron"
 EXCHANGE_TYPE = "topic"
+AE_EXCHANGE_TYPE = "fanout"
 QUEUE_TYPE = "classic"
 
-CRUD_EXCHANGE = "pam.heron"
+PAM_AE_EXCHANGE = "pam.heron.unrouted"
+PAM_UNROUTED_QUEUE = "pam.heron.unrouted"
+
+PAM_EXCHANGE = "pam.heron"
 CRUD_QUEUE = "heron.crud-operations"
 CRUD_ROUTING_KEY = "crud.#"
 
-FEEDBACK_EXCHANGE = "psd.heron"
+PSD_AE_EXCHANGE = "psd.heron.unrouted"
+PSD_UNROUTED_QUEUE = "psd.heron.unrouted"
+
+PSD_EXCHANGE = "psd.heron"
 FEEDBACK_QUEUE = "heron.feedback"
 FEEDBACK_ROUTING_KEY = "feedback.#"
 
@@ -47,13 +54,45 @@ print()
 print(f"Declaring vhost '{VHOST}'")
 print_command_output(["declare", "vhost", f"name={VHOST}"])
 
-print(f"Declaring CRUD exchange '{CRUD_EXCHANGE}'")
+print(f"Declaring PAM alternate exchange '{PAM_AE_EXCHANGE}'")
 print_command_output(
     [
         "declare",
         "exchange",
-        f"name={CRUD_EXCHANGE}",
+        f"name={PAM_AE_EXCHANGE}",
+        f"type={AE_EXCHANGE_TYPE}",
+    ]
+)
+
+print(f"Declaring PAM unrouted queue '{PAM_UNROUTED_QUEUE}'")
+print_command_output(
+    [
+        "declare",
+        "queue",
+        f"name={PAM_UNROUTED_QUEUE}",
+        f"queue_type={QUEUE_TYPE}",
+        f'arguments={json.dumps({"x-queue-type": QUEUE_TYPE})}',
+    ]
+)
+
+print("Declaring PAM unrouted binding")
+print_command_output(
+    [
+        "declare",
+        "binding",
+        f"source={PAM_AE_EXCHANGE}",
+        f"destination={PAM_UNROUTED_QUEUE}",
+    ]
+)
+
+print(f"Declaring PAM exchange '{PAM_EXCHANGE}'")
+print_command_output(
+    [
+        "declare",
+        "exchange",
+        f"name={PAM_EXCHANGE}",
         f"type={EXCHANGE_TYPE}",
+        f'arguments={json.dumps({"alternate-exchange": PAM_AE_EXCHANGE})}',
     ]
 )
 
@@ -73,19 +112,51 @@ print_command_output(
     [
         "declare",
         "binding",
-        f"source={CRUD_EXCHANGE}",
+        f"source={PAM_EXCHANGE}",
         f"destination={CRUD_QUEUE}",
         f"routing_key={CRUD_ROUTING_KEY}",
     ]
 )
 
-print(f"Declaring feedback exchange '{FEEDBACK_EXCHANGE}'")
+print(f"Declaring PSD alternate exchange '{PSD_AE_EXCHANGE}'")
 print_command_output(
     [
         "declare",
         "exchange",
-        f"name={FEEDBACK_EXCHANGE}",
+        f"name={PSD_AE_EXCHANGE}",
+        f"type={AE_EXCHANGE_TYPE}",
+    ]
+)
+
+print(f"Declaring PSD unrouted queue '{PSD_UNROUTED_QUEUE}'")
+print_command_output(
+    [
+        "declare",
+        "queue",
+        f"name={PSD_UNROUTED_QUEUE}",
+        f"queue_type={QUEUE_TYPE}",
+        f'arguments={json.dumps({"x-queue-type": QUEUE_TYPE})}',
+    ]
+)
+
+print("Declaring PAM unrouted binding")
+print_command_output(
+    [
+        "declare",
+        "binding",
+        f"source={PSD_AE_EXCHANGE}",
+        f"destination={PSD_UNROUTED_QUEUE}",
+    ]
+)
+
+print(f"Declaring feedback exchange '{PSD_EXCHANGE}'")
+print_command_output(
+    [
+        "declare",
+        "exchange",
+        f"name={PSD_EXCHANGE}",
         f"type={EXCHANGE_TYPE}",
+        f'arguments={json.dumps({"alternate-exchange": PSD_AE_EXCHANGE})}',
     ]
 )
 
@@ -105,7 +176,7 @@ print_command_output(
     [
         "declare",
         "binding",
-        f"source={FEEDBACK_EXCHANGE}",
+        f"source={PSD_EXCHANGE}",
         f"destination={FEEDBACK_QUEUE}",
         f"routing_key={FEEDBACK_ROUTING_KEY}",
     ]
