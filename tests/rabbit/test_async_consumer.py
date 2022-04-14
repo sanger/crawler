@@ -249,8 +249,12 @@ def test_on_consumer_cancelled_calls_channel_close(subject, mock_logger):
     subject._channel.close.assert_called_once()
 
 
-def test_on_message_passes_relevant_info_to_process_message(subject, mock_logger):
-    subject._process_message = MagicMock()
+@pytest.mark.parametrize(
+    "return_value,ack_calls,nack_calls",
+    [[False, [], [call("Test tag", requeue=False)]], [True, [call("Test tag")], []]],
+)
+def test_on_message_passes_relevant_info_to_process_message(subject, mock_logger, return_value, ack_calls, nack_calls):
+    subject._process_message = Mock(return_value=return_value)
 
     # Arrange arguments
     channel = MagicMock()
@@ -267,23 +271,15 @@ def test_on_message_passes_relevant_info_to_process_message(subject, mock_logger
 
     body = "A message body"
 
-    # Act on main function
+    # Act
     subject.on_message(channel, basic_deliver, properties, body)
 
-    # Assert main function
-    mock_logger.info.assert_called_once_with(ANY, delivery_tag, app_id, body)
-    subject._process_message.assert_called_once_with(headers, body, ANY)
-    callback_function = subject._process_message.call_args[0][2]
+    # Assert
+    mock_logger.info.assert_has_calls([call(ANY, delivery_tag, app_id, body), call(ANY, delivery_tag)])
+    subject._process_message.assert_called_once_with(headers, body)
 
-    # Act and assert on callback function with success
-    callback_function(True)
-    mock_logger.info.assert_called_with(ANY, delivery_tag)
-    channel.basic_ack.assert_called_once_with(delivery_tag)
-
-    # Act and assert on callback function with failure
-    callback_function(False)
-    mock_logger.info.assert_called_with(ANY, delivery_tag)
-    channel.basic_nack.assert_called_once_with(delivery_tag, requeue=False)
+    channel.basic_ack.assert_has_calls(ack_calls)
+    channel.basic_nack.assert_has_calls(nack_calls)
 
 
 def test_stop_consuming_calls_the_channel_method(subject, mock_logger):
