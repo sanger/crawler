@@ -1,8 +1,8 @@
 import logging
 from typing import NamedTuple
 
+from crawler.config.defaults import RABBITMQ_FEEDBACK_EXCHANGE
 from crawler.constants import (
-    RABBITMQ_FEEDBACK_EXCHANGE_NAME,
     RABBITMQ_HEADER_KEY_SUBJECT,
     RABBITMQ_HEADER_KEY_VERSION,
     RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
@@ -70,7 +70,7 @@ class RabbitMessageProcessor:
         )
         encoded_message = self._encoders[RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK].encode([message])
         self._basic_publisher.publish_message(
-            RABBITMQ_FEEDBACK_EXCHANGE_NAME,
+            RABBITMQ_FEEDBACK_EXCHANGE,
             RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
             encoded_message.body,
             RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,

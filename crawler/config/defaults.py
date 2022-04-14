@@ -81,6 +81,7 @@ RABBITMQ_USERNAME = "admin"
 RABBITMQ_PASSWORD = "development"
 RABBITMQ_VHOST = "heron"
 RABBITMQ_CRUD_QUEUE = "heron.crud-operations"
+RABBITMQ_FEEDBACK_EXCHANGE = "psd.heron"
 
 ###
 # RedPanda details
