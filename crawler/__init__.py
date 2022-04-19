@@ -57,4 +57,4 @@ def start_rabbit_consumer(app):
     ]:
         return
 
-    RabbitStack(app.config).bring_stack_up()
+    RabbitStack().bring_stack_up()

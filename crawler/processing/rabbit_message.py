@@ -5,6 +5,7 @@ class RabbitMessage:
     def __init__(self, headers, encoded_body):
         self.headers = headers
         self.encoded_body = encoded_body
+        self.errors = []
 
         self._subject = None
         self._schema_version = None
@@ -34,3 +35,6 @@ class RabbitMessage:
     def message(self):
         if self._decoded_list:
             return self._decoded_list[0]
+
+    def add_error(self, error):
+        self.errors.append(error)
