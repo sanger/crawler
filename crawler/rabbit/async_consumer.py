@@ -31,8 +31,9 @@ class AsyncConsumer(object):
         :param RabbitServerDetails server_details: The RabbitMQ server connection details.
         :param str queue: The AMQP queue to consume from.
         :param func process_message: A function to call with details of any messages consumed from the queue.
-                                     This function will be passed the message headers, message body and a function
-                                     to call to acknowledge that the message was processed.
+                                     This function will be passed the message headers and the message body and should
+                                     return a boolean indicating whether the message was processed successfully (True)
+                                     or failed to be processed and should be dead-lettered (False).
         """
         self.should_reconnect = False
         self.was_consuming = False
