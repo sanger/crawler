@@ -18,7 +18,7 @@ def mock_logger():
 
 @pytest.fixture
 def subject():
-    return AsyncConsumer(DEFAULT_SERVER_DETAILS, "queue")
+    return AsyncConsumer(DEFAULT_SERVER_DETAILS, "queue", Mock())
 
 
 @pytest.mark.parametrize("uses_ssl", [True, False])
@@ -26,7 +26,7 @@ def test_connect_provides_correct_parameters(mock_logger, uses_ssl):
     server_details = RabbitServerDetails(
         uses_ssl=uses_ssl, host="host", port=5672, username="username", password="password", vhost="vhost"
     )
-    subject = AsyncConsumer(server_details, "queue")
+    subject = AsyncConsumer(server_details, "queue", Mock())
     select_connection = subject.connect()
     select_connection.close()  # Don't want async callbacks that will log during other tests
 
@@ -249,25 +249,37 @@ def test_on_consumer_cancelled_calls_channel_close(subject, mock_logger):
     subject._channel.close.assert_called_once()
 
 
-###
-# No tests for on_message() yet because it will be updated with callbacks!
-###
+@pytest.mark.parametrize(
+    "return_value,ack_calls,nack_calls",
+    [[False, [], [call("Test tag", requeue=False)]], [True, [call("Test tag")], []]],
+)
+def test_on_message_passes_relevant_info_to_process_message(subject, mock_logger, return_value, ack_calls, nack_calls):
+    subject._process_message = Mock(return_value=return_value)
 
+    # Arrange arguments
+    channel = MagicMock()
 
-def test_acknowledge_message_calls_the_channel_method(subject, mock_logger):
-    subject._channel = MagicMock()
-    delivery_tag = Mock()
-    subject.acknowledge_message(delivery_tag)
+    delivery_tag = "Test tag"
+    basic_deliver = MagicMock()
+    basic_deliver.delivery_tag = delivery_tag
 
-    subject._channel.basic_ack.assert_called_once_with(delivery_tag)
-    mock_logger.info.assert_called_once_with(ANY, delivery_tag)
+    app_id = "Test app ID"
+    headers = {"header1": "value1"}
+    properties = MagicMock()
+    properties.app_id = app_id
+    properties.headers = headers
 
+    body = "A message body"
 
-def test_acknowledge_message_logs_when_no_channel(subject, mock_logger):
-    subject._channel = None
-    subject.acknowledge_message(Mock())
+    # Act
+    subject.on_message(channel, basic_deliver, properties, body)
 
-    mock_logger.error.assert_called_once()
+    # Assert
+    mock_logger.info.assert_has_calls([call(ANY, delivery_tag, app_id, body), call(ANY, delivery_tag)])
+    subject._process_message.assert_called_once_with(headers, body)
+
+    channel.basic_ack.assert_has_calls(ack_calls)
+    channel.basic_nack.assert_has_calls(nack_calls)
 
 
 def test_stop_consuming_calls_the_channel_method(subject, mock_logger):

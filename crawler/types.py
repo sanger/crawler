@@ -84,6 +84,20 @@ class Config(ModuleType):
     DART_DB_DBNAME: str
     DART_DB_DRIVER: str
 
+    # RabbitMQ
+    RABBITMQ_HOST: str
+    RABBITMQ_SSL: bool
+    RABBITMQ_PORT: int
+    RABBITMQ_USERNAME: str
+    RABBITMQ_PASSWORD: str
+    RABBITMQ_VHOST: str
+    RABBITMQ_CRUD_QUEUE: str
+    RABBITMQ_FEEDBACK_EXCHANGE: str
+
+    # RedPanda
+    REDPANDA_BASE_URI: str
+    REDPANDA_API_KEY: str
+
     # SFTP
     SFTP_HOST: str
     SFTP_PORT: int

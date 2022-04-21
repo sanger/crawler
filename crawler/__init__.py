@@ -8,8 +8,7 @@ import werkzeug
 from flask_apscheduler import APScheduler
 
 from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
-from crawler.rabbit.background_consumer import BackgroundConsumer
-from crawler.types import RabbitServerDetails
+from crawler.rabbit.rabbit_stack import RabbitStack
 
 scheduler = APScheduler()
 
@@ -58,13 +57,4 @@ def start_rabbit_consumer(app):
     ]:
         return
 
-    rabbit_server = RabbitServerDetails(
-        uses_ssl=app.config["RABBITMQ_SSL"],
-        host=app.config["RABBITMQ_HOST"],
-        port=app.config["RABBITMQ_PORT"],
-        username=app.config["RABBITMQ_USERNAME"],
-        password=app.config["RABBITMQ_PASSWORD"],
-        vhost=app.config["RABBITMQ_VHOST"],
-    )
-    rabbit_queue = app.config["RABBITMQ_CRUD_QUEUE"]
-    BackgroundConsumer(rabbit_server, rabbit_queue).start()
+    RabbitStack().bring_stack_up()

@@ -1,10 +1,9 @@
 import json
 from io import StringIO
-from ssl import create_default_context
 
 from constants import MESSAGE_PROPERTY_SUBJECT, MESSAGE_PROPERTY_VERSION
 from fastavro import json_reader, parse_schema
-from pika import BlockingConnection, ConnectionParameters, PlainCredentials, SSLOptions
+from pika import BlockingConnection, ConnectionParameters, PlainCredentials
 from schema_registry import RESPONSE_KEY_SCHEMA, SchemaRegistry
 
 
@@ -29,9 +28,8 @@ class AvroRabbitConsumer:
 
     def receive_messages(self, vhost, queue, username_password):
         credentials = PlainCredentials(username_password[0], username_password[1])
-        ssl_options = SSLOptions(create_default_context())
         connection_params = ConnectionParameters(
-            host=self._host, port=self._port, virtual_host=vhost, credentials=credentials, ssl_options=ssl_options
+            host=self._host, port=self._port, virtual_host=vhost, credentials=credentials
         )
         connection = BlockingConnection(connection_params)
         channel = connection.channel()

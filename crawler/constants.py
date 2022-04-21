@@ -253,6 +253,25 @@ EVENT_CHERRYPICK_LAYOUT_SET: Final[str] = "cherrypick_layout_set"
 # As per Beckman events detailed in https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/Cherrypicking+Events
 PLATE_EVENT_DESTINATION_CREATED: Final[str] = "lh_beckman_cp_destination_created"
 
+###
+# RabbitMQ message keys
+###
+RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING = "parsing"
+RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE = "plate"
+RABBITMQ_CREATE_FEEDBACK_ORIGIN_ROOT = "root"
+RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE = "sample"
+
+RABBITMQ_FIELD_LAB_ID = "labId"
+RABBITMQ_FIELD_MESSAGE_UUID = "messageUuid"
+RABBITMQ_FIELD_PLATE = "plate"
+
+RABBITMQ_HEADER_KEY_SUBJECT = "subject"
+RABBITMQ_HEADER_KEY_VERSION = "version"
+
+RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK = "feedback.created.plate"
+
+RABBITMQ_SUBJECT_CREATE_PLATE = "create-plate-map"
+RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK = "create-plate-map-feedback"
 
 ###
 # Flask endpoints

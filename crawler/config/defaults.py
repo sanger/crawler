@@ -81,6 +81,13 @@ RABBITMQ_USERNAME = "admin"
 RABBITMQ_PASSWORD = "development"
 RABBITMQ_VHOST = "heron"
 RABBITMQ_CRUD_QUEUE = "heron.crud-operations"
+RABBITMQ_FEEDBACK_EXCHANGE = "psd.heron"
+
+###
+# RedPanda details
+###
+REDPANDA_BASE_URI = f"http://{os.environ.get('LOCALHOST', '127.0.0.1')}:8081"
+REDPANDA_API_KEY = ""
 
 ###
 # SFTP details

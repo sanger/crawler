@@ -7,16 +7,16 @@ RESPONSE_KEY_SCHEMA = "schema"
 
 
 class SchemaRegistry:
-    def __init__(self, base_uri: str, api_key: str = ""):
+    def __init__(self, base_uri: str, api_key: str):
         self._base_uri = base_uri
         self._api_key = api_key
 
     def get_schema(self, subject: str, version_num: Union[str, int]) -> dict:
+        # TODO: Need to add caching
         return (dict)(
             get(
                 f"{self._base_uri}/subjects/{subject}/versions/{version_num}",
                 headers={"X-API-KEY": self._api_key},
-                verify="cert.pem",
             ).json()
         )
 
