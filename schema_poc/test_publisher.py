@@ -1,8 +1,6 @@
 from os import getenv
 
 from avro_rabbit_publisher import AvroRabbitPublisher
-
-# hosts.py is not in the default repository clone and will need creating
 from schema_registry import SchemaRegistry
 from test_messages import EXCHANGES, MESSAGES, ROUTING_KEYS
 
