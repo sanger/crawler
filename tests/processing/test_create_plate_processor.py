@@ -10,7 +10,6 @@ from crawler.constants import (
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
     RABBITMQ_FIELD_LAB_ID,
-    RABBITMQ_FIELD_MESSAGE_UUID,
     RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
     RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
 )
@@ -25,7 +24,7 @@ class EncodedMessage(NamedTuple):
     version: str
 
 
-ENCODED_MESSAGE = EncodedMessage(body='{"key": "value"}', version=1)
+ENCODED_MESSAGE = EncodedMessage(body=b'{"key": "value"}', version="1")
 
 
 @pytest.fixture
@@ -130,7 +129,7 @@ def test_publish_feedback_encodes_valid_message(subject, message, mock_avro_enco
 
     mock_avro_encoder.return_value.encode.assert_called_once()
     feedback_message = mock_avro_encoder.return_value.encode.call_args.args[0][0]
-    assert feedback_message["sourceMessageUuid"] == CREATE_PLATE_MESSAGE[RABBITMQ_FIELD_MESSAGE_UUID].decode()
+    assert feedback_message["sourceMessageUuid"] == "b01aa0ad-7b19-4f94-87e9-70d74fb8783c"
     assert feedback_message["countOfTotalSamples"] == 0
     assert feedback_message["countOfValidSamples"] == 0
     assert feedback_message["operationWasErrorFree"] is True
