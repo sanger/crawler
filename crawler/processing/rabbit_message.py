@@ -29,7 +29,7 @@ class RabbitMessage:
 
     @property
     def contains_single_message(self):
-        return self._decoded_list and len(self._decoded_list) == 1
+        return self._decoded_list is not None and len(self._decoded_list) == 1
 
     @property
     def message(self):
