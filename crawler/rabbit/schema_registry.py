@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Union
 
 from requests import get
@@ -13,8 +14,8 @@ class SchemaRegistry:
         self._base_uri = base_uri
         self._api_key = api_key
 
+    @lru_cache
     def get_schema(self, subject: str, version_num: Union[str, int]) -> dict:
-        # TODO: Need to add caching
         try:
             return (dict)(
                 get(
