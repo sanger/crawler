@@ -1,8 +1,5 @@
-from unittest.mock import patch
-
 import pytest
 import responses
-from more_itertools import first
 
 from crawler.exceptions import TransientRabbitError
 from crawler.rabbit.schema_registry import SchemaRegistry
@@ -68,6 +65,23 @@ def test_get_schema_returns_the_response_json(subject):
 
 
 @responses.activate
+def test_get_schema_without_a_version_gets_latest(subject):
+    expected_url = f"{BASE_URI}/subjects/create-plate-map/versions/latest"
+
+    responses.add(
+        responses.GET,
+        expected_url,
+        json={},
+        status=200,
+    )
+
+    subject.get_schema("create-plate-map")
+
+    assert len(responses.calls) == 1
+    assert responses.calls[0].request.url == expected_url
+
+
+@responses.activate
 def test_get_schema_caches_responses(subject):
     schema_subject = "create-plate-map"
     schema_version = "7"
@@ -91,18 +105,6 @@ def test_get_schema_caches_responses(subject):
 
 def test_get_schema_raises_transient_rabbit_error_on_exception(subject):
     with pytest.raises(TransientRabbitError) as ex_info:
-        subject.get_schema("create-plate-map", "7")
+        subject.get_schema("no-schema-here", "42")
 
     assert BASE_URI in ex_info.value.message
-
-
-def test_get_latest_schema_calls_get_schema_with_version_latest(subject):
-    return_value = {}
-    subject_name = "create-plate-map"
-
-    with patch("crawler.rabbit.schema_registry.SchemaRegistry.get_schema") as get_schema:
-        get_schema.return_value = return_value
-        result = subject.get_latest_schema(subject_name)
-
-    get_schema.assert_called_once_with(subject_name, "latest")
-    assert result == return_value

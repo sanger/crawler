@@ -1,10 +1,9 @@
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from crawler.constants import RABBITMQ_HEADER_KEY_SUBJECT, RABBITMQ_HEADER_KEY_VERSION, RABBITMQ_SUBJECT_CREATE_PLATE
 from crawler.exceptions import TransientRabbitError
-from crawler.processing.create_plate_processor import CreatePlateProcessor
 from crawler.processing.rabbit_message_processor import RabbitMessageProcessor
 
 SCHEMA_REGISTRY = MagicMock()
