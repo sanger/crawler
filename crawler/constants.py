@@ -286,6 +286,7 @@ RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK = "feedback.created.plate"
 RABBITMQ_SUBJECT_CREATE_PLATE = "create-plate-map"
 RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK = "create-plate-map-feedback"
 
+
 ###
 # Flask endpoints
 ###

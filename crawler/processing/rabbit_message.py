@@ -5,13 +5,11 @@ class RabbitMessage:
     def __init__(self, headers, encoded_body):
         self.headers = headers
         self.encoded_body = encoded_body
-        self.errors = []
 
         self._subject = None
         self._schema_version = None
         self._decoded_list = None
         self._message = None
-        self._counts = {}
 
     @property
     def subject(self):
@@ -36,15 +34,3 @@ class RabbitMessage:
     def message(self):
         if self._decoded_list:
             return self._decoded_list[0]
-
-    def add_error(self, error):
-        self.errors.append(error)
-
-    def initiate_count(self, key):
-        self._counts[key] = 0
-
-    def increment_count(self, key):
-        self._counts[key] += 1
-
-    def get_count(self, key):
-        return self._counts[key]

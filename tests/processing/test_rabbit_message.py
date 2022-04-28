@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -66,44 +66,3 @@ def test_contains_single_message_gives_correct_response(subject, decoded_list, e
 def test_message_returns_first_decoded_list_item(subject, decoded_list, expected):
     subject._decoded_list = decoded_list
     assert subject.message == expected
-
-
-@pytest.mark.parametrize(
-    "errors_to_add",
-    [
-        [],
-        [Mock()],
-        [Mock(), Mock()],
-        [Mock(), Mock(), Mock()],
-    ],
-)
-def test_add_error_appends_the_error_list(subject, errors_to_add):
-    for error in errors_to_add:
-        subject.add_error(error)
-
-    assert subject.errors == errors_to_add
-
-
-def test_initiate_count_sets_count_to_zero(subject):
-    count_key = "a_count"
-    subject.initiate_count(count_key)
-
-    assert subject._counts[count_key] == 0
-
-
-def test_increment_count_adds_one_to_count(subject):
-    count_key = "a_count"
-    subject._counts[count_key] = 5
-
-    subject.increment_count(count_key)
-
-    assert subject._counts[count_key] == 6
-
-
-def test_get_count_gets_the_correct_count(subject):
-    count_key = "a_count"
-    subject._counts["first_count"] = 2
-    subject._counts[count_key] = 4
-    subject._counts["another_count"] = 6
-
-    assert subject.get_count(count_key) == 4
