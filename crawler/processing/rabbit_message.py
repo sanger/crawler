@@ -11,6 +11,7 @@ class RabbitMessage:
         self._schema_version = None
         self._decoded_list = None
         self._message = None
+        self._counts = {}
 
     @property
     def subject(self):
@@ -38,3 +39,12 @@ class RabbitMessage:
 
     def add_error(self, error):
         self.errors.append(error)
+
+    def initiate_count(self, key):
+        self._counts[key] = 0
+
+    def increment_count(self, key):
+        self._counts[key] += 1
+
+    def get_count(self, key):
+        return self._counts[key]
