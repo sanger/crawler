@@ -68,7 +68,7 @@ class CreatePlateValidator:
 
     @property
     def message(self):
-        return self._message.message
+        return self._message
 
     def _validate_plate(self):
         """Perform validation of the plate field in the message values for sanity.

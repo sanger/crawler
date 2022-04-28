@@ -1,4 +1,4 @@
-from unittest.mock import ANY, MagicMock, PropertyMock, patch
+from unittest.mock import ANY, patch
 
 import pytest
 
@@ -16,17 +16,8 @@ def mock_logger():
 
 
 @pytest.fixture
-def message():
-    message = MagicMock()
-    type(message).message = PropertyMock(return_value=CREATE_PLATE_MESSAGE)
-    type(message).errors = PropertyMock(return_value=[])
-
-    return message
-
-
-@pytest.fixture
-def subject(message, config):
-    return CreatePlateValidator(message, config)
+def subject(config):
+    return CreatePlateValidator(CREATE_PLATE_MESSAGE, config)
 
 
 def test_centres_gets_centres_config_from_mongo_once(subject):
@@ -45,7 +36,7 @@ def test_centres_raises_exception_for_loss_of_mongo_connectivity(subject):
             subject.centres
 
 
-def test_validate_does_nothing_if_message_valid(subject, message):
+def test_validate_does_nothing_if_message_valid(subject):
     subject._centres = [{CENTRE_KEY_LAB_ID_DEFAULT: "CPTD"}]
 
     with patch("crawler.processing.create_plate_validator.CreatePlateValidator._add_error") as add_error:
@@ -54,7 +45,7 @@ def test_validate_does_nothing_if_message_valid(subject, message):
     add_error.assert_not_called()
 
 
-def test_validate_adds_error_when_lab_id_not_enabled(subject, message):
+def test_validate_adds_error_when_lab_id_not_enabled(subject):
     subject._centres = [{CENTRE_KEY_LAB_ID_DEFAULT: "CAMB"}]
 
     with patch("crawler.processing.create_plate_validator.CreatePlateValidator._add_error") as add_error:

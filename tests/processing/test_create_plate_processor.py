@@ -62,7 +62,7 @@ def test_process_uses_validator(subject, mock_validator):
     message = MagicMock()
     subject.process(message)
 
-    mock_validator.assert_called_once_with(message, subject._config)
+    mock_validator.assert_called_once_with(message.message, subject._config)
     mock_validator.return_value.validate.assert_called_once()
 
 

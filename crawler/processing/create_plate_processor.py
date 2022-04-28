@@ -23,7 +23,7 @@ class CreatePlateProcessor:
 
     def process(self, message):
         self._centres = None
-        validator = CreatePlateValidator(message, self._config)
+        validator = CreatePlateValidator(message.message, self._config)
 
         try:
             validator.validate()
