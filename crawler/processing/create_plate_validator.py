@@ -7,6 +7,7 @@ from crawler.constants import (
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
     RABBITMQ_FIELD_COG_UK_ID,
     RABBITMQ_FIELD_LAB_ID,
+    RABBITMQ_FIELD_MESSAGE_CREATE_DATE,
     RABBITMQ_FIELD_PLATE,
     RABBITMQ_FIELD_PLATE_BARCODE,
     RABBITMQ_FIELD_PLATE_COORDINATE,
@@ -14,6 +15,7 @@ from crawler.constants import (
     RABBITMQ_FIELD_ROOT_SAMPLE_ID,
     RABBITMQ_FIELD_SAMPLE_UUID,
     RABBITMQ_FIELD_SAMPLES,
+    RABBITMQ_FIELD_TESTED_DATE,
 )
 from crawler.exceptions import TransientRabbitError
 from crawler.helpers.general_helpers import extract_duplicated_values as extract_dupes
@@ -30,7 +32,7 @@ class CreatePlateValidator:
         self.valid_samples = 0
 
         self._centres = None
-        self._errors = ()
+        self._errors = []
 
     def validate(self):
         self.total_samples = 0
@@ -43,13 +45,13 @@ class CreatePlateValidator:
         LOGGER.error(
             f"Error found in message with origin '{origin}', sampleUuid '{sample_uuid}', field '{field}': {description}"
         )
-        self._errors = self._errors + (
+        self._errors.append(
             CreateFeedbackError(
                 origin=origin,
                 sampleUuid=sample_uuid,
                 field=field,
                 description=description,
-            ),
+            )
         )
 
     @property
@@ -64,7 +66,7 @@ class CreatePlateValidator:
 
     @property
     def errors(self):
-        return self._errors
+        return self._errors.copy()
 
     def _validate_plate(self):
         """Perform validation of the plate field in the message values for sanity.
@@ -111,7 +113,7 @@ class CreatePlateValidator:
             string_uuid = uuid.decode()
             self._add_error(
                 RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
-                f"Sample UUID {string_uuid} was found more than once in the message.",
+                f"Sample UUID {string_uuid} exists more than once in the message.",
                 sample_uuid=string_uuid,
                 field=RABBITMQ_FIELD_SAMPLE_UUID,
             )
@@ -124,7 +126,7 @@ class CreatePlateValidator:
     def _validate_sample_field_populated(self, field, sample):
         if not sample[field]:
             origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
-            description = "Field value was not populated."
+            description = "Field value is not populated."
             sample_uuid = sample[RABBITMQ_FIELD_SAMPLE_UUID].decode()
             self._add_error(origin, description, sample_uuid, field)
 
@@ -135,7 +137,29 @@ class CreatePlateValidator:
     def _validate_sample_field_unique(self, dup_values, field, sample):
         if sample[field] in dup_values[field]:
             origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
-            description = f"Field value provided was not unique across samples ({sample[field]})."
+            description = f"Field value is not unique across samples ({sample[field]})."
+            sample_uuid = sample[RABBITMQ_FIELD_SAMPLE_UUID].decode()
+            self._add_error(origin, description, sample_uuid, field)
+
+            return False
+
+        return True
+
+    def _validate_sample_field_matches_regex(self, regex, field, sample):
+        if not regex.match(sample[field]):
+            origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
+            description = f"Field value does not match regex ({regex})."
+            sample_uuid = sample[RABBITMQ_FIELD_SAMPLE_UUID].decode()
+            self._add_error(origin, description, sample_uuid, field)
+
+            return False
+
+        return True
+
+    def _validate_field_no_later_than(self, timestamp, field, sample):
+        if sample[field] > timestamp:
+            origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
+            description = f"Field value repesents a timestamp that is too recent ({sample[field]} > {timestamp})."
             sample_uuid = sample[RABBITMQ_FIELD_SAMPLE_UUID].decode()
             self._add_error(origin, description, sample_uuid, field)
 
@@ -163,10 +187,15 @@ class CreatePlateValidator:
         ) or not self._validate_sample_field_unique(dup_values, RABBITMQ_FIELD_RNA_ID, sample):
             valid = False
 
-        # Ensure sample UUIDs are all unique in this message.
-        # Root sample IDs are unique and all populated with a value.
-        # RNA IDs are all unique and populated.
-        # Plate coordinates are unique and match the expected pattern of A-H 1-12.
-        # Tested dates pre-date the message creation date.
+        # Validate plate coordinates
+        if not self._validate_sample_field_matches_regex(
+            r"^[A-H](?:0?[1-9]|1[0-2])$", RABBITMQ_FIELD_PLATE_COORDINATE, sample  # A1 - H12 or A01 padded format
+        ) or not self._validate_sample_field_unique(dup_values, RABBITMQ_FIELD_PLATE_COORDINATE, sample):
+            valid = False
+
+        # Validate tested date is not newer than the message create date
+        message_create_date = self.message[RABBITMQ_FIELD_MESSAGE_CREATE_DATE]
+        if not self._validate_field_no_later_than(message_create_date, RABBITMQ_FIELD_TESTED_DATE, sample):
+            valid = False
 
         return valid
