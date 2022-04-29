@@ -24,13 +24,13 @@ LOGGER = logging.getLogger(__name__)
 
 class CreatePlateValidator:
     def __init__(self, message, config):
-        self._message = message
         self._config = config
-        self._centres = None
-        self._errors = []
-
+        self.message = message
         self.total_samples = 0
         self.valid_samples = 0
+
+        self._centres = None
+        self._errors = ()
 
     def validate(self):
         self.total_samples = 0
@@ -43,13 +43,13 @@ class CreatePlateValidator:
         LOGGER.error(
             f"Error found in message with origin '{origin}', sampleUuid '{sample_uuid}', field '{field}': {description}"
         )
-        self.errors.append(
+        self._errors = self._errors + (
             CreateFeedbackError(
                 origin=origin,
                 sampleUuid=sample_uuid,
                 field=field,
                 description=description,
-            )
+            ),
         )
 
     @property
@@ -65,10 +65,6 @@ class CreatePlateValidator:
     @property
     def errors(self):
         return self._errors
-
-    @property
-    def message(self):
-        return self._message
 
     def _validate_plate(self):
         """Perform validation of the plate field in the message values for sanity.
