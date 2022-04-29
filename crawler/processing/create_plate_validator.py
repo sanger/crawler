@@ -1,4 +1,5 @@
 import logging
+import re
 
 from crawler.config.centres import CENTRE_DATA_SOURCE_RABBITMQ, get_centres_config
 from crawler.constants import (
@@ -148,7 +149,7 @@ class CreatePlateValidator:
     def _validate_sample_field_matches_regex(self, regex, field, sample):
         if not regex.match(sample[field]):
             origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
-            description = f"Field value does not match regex ({regex})."
+            description = f"Field value does not match regex ({regex.pattern})."
             sample_uuid = sample[RABBITMQ_FIELD_SAMPLE_UUID].decode()
             self._add_error(origin, description, sample_uuid, field)
 
@@ -156,7 +157,7 @@ class CreatePlateValidator:
 
         return True
 
-    def _validate_field_no_later_than(self, timestamp, field, sample):
+    def _validate_sample_field_no_later_than(self, timestamp, field, sample):
         if sample[field] > timestamp:
             origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
             description = f"Field value repesents a timestamp that is too recent ({sample[field]} > {timestamp})."
@@ -189,13 +190,15 @@ class CreatePlateValidator:
 
         # Validate plate coordinates
         if not self._validate_sample_field_matches_regex(
-            r"^[A-H](?:0?[1-9]|1[0-2])$", RABBITMQ_FIELD_PLATE_COORDINATE, sample  # A1 - H12 or A01 padded format
+            re.compile(r"^[A-H](?:0?[1-9]|1[0-2])$"),
+            RABBITMQ_FIELD_PLATE_COORDINATE,
+            sample,  # A1 - H12 or A01 padded format
         ) or not self._validate_sample_field_unique(dup_values, RABBITMQ_FIELD_PLATE_COORDINATE, sample):
             valid = False
 
         # Validate tested date is not newer than the message create date
         message_create_date = self.message[RABBITMQ_FIELD_MESSAGE_CREATE_DATE]
-        if not self._validate_field_no_later_than(message_create_date, RABBITMQ_FIELD_TESTED_DATE, sample):
+        if not self._validate_sample_field_no_later_than(message_create_date, RABBITMQ_FIELD_TESTED_DATE, sample):
             valid = False
 
         return valid
