@@ -1,10 +1,6 @@
 from os import getenv
 
 from avro_rabbit_consumer import AvroRabbitConsumer
-from credentials import CONSUME_CREDENTIALS, CREDENTIAL_KEY_API_KEY, CREDENTIAL_KEY_RABBITMQ
-
-# hosts.py is not in the default repository clone and will need creating
-from hosts import RABBITMQ_HOST, REDPANDA_URL  # type: ignore
 from schema_registry import SchemaRegistry
 from test_messages import QUEUES
 
@@ -19,10 +15,9 @@ from test_messages import QUEUES
 
 subject = getenv("AVRO_TEST_SUBJECT", "create-plate-map")
 queue = QUEUES[subject]
-credentials = CONSUME_CREDENTIALS[subject]()
 
-schema_registry = SchemaRegistry(REDPANDA_URL, credentials[CREDENTIAL_KEY_API_KEY])
+schema_registry = SchemaRegistry("http://localhost:8081")
 
 # Read from RabbitMQ
-consumer = AvroRabbitConsumer(RABBITMQ_HOST, 5671, schema_registry)
-consumer.receive_messages(vhost="heron", queue=queue, username_password=credentials[CREDENTIAL_KEY_RABBITMQ])
+consumer = AvroRabbitConsumer("localhost", 5672, schema_registry)
+consumer.receive_messages(vhost="heron", queue=queue, username_password=("admin", "development"))

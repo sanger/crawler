@@ -63,8 +63,7 @@ class CreatePlateProcessor:
 
     def _publish_feedback(self, message, additional_errors=()):
         message_uuid = message.message[RABBITMQ_FIELD_MESSAGE_UUID].decode()
-        errors = message.errors
-        errors.extend(additional_errors)
+        errors = message.errors + list(additional_errors)
 
         feedback_message = CreateFeedbackMessage(
             sourceMessageUuid=message_uuid,
