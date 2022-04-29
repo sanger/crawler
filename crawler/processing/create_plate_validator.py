@@ -89,7 +89,7 @@ class CreatePlateValidator:
         if not plate_barcode:
             self._add_error(
                 RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
-                "Field value was not populated.",
+                "Field value is not populated.",
                 field=RABBITMQ_FIELD_PLATE_BARCODE,
             )
 
