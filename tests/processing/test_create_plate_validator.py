@@ -350,7 +350,7 @@ def test_validate_adds_error_when_plate_coordinate_column_invalid(subject, add_e
     "invalid_row",
     ["", "0", "01", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"],
 )
-def test_validate_adds_error_when_plate_coordinate_column_invalid(subject, add_error, invalid_row):
+def test_validate_adds_error_when_plate_coordinate_row_invalid(subject, add_error, invalid_row):
     samples = subject.message[RABBITMQ_FIELD_PLATE][RABBITMQ_FIELD_SAMPLES]
     samples[0][RABBITMQ_FIELD_PLATE_COORDINATE] = f"{invalid_row}03"
     samples[1][RABBITMQ_FIELD_PLATE_COORDINATE] = f"{invalid_row}03"
