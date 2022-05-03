@@ -88,17 +88,76 @@ def test_add_error_records_the_error(subject, logger, origin, description, sampl
     assert added_error["field"] == field
 
 
-def test_validate_generates_no_errors_when_message_is_valid(subject):
+@pytest.mark.parametrize("plate_barcode", ["plate_barcode_1", "plate_barcode_2"])
+@pytest.mark.parametrize(
+    "sample_uuid", [b"37f35f76-d4cf-4ffd-9fb1-bafde824fd46", b"34d623e0-ecd9-4ffe-b6bc-a2573bb27b22"]
+)
+@pytest.mark.parametrize("root_sample_id", ["R00T-S4MPL3-1D-01", "R00T-S4MPL3-1D-02"])
+@pytest.mark.parametrize("rna_id", ["RN4-1D-01", "RN4-1D-02"])
+@pytest.mark.parametrize(
+    "plate_coordinate",
+    [
+        "A1",
+        "A01",
+        "A2",
+        "A02",
+        "A3",
+        "A03",
+        "A4",
+        "A04",
+        "A5",
+        "A05",
+        "A6",
+        "A06",
+        "A7",
+        "A07",
+        "A8",
+        "A08",
+        "A9",
+        "A09",
+        "A10",
+        "A11",
+        "A12",
+        "B1",
+        "B01",
+        "C1",
+        "C01",
+        "D1",
+        "D01",
+        "E1",
+        "E01",
+        "F1",
+        "F01",
+        "G1",
+        "G01",
+        "H1",
+        "H01",
+    ],
+)
+@pytest.mark.parametrize(
+    "tested_date",
+    [datetime(2022, 2, 14, 7, 24, 35), datetime(2021, 12, 31, 23, 59, 59), datetime(2022, 2, 13, 14, 30, 0)],
+)
+def test_validate_generates_no_errors_and_counts_samples_when_message_is_valid(
+    subject, plate_barcode, sample_uuid, root_sample_id, rna_id, plate_coordinate, tested_date
+):
+    subject.message[RABBITMQ_FIELD_MESSAGE_CREATE_DATE] = datetime(2022, 2, 14, 7, 24, 35)
+    subject.message[RABBITMQ_FIELD_PLATE][RABBITMQ_FIELD_PLATE_BARCODE] = plate_barcode
+
+    # Just keep one sample to modify values on
+    sample = subject.message[RABBITMQ_FIELD_PLATE][RABBITMQ_FIELD_SAMPLES][0]
+    subject.message[RABBITMQ_FIELD_PLATE][RABBITMQ_FIELD_SAMPLES] = [sample]
+    sample[RABBITMQ_FIELD_SAMPLE_UUID] = sample_uuid
+    sample[RABBITMQ_FIELD_ROOT_SAMPLE_ID] = root_sample_id
+    sample[RABBITMQ_FIELD_RNA_ID] = rna_id
+    sample[RABBITMQ_FIELD_PLATE_COORDINATE] = plate_coordinate
+    sample[RABBITMQ_FIELD_TESTED_DATE] = tested_date
+
     subject.validate()
 
     assert subject.errors == []
-
-
-def test_validate_counts_samples_correctly(subject):
-    subject.validate()
-
-    assert subject.total_samples == 3
-    assert subject.valid_samples == 3
+    assert subject.total_samples == 1
+    assert subject.valid_samples == 1
 
 
 def test_validate_adds_error_when_lab_id_not_enabled(subject, add_error):
