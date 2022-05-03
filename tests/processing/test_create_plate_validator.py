@@ -1,4 +1,5 @@
 import copy
+from datetime import datetime
 from unittest.mock import ANY, call, patch
 
 import pytest
@@ -9,12 +10,15 @@ from crawler.constants import (
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
     RABBITMQ_FIELD_LAB_ID,
+    RABBITMQ_FIELD_MESSAGE_CREATE_DATE,
     RABBITMQ_FIELD_PLATE,
     RABBITMQ_FIELD_PLATE_BARCODE,
+    RABBITMQ_FIELD_PLATE_COORDINATE,
     RABBITMQ_FIELD_RNA_ID,
     RABBITMQ_FIELD_ROOT_SAMPLE_ID,
     RABBITMQ_FIELD_SAMPLE_UUID,
     RABBITMQ_FIELD_SAMPLES,
+    RABBITMQ_FIELD_TESTED_DATE,
 )
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_validator import CreatePlateValidator
@@ -245,6 +249,127 @@ def test_validate_adds_error_when_rna_id_is_not_unique(subject, add_error):
                 "Field value is not unique across samples (RNA-ID).",
                 samples[1][RABBITMQ_FIELD_SAMPLE_UUID].decode(),
                 RABBITMQ_FIELD_RNA_ID,
+            ),
+        ]
+    )
+
+    assert subject.total_samples == 3
+    assert subject.valid_samples == 1
+
+
+@pytest.mark.parametrize("invalid_column", ["", "001", "0", "00", "13", "013", "A"])
+def test_validate_adds_error_when_plate_coordinate_column_invalid(subject, add_error, invalid_column):
+    samples = subject.message[RABBITMQ_FIELD_PLATE][RABBITMQ_FIELD_SAMPLES]
+    samples[0][RABBITMQ_FIELD_PLATE_COORDINATE] = f"A{invalid_column}"
+    samples[1][RABBITMQ_FIELD_PLATE_COORDINATE] = f"A{invalid_column}"
+
+    subject.validate()
+
+    # We're only expecting 2 calls.  There should not be a call indicating that the empty values are not unique.
+    add_error.assert_has_calls(
+        [
+            call(
+                RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                "Field value does not match regex (^[A-H](?:0?[1-9]|1[0-2])$).",
+                samples[0][RABBITMQ_FIELD_SAMPLE_UUID].decode(),
+                RABBITMQ_FIELD_PLATE_COORDINATE,
+            ),
+            call(
+                RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                "Field value does not match regex (^[A-H](?:0?[1-9]|1[0-2])$).",
+                samples[1][RABBITMQ_FIELD_SAMPLE_UUID].decode(),
+                RABBITMQ_FIELD_PLATE_COORDINATE,
+            ),
+        ]
+    )
+
+    assert subject.total_samples == 3
+    assert subject.valid_samples == 1
+
+
+@pytest.mark.parametrize(
+    "invalid_row",
+    ["", "0", "01", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"],
+)
+def test_validate_adds_error_when_plate_coordinate_column_invalid(subject, add_error, invalid_row):
+    samples = subject.message[RABBITMQ_FIELD_PLATE][RABBITMQ_FIELD_SAMPLES]
+    samples[0][RABBITMQ_FIELD_PLATE_COORDINATE] = f"{invalid_row}03"
+    samples[1][RABBITMQ_FIELD_PLATE_COORDINATE] = f"{invalid_row}03"
+
+    subject.validate()
+
+    # We're only expecting 2 calls.  There should not be a call indicating that the empty values are not unique.
+    add_error.assert_has_calls(
+        [
+            call(
+                RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                "Field value does not match regex (^[A-H](?:0?[1-9]|1[0-2])$).",
+                samples[0][RABBITMQ_FIELD_SAMPLE_UUID].decode(),
+                RABBITMQ_FIELD_PLATE_COORDINATE,
+            ),
+            call(
+                RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                "Field value does not match regex (^[A-H](?:0?[1-9]|1[0-2])$).",
+                samples[1][RABBITMQ_FIELD_SAMPLE_UUID].decode(),
+                RABBITMQ_FIELD_PLATE_COORDINATE,
+            ),
+        ]
+    )
+
+    assert subject.total_samples == 3
+    assert subject.valid_samples == 1
+
+
+def test_validate_adds_error_when_plate_coordinate_is_not_unique(subject, add_error):
+    samples = subject.message[RABBITMQ_FIELD_PLATE][RABBITMQ_FIELD_SAMPLES]
+    samples[0][RABBITMQ_FIELD_PLATE_COORDINATE] = "E06"
+    samples[1][RABBITMQ_FIELD_PLATE_COORDINATE] = "E06"
+
+    subject.validate()
+
+    add_error.assert_has_calls(
+        [
+            call(
+                RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                "Field value is not unique across samples (E06).",
+                samples[0][RABBITMQ_FIELD_SAMPLE_UUID].decode(),
+                RABBITMQ_FIELD_PLATE_COORDINATE,
+            ),
+            call(
+                RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                "Field value is not unique across samples (E06).",
+                samples[1][RABBITMQ_FIELD_SAMPLE_UUID].decode(),
+                RABBITMQ_FIELD_PLATE_COORDINATE,
+            ),
+        ]
+    )
+
+    assert subject.total_samples == 3
+    assert subject.valid_samples == 1
+
+
+def test_validate_adds_error_when_tested_date_is_too_recent(subject, add_error):
+    subject.message[RABBITMQ_FIELD_MESSAGE_CREATE_DATE] = datetime(2022, 4, 29, 12, 34, 56)
+    samples = subject.message[RABBITMQ_FIELD_PLATE][RABBITMQ_FIELD_SAMPLES]
+    samples[0][RABBITMQ_FIELD_TESTED_DATE] = datetime(2022, 4, 29, 12, 34, 57)  # one second too late
+    samples[1][RABBITMQ_FIELD_TESTED_DATE] = datetime(2023, 4, 29, 12, 34, 56)  # one year too late
+    samples[2][RABBITMQ_FIELD_TESTED_DATE] = datetime(2022, 4, 29, 12, 34, 56)  # this is OK
+
+    subject.validate()
+
+    add_error.assert_has_calls(
+        [
+            call(
+                RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                "Field value repesents a timestamp that is too recent (2022-04-29 12:34:57 > 2022-04-29 12:34:56).",
+                samples[0][RABBITMQ_FIELD_SAMPLE_UUID].decode(),
+                RABBITMQ_FIELD_TESTED_DATE,
+            ),
+            call(
+                RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                "Field value repesents a timestamp that is too recent (2023-04-29 12:34:56 > 2022-04-29 12:34:56).",
+                samples[1][RABBITMQ_FIELD_SAMPLE_UUID].decode(),
+                RABBITMQ_FIELD_TESTED_DATE,
             ),
         ]
     )
