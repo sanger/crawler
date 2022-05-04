@@ -1218,11 +1218,11 @@
         },
         "flake8-bugbear": {
             "hashes": [
-                "sha256:e0dc2a36474490d5b1a2d57f9e4ef570abc09f07cbb712b29802e28a2367ff19",
-                "sha256:ec5ec92195720cee1589315416b844ffa5e82f73a78e65329e8055322df1e939"
+                "sha256:ec374101cddf65bd7a96d393847d74e58d3b98669dbf9768344c39b6290e8bd6",
+                "sha256:f7c080563fca75ee6b205d06b181ecba22b802babb96b0b084cc7743d6908a55"
             ],
             "index": "pypi",
-            "version": "==22.3.23"
+            "version": "==22.4.25"
         },
         "freezegun": {
             "hashes": [
@@ -1518,7 +1518,7 @@
                 "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc",
                 "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"
             ],
-            "markers": "python_version < '3.11'",
+            "markers": "python_version >= '3.7'",
             "version": "==2.0.1"
         },
         "types-python-dateutil": {
@@ -1534,7 +1534,7 @@
                 "sha256:6657594ee297170d19f67d55c05852a874e7eb634f4f753dbd667855e07c1708",
                 "sha256:f1c24655a0da0d1b67f07e17a5e6b2a105894e6824b92096378bb3668ef02376"
             ],
-            "markers": "python_version < '3.10'",
+            "markers": "python_version >= '3.7'",
             "version": "==4.2.0"
         },
         "urllib3": {
