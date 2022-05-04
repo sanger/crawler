@@ -33,7 +33,7 @@ pyodbc = "~=4.0"
 pysftp = "~=0.2"
 python-dotenv = "~=0.20"
 requests = "~=2.27"
-slackclient = "~=2.5"
+slackclient = "~=2.9"
 sqlalchemy = "~=1.4"
 
 [requires]
