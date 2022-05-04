@@ -379,10 +379,13 @@ def test_validate_adds_error_when_plate_coordinate_row_invalid(subject, add_erro
     assert subject.valid_samples == 1
 
 
-def test_validate_adds_error_when_plate_coordinate_is_not_unique(subject, add_error):
+@pytest.mark.parametrize("first_coordinate, second_coordinate", [("E06", "E06"), ("E6", "E06"), ("E06", "E6")])
+def test_validate_adds_error_when_plate_coordinate_is_not_unique(
+    subject, add_error, first_coordinate, second_coordinate
+):
     samples = subject.message[RABBITMQ_FIELD_PLATE][RABBITMQ_FIELD_SAMPLES]
-    samples[0][RABBITMQ_FIELD_PLATE_COORDINATE] = "E06"
-    samples[1][RABBITMQ_FIELD_PLATE_COORDINATE] = "E06"
+    samples[0][RABBITMQ_FIELD_PLATE_COORDINATE] = first_coordinate
+    samples[1][RABBITMQ_FIELD_PLATE_COORDINATE] = second_coordinate
 
     subject.validate()
 
@@ -390,13 +393,13 @@ def test_validate_adds_error_when_plate_coordinate_is_not_unique(subject, add_er
         [
             call(
                 RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
-                "Field value is not unique across samples (E06).",
+                f"Field value is not unique across samples ({first_coordinate}).",
                 samples[0][RABBITMQ_FIELD_SAMPLE_UUID].decode(),
                 RABBITMQ_FIELD_PLATE_COORDINATE,
             ),
             call(
                 RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
-                "Field value is not unique across samples (E06).",
+                f"Field value is not unique across samples ({second_coordinate}).",
                 samples[1][RABBITMQ_FIELD_SAMPLE_UUID].decode(),
                 RABBITMQ_FIELD_PLATE_COORDINATE,
             ),

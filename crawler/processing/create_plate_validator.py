@@ -20,6 +20,7 @@ from crawler.constants import (
 )
 from crawler.exceptions import TransientRabbitError
 from crawler.helpers.general_helpers import extract_duplicated_values as extract_dupes
+from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError
 
 LOGGER = logging.getLogger(__name__)
@@ -103,7 +104,9 @@ class CreatePlateValidator:
         dup_values = {
             RABBITMQ_FIELD_SAMPLE_UUID: extract_dupes([s[RABBITMQ_FIELD_SAMPLE_UUID] for s in samples]),
             RABBITMQ_FIELD_ROOT_SAMPLE_ID: extract_dupes([s[RABBITMQ_FIELD_ROOT_SAMPLE_ID] for s in samples]),
-            RABBITMQ_FIELD_PLATE_COORDINATE: extract_dupes([s[RABBITMQ_FIELD_PLATE_COORDINATE] for s in samples]),
+            RABBITMQ_FIELD_PLATE_COORDINATE: extract_dupes(
+                [normalise_plate_coordinate(s[RABBITMQ_FIELD_PLATE_COORDINATE]) for s in samples]
+            ),
             RABBITMQ_FIELD_RNA_ID: extract_dupes([s[RABBITMQ_FIELD_RNA_ID] for s in samples]),
             RABBITMQ_FIELD_COG_UK_ID: extract_dupes(
                 [s[RABBITMQ_FIELD_COG_UK_ID] for s in samples if RABBITMQ_FIELD_COG_UK_ID in s]
@@ -135,8 +138,12 @@ class CreatePlateValidator:
 
         return True
 
-    def _validate_sample_field_unique(self, dup_values, field, sample):
-        if sample[field] in dup_values[field]:
+    def _validate_sample_field_unique(self, dup_values, field, sample, normalise_func=None):
+        normalised_value = sample[field]
+        if normalise_func is not None:
+            normalised_value = normalise_func(normalised_value)
+
+        if normalised_value in dup_values[field]:
             origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
             description = f"Field value is not unique across samples ({sample[field]})."
             sample_uuid = sample[RABBITMQ_FIELD_SAMPLE_UUID].decode()
@@ -190,10 +197,12 @@ class CreatePlateValidator:
 
         # Validate plate coordinates
         if not self._validate_sample_field_matches_regex(
-            re.compile(r"^[A-H](?:0?[1-9]|1[0-2])$"),
+            re.compile(r"^[A-H](?:0?[1-9]|1[0-2])$"),  # A1 - H12 or A01 padded format
             RABBITMQ_FIELD_PLATE_COORDINATE,
-            sample,  # A1 - H12 or A01 padded format
-        ) or not self._validate_sample_field_unique(dup_values, RABBITMQ_FIELD_PLATE_COORDINATE, sample):
+            sample,
+        ) or not self._validate_sample_field_unique(
+            dup_values, RABBITMQ_FIELD_PLATE_COORDINATE, sample, normalise_plate_coordinate
+        ):
             valid = False
 
         # Validate tested date is not newer than the message create date
