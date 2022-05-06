@@ -104,12 +104,10 @@ class CreatePlateValidator:
         dup_values = {
             RABBITMQ_FIELD_SAMPLE_UUID: extract_dupes([s[RABBITMQ_FIELD_SAMPLE_UUID] for s in samples]),
             RABBITMQ_FIELD_ROOT_SAMPLE_ID: extract_dupes([s[RABBITMQ_FIELD_ROOT_SAMPLE_ID] for s in samples]),
+            RABBITMQ_FIELD_RNA_ID: extract_dupes([s[RABBITMQ_FIELD_RNA_ID] for s in samples]),
+            RABBITMQ_FIELD_COG_UK_ID: extract_dupes([s[RABBITMQ_FIELD_COG_UK_ID] for s in samples]),
             RABBITMQ_FIELD_PLATE_COORDINATE: extract_dupes(
                 [normalise_plate_coordinate(s[RABBITMQ_FIELD_PLATE_COORDINATE]) for s in samples]
-            ),
-            RABBITMQ_FIELD_RNA_ID: extract_dupes([s[RABBITMQ_FIELD_RNA_ID] for s in samples]),
-            RABBITMQ_FIELD_COG_UK_ID: extract_dupes(
-                [s[RABBITMQ_FIELD_COG_UK_ID] for s in samples if RABBITMQ_FIELD_COG_UK_ID in s]
             ),
         }
 
@@ -193,6 +191,12 @@ class CreatePlateValidator:
         if not self._validate_sample_field_populated(
             RABBITMQ_FIELD_RNA_ID, sample
         ) or not self._validate_sample_field_unique(dup_values, RABBITMQ_FIELD_RNA_ID, sample):
+            valid = False
+
+        # Validate COG UK ID
+        if not self._validate_sample_field_populated(
+            RABBITMQ_FIELD_COG_UK_ID, sample
+        ) or not self._validate_sample_field_unique(dup_values, RABBITMQ_FIELD_COG_UK_ID, sample):
             valid = False
 
         # Validate plate coordinates

@@ -52,8 +52,8 @@
                     "doc": "The RNA ID for the sample. Used later as the sample name."
                   },
                   {
-                    "name": "cogUkId", "type": ["null", "string"], "default": null,
-                    "doc": "Covid-19 Genomics UK consortium ID (optional)."
+                    "name": "cogUkId", "type": "string",
+                    "doc": "Covid-19 Genomics UK consortium ID."
                   },
                   {
                     "name": "plateCoordinate", "type": "string",
