@@ -9,6 +9,7 @@ from crawler.constants import (
     CENTRE_KEY_LAB_ID_DEFAULT,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+    RABBITMQ_FIELD_COG_UK_ID,
     RABBITMQ_FIELD_LAB_ID,
     RABBITMQ_FIELD_MESSAGE_CREATE_DATE,
     RABBITMQ_FIELD_PLATE,
@@ -94,6 +95,7 @@ def test_add_error_records_the_error(subject, logger, origin, description, sampl
 )
 @pytest.mark.parametrize("root_sample_id", ["R00T-S4MPL3-1D-01", "R00T-S4MPL3-1D-02"])
 @pytest.mark.parametrize("rna_id", ["RN4-1D-01", "RN4-1D-02"])
+@pytest.mark.parametrize("cog_uk_id", ["COG-UK-ID-1", "COG-UK-ID-2"])
 @pytest.mark.parametrize(
     "plate_coordinate",
     [
@@ -139,7 +141,7 @@ def test_add_error_records_the_error(subject, logger, origin, description, sampl
     [datetime(2022, 2, 14, 7, 24, 35), datetime(2021, 12, 31, 23, 59, 59), datetime(2022, 2, 13, 14, 30, 0)],
 )
 def test_validate_generates_no_errors_and_counts_samples_when_message_is_valid(
-    subject, plate_barcode, sample_uuid, root_sample_id, rna_id, plate_coordinate, tested_date
+    subject, plate_barcode, sample_uuid, root_sample_id, rna_id, cog_uk_id, plate_coordinate, tested_date
 ):
     subject.message[RABBITMQ_FIELD_MESSAGE_CREATE_DATE] = datetime(2022, 2, 14, 7, 24, 35)
     subject.message[RABBITMQ_FIELD_PLATE][RABBITMQ_FIELD_PLATE_BARCODE] = plate_barcode
@@ -150,6 +152,7 @@ def test_validate_generates_no_errors_and_counts_samples_when_message_is_valid(
     sample[RABBITMQ_FIELD_SAMPLE_UUID] = sample_uuid
     sample[RABBITMQ_FIELD_ROOT_SAMPLE_ID] = root_sample_id
     sample[RABBITMQ_FIELD_RNA_ID] = rna_id
+    sample[RABBITMQ_FIELD_COG_UK_ID] = cog_uk_id
     sample[RABBITMQ_FIELD_PLATE_COORDINATE] = plate_coordinate
     sample[RABBITMQ_FIELD_TESTED_DATE] = tested_date
 
@@ -308,6 +311,63 @@ def test_validate_adds_error_when_rna_id_is_not_unique(subject, add_error):
                 "Field value is not unique across samples (RNA-ID).",
                 samples[1][RABBITMQ_FIELD_SAMPLE_UUID].decode(),
                 RABBITMQ_FIELD_RNA_ID,
+            ),
+        ]
+    )
+
+    assert subject.total_samples == 3
+    assert subject.valid_samples == 1
+
+
+def test_validate_adds_error_when_cog_uk_id_is_empty(subject, add_error):
+    samples = subject.message[RABBITMQ_FIELD_PLATE][RABBITMQ_FIELD_SAMPLES]
+    samples[0][RABBITMQ_FIELD_COG_UK_ID] = ""
+    samples[1][RABBITMQ_FIELD_COG_UK_ID] = ""
+
+    subject.validate()
+
+    # We're only expecting 2 calls.  There should not be a call indicating that the empty values are not unique.
+    add_error.assert_has_calls(
+        [
+            call(
+                RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                "Field value is not populated.",
+                samples[0][RABBITMQ_FIELD_SAMPLE_UUID].decode(),
+                RABBITMQ_FIELD_COG_UK_ID,
+            ),
+            call(
+                RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                "Field value is not populated.",
+                samples[1][RABBITMQ_FIELD_SAMPLE_UUID].decode(),
+                RABBITMQ_FIELD_COG_UK_ID,
+            ),
+        ]
+    )
+
+    assert subject.total_samples == 3
+    assert subject.valid_samples == 1
+
+
+def test_validate_adds_error_when_cog_uk_id_is_not_unique(subject, add_error):
+    samples = subject.message[RABBITMQ_FIELD_PLATE][RABBITMQ_FIELD_SAMPLES]
+    samples[0][RABBITMQ_FIELD_COG_UK_ID] = "COG-UK-ID"
+    samples[1][RABBITMQ_FIELD_COG_UK_ID] = "COG-UK-ID"
+
+    subject.validate()
+
+    add_error.assert_has_calls(
+        [
+            call(
+                RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                "Field value is not unique across samples (COG-UK-ID).",
+                samples[0][RABBITMQ_FIELD_SAMPLE_UUID].decode(),
+                RABBITMQ_FIELD_COG_UK_ID,
+            ),
+            call(
+                RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                "Field value is not unique across samples (COG-UK-ID).",
+                samples[1][RABBITMQ_FIELD_SAMPLE_UUID].decode(),
+                RABBITMQ_FIELD_COG_UK_ID,
             ),
         ]
     )
