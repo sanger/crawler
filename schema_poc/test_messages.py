@@ -21,6 +21,7 @@ create_message = {
             {
                 "sampleUuid": b"dd490ee5-fd1d-456d-99fd-eb9d3861e0f6",
                 "rootSampleId": "R00T-S4MPL3-01",
+                "cogUkId": "COG-UK-ID-1",
                 "plateCoordinate": "A6",
                 "rnaId": "BARCODE001_A06",
                 "result": "positive",
@@ -32,6 +33,7 @@ create_message = {
             {
                 "sampleUuid": b"d1631fe4-6fd3-4f35-add1-8de2f54802c2",
                 "rootSampleId": "R00T-S4MPL3-02",
+                "cogUkId": "COG-UK-ID-2",
                 "plateCoordinate": "B9",
                 "rnaId": "BARCODE001_B09",
                 "result": "negative",
