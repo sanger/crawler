@@ -27,6 +27,10 @@ class CreatePlateProcessor:
 
         try:
             validator.validate()
+            is_valid = len(validator.errors) == 0
+            if is_valid:
+                # TODO: Insert into MongoDB and DART
+                pass
         except TransientRabbitError as ex:
             LOGGER.error(f"Transient error while processing message: {ex.message}")
             raise  # Cause the consumer to restart and try this message again.  Ideally we will delay the consumer.
@@ -44,7 +48,7 @@ class CreatePlateProcessor:
             return False  # Send the message to dead letters
 
         self._publish_feedback(validator)
-        return len(validator.errors) == 0
+        return is_valid
 
     def _publish_feedback(self, validator, additional_errors=()):
         message_uuid = validator.message[RABBITMQ_FIELD_MESSAGE_UUID].decode()
