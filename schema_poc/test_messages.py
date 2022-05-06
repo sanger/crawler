@@ -85,17 +85,8 @@ update_message = {
     "sample": {
         "sampleUuid": b"3f51febc-aeb7-4aee-a730-20d6d308df60",
         "updatedFields": [
-            {"name": "labId", "value": "CPTD"},
-            {"name": "rootSampleId", "value": "R00T-S4MPL3-1D"},
-            {"name": "plateBarcode", "value": "BARCODE001"},
-            {"name": "plateCoordinate", "value": "A6"},
-            {"name": "rnaId", "value": "BARCODE001_A06"},
-            {"name": "result", "value": "positive"},
-            {"name": "cogUkId", "value": None},
             {"name": "preferentiallySequence", "value": True},
             {"name": "mustSequence", "value": True},
-            {"name": "fitToPick", "value": True},
-            {"name": "testedDateUtc", "value": datetime(2021, 3, 4, 10, 32, 48)},
         ],
     },
 }
