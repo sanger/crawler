@@ -9,7 +9,7 @@ from crawler.constants import (
 from crawler.exceptions import TransientRabbitError
 from crawler.helpers.general_helpers import extract_duplicated_values as extract_dupes
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
-from crawler.processing.messages.create_plate_message import (
+from crawler.rabbit.messages.create_plate_message import (
     FIELD_COG_UK_ID,
     FIELD_LAB_ID,
     FIELD_MESSAGE_CREATE_DATE,

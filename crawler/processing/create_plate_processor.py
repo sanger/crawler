@@ -8,9 +8,9 @@ from crawler.constants import (
 )
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_validator import CreatePlateValidator
-from crawler.processing.messages.create_plate_message import CreatePlateMessage
 from crawler.rabbit.avro_encoder import AvroEncoder
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackMessage
+from crawler.rabbit.messages.create_plate_message import CreatePlateMessage
 
 LOGGER = logging.getLogger(__name__)
 

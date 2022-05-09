@@ -11,8 +11,8 @@ from crawler.constants import (
 )
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_processor import CreatePlateProcessor
-from crawler.processing.messages.create_plate_message import CreatePlateMessage
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError
+from crawler.rabbit.messages.create_plate_message import CreatePlateMessage
 from tests.testing_objects import CREATE_PLATE_MESSAGE
 
 

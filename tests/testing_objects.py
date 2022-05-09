@@ -60,26 +60,24 @@ from crawler.constants import (
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
 )
-from crawler.processing.messages.create_plate_message import FIELD_COG_UK_ID as CREATE_PLATE_COG_UK_ID
-from crawler.processing.messages.create_plate_message import FIELD_FIT_TO_PICK as CREATE_PLATE_FIT_TO_PICK
-from crawler.processing.messages.create_plate_message import FIELD_LAB_ID as CREATE_PLATE_LAB_ID
-from crawler.processing.messages.create_plate_message import (
-    FIELD_MESSAGE_CREATE_DATE as CREATE_PLATE_MESSAGE_CREATE_DATE,
-)
-from crawler.processing.messages.create_plate_message import FIELD_MESSAGE_UUID as CREATE_PLATE_MESSAGE_UUID
-from crawler.processing.messages.create_plate_message import FIELD_MUST_SEQUENCE as CREATE_PLATE_MUST_SEQUENCE
-from crawler.processing.messages.create_plate_message import FIELD_PLATE as CREATE_PLATE_PLATE
-from crawler.processing.messages.create_plate_message import FIELD_PLATE_BARCODE as CREATE_PLATE_PLATE_BARCODE
-from crawler.processing.messages.create_plate_message import FIELD_PLATE_COORDINATE as CREATE_PLATE_PLATE_COORDINATE
-from crawler.processing.messages.create_plate_message import (
+from crawler.rabbit.messages.create_plate_message import FIELD_COG_UK_ID as CREATE_PLATE_COG_UK_ID
+from crawler.rabbit.messages.create_plate_message import FIELD_FIT_TO_PICK as CREATE_PLATE_FIT_TO_PICK
+from crawler.rabbit.messages.create_plate_message import FIELD_LAB_ID as CREATE_PLATE_LAB_ID
+from crawler.rabbit.messages.create_plate_message import FIELD_MESSAGE_CREATE_DATE as CREATE_PLATE_MESSAGE_CREATE_DATE
+from crawler.rabbit.messages.create_plate_message import FIELD_MESSAGE_UUID as CREATE_PLATE_MESSAGE_UUID
+from crawler.rabbit.messages.create_plate_message import FIELD_MUST_SEQUENCE as CREATE_PLATE_MUST_SEQUENCE
+from crawler.rabbit.messages.create_plate_message import FIELD_PLATE as CREATE_PLATE_PLATE
+from crawler.rabbit.messages.create_plate_message import FIELD_PLATE_BARCODE as CREATE_PLATE_PLATE_BARCODE
+from crawler.rabbit.messages.create_plate_message import FIELD_PLATE_COORDINATE as CREATE_PLATE_PLATE_COORDINATE
+from crawler.rabbit.messages.create_plate_message import (
     FIELD_PREFERENTIALLY_SEQUENCE as CREATE_PLATE_PREFERENTIALLY_SEQUENCE,
 )
-from crawler.processing.messages.create_plate_message import FIELD_RESULT as CREATE_PLATE_RESULT
-from crawler.processing.messages.create_plate_message import FIELD_RNA_ID as CREATE_PLATE_RNA_ID
-from crawler.processing.messages.create_plate_message import FIELD_ROOT_SAMPLE_ID as CREATE_PLATE_ROOT_SAMPLE_ID
-from crawler.processing.messages.create_plate_message import FIELD_SAMPLE_UUID as CREATE_PLATE_SAMPLE_UUID
-from crawler.processing.messages.create_plate_message import FIELD_SAMPLES as CREATE_PLATE_SAMPLES
-from crawler.processing.messages.create_plate_message import FIELD_TESTED_DATE as CREATE_PLATE_TESTED_DATE
+from crawler.rabbit.messages.create_plate_message import FIELD_RESULT as CREATE_PLATE_RESULT
+from crawler.rabbit.messages.create_plate_message import FIELD_RNA_ID as CREATE_PLATE_RNA_ID
+from crawler.rabbit.messages.create_plate_message import FIELD_ROOT_SAMPLE_ID as CREATE_PLATE_ROOT_SAMPLE_ID
+from crawler.rabbit.messages.create_plate_message import FIELD_SAMPLE_UUID as CREATE_PLATE_SAMPLE_UUID
+from crawler.rabbit.messages.create_plate_message import FIELD_SAMPLES as CREATE_PLATE_SAMPLES
+from crawler.rabbit.messages.create_plate_message import FIELD_TESTED_DATE as CREATE_PLATE_TESTED_DATE
 
 TESTING_SAMPLES: List[Dict[str, Union[str, bool, ObjectId]]] = [
     {
