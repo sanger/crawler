@@ -44,8 +44,9 @@ class CreatePlateProcessor:
         return len(create_message.errors) == 0
 
     def _publish_feedback(self, create_message):
+        _, message_uuid = create_message.message_uuid
         feedback_message = CreateFeedbackMessage(
-            sourceMessageUuid=create_message.message_uuid,
+            sourceMessageUuid=message_uuid,
             countOfTotalSamples=create_message.total_samples,
             countOfValidSamples=create_message.validated_samples,
             operationWasErrorFree=len(create_message.errors) == 0,

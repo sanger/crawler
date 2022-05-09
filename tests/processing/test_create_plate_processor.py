@@ -1,5 +1,5 @@
 from typing import NamedTuple
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, MagicMock, PropertyMock, patch
 
 import pytest
 
@@ -39,6 +39,11 @@ def message():
 
 
 @pytest.fixture
+def create_plate_message(message):
+    return CreatePlateMessage(message)
+
+
+@pytest.fixture
 def mock_validator():
     with patch("crawler.processing.create_plate_processor.CreatePlateValidator") as validator:
         yield validator
@@ -63,8 +68,9 @@ def test_constructor_creates_appropriate_encoder(mock_avro_encoder):
     mock_avro_encoder.assert_called_once_with(schema_registry, RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK)
 
 
-def test_process_creates_a_create_message_object(subject, message):
+def test_process_creates_a_create_plate_message_object(subject, message):
     with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as create_plate_message:
+        create_plate_message.return_value.message_uuid = ("UUID_FIELD", "UUID")
         subject.process(message)
 
     create_plate_message.assert_called_once_with(message.message)
@@ -72,20 +78,26 @@ def test_process_creates_a_create_message_object(subject, message):
 
 def test_process_uses_validator(subject, mock_validator):
     with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as create_plate_message:
+        create_plate_message.return_value.message_uuid = ("UUID_FIELD", "UUID")
         subject.process(MagicMock())
 
     mock_validator.assert_called_once_with(create_plate_message.return_value, subject._config)
     mock_validator.return_value.validate.assert_called_once()
 
 
-def test_process_when_no_issues_found(subject):
+def test_process_publishes_feedback_when_no_issues_found(subject, mock_validator):
     with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as create_plate_message:
         with patch(
             "crawler.processing.create_plate_processor.CreatePlateProcessor._publish_feedback"
         ) as publish_feedback:
-            result = subject.process(MagicMock())
+            subject.process(MagicMock())
 
     publish_feedback.assert_called_once_with(create_plate_message.return_value)
+
+
+def test_process_returns_true_when_no_issues_found(subject, mock_validator):
+    result = subject.process(MagicMock())
+
     assert result is True
 
 
@@ -130,8 +142,8 @@ def test_publish_feedback_encodes_valid_message(subject, mock_avro_encoder):
     assert feedback_message["errors"] == []
 
 
-def test_publish_feedback_publishes_valid_message(subject):
-    subject._publish_feedback(MagicMock())
+def test_publish_feedback_publishes_valid_message(subject, create_plate_message):
+    subject._publish_feedback(create_plate_message)
 
     subject._basic_publisher.publish_message.assert_called_once_with(
         RABBITMQ_FEEDBACK_EXCHANGE,
@@ -154,10 +166,10 @@ def test_publish_feedback_publishes_valid_message(subject):
         ),
     ],
 )
-def test_publish_feedback_encodes_errors(subject, message, mock_avro_encoder, message_errors):
-    create_message = MagicMock()
-    create_message.errors = message_errors
-    subject._publish_feedback(create_message)
+def test_publish_feedback_encodes_errors(subject, create_plate_message, mock_avro_encoder, message_errors):
+    with patch.object(CreatePlateMessage, "errors", new_callable=PropertyMock) as errors_attribute:
+        errors_attribute.return_value = message_errors
+        subject._publish_feedback(create_plate_message)
 
     mock_avro_encoder.return_value.encode.assert_called_once()
     feedback_message = mock_avro_encoder.return_value.encode.call_args.args[0][0]

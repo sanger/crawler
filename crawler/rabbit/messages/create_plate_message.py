@@ -40,7 +40,23 @@ class CreatePlateMessage:
 
     @property
     def message_uuid(self):
-        return self._body[FIELD_MESSAGE_UUID].decode()
+        return (FIELD_MESSAGE_UUID, self._body[FIELD_MESSAGE_UUID].decode())
+
+    @property
+    def message_create_date(self):
+        return (FIELD_MESSAGE_CREATE_DATE, self._body[FIELD_MESSAGE_CREATE_DATE])
+
+    @property
+    def plate_lab_id(self):
+        return (FIELD_LAB_ID, self._body[FIELD_PLATE][FIELD_LAB_ID])
+
+    @property
+    def plate_barcode(self):
+        return (FIELD_PLATE_BARCODE, self._body[FIELD_PLATE][FIELD_PLATE_BARCODE])
+
+    @property
+    def samples(self):
+        return (FIELD_SAMPLES, self._body[FIELD_PLATE][FIELD_SAMPLES].copy())
 
     def add_error(self, origin, description, sample_uuid="", field=""):
         LOGGER.error(

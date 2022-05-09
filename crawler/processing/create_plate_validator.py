@@ -11,10 +11,6 @@ from crawler.helpers.general_helpers import extract_duplicated_values as extract
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
 from crawler.rabbit.messages.create_plate_message import (
     FIELD_COG_UK_ID,
-    FIELD_LAB_ID,
-    FIELD_MESSAGE_CREATE_DATE,
-    FIELD_PLATE,
-    FIELD_PLATE_BARCODE,
     FIELD_PLATE_COORDINATE,
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
@@ -49,31 +45,29 @@ class CreatePlateValidator:
         """Perform validation of the plate field in the message values for sanity.
         This does not check that the message can be inserted into the relevant databases.
         """
-        plate_body = self._message._body[FIELD_PLATE]
-
         # Check that the plate is from a centre we are accepting RabbitMQ messages for.
-        lab_id = plate_body[FIELD_LAB_ID]
+        lab_id_field, lab_id = self._message.plate_lab_id
         if lab_id not in [c[CENTRE_KEY_LAB_ID_DEFAULT] for c in self.centres]:
             self._message.add_error(
                 RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
                 f"The lab ID provided '{lab_id}' is not configured to receive messages via RabbitMQ.",
-                field=FIELD_LAB_ID,
+                field=lab_id_field,
             )
 
         # Ensure that the plate barcode isn't an empty string.
-        plate_barcode = plate_body[FIELD_PLATE_BARCODE]
+        plate_barcode_field, plate_barcode = self._message.plate_barcode
         if not plate_barcode:
             self._message.add_error(
                 RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
                 "Field value is not populated.",
-                field=FIELD_PLATE_BARCODE,
+                field=plate_barcode_field,
             )
 
     def _validate_samples(self):
         """Perform validation of the samples array in the message.
         This does not check that the message can be inserted into the relevant databases.
         """
-        samples = self._message._body[FIELD_PLATE][FIELD_SAMPLES]
+        _, samples = self._message.samples
 
         # Extract all values that are supposed to be unique
         dup_values = {
@@ -185,7 +179,7 @@ class CreatePlateValidator:
             valid = False
 
         # Validate tested date is not newer than the message create date
-        message_create_date = self._message._body[FIELD_MESSAGE_CREATE_DATE]
+        _, message_create_date = self._message.message_create_date
         if not self._validate_sample_field_no_later_than(message_create_date, FIELD_TESTED_DATE, sample):
             valid = False
 
