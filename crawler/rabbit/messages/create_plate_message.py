@@ -1,5 +1,7 @@
 import logging
 
+from crawler.helpers.general_helpers import extract_duplicated_values as extract_dupes
+from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError
 
 LOGGER = logging.getLogger(__name__)
@@ -23,12 +25,44 @@ FIELD_SAMPLES = "samples"
 FIELD_TESTED_DATE = "testedDateUtc"
 
 
+class CreatePlateSample:
+    def __init__(self, body):
+        self._body = body
+
+    @property
+    def cog_uk_id(self):
+        return (FIELD_COG_UK_ID, self._body[FIELD_COG_UK_ID])
+
+    @property
+    def plate_coordinate(self):
+        return (FIELD_PLATE_COORDINATE, self._body[FIELD_PLATE_COORDINATE])
+
+    @property
+    def rna_id(self):
+        return (FIELD_RNA_ID, self._body[FIELD_RNA_ID])
+
+    @property
+    def root_sample_id(self):
+        return (FIELD_ROOT_SAMPLE_ID, self._body[FIELD_ROOT_SAMPLE_ID])
+
+    @property
+    def sample_uuid(self):
+        return (FIELD_SAMPLE_UUID, self._body[FIELD_SAMPLE_UUID].decode())
+
+    @property
+    def tested_date(self):
+        return (FIELD_TESTED_DATE, self._body[FIELD_TESTED_DATE])
+
+
 class CreatePlateMessage:
     def __init__(self, body):
         self._body = body
 
         self.validated_samples = 0
         self._errors = []
+
+        self._duplicated_sample_values = None
+        self._samples = None
 
     @property
     def errors(self):
@@ -56,7 +90,25 @@ class CreatePlateMessage:
 
     @property
     def samples(self):
-        return (FIELD_SAMPLES, self._body[FIELD_PLATE][FIELD_SAMPLES].copy())
+        if self._samples is None:
+            self._samples = [CreatePlateSample(body) for body in self._body[FIELD_PLATE][FIELD_SAMPLES]]
+
+        return self._samples
+
+    @property
+    def duplicated_sample_values(self):
+        if self._duplicated_sample_values is None:
+            self._duplicated_sample_values = {
+                FIELD_SAMPLE_UUID: extract_dupes([s.sample_uuid[1] for s in self.samples]),
+                FIELD_ROOT_SAMPLE_ID: extract_dupes([s.root_sample_id[1] for s in self.samples]),
+                FIELD_RNA_ID: extract_dupes([s.rna_id[1] for s in self.samples]),
+                FIELD_COG_UK_ID: extract_dupes([s.cog_uk_id[1] for s in self.samples]),
+                FIELD_PLATE_COORDINATE: extract_dupes(
+                    [normalise_plate_coordinate(s.plate_coordinate[1]) for s in self.samples]
+                ),
+            }
+
+        return self._duplicated_sample_values
 
     def add_error(self, origin, description, sample_uuid="", field=""):
         LOGGER.error(
