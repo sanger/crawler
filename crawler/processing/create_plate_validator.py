@@ -57,7 +57,7 @@ class CreatePlateValidator:
         """Perform validation of the samples array in the message.
         This does not check that the message can be inserted into the relevant databases.
         """
-        if len(self._message.samples) == 0:
+        if self._message.total_samples == 0:
             return
 
         sample_uuid_field, _ = self._message.samples[0].sample_uuid
