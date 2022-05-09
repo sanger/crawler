@@ -45,10 +45,6 @@ class CreatePlateValidator:
 
         return self._centres
 
-    @property
-    def errors(self):
-        return self._errors.copy()
-
     def _validate_plate(self):
         """Perform validation of the plate field in the message values for sanity.
         This does not check that the message can be inserted into the relevant databases.

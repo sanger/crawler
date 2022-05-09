@@ -69,6 +69,9 @@ def test_centres_raises_exception_for_loss_of_mongo_connectivity(subject):
             subject.centres
 
 
+DEFAULT_TESTED_DATE = datetime(2021, 1, 1, 0, 0, 0)
+
+
 def assert_validate_when_message_is_valid(
     subject,
     create_message,
@@ -78,7 +81,7 @@ def assert_validate_when_message_is_valid(
     rna_id="RNA_ID",
     cog_uk_id="COG_UK_ID",
     plate_coordinate="A1",
-    tested_date=datetime(2021, 1, 1, 0, 0, 0),
+    tested_date=DEFAULT_TESTED_DATE,
 ):
     create_message._body[FIELD_MESSAGE_CREATE_DATE] = datetime(2022, 2, 14, 7, 24, 35)
     create_message._body[FIELD_PLATE][FIELD_PLATE_BARCODE] = plate_barcode

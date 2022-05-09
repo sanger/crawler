@@ -28,7 +28,11 @@ class CreatePlateMessage:
         self._body = body
 
         self.validated_samples = 0
-        self.errors = []
+        self._errors = []
+
+    @property
+    def errors(self):
+        return self._errors.copy()
 
     @property
     def total_samples(self):
@@ -42,7 +46,7 @@ class CreatePlateMessage:
         LOGGER.error(
             f"Error found in message with origin '{origin}', sampleUuid '{sample_uuid}', field '{field}': {description}"
         )
-        self.errors.append(
+        self._errors.append(
             CreateFeedbackError(
                 origin=origin,
                 sampleUuid=sample_uuid,
