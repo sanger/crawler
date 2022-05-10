@@ -36,21 +36,21 @@ class CreatePlateValidator:
         This does not check that the message can be inserted into the relevant databases.
         """
         # Check that the plate is from a centre we are accepting RabbitMQ messages for.
-        lab_id = self._message.plate_lab_id
-        if lab_id.value not in [c[CENTRE_KEY_LAB_ID_DEFAULT] for c in self.centres]:
+        lab_id_field = self._message.lab_id
+        if lab_id_field.value not in [c[CENTRE_KEY_LAB_ID_DEFAULT] for c in self.centres]:
             self._message.add_error(
                 RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
-                f"The lab ID provided '{lab_id.value}' is not configured to receive messages via RabbitMQ.",
-                field=lab_id.name,
+                f"The lab ID provided '{lab_id_field.value}' is not configured to receive messages via RabbitMQ.",
+                field=lab_id_field.name,
             )
 
         # Ensure that the plate barcode isn't an empty string.
-        plate_barcode = self._message.plate_barcode
-        if not plate_barcode.value:
+        plate_barcode_field = self._message.plate_barcode
+        if not plate_barcode_field.value:
             self._message.add_error(
                 RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
                 "Field value is not populated.",
-                field=plate_barcode.name,
+                field=plate_barcode_field.name,
             )
 
     def _validate_samples(self):
@@ -60,13 +60,13 @@ class CreatePlateValidator:
         if self._message.total_samples == 0:
             return
 
-        first_sample_uuid = self._message.samples.value[0].sample_uuid
-        for sample_uuid in self._message.duplicated_sample_values[first_sample_uuid.name]:
+        sample_uuid_field_name = self._message.samples.value[0].sample_uuid.name
+        for sample_uuid in self._message.duplicated_sample_values[sample_uuid_field_name]:
             self._message.add_error(
                 RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                 f"Sample UUID {sample_uuid} exists more than once in the message.",
                 sample_uuid=sample_uuid,
-                field=first_sample_uuid.name,
+                field=sample_uuid_field_name,
             )
 
         self._message.validated_samples = 0

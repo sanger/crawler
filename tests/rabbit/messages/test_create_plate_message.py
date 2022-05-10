@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
@@ -15,6 +16,34 @@ def logger():
 @pytest.fixture
 def subject():
     return CreatePlateMessage(CREATE_PLATE_MESSAGE)
+
+
+def test_validated_samples_is_initially_zero(subject):
+    assert subject.validated_samples == 0
+
+
+def test_total_samples_gives_expected_value(subject):
+    assert subject.total_samples == 3
+
+
+def test_message_uuid_gives_expected_value(subject):
+    assert subject.message_uuid.name == "messageUuid"
+    assert subject.message_uuid.value == "b01aa0ad-7b19-4f94-87e9-70d74fb8783c"
+
+
+def test_message_create_date_gives_expected_value(subject):
+    assert subject.message_create_date.name == "messageCreateDateUtc"
+    assert type(subject.message_create_date.value) == datetime
+
+
+def test_plate_lab_id_gives_expected_value(subject):
+    assert subject.lab_id.name == "labId"
+    assert subject.lab_id.value == "CPTD"
+
+
+def test_plate_barcode_gives_expected_value(subject):
+    assert subject.plate_barcode.name == "plateBarcode"
+    assert subject.plate_barcode.value == "PLATE-001"
 
 
 @pytest.mark.parametrize("origin", ["origin_1", "origin_2"])
@@ -37,3 +66,13 @@ def test_add_error_records_the_error(subject, logger, origin, description, sampl
     assert added_error["description"] == description
     assert added_error["sampleUuid"] == sample_uuid
     assert added_error["field"] == field
+
+
+def test_errors_list_is_immutable(subject):
+    subject.add_error("origin", "description", "sample_uuid", "field")
+
+    errors = subject.errors
+    assert len(errors) == 1
+    errors.remove(errors[0])
+    assert len(errors) == 0
+    assert len(subject.errors) == 1  # Hasn't been modified

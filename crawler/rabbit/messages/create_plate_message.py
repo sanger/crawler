@@ -87,7 +87,7 @@ class CreatePlateMessage:
         return MessageField(FIELD_MESSAGE_CREATE_DATE, self._body[FIELD_MESSAGE_CREATE_DATE])
 
     @property
-    def plate_lab_id(self):
+    def lab_id(self):
         return MessageField(FIELD_LAB_ID, self._body[FIELD_PLATE][FIELD_LAB_ID])
 
     @property
