@@ -12,7 +12,7 @@ from crawler.constants import (
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_processor import CreatePlateProcessor
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError
-from crawler.rabbit.messages.create_plate_message import CreatePlateMessage
+from crawler.rabbit.messages.create_plate_message import CreatePlateMessage, MessageField
 from tests.testing_objects import CREATE_PLATE_MESSAGE
 
 
@@ -70,7 +70,7 @@ def test_constructor_creates_appropriate_encoder(mock_avro_encoder):
 
 def test_process_creates_a_create_plate_message_object(subject, message):
     with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as create_plate_message:
-        create_plate_message.return_value.message_uuid = ("UUID_FIELD", "UUID")
+        create_plate_message.return_value.message_uuid = MessageField("UUID_FIELD", "UUID")
         subject.process(message)
 
     create_plate_message.assert_called_once_with(message.message)
@@ -78,7 +78,7 @@ def test_process_creates_a_create_plate_message_object(subject, message):
 
 def test_process_uses_validator(subject, mock_validator):
     with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as create_plate_message:
-        create_plate_message.return_value.message_uuid = ("UUID_FIELD", "UUID")
+        create_plate_message.return_value.message_uuid = MessageField("UUID_FIELD", "UUID")
         subject.process(MagicMock())
 
     mock_validator.assert_called_once_with(create_plate_message.return_value, subject._config)

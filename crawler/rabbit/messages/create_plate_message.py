@@ -1,4 +1,5 @@
 import logging
+from typing import Any, NamedTuple
 
 from crawler.helpers.general_helpers import extract_duplicated_values as extract_dupes
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
@@ -25,33 +26,38 @@ FIELD_SAMPLES = "samples"
 FIELD_TESTED_DATE = "testedDateUtc"
 
 
+class MessageField(NamedTuple):
+    name: str
+    value: Any
+
+
 class CreatePlateSample:
     def __init__(self, body):
         self._body = body
 
     @property
     def cog_uk_id(self):
-        return (FIELD_COG_UK_ID, self._body[FIELD_COG_UK_ID])
+        return MessageField(FIELD_COG_UK_ID, self._body[FIELD_COG_UK_ID])
 
     @property
     def plate_coordinate(self):
-        return (FIELD_PLATE_COORDINATE, self._body[FIELD_PLATE_COORDINATE])
+        return MessageField(FIELD_PLATE_COORDINATE, self._body[FIELD_PLATE_COORDINATE])
 
     @property
     def rna_id(self):
-        return (FIELD_RNA_ID, self._body[FIELD_RNA_ID])
+        return MessageField(FIELD_RNA_ID, self._body[FIELD_RNA_ID])
 
     @property
     def root_sample_id(self):
-        return (FIELD_ROOT_SAMPLE_ID, self._body[FIELD_ROOT_SAMPLE_ID])
+        return MessageField(FIELD_ROOT_SAMPLE_ID, self._body[FIELD_ROOT_SAMPLE_ID])
 
     @property
     def sample_uuid(self):
-        return (FIELD_SAMPLE_UUID, self._body[FIELD_SAMPLE_UUID].decode())
+        return MessageField(FIELD_SAMPLE_UUID, self._body[FIELD_SAMPLE_UUID].decode())
 
     @property
     def tested_date(self):
-        return (FIELD_TESTED_DATE, self._body[FIELD_TESTED_DATE])
+        return MessageField(FIELD_TESTED_DATE, self._body[FIELD_TESTED_DATE])
 
 
 class CreatePlateMessage:
@@ -74,37 +80,37 @@ class CreatePlateMessage:
 
     @property
     def message_uuid(self):
-        return (FIELD_MESSAGE_UUID, self._body[FIELD_MESSAGE_UUID].decode())
+        return MessageField(FIELD_MESSAGE_UUID, self._body[FIELD_MESSAGE_UUID].decode())
 
     @property
     def message_create_date(self):
-        return (FIELD_MESSAGE_CREATE_DATE, self._body[FIELD_MESSAGE_CREATE_DATE])
+        return MessageField(FIELD_MESSAGE_CREATE_DATE, self._body[FIELD_MESSAGE_CREATE_DATE])
 
     @property
     def plate_lab_id(self):
-        return (FIELD_LAB_ID, self._body[FIELD_PLATE][FIELD_LAB_ID])
+        return MessageField(FIELD_LAB_ID, self._body[FIELD_PLATE][FIELD_LAB_ID])
 
     @property
     def plate_barcode(self):
-        return (FIELD_PLATE_BARCODE, self._body[FIELD_PLATE][FIELD_PLATE_BARCODE])
+        return MessageField(FIELD_PLATE_BARCODE, self._body[FIELD_PLATE][FIELD_PLATE_BARCODE])
 
     @property
     def samples(self):
         if self._samples is None:
             self._samples = [CreatePlateSample(body) for body in self._body[FIELD_PLATE][FIELD_SAMPLES]]
 
-        return self._samples
+        return MessageField(FIELD_SAMPLES, self._samples)
 
     @property
     def duplicated_sample_values(self):
         if self._duplicated_sample_values is None:
             self._duplicated_sample_values = {
-                FIELD_SAMPLE_UUID: extract_dupes([s.sample_uuid[1] for s in self.samples]),
-                FIELD_ROOT_SAMPLE_ID: extract_dupes([s.root_sample_id[1] for s in self.samples]),
-                FIELD_RNA_ID: extract_dupes([s.rna_id[1] for s in self.samples]),
-                FIELD_COG_UK_ID: extract_dupes([s.cog_uk_id[1] for s in self.samples]),
+                FIELD_SAMPLE_UUID: extract_dupes([s.sample_uuid.value for s in self.samples.value]),
+                FIELD_ROOT_SAMPLE_ID: extract_dupes([s.root_sample_id.value for s in self.samples.value]),
+                FIELD_RNA_ID: extract_dupes([s.rna_id.value for s in self.samples.value]),
+                FIELD_COG_UK_ID: extract_dupes([s.cog_uk_id.value for s in self.samples.value]),
                 FIELD_PLATE_COORDINATE: extract_dupes(
-                    [normalise_plate_coordinate(s.plate_coordinate[1]) for s in self.samples]
+                    [normalise_plate_coordinate(s.plate_coordinate.value) for s in self.samples.value]
                 ),
             }
 

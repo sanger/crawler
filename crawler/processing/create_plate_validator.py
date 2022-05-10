@@ -36,21 +36,21 @@ class CreatePlateValidator:
         This does not check that the message can be inserted into the relevant databases.
         """
         # Check that the plate is from a centre we are accepting RabbitMQ messages for.
-        lab_id_field, lab_id = self._message.plate_lab_id
-        if lab_id not in [c[CENTRE_KEY_LAB_ID_DEFAULT] for c in self.centres]:
+        lab_id = self._message.plate_lab_id
+        if lab_id.value not in [c[CENTRE_KEY_LAB_ID_DEFAULT] for c in self.centres]:
             self._message.add_error(
                 RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
-                f"The lab ID provided '{lab_id}' is not configured to receive messages via RabbitMQ.",
-                field=lab_id_field,
+                f"The lab ID provided '{lab_id.value}' is not configured to receive messages via RabbitMQ.",
+                field=lab_id.name,
             )
 
         # Ensure that the plate barcode isn't an empty string.
-        plate_barcode_field, plate_barcode = self._message.plate_barcode
-        if not plate_barcode:
+        plate_barcode = self._message.plate_barcode
+        if not plate_barcode.value:
             self._message.add_error(
                 RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
                 "Field value is not populated.",
-                field=plate_barcode_field,
+                field=plate_barcode.name,
             )
 
     def _validate_samples(self):
@@ -60,59 +60,59 @@ class CreatePlateValidator:
         if self._message.total_samples == 0:
             return
 
-        sample_uuid_field, _ = self._message.samples[0].sample_uuid
-        for sample_uuid in self._message.duplicated_sample_values[sample_uuid_field]:
+        first_sample_uuid = self._message.samples.value[0].sample_uuid
+        for sample_uuid in self._message.duplicated_sample_values[first_sample_uuid.name]:
             self._message.add_error(
                 RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                 f"Sample UUID {sample_uuid} exists more than once in the message.",
                 sample_uuid=sample_uuid,
-                field=sample_uuid_field,
+                field=first_sample_uuid.name,
             )
 
         self._message.validated_samples = 0
-        for sample in self._message.samples:
+        for sample in self._message.samples.value:
             if self._validate_sample(sample):
                 self._message.validated_samples += 1
 
-    def _validate_sample_field_populated(self, field_name, field_value, sample_uuid):
-        if not field_value:
+    def _validate_sample_field_populated(self, field, sample_uuid):
+        if not field.value:
             origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
             description = "Field value is not populated."
-            self._message.add_error(origin, description, sample_uuid, field_name)
+            self._message.add_error(origin, description, sample_uuid, field.name)
 
             return False
 
         return True
 
-    def _validate_sample_field_unique(self, field_name, field_value, sample_uuid, normalise_func=None):
-        normalised_value = field_value
+    def _validate_sample_field_unique(self, field, sample_uuid, normalise_func=None):
+        normalised_value = field.value
         if normalise_func is not None:
             normalised_value = normalise_func(normalised_value)
 
-        if normalised_value in self._message.duplicated_sample_values[field_name]:
+        if normalised_value in self._message.duplicated_sample_values[field.name]:
             origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
-            description = f"Field value is not unique across samples ({field_value})."
-            self._message.add_error(origin, description, sample_uuid, field_name)
+            description = f"Field value is not unique across samples ({field.value})."
+            self._message.add_error(origin, description, sample_uuid, field.name)
 
             return False
 
         return True
 
-    def _validate_sample_field_matches_regex(self, regex, field_name, field_value, sample_uuid):
-        if not regex.match(field_value):
+    def _validate_sample_field_matches_regex(self, regex, field, sample_uuid):
+        if not regex.match(field.value):
             origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
             description = f"Field value does not match regex ({regex.pattern})."
-            self._message.add_error(origin, description, sample_uuid, field_name)
+            self._message.add_error(origin, description, sample_uuid, field.name)
 
             return False
 
         return True
 
-    def _validate_sample_field_no_later_than(self, timestamp, field_name, field_value, sample_uuid):
-        if field_value > timestamp:
+    def _validate_sample_field_no_later_than(self, timestamp, field, sample_uuid):
+        if field.value > timestamp:
             origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
-            description = f"Field value repesents a timestamp that is too recent ({field_value} > {timestamp})."
-            self._message.add_error(origin, description, sample_uuid, field_name)
+            description = f"Field value repesents a timestamp that is too recent ({field.value} > {timestamp})."
+            self._message.add_error(origin, description, sample_uuid, field.name)
 
             return False
 
@@ -123,49 +123,45 @@ class CreatePlateValidator:
         valid = True
 
         # Ensure the sample UUID is unique
-        sample_uuid_field, sample_uuid = sample.sample_uuid
-        if sample_uuid in self._message.duplicated_sample_values[sample_uuid_field]:
+        sample_uuid_field = sample.sample_uuid
+        sample_uuid = sample_uuid_field.value
+        if sample_uuid in self._message.duplicated_sample_values[sample_uuid_field.name]:
             valid = False
 
         # Validate root sample ID
-        root_sample_id_field, root_sample_id = sample.root_sample_id
+        root_sample_id_field = sample.root_sample_id
         if not self._validate_sample_field_populated(
-            root_sample_id_field, root_sample_id, sample_uuid
-        ) or not self._validate_sample_field_unique(root_sample_id_field, root_sample_id, sample_uuid):
+            root_sample_id_field, sample_uuid
+        ) or not self._validate_sample_field_unique(root_sample_id_field, sample_uuid):
             valid = False
 
         # Validate RNA ID
-        rna_id_field, rna_id = sample.rna_id
+        rna_id_field = sample.rna_id
         if not self._validate_sample_field_populated(
-            rna_id_field, rna_id, sample_uuid
-        ) or not self._validate_sample_field_unique(rna_id_field, rna_id, sample_uuid):
+            rna_id_field, sample_uuid
+        ) or not self._validate_sample_field_unique(rna_id_field, sample_uuid):
             valid = False
 
         # Validate COG UK ID
-        cog_uk_id_field, cog_uk_id = sample.cog_uk_id
+        cog_uk_id_field = sample.cog_uk_id
         if not self._validate_sample_field_populated(
-            cog_uk_id_field, cog_uk_id, sample_uuid
-        ) or not self._validate_sample_field_unique(cog_uk_id_field, cog_uk_id, sample_uuid):
+            cog_uk_id_field, sample_uuid
+        ) or not self._validate_sample_field_unique(cog_uk_id_field, sample_uuid):
             valid = False
 
         # Validate plate coordinates
-        plate_coordinate_field, plate_coordinate = sample.plate_coordinate
+        plate_coordinate_field = sample.plate_coordinate
         if not self._validate_sample_field_matches_regex(
             re.compile(r"^[A-H](?:0?[1-9]|1[0-2])$"),  # A1 - H12 or A01 padded format
             plate_coordinate_field,
-            plate_coordinate,
             sample_uuid,
-        ) or not self._validate_sample_field_unique(
-            plate_coordinate_field, plate_coordinate, sample_uuid, normalise_plate_coordinate
-        ):
+        ) or not self._validate_sample_field_unique(plate_coordinate_field, sample_uuid, normalise_plate_coordinate):
             valid = False
 
         # Validate tested date is not newer than the message create date
-        _, message_create_date = self._message.message_create_date
-        sample_tested_date_field, sample_tested_date = sample.tested_date
-        if not self._validate_sample_field_no_later_than(
-            message_create_date, sample_tested_date_field, sample_tested_date, sample_uuid
-        ):
+        message_create_date = self._message.message_create_date.value
+        tested_date_field = sample.tested_date
+        if not self._validate_sample_field_no_later_than(message_create_date, tested_date_field, sample_uuid):
             valid = False
 
         return valid
