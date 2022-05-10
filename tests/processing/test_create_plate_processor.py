@@ -12,6 +12,7 @@ from crawler.constants import (
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_processor import CreatePlateProcessor
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError
+from crawler.rabbit.messages.create_plate_message import CreatePlateMessage, MessageField
 from tests.testing_objects import CREATE_PLATE_MESSAGE
 
 
@@ -30,12 +31,21 @@ def mock_logger():
 
 
 @pytest.fixture
+def message():
+    message = MagicMock()
+    message.message = CREATE_PLATE_MESSAGE
+
+    return message
+
+
+@pytest.fixture
+def create_plate_message(message):
+    return CreatePlateMessage(message)
+
+
+@pytest.fixture
 def mock_validator():
     with patch("crawler.processing.create_plate_processor.CreatePlateValidator") as validator:
-        type(validator).message = PropertyMock(return_value=CREATE_PLATE_MESSAGE)
-        type(validator).total_samples = PropertyMock(return_value=96)
-        type(validator).valid_samples = PropertyMock(return_value=96)
-        type(validator).errors = PropertyMock(return_value=[])
         yield validator
 
 
@@ -58,19 +68,36 @@ def test_constructor_creates_appropriate_encoder(mock_avro_encoder):
     mock_avro_encoder.assert_called_once_with(schema_registry, RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK)
 
 
-def test_process_uses_validator(subject, mock_validator):
-    message = MagicMock()
-    subject.process(message)
+def test_process_creates_a_create_plate_message_object(subject, message):
+    with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as create_plate_message:
+        create_plate_message.return_value.message_uuid = MessageField("UUID_FIELD", "UUID")
+        subject.process(message)
 
-    mock_validator.assert_called_once_with(message.message, subject._config)
+    create_plate_message.assert_called_once_with(message.message)
+
+
+def test_process_uses_validator(subject, mock_validator):
+    with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as create_plate_message:
+        create_plate_message.return_value.message_uuid = MessageField("UUID_FIELD", "UUID")
+        subject.process(MagicMock())
+
+    mock_validator.assert_called_once_with(create_plate_message.return_value, subject._config)
     mock_validator.return_value.validate.assert_called_once()
 
 
-def test_process_when_no_issues_found(subject, mock_validator):
-    with patch("crawler.processing.create_plate_processor.CreatePlateProcessor._publish_feedback") as publish_feedback:
-        result = subject.process(MagicMock())
+def test_process_publishes_feedback_when_no_issues_found(subject, mock_validator):
+    with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as create_plate_message:
+        with patch(
+            "crawler.processing.create_plate_processor.CreatePlateProcessor._publish_feedback"
+        ) as publish_feedback:
+            subject.process(MagicMock())
 
-    publish_feedback.assert_called_once_with(mock_validator.return_value)
+    publish_feedback.assert_called_once_with(create_plate_message.return_value)
+
+
+def test_process_returns_true_when_no_issues_found(subject, mock_validator):
+    result = subject.process(MagicMock())
+
     assert result is True
 
 
@@ -88,31 +115,35 @@ def test_process_when_transient_error(subject, mock_logger, mock_validator):
 def test_process_when_another_exception(subject, mock_logger, mock_validator):
     another_exception = KeyError("key")
     mock_validator.return_value.validate.side_effect = another_exception
-    with patch("crawler.processing.create_plate_processor.CreatePlateProcessor._publish_feedback") as publish_feedback:
-        result = subject.process(MagicMock())
+    with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as create_plate_message:
+        with patch(
+            "crawler.processing.create_plate_processor.CreatePlateProcessor._publish_feedback"
+        ) as publish_feedback:
+            result = subject.process(MagicMock())
 
     mock_logger.error.assert_called_once()
-    publish_feedback.assert_called_once_with(mock_validator.return_value, additional_errors=[ANY])
-    additional_error = publish_feedback.call_args.kwargs["additional_errors"][0]
-    assert additional_error["origin"] == RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING
-    assert "unhandled error" in additional_error["description"].lower()
+    create_plate_message.return_value.add_error.assert_called_once_with(
+        origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING, description=ANY
+    )
+    publish_feedback.assert_called_once_with(create_plate_message.return_value)
     assert result is False
 
 
-def test_publish_feedback_encodes_valid_message(subject, mock_validator, mock_avro_encoder):
-    subject._publish_feedback(mock_validator)
+def test_publish_feedback_encodes_valid_message(subject, mock_avro_encoder):
+    create_message = CreatePlateMessage(CREATE_PLATE_MESSAGE)
+    subject._publish_feedback(create_message)
 
     mock_avro_encoder.return_value.encode.assert_called_once()
     feedback_message = mock_avro_encoder.return_value.encode.call_args.args[0][0]
     assert feedback_message["sourceMessageUuid"] == "b01aa0ad-7b19-4f94-87e9-70d74fb8783c"
-    assert feedback_message["countOfTotalSamples"] == 96
-    assert feedback_message["countOfValidSamples"] == 96
+    assert feedback_message["countOfTotalSamples"] == 3
+    assert feedback_message["countOfValidSamples"] == 0  # We haven't validated the message
     assert feedback_message["operationWasErrorFree"] is True
     assert feedback_message["errors"] == []
 
 
-def test_publish_feedback_publishes_valid_message(subject, mock_validator):
-    subject._publish_feedback(mock_validator)
+def test_publish_feedback_publishes_valid_message(subject, create_plate_message):
+    subject._publish_feedback(create_plate_message)
 
     subject._basic_publisher.publish_message.assert_called_once_with(
         RABBITMQ_FEEDBACK_EXCHANGE,
@@ -135,24 +166,12 @@ def test_publish_feedback_publishes_valid_message(subject, mock_validator):
         ),
     ],
 )
-@pytest.mark.parametrize(
-    "additional_errors",
-    [
-        ([CreateFeedbackError(origin="additional_error_1", description="desc_1")]),
-        (
-            [
-                CreateFeedbackError(origin="additional_error_1", description="desc_1"),
-                CreateFeedbackError(origin="additional_error_2", description="desc_2"),
-            ]
-        ),
-    ],
-)
-def test_publish_feedback_encodes_errors(subject, mock_validator, mock_avro_encoder, message_errors, additional_errors):
-    type(mock_validator).errors = PropertyMock(return_value=message_errors)
-
-    subject._publish_feedback(mock_validator, additional_errors)
+def test_publish_feedback_encodes_errors(subject, create_plate_message, mock_avro_encoder, message_errors):
+    with patch.object(CreatePlateMessage, "errors", new_callable=PropertyMock) as errors_attribute:
+        errors_attribute.return_value = message_errors
+        subject._publish_feedback(create_plate_message)
 
     mock_avro_encoder.return_value.encode.assert_called_once()
     feedback_message = mock_avro_encoder.return_value.encode.call_args.args[0][0]
     assert feedback_message["operationWasErrorFree"] is False
-    assert feedback_message["errors"] == message_errors + additional_errors
+    assert feedback_message["errors"] == message_errors
