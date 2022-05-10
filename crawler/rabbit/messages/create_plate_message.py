@@ -40,8 +40,24 @@ class CreatePlateSample:
         return MessageField(FIELD_COG_UK_ID, self._body[FIELD_COG_UK_ID])
 
     @property
+    def fit_to_pick(self):
+        return MessageField(FIELD_FIT_TO_PICK, self._body[FIELD_FIT_TO_PICK])
+
+    @property
+    def must_sequence(self):
+        return MessageField(FIELD_MUST_SEQUENCE, self._body[FIELD_MUST_SEQUENCE])
+
+    @property
     def plate_coordinate(self):
         return MessageField(FIELD_PLATE_COORDINATE, self._body[FIELD_PLATE_COORDINATE])
+
+    @property
+    def preferentially_sequence(self):
+        return MessageField(FIELD_PREFERENTIALLY_SEQUENCE, self._body[FIELD_PREFERENTIALLY_SEQUENCE])
+
+    @property
+    def result(self):
+        return MessageField(FIELD_RESULT, self._body[FIELD_RESULT])
 
     @property
     def rna_id(self):
