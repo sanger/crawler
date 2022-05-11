@@ -253,6 +253,39 @@ EVENT_CHERRYPICK_LAYOUT_SET: Final[str] = "cherrypick_layout_set"
 # As per Beckman events detailed in https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/Cherrypicking+Events
 PLATE_EVENT_DESTINATION_CREATED: Final[str] = "lh_beckman_cp_destination_created"
 
+###
+# RabbitMQ message keys
+###
+RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING = "parsing"
+RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE = "plate"
+RABBITMQ_CREATE_FEEDBACK_ORIGIN_ROOT = "root"
+RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE = "sample"
+
+RABBITMQ_FIELD_COG_UK_ID = "cogUkId"
+RABBITMQ_FIELD_FIT_TO_PICK = "fitToPick"
+RABBITMQ_FIELD_LAB_ID = "labId"
+RABBITMQ_FIELD_MESSAGE_CREATE_DATE = "messageCreateDateUtc"
+RABBITMQ_FIELD_MESSAGE_UUID = "messageUuid"
+RABBITMQ_FIELD_MUST_SEQUENCE = "mustSequence"
+RABBITMQ_FIELD_PLATE = "plate"
+RABBITMQ_FIELD_PLATE_BARCODE = "plateBarcode"
+RABBITMQ_FIELD_PLATE_COORDINATE = "plateCoordinate"
+RABBITMQ_FIELD_PREFERENTIALLY_SEQUENCE = "preferentiallySequence"
+RABBITMQ_FIELD_RESULT = "result"
+RABBITMQ_FIELD_RNA_ID = "rnaId"
+RABBITMQ_FIELD_ROOT_SAMPLE_ID = "rootSampleId"
+RABBITMQ_FIELD_SAMPLE_UUID = "sampleUuid"
+RABBITMQ_FIELD_SAMPLES = "samples"
+RABBITMQ_FIELD_TESTED_DATE = "testedDateUtc"
+
+RABBITMQ_HEADER_KEY_SUBJECT = "subject"
+RABBITMQ_HEADER_KEY_VERSION = "version"
+
+RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK = "feedback.created.plate"
+
+RABBITMQ_SUBJECT_CREATE_PLATE = "create-plate-map"
+RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK = "create-plate-map-feedback"
+
 
 ###
 # Flask endpoints

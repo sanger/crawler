@@ -21,6 +21,7 @@ create_message = {
             {
                 "sampleUuid": b"dd490ee5-fd1d-456d-99fd-eb9d3861e0f6",
                 "rootSampleId": "R00T-S4MPL3-01",
+                "cogUkId": "COG-UK-ID-1",
                 "plateCoordinate": "A6",
                 "rnaId": "BARCODE001_A06",
                 "result": "positive",
@@ -32,6 +33,7 @@ create_message = {
             {
                 "sampleUuid": b"d1631fe4-6fd3-4f35-add1-8de2f54802c2",
                 "rootSampleId": "R00T-S4MPL3-02",
+                "cogUkId": "COG-UK-ID-2",
                 "plateCoordinate": "B9",
                 "rnaId": "BARCODE001_B09",
                 "result": "negative",
@@ -83,17 +85,8 @@ update_message = {
     "sample": {
         "sampleUuid": b"3f51febc-aeb7-4aee-a730-20d6d308df60",
         "updatedFields": [
-            {"name": "labId", "value": "CPTD"},
-            {"name": "rootSampleId", "value": "R00T-S4MPL3-1D"},
-            {"name": "plateBarcode", "value": "BARCODE001"},
-            {"name": "plateCoordinate", "value": "A6"},
-            {"name": "rnaId", "value": "BARCODE001_A06"},
-            {"name": "result", "value": "positive"},
-            {"name": "cogUkId", "value": None},
             {"name": "preferentiallySequence", "value": True},
             {"name": "mustSequence", "value": True},
-            {"name": "fitToPick", "value": True},
-            {"name": "testedDateUtc", "value": datetime(2021, 3, 4, 10, 32, 48)},
         ],
     },
 }

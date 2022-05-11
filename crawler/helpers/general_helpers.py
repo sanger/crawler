@@ -372,6 +372,28 @@ def create_source_plate_doc(plate_barcode: str, lab_id: str) -> SourcePlateDoc:
     }
 
 
+def extract_duplicated_values(values):
+    """A helper method for finding duplicated values in an iterable.
+    The returned set will contain only values that existed more than once.
+
+    Arguments:
+        values: Iterable -- An iterable containing hashable values.
+
+    Returns:
+        Set of values that were duplicated at least once.
+    """
+    seen = set()
+    dupes = set()
+
+    for x in values:
+        if x in seen:
+            dupes.add(x)
+        else:
+            seen.add(x)
+
+    return dupes
+
+
 def is_found_in_list(needle: str, haystack: List[str]) -> bool:
     """A helper method for finding a string contained in any one of a list of strings.
 

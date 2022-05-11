@@ -1,10 +1,6 @@
 from os import getenv
 
-from avro_rabbit_producer import AvroRabbitProducer
-from credentials import CREDENTIAL_KEY_API_KEY, CREDENTIAL_KEY_RABBITMQ, PUBLISH_CREDENTIALS
-
-# hosts.py is not in the default repository clone and will need creating
-from hosts import RABBITMQ_HOST, REDPANDA_URL  # type: ignore
+from avro_rabbit_publisher import AvroRabbitPublisher
 from schema_registry import SchemaRegistry
 from test_messages import EXCHANGES, MESSAGES, ROUTING_KEYS
 
@@ -22,17 +18,16 @@ from test_messages import EXCHANGES, MESSAGES, ROUTING_KEYS
 subject = getenv("AVRO_TEST_SUBJECT", "create-plate-map")
 test_msg = MESSAGES[subject]
 exchange = EXCHANGES[subject]
-credentials = PUBLISH_CREDENTIALS[subject]()
 routing_key = ROUTING_KEYS[subject]
 
-schema_registry = SchemaRegistry(REDPANDA_URL, credentials[CREDENTIAL_KEY_API_KEY])
+schema_registry = SchemaRegistry("http://localhost:8081")
 
-producer = AvroRabbitProducer(RABBITMQ_HOST, 5671, schema_registry)
+producer = AvroRabbitPublisher("localhost", 5672, schema_registry)
 prepared_message = producer.prepare_message(test_msg, subject)
 producer.send_message(
     prepared_message,
     vhost="heron",
     exchange=exchange,
     routing_key=routing_key,
-    username_password=credentials[CREDENTIAL_KEY_RABBITMQ],
+    username_password=("admin", "development"),
 )

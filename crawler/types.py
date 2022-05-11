@@ -84,6 +84,20 @@ class Config(ModuleType):
     DART_DB_DBNAME: str
     DART_DB_DRIVER: str
 
+    # RabbitMQ
+    RABBITMQ_HOST: str
+    RABBITMQ_SSL: bool
+    RABBITMQ_PORT: int
+    RABBITMQ_USERNAME: str
+    RABBITMQ_PASSWORD: str
+    RABBITMQ_VHOST: str
+    RABBITMQ_CRUD_QUEUE: str
+    RABBITMQ_FEEDBACK_EXCHANGE: str
+
+    # RedPanda
+    REDPANDA_BASE_URI: str
+    REDPANDA_API_KEY: str
+
     # SFTP
     SFTP_HOST: str
     SFTP_PORT: int
@@ -95,3 +109,22 @@ class Config(ModuleType):
     SCHEDULER_TIMEZONE: str
     SCHEDULER_API_ENABLED: bool
     JOBS: List[Dict[str, str]]
+
+
+class RabbitServerDetails(ModuleType):
+    """ModuleType class for details to connect to a RabbitMQ server."""
+
+    uses_ssl: bool
+    host: str
+    port: int
+    username: str
+    password: str
+    vhost: str
+
+    def __init__(self, uses_ssl, host, port, username, password, vhost):
+        self.uses_ssl = uses_ssl
+        self.host = host
+        self.port = port
+        self.username = username
+        self.password = password
+        self.vhost = vhost or "/"

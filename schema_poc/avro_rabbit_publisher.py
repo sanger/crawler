@@ -1,17 +1,16 @@
 import json
 from io import StringIO
-from ssl import create_default_context
 
 from constants import MESSAGE_PROPERTY_SUBJECT, MESSAGE_PROPERTY_VERSION
 from fastavro import json_writer, parse_schema
-from pika import BasicProperties, BlockingConnection, ConnectionParameters, PlainCredentials, SSLOptions
+from pika import BasicProperties, BlockingConnection, ConnectionParameters, PlainCredentials
 from schema_registry import RESPONSE_KEY_SCHEMA, RESPONSE_KEY_VERSION, SchemaRegistry
 
 MESSAGE_KEY_PROPERTIES = "properties"
 MESSAGE_KEY_BODY = "body"
 
 
-class AvroRabbitProducer:
+class AvroRabbitPublisher:
     def __init__(self, host: str, port: int, schema_registry: SchemaRegistry):
         self._host = host
         self._port = port
@@ -35,9 +34,8 @@ class AvroRabbitProducer:
 
     def send_message(self, prepared_message, vhost, exchange, routing_key, username_password):
         credentials = PlainCredentials(username_password[0], username_password[1])
-        ssl_options = SSLOptions(create_default_context())
         connection_params = ConnectionParameters(
-            host=self._host, port=self._port, virtual_host=vhost, credentials=credentials, ssl_options=ssl_options
+            host=self._host, port=self._port, virtual_host=vhost, credentials=credentials
         )
         connection = BlockingConnection(connection_params)
         channel = connection.channel()

@@ -89,6 +89,16 @@ Once all the required packages are installed, enter the virtual environment with
 
     pipenv shell
 
+Crawler requires access to an instance of RabbitMQ which is among the
+dependencies [Docker Compose](#docker) can set up for you.  Otherwise if you
+have a local instance of RabbitMQ, it can also be used after changing the
+RabbitMQ host and port in `./setup_dev_rabbit.py` and in
+`./crawler/config/defaults.py`.  Crawler will generate errors if the expected
+resources are not present in RabbitMQ, so run the following to generate those in
+your dev environment.
+
+    python ./setup_dev_rabbit.py
+
 To then run the app, use the command:
 
     flask run

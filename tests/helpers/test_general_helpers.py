@@ -57,8 +57,10 @@ from crawler.constants import (
 )
 from crawler.helpers.general_helpers import (
     create_source_plate_doc,
+    extract_duplicated_values,
     get_config,
     get_dart_well_index,
+    is_found_in_list,
     is_sample_pickable,
     is_sample_positive,
     map_mongo_doc_to_dart_well_props,
@@ -409,3 +411,28 @@ def test_is_sample_pickable():
     assert is_sample_pickable({FIELD_FILTERED_POSITIVE: True}) is True
     assert is_sample_pickable({FIELD_MUST_SEQUENCE: True}) is True
     assert is_sample_pickable({FIELD_PREFERENTIALLY_SEQUENCE: True}) is False
+
+
+@pytest.mark.parametrize(
+    "input, expected",
+    [
+        [[], set()],
+        [["one", "two", "three", "four"], set()],
+        [["one", "two", "three", "two"], set(["two"])],
+        [["one", "two", "three", "two", "four", "two", "one"], set(["one", "two"])],
+    ],
+)
+def test_extract_duplicated_values_gives_correct_result(input, expected):
+    assert extract_duplicated_values(input) == expected
+
+
+@pytest.mark.parametrize(
+    "needle, haystack, expected",
+    [
+        ["two", ["one", "two", "three", "four"], True],
+        ["one", [], False],
+        ["ten", ["one", "two", "three", "two", "four", "two", "one"], False],
+    ],
+)
+def test_is_found_in_list_gives_correct_result(needle, haystack, expected):
+    assert is_found_in_list(needle, haystack) is expected

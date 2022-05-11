@@ -73,13 +73,8 @@ services:
     ports:
       - "5672:5672"
       - "8080:15672"
-    configs:
-      - source: rabbitmq-conf
-        target: /etc/rabbitmq/rabbitmq.conf
-
-configs:
-  rabbitmq-conf:
-    file: ./rabbitmq.conf
+    volumes:
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
 
 volumes:
   mongo-volume:
