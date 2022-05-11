@@ -7,6 +7,7 @@ from crawler.constants import (
     RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
 )
 from crawler.exceptions import TransientRabbitError
+from crawler.processing.create_plate_exporter import CreatePlateExporter
 from crawler.processing.create_plate_validator import CreatePlateValidator
 from crawler.rabbit.avro_encoder import AvroEncoder
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackMessage
@@ -25,12 +26,12 @@ class CreatePlateProcessor:
         self._centres = None
         create_message = CreatePlateMessage(message.message)
         validator = CreatePlateValidator(create_message, self._config)
+        exporter = CreatePlateExporter(create_message, self._config)
 
         try:
             validator.validate()
-            if len(create_message.errors) == 0:
-                # TODO: Insert into MongoDB and DART
-                pass
+            if len(create_message.feedback_errors) == 0:
+                exporter.export_data()
         except TransientRabbitError as ex:
             LOGGER.error(f"Transient error while processing message: {ex.message}")
             raise  # Cause the consumer to restart and try this message again.  Ideally we will delay the consumer.
