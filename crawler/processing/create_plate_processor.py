@@ -10,7 +10,7 @@ from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_validator import CreatePlateValidator
 from crawler.rabbit.avro_encoder import AvroEncoder
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackMessage
-from crawler.rabbit.messages.create_plate_message import CreatePlateMessage
+from crawler.rabbit.messages.create_plate_message import CreatePlateError, CreatePlateMessage
 
 LOGGER = logging.getLogger(__name__)
 
@@ -37,8 +37,10 @@ class CreatePlateProcessor:
         except Exception as ex:
             LOGGER.error(f"Unhandled error while processing message: {type(ex)} {str(ex)}")
             create_message.add_error(
-                origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING,
-                description="An unhandled error occurred while processing the message.",
+                CreatePlateError(
+                    origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING,
+                    description="An unhandled error occurred while processing the message.",
+                )
             )
             self._publish_feedback(create_message)
             return False  # Send the message to dead letters

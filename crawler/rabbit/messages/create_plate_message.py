@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 from typing import Any, NamedTuple
 
 from crawler.helpers.general_helpers import extract_duplicated_values as extract_dupes
@@ -29,6 +30,19 @@ FIELD_TESTED_DATE = "testedDateUtc"
 class MessageField(NamedTuple):
     name: str
     value: Any
+
+
+@dataclass
+class CreatePlateError:
+    origin: str
+    description: str
+    long_description: str = None
+    sample_uuid: str = None
+    field: str = None
+
+    @property
+    def longest_description(self):
+        return self.long_description or self.description
 
 
 class CreatePlateSample:
@@ -132,15 +146,13 @@ class CreatePlateMessage:
 
         return self._duplicated_sample_values
 
-    def add_error(self, origin, description, sample_uuid="", field=""):
-        LOGGER.error(
-            f"Error found in message with origin '{origin}', sampleUuid '{sample_uuid}', field '{field}': {description}"
-        )
+    def add_error(self, create_error):
+        LOGGER.error(f"Error in create plate message: {create_error.longest_description}")
         self._errors.append(
             CreateFeedbackError(
-                origin=origin,
-                sampleUuid=sample_uuid,
-                field=field,
-                description=description,
+                origin=create_error.origin,
+                sampleUuid=create_error.sample_uuid,
+                field=create_error.field,
+                description=create_error.description,
             )
         )

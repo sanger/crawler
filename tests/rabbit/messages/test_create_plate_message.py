@@ -20,6 +20,7 @@ from crawler.rabbit.messages.create_plate_message import (
     FIELD_SAMPLE_UUID,
     FIELD_SAMPLES,
     FIELD_TESTED_DATE,
+    CreatePlateError,
     CreatePlateMessage,
     CreatePlateSample,
 )
@@ -200,15 +201,25 @@ def test_duplicated_sample_values_calls_expected_methods():
 @pytest.mark.parametrize("description", ["description_1", "description_2"])
 @pytest.mark.parametrize("sample_uuid", ["uuid_1", "uuid_2"])
 @pytest.mark.parametrize("field", ["field_1", "field_2"])
-def test_add_error_records_the_error(subject, logger, origin, description, sample_uuid, field):
-    subject.add_error(origin, description, sample_uuid, field)
+@pytest.mark.parametrize("long_description", [None, "long_desc_1", "long_desc_2"])
+def test_add_error_records_the_error(subject, logger, origin, description, sample_uuid, field, long_description):
+    subject.add_error(
+        CreatePlateError(
+            origin=origin,
+            description=description,
+            sample_uuid=sample_uuid,
+            field=field,
+            long_description=long_description,
+        )
+    )
 
     logger.error.assert_called_once()
     logged_error = logger.error.call_args.args[0]
-    assert origin in logged_error
-    assert description in logged_error
-    assert sample_uuid in logged_error
-    assert field in logged_error
+
+    if long_description is None:
+        assert description in logged_error
+    else:
+        assert long_description in logged_error
 
     assert len(subject.errors) == 1
     added_error = subject.errors[0]
@@ -219,7 +230,7 @@ def test_add_error_records_the_error(subject, logger, origin, description, sampl
 
 
 def test_errors_list_is_immutable(subject):
-    subject.add_error("origin", "description", "sample_uuid", "field")
+    subject.add_error(CreatePlateError(origin="origin", description="description"))
 
     errors = subject.errors
     assert len(errors) == 1

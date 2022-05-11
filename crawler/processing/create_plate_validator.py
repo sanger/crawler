@@ -8,12 +8,13 @@ from crawler.constants import (
 )
 from crawler.exceptions import TransientRabbitError
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
+from crawler.rabbit.messages.create_plate_message import CreatePlateError
 
 
 class CreatePlateValidator:
     def __init__(self, message, config):
-        self._config = config
         self._message = message
+        self._config = config
 
         self._centres = None
 
@@ -39,18 +40,26 @@ class CreatePlateValidator:
         lab_id_field = self._message.lab_id
         if lab_id_field.value not in [c[CENTRE_KEY_LAB_ID_DEFAULT] for c in self.centres]:
             self._message.add_error(
-                RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
-                f"The lab ID provided '{lab_id_field.value}' is not configured to receive messages via RabbitMQ.",
-                field=lab_id_field.name,
+                CreatePlateError(
+                    origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
+                    description=(
+                        f"The lab ID provided '{lab_id_field.value}' "
+                        "is not configured to receive messages via RabbitMQ."
+                    ),
+                    field=lab_id_field.name,
+                )
             )
 
         # Ensure that the plate barcode isn't an empty string.
         plate_barcode_field = self._message.plate_barcode
         if not plate_barcode_field.value:
             self._message.add_error(
-                RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
-                "Field value is not populated.",
-                field=plate_barcode_field.name,
+                CreatePlateError(
+                    origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
+                    description="Field value is not populated.",
+                    field=plate_barcode_field.name,
+                    long_description=f"Value for field '{plate_barcode_field.name}' has not been populated.",
+                )
             )
 
     def _validate_samples(self):
@@ -63,10 +72,12 @@ class CreatePlateValidator:
         sample_uuid_field_name = self._message.samples.value[0].sample_uuid.name
         for sample_uuid in self._message.duplicated_sample_values[sample_uuid_field_name]:
             self._message.add_error(
-                RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
-                f"Sample UUID {sample_uuid} exists more than once in the message.",
-                sample_uuid=sample_uuid,
-                field=sample_uuid_field_name,
+                CreatePlateError(
+                    origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                    description=f"Sample UUID {sample_uuid} exists more than once in the message.",
+                    sample_uuid=sample_uuid,
+                    field=sample_uuid_field_name,
+                )
             )
 
         self._message.validated_samples = 0
@@ -78,7 +89,9 @@ class CreatePlateValidator:
         if not field.value:
             origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
             description = "Field value is not populated."
-            self._message.add_error(origin, description, sample_uuid, field.name)
+            self._message.add_error(
+                CreatePlateError(origin=origin, description=description, sample_uuid=sample_uuid, field=field.name)
+            )
 
             return False
 
@@ -92,7 +105,9 @@ class CreatePlateValidator:
         if normalised_value in self._message.duplicated_sample_values[field.name]:
             origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
             description = f"Field value is not unique across samples ({field.value})."
-            self._message.add_error(origin, description, sample_uuid, field.name)
+            self._message.add_error(
+                CreatePlateError(origin=origin, description=description, sample_uuid=sample_uuid, field=field.name)
+            )
 
             return False
 
@@ -102,7 +117,9 @@ class CreatePlateValidator:
         if not regex.match(field.value):
             origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
             description = f"Field value does not match regex ({regex.pattern})."
-            self._message.add_error(origin, description, sample_uuid, field.name)
+            self._message.add_error(
+                CreatePlateError(origin=origin, description=description, sample_uuid=sample_uuid, field=field.name)
+            )
 
             return False
 
@@ -112,7 +129,9 @@ class CreatePlateValidator:
         if field.value > timestamp:
             origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
             description = f"Field value repesents a timestamp that is too recent ({field.value} > {timestamp})."
-            self._message.add_error(origin, description, sample_uuid, field.name)
+            self._message.add_error(
+                CreatePlateError(origin=origin, description=description, sample_uuid=sample_uuid, field=field.name)
+            )
 
             return False
 

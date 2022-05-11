@@ -12,7 +12,7 @@ from crawler.constants import (
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_processor import CreatePlateProcessor
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError
-from crawler.rabbit.messages.create_plate_message import CreatePlateMessage, MessageField
+from crawler.rabbit.messages.create_plate_message import CreatePlateError, CreatePlateMessage, MessageField
 from tests.testing_objects import CREATE_PLATE_MESSAGE
 
 
@@ -123,7 +123,7 @@ def test_process_when_another_exception(subject, mock_logger, mock_validator):
 
     mock_logger.error.assert_called_once()
     create_plate_message.return_value.add_error.assert_called_once_with(
-        origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING, description=ANY
+        CreatePlateError(origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING, description=ANY)
     )
     publish_feedback.assert_called_once_with(create_plate_message.return_value)
     assert result is False
