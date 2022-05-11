@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 
@@ -40,6 +40,20 @@ def subject():
 
 def test_validated_samples_is_initially_zero(subject):
     assert subject.validated_samples == 0
+
+
+def test_has_errors_is_initially_false(subject):
+    assert subject.has_errors is False
+
+
+def test_has_errors_is_true_after_feedback_error_logged(subject):
+    subject._feedback_errors.append(MagicMock())
+    assert subject.has_errors is True
+
+
+def test_has_errors_is_true_after_textual_error_logged(subject):
+    subject._textual_errors.append(MagicMock())
+    assert subject.has_errors is True
 
 
 def test_total_samples_gives_expected_value(subject):

@@ -30,7 +30,7 @@ class CreatePlateProcessor:
 
         try:
             validator.validate()
-            if len(create_message.feedback_errors) == 0:
+            if not create_message.has_errors:
                 exporter.export_data()
         except TransientRabbitError as ex:
             LOGGER.error(f"Transient error while processing message: {ex.message}")
@@ -47,7 +47,7 @@ class CreatePlateProcessor:
             return False  # Send the message to dead letters
 
         self._publish_feedback(create_message)
-        return len(create_message.feedback_errors) == 0
+        return not create_message.has_errors
 
     def _publish_feedback(self, create_message):
         message_uuid = create_message.message_uuid.value
@@ -55,7 +55,7 @@ class CreatePlateProcessor:
             sourceMessageUuid=message_uuid,
             countOfTotalSamples=create_message.total_samples,
             countOfValidSamples=create_message.validated_samples,
-            operationWasErrorFree=len(create_message.feedback_errors) == 0,
+            operationWasErrorFree=not create_message.has_errors,
             errors=create_message.feedback_errors,
         )
 

@@ -110,6 +110,10 @@ class CreatePlateMessage:
         return self._feedback_errors.copy()
 
     @property
+    def has_errors(self):
+        return len(self.textual_errors) > 0 or len(self.feedback_errors) > 0
+
+    @property
     def total_samples(self):
         return len(self._body[FIELD_PLATE][FIELD_SAMPLES])
 
