@@ -167,7 +167,7 @@ def test_publish_feedback_publishes_valid_message(subject, create_plate_message)
     ],
 )
 def test_publish_feedback_encodes_errors(subject, create_plate_message, mock_avro_encoder, message_errors):
-    with patch.object(CreatePlateMessage, "errors", new_callable=PropertyMock) as errors_attribute:
+    with patch.object(CreatePlateMessage, "feedback_errors", new_callable=PropertyMock) as errors_attribute:
         errors_attribute.return_value = message_errors
         subject._publish_feedback(create_plate_message)
 

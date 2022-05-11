@@ -99,7 +99,7 @@ def assert_validate_when_message_is_valid(
 
     subject.validate()
 
-    assert create_message.errors == []
+    assert create_message.feedback_errors == []
     assert create_message.total_samples == 1
     assert create_message.validated_samples == 1
 
