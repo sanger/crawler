@@ -57,8 +57,8 @@ class CreatePlateValidator:
                 CreatePlateError(
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
                     description="Field value is not populated.",
-                    field=plate_barcode_field.name,
                     long_description=f"Value for field '{plate_barcode_field.name}' has not been populated.",
+                    field=plate_barcode_field.name,
                 )
             )
 
@@ -87,10 +87,16 @@ class CreatePlateValidator:
 
     def _validate_sample_field_populated(self, field, sample_uuid):
         if not field.value:
-            origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
-            description = "Field value is not populated."
             self._message.add_error(
-                CreatePlateError(origin=origin, description=description, sample_uuid=sample_uuid, field=field.name)
+                CreatePlateError(
+                    origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                    description="Field value is not populated.",
+                    long_description=(
+                        f"Value for field '{field.name}' on sample '{sample_uuid}' has not been populated."
+                    ),
+                    sample_uuid=sample_uuid,
+                    field=field.name,
+                )
             )
 
             return False
@@ -106,7 +112,16 @@ class CreatePlateValidator:
             origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
             description = f"Field value is not unique across samples ({field.value})."
             self._message.add_error(
-                CreatePlateError(origin=origin, description=description, sample_uuid=sample_uuid, field=field.name)
+                CreatePlateError(
+                    origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                    description=f"Field value is not unique across samples ({field.value}).",
+                    long_description=(
+                        f"Field '{field.name}' on sample '{sample_uuid}' contains the value '{field.value}' "
+                        "which is used in more than one sample but should be unique."
+                    ),
+                    sample_uuid=sample_uuid,
+                    field=field.name,
+                )
             )
 
             return False
@@ -115,10 +130,17 @@ class CreatePlateValidator:
 
     def _validate_sample_field_matches_regex(self, regex, field, sample_uuid):
         if not regex.match(field.value):
-            origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
-            description = f"Field value does not match regex ({regex.pattern})."
             self._message.add_error(
-                CreatePlateError(origin=origin, description=description, sample_uuid=sample_uuid, field=field.name)
+                CreatePlateError(
+                    origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                    description=f"Field value does not match regex ({regex.pattern}).",
+                    long_description=(
+                        f"Field '{field.name}' on sample '{sample_uuid}' contains the value '{field.value}' "
+                        "which doesn't match the expected format for values in this field."
+                    ),
+                    sample_uuid=sample_uuid,
+                    field=field.name,
+                )
             )
 
             return False
@@ -127,10 +149,17 @@ class CreatePlateValidator:
 
     def _validate_sample_field_no_later_than(self, timestamp, field, sample_uuid):
         if field.value > timestamp:
-            origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
-            description = f"Field value repesents a timestamp that is too recent ({field.value} > {timestamp})."
             self._message.add_error(
-                CreatePlateError(origin=origin, description=description, sample_uuid=sample_uuid, field=field.name)
+                CreatePlateError(
+                    origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                    description=f"Field value repesents a timestamp that is too recent ({field.value} > {timestamp}).",
+                    long_description=(
+                        f"Field '{field.name}' on sample '{sample_uuid}' contains the value '{field.value}' "
+                        f"which is too recent and should be lower than '{timestamp}'."
+                    ),
+                    sample_uuid=sample_uuid,
+                    field=field.name,
+                )
             )
 
             return False
