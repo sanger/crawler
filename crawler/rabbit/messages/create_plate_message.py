@@ -95,10 +95,15 @@ class CreatePlateMessage:
         self._body = body
 
         self.validated_samples = 0
+        self._textual_errors = []
         self._feedback_errors = []
 
         self._duplicated_sample_values = None
         self._samples = None
+
+    @property
+    def textual_errors(self):
+        return self._textual_errors.copy()
 
     @property
     def feedback_errors(self):
@@ -148,6 +153,7 @@ class CreatePlateMessage:
 
     def add_error(self, create_error):
         LOGGER.error(f"Error in create plate message: {create_error.longest_description}")
+        self._textual_errors.append(create_error.longest_description)
         self._feedback_errors.append(
             CreateFeedbackError(
                 origin=create_error.origin,
