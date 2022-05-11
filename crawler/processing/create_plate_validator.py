@@ -109,8 +109,6 @@ class CreatePlateValidator:
             normalised_value = normalise_func(normalised_value)
 
         if normalised_value in self._message.duplicated_sample_values[field.name]:
-            origin = RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE
-            description = f"Field value is not unique across samples ({field.value})."
             self._message.add_error(
                 CreatePlateError(
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,

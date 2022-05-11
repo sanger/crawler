@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, Optional
 
 from crawler.helpers.general_helpers import extract_duplicated_values as extract_dupes
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
@@ -36,9 +36,9 @@ class MessageField(NamedTuple):
 class CreatePlateError:
     origin: str
     description: str
-    long_description: str = None
-    sample_uuid: str = None
-    field: str = None
+    long_description: Optional[str] = None
+    sample_uuid: Optional[str] = None
+    field: Optional[str] = None
 
     @property
     def longest_description(self):
