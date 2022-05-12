@@ -71,7 +71,7 @@ def message_wrapper_class():
 
 
 @pytest.fixture
-def subject(config, mock_avro_encoder):
+def subject(config, mock_avro_encoder, mock_validator, mock_exporter):
     return CreatePlateProcessor(MagicMock(), MagicMock(), config)
 
 
@@ -115,7 +115,7 @@ def test_process_returns_true_when_no_issues_found(subject, mock_validator, mock
     assert result is True
 
 
-def test_process_when_transient_error(subject, mock_logger, mock_validator):
+def test_process_when_transient_error_from_validator(subject, mock_logger, mock_validator):
     transient_error = TransientRabbitError("Test transient error")
     mock_validator.return_value.validate.side_effect = transient_error
 
@@ -126,9 +126,34 @@ def test_process_when_transient_error(subject, mock_logger, mock_validator):
     assert ex_info.value == transient_error
 
 
-def test_process_when_another_exception(subject, mock_logger, mock_validator, message_wrapper_class):
+def test_process_when_transient_error_from_exporter(subject, mock_logger, mock_exporter):
+    transient_error = TransientRabbitError("Test transient error")
+    mock_exporter.return_value.export_data.side_effect = transient_error
+
+    with pytest.raises(TransientRabbitError) as ex_info:
+        subject.process(MagicMock())
+
+    mock_logger.error.assert_called_once()
+    assert ex_info.value == transient_error
+
+
+def test_process_when_another_exception_from_the_validator(subject, mock_logger, mock_validator, message_wrapper_class):
     another_exception = KeyError("key")
     mock_validator.return_value.validate.side_effect = another_exception
+    with patch("crawler.processing.create_plate_processor.CreatePlateProcessor._publish_feedback") as publish_feedback:
+        result = subject.process(MagicMock())
+
+    mock_logger.error.assert_called_once()
+    message_wrapper_class.return_value.add_error.assert_called_once_with(
+        CreatePlateError(origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING, description=ANY)
+    )
+    publish_feedback.assert_called_once_with(message_wrapper_class.return_value)
+    assert result is False
+
+
+def test_process_when_another_exception_from_the_exporter(subject, mock_logger, mock_exporter, message_wrapper_class):
+    another_exception = KeyError("key")
+    mock_exporter.return_value.export_data.side_effect = another_exception
     with patch("crawler.processing.create_plate_processor.CreatePlateProcessor._publish_feedback") as publish_feedback:
         result = subject.process(MagicMock())
 
