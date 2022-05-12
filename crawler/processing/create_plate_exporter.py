@@ -45,13 +45,13 @@ class CreatePlateExporter:
         """Find an existing plate in MongoDB or add a new one for the plate in the message."""
         try:
             plate_barcode = self._message.plate_barcode.value
+            lab_id_field = self._message.lab_id
 
             source_plates_collection = get_mongo_collection(self._mongo_db, COLLECTION_SOURCE_PLATES)
             mongo_plate = source_plates_collection.find_one(filter={MONGO_PLATE_BARCODE: plate_barcode})
 
             if mongo_plate is not None:
                 # There was a plate in Mongo DB for this field barcode so check that the lab ID matches then return.
-                lab_id_field = self._message.lab_id
                 if mongo_plate[MONGO_LAB_ID] != lab_id_field.value:
                     raise ExportingError(
                         CreatePlateError(
@@ -66,7 +66,7 @@ class CreatePlateExporter:
                 return
 
             # Create a new plate for this message.
-            mongo_plate = create_source_plate_doc(self._message.plate_barcode, self._message.lab_id)
+            mongo_plate = create_source_plate_doc(plate_barcode, lab_id_field.value)
             source_plates_collection.insert_one(mongo_plate)
         except ExportingError:
             # These are handled in the calling method.
