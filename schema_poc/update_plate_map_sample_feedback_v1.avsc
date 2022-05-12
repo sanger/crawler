@@ -24,7 +24,7 @@
             {
               "name": "origin",
               "doc": "Where the error originated from in the message.  One of parsing errors, an error at the root of the message or an error in a field to be updated.",
-              "type": { "name": "messagePart", "type": "enum", "symbols": ["parsing", "root", "field"] }
+              "type": { "name": "messagePart", "type": "enum", "symbols": ["exporting", "parsing", "root", "field"] }
             },
             { "name": "field", "type": ["null", "string"], "doc": "The field generating the error, or null if the error isn't field specific." },
             { "name": "description", "type": "string", "doc": "A description of the error encountered." }

@@ -32,7 +32,7 @@
             {
               "name": "origin",
               "doc": "Where the error originated from in the message.  One of parsing errors, an error at the root of the message, an error in the plate metadata or an error in an individual sample.",
-              "type": { "name": "messagePart", "type": "enum", "symbols": ["parsing", "root", "plate", "sample"] }
+              "type": { "name": "messagePart", "type": "enum", "symbols": ["exporting", "parsing", "root", "plate", "sample"] }
             },
             { "name": "sampleUuid", "type": ["null", "string"], "doc": "The UUID of the affected sample, or null if the error isn't from a sample." },
             { "name": "field", "type": ["null", "string"], "doc": "The field generating the error, or null if the error isn't field specific." },
