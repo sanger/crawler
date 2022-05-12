@@ -5,7 +5,11 @@ from pymongo.database import Database
 from crawler.constants import COLLECTION_SOURCE_PLATES
 from crawler.constants import FIELD_BARCODE as MONGO_PLATE_BARCODE
 from crawler.constants import FIELD_LAB_ID as MONGO_LAB_ID
-from crawler.constants import RABBITMQ_CREATE_FEEDBACK_ORIGIN_EXPORTING, RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE
+from crawler.constants import (
+    FIELD_LH_SOURCE_PLATE_UUID,
+    RABBITMQ_CREATE_FEEDBACK_ORIGIN_EXPORTING,
+    RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
+)
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.exceptions import Error
 from crawler.helpers.general_helpers import create_source_plate_doc
@@ -23,6 +27,8 @@ class CreatePlateExporter:
     def __init__(self, message, config):
         self._message = message
         self._config = config
+
+        self._plate_uuid = None
 
     def export_data(self):
         try:
@@ -52,6 +58,8 @@ class CreatePlateExporter:
 
             if mongo_plate is not None:
                 # There was a plate in Mongo DB for this field barcode so check that the lab ID matches then return.
+                self._plate_uuid = mongo_plate[FIELD_LH_SOURCE_PLATE_UUID]
+
                 if mongo_plate[MONGO_LAB_ID] != lab_id_field.value:
                     raise ExportingError(
                         CreatePlateError(
@@ -68,6 +76,7 @@ class CreatePlateExporter:
             # Create a new plate for this message.
             mongo_plate = create_source_plate_doc(plate_barcode, lab_id_field.value)
             source_plates_collection.insert_one(mongo_plate)
+            self._plate_uuid = mongo_plate[FIELD_LH_SOURCE_PLATE_UUID]
         except ExportingError:
             # These are handled in the calling method.
             raise

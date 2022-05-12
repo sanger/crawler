@@ -31,16 +31,8 @@ def mock_logger():
 
 
 @pytest.fixture
-def message():
-    message = MagicMock()
-    message.message = CREATE_PLATE_MESSAGE
-
-    return message
-
-
-@pytest.fixture
-def create_plate_message(message):
-    return CreatePlateMessage(message)
+def create_plate_message():
+    return CreatePlateMessage(CREATE_PLATE_MESSAGE)
 
 
 @pytest.fixture
@@ -82,9 +74,12 @@ def test_constructor_creates_appropriate_encoder(mock_avro_encoder):
     mock_avro_encoder.assert_called_once_with(schema_registry, RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK)
 
 
-def test_process_creates_a_create_plate_message_object(subject, message, message_wrapper_class):
+def test_process_creates_a_create_plate_message_object(subject, message_wrapper_class):
+    message = MagicMock()
+    message.message = "A message body"
     subject.process(message)
-    message_wrapper_class.assert_called_once_with(message.message)
+
+    message_wrapper_class.assert_called_once_with("A message body")
 
 
 def test_process_uses_validator(subject, mock_validator, message_wrapper_class):
