@@ -50,10 +50,24 @@ def mock_validator():
 
 
 @pytest.fixture
+def mock_exporter():
+    with patch("crawler.processing.create_plate_processor.CreatePlateExporter") as exporter:
+        yield exporter
+
+
+@pytest.fixture
 def mock_avro_encoder():
     with patch("crawler.processing.create_plate_processor.AvroEncoder") as avro_encoder:
         avro_encoder.return_value.encode.return_value = ENCODED_MESSAGE
         yield avro_encoder
+
+
+@pytest.fixture
+def message_wrapper_class():
+    with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as message_wrapper_class:
+        message_wrapper_class.return_value.message_uuid = MessageField("UUID_FIELD", "UUID")
+        message_wrapper_class.return_value.has_errors = False
+        yield message_wrapper_class
 
 
 @pytest.fixture
@@ -68,21 +82,21 @@ def test_constructor_creates_appropriate_encoder(mock_avro_encoder):
     mock_avro_encoder.assert_called_once_with(schema_registry, RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK)
 
 
-def test_process_creates_a_create_plate_message_object(subject, message):
-    with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as create_plate_message:
-        create_plate_message.return_value.message_uuid = MessageField("UUID_FIELD", "UUID")
-        subject.process(message)
-
-    create_plate_message.assert_called_once_with(message.message)
+def test_process_creates_a_create_plate_message_object(subject, message, message_wrapper_class):
+    subject.process(message)
+    message_wrapper_class.assert_called_once_with(message.message)
 
 
-def test_process_uses_validator(subject, mock_validator):
-    with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as create_plate_message:
-        create_plate_message.return_value.message_uuid = MessageField("UUID_FIELD", "UUID")
-        subject.process(MagicMock())
-
-    mock_validator.assert_called_once_with(create_plate_message.return_value, subject._config)
+def test_process_uses_validator(subject, mock_validator, message_wrapper_class):
+    subject.process(MagicMock())
+    mock_validator.assert_called_once_with(message_wrapper_class.return_value, subject._config)
     mock_validator.return_value.validate.assert_called_once()
+
+
+def test_process_uses_exporter(subject, mock_exporter, message_wrapper_class):
+    subject.process(MagicMock())
+    mock_exporter.assert_called_once_with(message_wrapper_class.return_value, subject._config)
+    mock_exporter.return_value.export_data.assert_called_once()
 
 
 def test_process_publishes_feedback_when_no_issues_found(subject, mock_validator):
@@ -95,7 +109,7 @@ def test_process_publishes_feedback_when_no_issues_found(subject, mock_validator
     publish_feedback.assert_called_once_with(create_plate_message.return_value)
 
 
-def test_process_returns_true_when_no_issues_found(subject, mock_validator):
+def test_process_returns_true_when_no_issues_found(subject, mock_validator, mock_exporter):
     result = subject.process(MagicMock())
 
     assert result is True
@@ -112,20 +126,17 @@ def test_process_when_transient_error(subject, mock_logger, mock_validator):
     assert ex_info.value == transient_error
 
 
-def test_process_when_another_exception(subject, mock_logger, mock_validator):
+def test_process_when_another_exception(subject, mock_logger, mock_validator, message_wrapper_class):
     another_exception = KeyError("key")
     mock_validator.return_value.validate.side_effect = another_exception
-    with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as create_plate_message:
-        with patch(
-            "crawler.processing.create_plate_processor.CreatePlateProcessor._publish_feedback"
-        ) as publish_feedback:
-            result = subject.process(MagicMock())
+    with patch("crawler.processing.create_plate_processor.CreatePlateProcessor._publish_feedback") as publish_feedback:
+        result = subject.process(MagicMock())
 
     mock_logger.error.assert_called_once()
-    create_plate_message.return_value.add_error.assert_called_once_with(
+    message_wrapper_class.return_value.add_error.assert_called_once_with(
         CreatePlateError(origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING, description=ANY)
     )
-    publish_feedback.assert_called_once_with(create_plate_message.return_value)
+    publish_feedback.assert_called_once_with(message_wrapper_class.return_value)
     assert result is False
 
 
