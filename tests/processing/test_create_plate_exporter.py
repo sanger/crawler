@@ -1,3 +1,4 @@
+import copy
 from unittest.mock import MagicMock
 
 import pytest
@@ -11,7 +12,7 @@ from tests.testing_objects import CREATE_PLATE_MESSAGE
 
 @pytest.fixture
 def create_plate_message():
-    return CreatePlateMessage(CREATE_PLATE_MESSAGE)
+    return CreatePlateMessage(copy.deepcopy(CREATE_PLATE_MESSAGE))
 
 
 @pytest.fixture
@@ -59,7 +60,8 @@ def test_export_data_sets_the_source_plate_uuid(subject, mongo_database):
     subject.export_data()
 
     source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
-    plate_uuid = source_plates_collection.find_one({"barcode": "PLATE-001"})[FIELD_LH_SOURCE_PLATE_UUID]
+    source_plate = source_plates_collection.find_one({"barcode": "PLATE-001"})
+    plate_uuid = source_plate and source_plate[FIELD_LH_SOURCE_PLATE_UUID]
 
     assert subject._plate_uuid == plate_uuid
 

@@ -1,3 +1,4 @@
+import copy
 from typing import NamedTuple
 from unittest.mock import ANY, MagicMock, PropertyMock, patch
 
@@ -32,7 +33,7 @@ def mock_logger():
 
 @pytest.fixture
 def create_plate_message():
-    return CreatePlateMessage(CREATE_PLATE_MESSAGE)
+    return CreatePlateMessage(copy.deepcopy(CREATE_PLATE_MESSAGE))
 
 
 @pytest.fixture
