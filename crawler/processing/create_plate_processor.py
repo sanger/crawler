@@ -64,7 +64,7 @@ class CreatePlateProcessor:
 
         # No need to dead letter the message even if there were errors while exporting to DART or recording an import.
         # Neither of those situations can be dealt with by PAM who sent the message.
-        return True
+        return True  # Acknowledge the message has been processed
 
     def _publish_feedback(self, create_message):
         message_uuid = create_message.message_uuid.value
