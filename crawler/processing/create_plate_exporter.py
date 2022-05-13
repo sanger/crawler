@@ -1,26 +1,23 @@
 import logging
+from typing import NamedTuple, Optional
 
 from pymongo.database import Database
 
 from crawler.constants import COLLECTION_SOURCE_PLATES
 from crawler.constants import FIELD_BARCODE as MONGO_PLATE_BARCODE
 from crawler.constants import FIELD_LAB_ID as MONGO_LAB_ID
-from crawler.constants import (
-    FIELD_LH_SOURCE_PLATE_UUID,
-    RABBITMQ_CREATE_FEEDBACK_ORIGIN_EXPORTING,
-    RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
-)
+from crawler.constants import FIELD_LH_SOURCE_PLATE_UUID, RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
-from crawler.exceptions import Error
+from crawler.exceptions import TransientRabbitError
 from crawler.helpers.general_helpers import create_source_plate_doc
 from crawler.rabbit.messages.create_plate_message import CreatePlateError
 
 LOGGER = logging.getLogger(__name__)
 
 
-class ExportingError(Error):
-    def __init__(self, create_plate_error):
-        self.create_plate_error = create_plate_error
+class ExportResult(NamedTuple):
+    success: bool
+    create_plate_error: Optional[CreatePlateError]
 
 
 class CreatePlateExporter:
@@ -32,10 +29,16 @@ class CreatePlateExporter:
 
     def export_to_mongo(self):
         try:
-            self._record_source_plate_in_mongo_db()
-        except ExportingError as ex:
-            # Something that was handled gracefully went wrong. Add the error to the message and stop exporting.
-            self._message.add_error(ex.create_plate_error)
+            source_plate_result = self._record_source_plate_in_mongo_db()
+
+            if not source_plate_result.success:
+                self._message.add_error(source_plate_result.create_plate_error)
+                return
+
+            samples_result = self._record_samples_in_mongo_db()
+
+            if not samples_result.success:
+                self._message.add_error(samples_result.create_plate_error)
         finally:
             self._mongo_db.client.close()
 
@@ -53,7 +56,7 @@ class CreatePlateExporter:
 
         return self.__mongo_db
 
-    def _record_source_plate_in_mongo_db(self):
+    def _record_source_plate_in_mongo_db(self) -> ExportResult:
         """Find an existing plate in MongoDB or add a new one for the plate in the message."""
         try:
             plate_barcode = self._message.plate_barcode.value
@@ -67,35 +70,33 @@ class CreatePlateExporter:
                 self._plate_uuid = mongo_plate[FIELD_LH_SOURCE_PLATE_UUID]
 
                 if mongo_plate[MONGO_LAB_ID] != lab_id_field.value:
-                    raise ExportingError(
-                        CreatePlateError(
+                    return ExportResult(
+                        success=False,
+                        create_plate_error=CreatePlateError(
                             origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
                             description=(
                                 f"Plate barcode '{plate_barcode}' already exists "
                                 f"with a different lab ID: '{mongo_plate[MONGO_LAB_ID]}'"
                             ),
                             field=lab_id_field.name,
-                        )
+                        ),
                     )
-                return
+
+                return ExportResult(success=True, create_plate_error=None)
 
             # Create a new plate for this message.
             mongo_plate = create_source_plate_doc(plate_barcode, lab_id_field.value)
             source_plates_collection.insert_one(mongo_plate)
             self._plate_uuid = mongo_plate[FIELD_LH_SOURCE_PLATE_UUID]
-        except ExportingError:
-            # These are handled in the calling method.
-            raise
+
+            return ExportResult(success=True, create_plate_error=None)
         except Exception as ex:
             LOGGER.critical(f"Error accessing MongoDB during export of source plate '{plate_barcode}': {ex}")
             LOGGER.exception(ex)
 
-            raise ExportingError(
-                CreatePlateError(
-                    origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_EXPORTING,
-                    description="There was an error updating MongoDB while exporting the plate.",
-                    long_description=(
-                        f"There was an error updating MongoDB while exporting plate with barcode {plate_barcode}."
-                    ),
-                )
+            raise TransientRabbitError(
+                f"There was an error updating MongoDB while exporting plate with barcode {plate_barcode}."
             )
+
+    def _record_samples_in_mongo_db(self) -> ExportResult:
+        return ExportResult(success=True, create_plate_error=None)
