@@ -39,6 +39,12 @@ class CreatePlateExporter:
         finally:
             self._mongo_db.client.close()
 
+    def export_to_dart(self):
+        pass
+
+    def record_import(self):
+        pass
+
     @property
     def _mongo_db(self) -> Database:
         if not hasattr(self, "__mongo_db"):

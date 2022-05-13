@@ -28,6 +28,7 @@ class CreatePlateProcessor:
         validator = CreatePlateValidator(create_message, self._config)
         exporter = CreatePlateExporter(create_message, self._config)
 
+        # First validate the message and then export the source plate and samples to MongoDB.
         try:
             validator.validate()
             if not create_message.has_errors:
@@ -46,8 +47,24 @@ class CreatePlateProcessor:
             self._publish_feedback(create_message)
             return False  # Send the message to dead letters
 
+        # At this point, publish feedback as all remaining errors are not for PAM to be concerned with.
         self._publish_feedback(create_message)
-        return not create_message.has_errors
+
+        # We don't want to continue with the export to DART if we weren't able to get the samples into MongoDB.
+        if create_message.has_errors:
+            exporter.record_import()
+            return False  # Send the message to dead letters
+
+        # Export to DART and record the import no matter whether this is successful or not.
+        try:
+            exporter.export_to_dart()
+            exporter.record_import()
+        except Exception as ex:
+            LOGGER.exception(ex)
+
+        # No need to dead letter the message even if there were errors while exporting to DART or recording an import.
+        # Neither of those situations can be dealt with by PAM who sent the message.
+        return True
 
     def _publish_feedback(self, create_message):
         message_uuid = create_message.message_uuid.value
