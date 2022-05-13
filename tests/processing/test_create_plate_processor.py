@@ -92,7 +92,7 @@ def test_process_uses_validator(subject, mock_validator, message_wrapper_class):
 def test_process_uses_exporter(subject, mock_exporter, message_wrapper_class):
     subject.process(MagicMock())
     mock_exporter.assert_called_once_with(message_wrapper_class.return_value, subject._config)
-    mock_exporter.return_value.export_data.assert_called_once()
+    mock_exporter.return_value.export_to_mongo.assert_called_once()
 
 
 def test_process_publishes_feedback_when_no_issues_found(subject, mock_validator):
@@ -124,7 +124,7 @@ def test_process_when_transient_error_from_validator(subject, mock_logger, mock_
 
 def test_process_when_transient_error_from_exporter(subject, mock_logger, mock_exporter):
     transient_error = TransientRabbitError("Test transient error")
-    mock_exporter.return_value.export_data.side_effect = transient_error
+    mock_exporter.return_value.export_to_mongo.side_effect = transient_error
 
     with pytest.raises(TransientRabbitError) as ex_info:
         subject.process(MagicMock())
@@ -149,7 +149,7 @@ def test_process_when_another_exception_from_the_validator(subject, mock_logger,
 
 def test_process_when_another_exception_from_the_exporter(subject, mock_logger, mock_exporter, message_wrapper_class):
     another_exception = KeyError("key")
-    mock_exporter.return_value.export_data.side_effect = another_exception
+    mock_exporter.return_value.export_to_mongo.side_effect = another_exception
     with patch("crawler.processing.create_plate_processor.CreatePlateProcessor._publish_feedback") as publish_feedback:
         result = subject.process(MagicMock())
 

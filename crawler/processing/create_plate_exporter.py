@@ -30,7 +30,7 @@ class CreatePlateExporter:
 
         self._plate_uuid = None
 
-    def export_data(self):
+    def export_to_mongo(self):
         try:
             self._record_source_plate_in_mongo_db()
         except ExportingError as ex:

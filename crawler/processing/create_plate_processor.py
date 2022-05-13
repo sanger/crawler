@@ -31,7 +31,7 @@ class CreatePlateProcessor:
         try:
             validator.validate()
             if not create_message.has_errors:
-                exporter.export_data()
+                exporter.export_to_mongo()
         except TransientRabbitError as ex:
             LOGGER.error(f"Transient error while processing message: {ex.message}")
             raise  # Cause the consumer to restart and try this message again.  Ideally we will delay the consumer.
