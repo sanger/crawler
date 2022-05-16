@@ -52,12 +52,21 @@ class CreatePlateProcessor:
 
         # We don't want to continue with the export to DART if we weren't able to get the samples into MongoDB.
         if create_message.has_errors:
-            exporter.record_import()
+            try:
+                exporter.record_import()
+            except Exception as ex:
+                LOGGER.exception(ex)
+
             return False  # Send the message to dead letters
 
-        # Export to DART and record the import no matter whether this is successful or not.
+        # Export to DART, logging any error that might occur.
         try:
             exporter.export_to_dart()
+        except Exception as ex:
+            LOGGER.exception(ex)
+
+        # Record the import no matter the success or not of prior steps.
+        try:
             exporter.record_import()
         except Exception as ex:
             LOGGER.exception(ex)
