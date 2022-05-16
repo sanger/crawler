@@ -101,7 +101,7 @@ def test_process_uses_exporter(subject, mock_exporter, message_wrapper_class):
     mock_exporter.return_value.export_to_mongo.assert_called_once()
 
 
-def test_process_publishes_feedback_when_no_issues_found(subject, mock_validator):
+def test_process_publishes_feedback_when_no_issues_found(subject):
     with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as create_plate_message:
         with patch(
             "crawler.processing.create_plate_processor.CreatePlateProcessor._publish_feedback"
@@ -111,7 +111,13 @@ def test_process_publishes_feedback_when_no_issues_found(subject, mock_validator
     publish_feedback.assert_called_once_with(create_plate_message.return_value)
 
 
-def test_process_returns_true_when_no_issues_found(subject, mock_validator, mock_exporter):
+def test_process_records_import_when_no_issues_found(subject, mock_exporter):
+    subject.process(MagicMock())
+
+    mock_exporter.return_value.record_import.assert_called_once()
+
+
+def test_process_returns_true_when_no_issues_found(subject):
     result = subject.process(MagicMock())
 
     assert result is True
