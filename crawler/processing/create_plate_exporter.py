@@ -43,10 +43,16 @@ class CreatePlateExporter:
             self._mongo_db.client.close()
 
     def export_to_dart(self):
-        pass
+        try:
+            pass  # Do export
+        except Exception as ex:
+            LOGGER.exception(ex)
 
     def record_import(self):
-        pass
+        try:
+            pass  # Record import
+        except Exception as ex:
+            LOGGER.exception(ex)
 
     @property
     def _mongo_db(self) -> Database:

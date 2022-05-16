@@ -176,49 +176,6 @@ def test_process_records_the_import_when_errors_after_mongo_export(subject, mock
     exporter.export_to_dart.assert_not_called()
 
 
-def test_process_logs_raised_exception_while_recording_import(
-    subject, mock_logger, mock_exporter, message_wrapper_class
-):
-    exporter = mock_exporter.return_value
-
-    def set_has_errors():
-        message_wrapper_class.return_value.has_errors = True
-
-    record_error = KeyError()
-    exporter.export_to_mongo.side_effect = set_has_errors
-    exporter.record_import.side_effect = record_error
-
-    subject.process(MagicMock())
-
-    mock_logger.exception.assert_called_once_with(record_error)
-
-
-def test_process_logs_errors_from_dart_export(subject, mock_logger, mock_exporter):
-    exporter = mock_exporter.return_value
-    export_error = KeyError()
-    exporter.export_to_dart.side_effect = export_error
-
-    result = subject.process(MagicMock())
-
-    assert result is True
-    exporter.export_to_dart.assert_called_once()
-    exporter.record_import.assert_called_once()
-    mock_logger.exception.assert_called_once_with(export_error)
-
-
-def test_process_logs_errors_from_recording_import(subject, mock_logger, mock_exporter):
-    exporter = mock_exporter.return_value
-    export_error = KeyError()
-    exporter.record_import.side_effect = export_error
-
-    result = subject.process(MagicMock())
-
-    assert result is True
-    exporter.export_to_dart.assert_called_once()
-    exporter.record_import.assert_called_once()
-    mock_logger.exception.assert_called_once_with(export_error)
-
-
 def test_publish_feedback_encodes_valid_message(subject, mock_avro_encoder):
     create_message = CreatePlateMessage(CREATE_PLATE_MESSAGE)
     subject._publish_feedback(create_message)

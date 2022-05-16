@@ -52,27 +52,13 @@ class CreatePlateProcessor:
 
         # We don't want to continue with the export to DART if we weren't able to get the samples into MongoDB.
         if create_message.has_errors:
-            try:
-                exporter.record_import()
-            except Exception as ex:
-                LOGGER.exception(ex)
-
+            exporter.record_import()
             return False  # Send the message to dead letters
 
-        # Export to DART, logging any error that might occur.
-        try:
-            exporter.export_to_dart()
-        except Exception as ex:
-            LOGGER.exception(ex)
-
-        # Record the import no matter the success or not of prior steps.
-        try:
-            exporter.record_import()
-        except Exception as ex:
-            LOGGER.exception(ex)
-
-        # No need to dead letter the message even if there were errors while exporting to DART or recording an import.
-        # Neither of those situations can be dealt with by PAM who sent the message.
+        # Export to DART and record the import no matter the success or not of prior steps.  Then acknowledge the
+        # message as processed since PAM cannot fix issues we had with DART export or recording the import.
+        exporter.export_to_dart()
+        exporter.record_import()
         return True  # Acknowledge the message has been processed
 
     def _publish_feedback(self, create_message):
