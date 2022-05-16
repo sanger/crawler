@@ -95,7 +95,7 @@ class CreatePlateExporter:
             LOGGER.exception(ex)
 
             raise TransientRabbitError(
-                f"There was an error updating MongoDB while exporting plate with barcode {plate_barcode}."
+                f"There was an error updating MongoDB while exporting plate with barcode '{plate_barcode}'."
             )
 
     def _record_samples_in_mongo_db(self) -> ExportResult:

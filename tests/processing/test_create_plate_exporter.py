@@ -1,13 +1,20 @@
 import copy
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from crawler.constants import COLLECTION_SOURCE_PLATES, FIELD_LH_SOURCE_PLATE_UUID
 from crawler.db.mongo import get_mongo_collection
+from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_exporter import CreatePlateExporter
 from crawler.rabbit.messages.create_plate_message import FIELD_LAB_ID, FIELD_PLATE, CreatePlateMessage
 from tests.testing_objects import CREATE_PLATE_MESSAGE
+
+
+@pytest.fixture
+def logger():
+    with patch("crawler.processing.create_plate_exporter.LOGGER") as logger:
+        yield logger
 
 
 @pytest.fixture
@@ -92,3 +99,24 @@ def test_export_to_mongo_adds_an_error_when_source_plate_exists_for_another_lab_
     subject.export_to_mongo()
 
     assert create_plate_message.has_errors is True
+
+
+def test_export_to_mongo_logs_error_correctly_on_exception(subject, logger):
+    timeout_error = TimeoutError()
+
+    with patch("crawler.processing.create_plate_exporter.get_mongo_collection") as get_mongo_collection:
+        get_mongo_collection.side_effect = timeout_error
+
+        with pytest.raises(TransientRabbitError) as ex_info:
+            subject.export_to_mongo()
+
+    assert (
+        ex_info.value.message == "There was an error updating MongoDB while exporting plate with barcode 'PLATE-001'."
+    )
+
+    logger.critical.assert_called_once()
+    log_message = logger.critical.call_args.args[0]
+    assert "PLATE-001" in log_message
+    assert str(timeout_error) in log_message
+
+    logger.exception.assert_called_once_with(timeout_error)
