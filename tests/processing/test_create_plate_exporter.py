@@ -45,7 +45,6 @@ def test_export_to_mongo_puts_a_source_plate_in_mongo(subject, mongo_database):
     _, mongo_database = mongo_database
 
     source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
-    source_plates_collection.drop()
 
     assert source_plates_collection.count_documents({"barcode": "PLATE-001"}) == 0
 
@@ -70,7 +69,6 @@ def test_export_to_mongo_puts_a_source_plate_in_mongo_only_once(subject, mongo_d
     _, mongo_database = mongo_database
 
     source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
-    source_plates_collection.drop()
 
     assert source_plates_collection.count_documents({"barcode": "PLATE-001"}) == 0
 
