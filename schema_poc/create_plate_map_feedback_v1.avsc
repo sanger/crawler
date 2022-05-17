@@ -29,6 +29,7 @@
           "name": "ProcessingError", "type": "record",
           "doc": "An error generated during processing of the create message.",
           "fields": [
+            { "name": "typeId", "type": "int", "doc": "An ID indicating the type of the error." },
             {
               "name": "origin",
               "doc": "Where the error originated from in the message.  One of parsing errors, an error at the root of the message, an error in the plate metadata or an error in an individual sample.",

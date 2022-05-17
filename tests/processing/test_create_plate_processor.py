@@ -13,7 +13,7 @@ from crawler.constants import (
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_processor import CreatePlateProcessor
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError
-from crawler.rabbit.messages.create_plate_message import CreatePlateError, CreatePlateMessage, MessageField
+from crawler.rabbit.messages.create_plate_message import CreatePlateError, CreatePlateMessage, ErrorType, MessageField
 from tests.testing_objects import CREATE_PLATE_MESSAGE
 
 
@@ -141,7 +141,9 @@ def test_process_when_another_exception_from_the_validator(subject, mock_logger,
 
     mock_logger.error.assert_called_once()
     message_wrapper_class.return_value.add_error.assert_called_once_with(
-        CreatePlateError(origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING, description=ANY)
+        CreatePlateError(
+            type=ErrorType.UnhandledProcessingError, origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING, description=ANY
+        )
     )
     publish_feedback.assert_called_once_with(message_wrapper_class.return_value)
     assert result is False
@@ -155,7 +157,9 @@ def test_process_when_another_exception_from_the_exporter(subject, mock_logger, 
 
     mock_logger.error.assert_called_once()
     message_wrapper_class.return_value.add_error.assert_called_once_with(
-        CreatePlateError(origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING, description=ANY)
+        CreatePlateError(
+            type=ErrorType.UnhandledProcessingError, origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING, description=ANY
+        )
     )
     publish_feedback.assert_called_once_with(message_wrapper_class.return_value)
     assert result is False

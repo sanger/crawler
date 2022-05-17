@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from enum import IntEnum
 from typing import Any, NamedTuple, Optional
 
 from crawler.helpers.general_helpers import extract_duplicated_values as extract_dupes
@@ -27,6 +28,15 @@ FIELD_SAMPLES = "samples"
 FIELD_TESTED_DATE = "testedDateUtc"
 
 
+class ErrorType(IntEnum):
+    UnhandledProcessingError = 1
+    CentreNotConfigured = 2
+    UnpopulatedField = 3
+    NonUniqueValue = 4
+    InvalidFormatValue = 5
+    OutOfRangeValue = 6
+
+
 class MessageField(NamedTuple):
     name: str
     value: Any
@@ -34,15 +44,11 @@ class MessageField(NamedTuple):
 
 @dataclass
 class CreatePlateError:
+    type: ErrorType
     origin: str
     description: str
-    long_description: Optional[str] = None
     sample_uuid: Optional[str] = None
     field: Optional[str] = None
-
-    @property
-    def longest_description(self):
-        return self.long_description or self.description
 
 
 class CreatePlateSample:
@@ -156,10 +162,11 @@ class CreatePlateMessage:
         return self._duplicated_sample_values
 
     def add_error(self, create_error):
-        LOGGER.error(f"Error in create plate message: {create_error.longest_description}")
-        self._textual_errors.append(create_error.longest_description)
+        LOGGER.error(f"Error in create plate message: {create_error.description}")
+        self._textual_errors.append(create_error.description)
         self._feedback_errors.append(
             CreateFeedbackError(
+                typeId=int(create_error.type),
                 origin=create_error.origin,
                 sampleUuid=create_error.sample_uuid,
                 field=create_error.field,

@@ -10,7 +10,7 @@ from crawler.constants import FIELD_LH_SOURCE_PLATE_UUID, RABBITMQ_CREATE_FEEDBA
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.exceptions import TransientRabbitError
 from crawler.helpers.general_helpers import create_source_plate_doc
-from crawler.rabbit.messages.create_plate_message import CreatePlateError
+from crawler.rabbit.messages.create_plate_message import CreatePlateError, ErrorType
 
 LOGGER = logging.getLogger(__name__)
 
@@ -79,6 +79,7 @@ class CreatePlateExporter:
                     return ExportResult(
                         success=False,
                         create_plate_error=CreatePlateError(
+                            type=ErrorType.NonUniqueValue,
                             origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
                             description=(
                                 f"Plate barcode '{plate_barcode}' already exists "
