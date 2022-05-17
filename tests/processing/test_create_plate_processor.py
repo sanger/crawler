@@ -182,7 +182,7 @@ def test_publish_feedback_encodes_valid_message(subject, mock_avro_encoder):
 
     mock_avro_encoder.return_value.encode.assert_called_once()
     feedback_message = mock_avro_encoder.return_value.encode.call_args.args[0][0]
-    assert feedback_message["sourceMessageUuid"] == "b01aa0ad-7b19-4f94-87e9-70d74fb8783c"
+    assert feedback_message["sourceMessageUuid"] == "CREATE_PLATE_UUID"
     assert feedback_message["countOfTotalSamples"] == 3
     assert feedback_message["countOfValidSamples"] == 0  # We haven't validated the message
     assert feedback_message["operationWasErrorFree"] is True

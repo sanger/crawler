@@ -385,10 +385,7 @@ def test_validate_adds_error_when_root_sample_id_is_empty(subject, create_messag
                 CreatePlateError(
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description="Field value is not populated.",
-                    long_description=(
-                        "Value for field 'rootSampleId' on sample '0aae6004-8e01-4f7a-9d50-91c51052813f' "
-                        "has not been populated."
-                    ),
+                    long_description="Value for field 'rootSampleId' on sample 'UUID_001' has not been populated.",
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
                     field=FIELD_ROOT_SAMPLE_ID,
                 )
@@ -397,10 +394,7 @@ def test_validate_adds_error_when_root_sample_id_is_empty(subject, create_messag
                 CreatePlateError(
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description="Field value is not populated.",
-                    long_description=(
-                        "Value for field 'rootSampleId' on sample 'a9071f9c-0e3c-42c9-bef2-1045e827f9df' "
-                        "has not been populated."
-                    ),
+                    long_description="Value for field 'rootSampleId' on sample 'UUID_002' has not been populated.",
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
                     field=FIELD_ROOT_SAMPLE_ID,
                 )
@@ -426,7 +420,7 @@ def test_validate_adds_error_when_root_sample_id_is_not_unique(subject, create_m
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description="Field value is not unique across samples (ROOT-SAMPLE-ID).",
                     long_description=(
-                        "Field 'rootSampleId' on sample '0aae6004-8e01-4f7a-9d50-91c51052813f' contains the value "
+                        "Field 'rootSampleId' on sample 'UUID_001' contains the value "
                         "'ROOT-SAMPLE-ID' which is used in more than one sample but should be unique."
                     ),
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -438,7 +432,7 @@ def test_validate_adds_error_when_root_sample_id_is_not_unique(subject, create_m
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description="Field value is not unique across samples (ROOT-SAMPLE-ID).",
                     long_description=(
-                        "Field 'rootSampleId' on sample 'a9071f9c-0e3c-42c9-bef2-1045e827f9df' contains the value "
+                        "Field 'rootSampleId' on sample 'UUID_002' contains the value "
                         "'ROOT-SAMPLE-ID' which is used in more than one sample but should be unique."
                     ),
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
@@ -466,10 +460,7 @@ def test_validate_adds_error_when_rna_id_is_empty(subject, create_message, add_e
                 CreatePlateError(
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description="Field value is not populated.",
-                    long_description=(
-                        "Value for field 'rnaId' on sample '0aae6004-8e01-4f7a-9d50-91c51052813f' "
-                        "has not been populated."
-                    ),
+                    long_description="Value for field 'rnaId' on sample 'UUID_001' has not been populated.",
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
                     field=FIELD_RNA_ID,
                 )
@@ -478,10 +469,7 @@ def test_validate_adds_error_when_rna_id_is_empty(subject, create_message, add_e
                 CreatePlateError(
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description="Field value is not populated.",
-                    long_description=(
-                        "Value for field 'rnaId' on sample 'a9071f9c-0e3c-42c9-bef2-1045e827f9df' "
-                        "has not been populated."
-                    ),
+                    long_description="Value for field 'rnaId' on sample 'UUID_002' has not been populated.",
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
                     field=FIELD_RNA_ID,
                 )
@@ -507,7 +495,7 @@ def test_validate_adds_error_when_rna_id_is_not_unique(subject, create_message, 
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description="Field value is not unique across samples (RNA-ID).",
                     long_description=(
-                        "Field 'rnaId' on sample '0aae6004-8e01-4f7a-9d50-91c51052813f' contains the value "
+                        "Field 'rnaId' on sample 'UUID_001' contains the value "
                         "'RNA-ID' which is used in more than one sample but should be unique."
                     ),
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -519,7 +507,7 @@ def test_validate_adds_error_when_rna_id_is_not_unique(subject, create_message, 
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description="Field value is not unique across samples (RNA-ID).",
                     long_description=(
-                        "Field 'rnaId' on sample 'a9071f9c-0e3c-42c9-bef2-1045e827f9df' contains the value "
+                        "Field 'rnaId' on sample 'UUID_002' contains the value "
                         "'RNA-ID' which is used in more than one sample but should be unique."
                     ),
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
@@ -547,10 +535,7 @@ def test_validate_adds_error_when_cog_uk_id_is_empty(subject, create_message, ad
                 CreatePlateError(
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description="Field value is not populated.",
-                    long_description=(
-                        "Value for field 'cogUkId' on sample '0aae6004-8e01-4f7a-9d50-91c51052813f' "
-                        "has not been populated."
-                    ),
+                    long_description="Value for field 'cogUkId' on sample 'UUID_001' has not been populated.",
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
                     field=FIELD_COG_UK_ID,
                 )
@@ -559,10 +544,7 @@ def test_validate_adds_error_when_cog_uk_id_is_empty(subject, create_message, ad
                 CreatePlateError(
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description="Field value is not populated.",
-                    long_description=(
-                        "Value for field 'cogUkId' on sample 'a9071f9c-0e3c-42c9-bef2-1045e827f9df' "
-                        "has not been populated."
-                    ),
+                    long_description="Value for field 'cogUkId' on sample 'UUID_002' has not been populated.",
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
                     field=FIELD_COG_UK_ID,
                 )
@@ -588,7 +570,7 @@ def test_validate_adds_error_when_cog_uk_id_is_not_unique(subject, create_messag
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description="Field value is not unique across samples (COG-UK-ID).",
                     long_description=(
-                        "Field 'cogUkId' on sample '0aae6004-8e01-4f7a-9d50-91c51052813f' contains the value "
+                        "Field 'cogUkId' on sample 'UUID_001' contains the value "
                         "'COG-UK-ID' which is used in more than one sample but should be unique."
                     ),
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -600,7 +582,7 @@ def test_validate_adds_error_when_cog_uk_id_is_not_unique(subject, create_messag
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description="Field value is not unique across samples (COG-UK-ID).",
                     long_description=(
-                        "Field 'cogUkId' on sample 'a9071f9c-0e3c-42c9-bef2-1045e827f9df' contains the value "
+                        "Field 'cogUkId' on sample 'UUID_002' contains the value "
                         "'COG-UK-ID' which is used in more than one sample but should be unique."
                     ),
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
@@ -630,7 +612,7 @@ def test_validate_adds_error_when_plate_coordinate_column_invalid(subject, creat
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description="Field value does not match regex (^[A-H](?:0?[1-9]|1[0-2])$).",
                     long_description=(
-                        "Field 'plateCoordinate' on sample '0aae6004-8e01-4f7a-9d50-91c51052813f' contains the value "
+                        "Field 'plateCoordinate' on sample 'UUID_001' contains the value "
                         f"'A{invalid_column}' which doesn't match the expected format for values in this field."
                     ),
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -642,7 +624,7 @@ def test_validate_adds_error_when_plate_coordinate_column_invalid(subject, creat
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description="Field value does not match regex (^[A-H](?:0?[1-9]|1[0-2])$).",
                     long_description=(
-                        "Field 'plateCoordinate' on sample 'a9071f9c-0e3c-42c9-bef2-1045e827f9df' contains the value "
+                        "Field 'plateCoordinate' on sample 'UUID_002' contains the value "
                         f"'A{invalid_column}' which doesn't match the expected format for values in this field."
                     ),
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
@@ -675,7 +657,7 @@ def test_validate_adds_error_when_plate_coordinate_row_invalid(subject, create_m
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description="Field value does not match regex (^[A-H](?:0?[1-9]|1[0-2])$).",
                     long_description=(
-                        "Field 'plateCoordinate' on sample '0aae6004-8e01-4f7a-9d50-91c51052813f' contains the value "
+                        "Field 'plateCoordinate' on sample 'UUID_001' contains the value "
                         f"'{invalid_row}03' which doesn't match the expected format for values in this field."
                     ),
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -687,7 +669,7 @@ def test_validate_adds_error_when_plate_coordinate_row_invalid(subject, create_m
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description="Field value does not match regex (^[A-H](?:0?[1-9]|1[0-2])$).",
                     long_description=(
-                        "Field 'plateCoordinate' on sample 'a9071f9c-0e3c-42c9-bef2-1045e827f9df' contains the value "
+                        "Field 'plateCoordinate' on sample 'UUID_002' contains the value "
                         f"'{invalid_row}03' which doesn't match the expected format for values in this field."
                     ),
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
@@ -718,7 +700,7 @@ def test_validate_adds_error_when_plate_coordinate_is_not_unique(
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=f"Field value is not unique across samples ({first_coordinate}).",
                     long_description=(
-                        "Field 'plateCoordinate' on sample '0aae6004-8e01-4f7a-9d50-91c51052813f' contains the value "
+                        "Field 'plateCoordinate' on sample 'UUID_001' contains the value "
                         f"'{first_coordinate}' which is used in more than one sample but should be unique."
                     ),
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -730,7 +712,7 @@ def test_validate_adds_error_when_plate_coordinate_is_not_unique(
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=f"Field value is not unique across samples ({second_coordinate}).",
                     long_description=(
-                        "Field 'plateCoordinate' on sample 'a9071f9c-0e3c-42c9-bef2-1045e827f9df' contains the value "
+                        "Field 'plateCoordinate' on sample 'UUID_002' contains the value "
                         f"'{second_coordinate}' which is used in more than one sample but should be unique."
                     ),
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
@@ -763,7 +745,7 @@ def test_validate_adds_error_when_tested_date_is_too_recent(subject, create_mess
                         "(2022-04-29 12:34:57 > 2022-04-29 12:34:56)."
                     ),
                     long_description=(
-                        "Field 'testedDateUtc' on sample '0aae6004-8e01-4f7a-9d50-91c51052813f' contains the value "
+                        "Field 'testedDateUtc' on sample 'UUID_001' contains the value "
                         "'2022-04-29 12:34:57' which is too recent and should be lower than '2022-04-29 12:34:56'."
                     ),
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -778,7 +760,7 @@ def test_validate_adds_error_when_tested_date_is_too_recent(subject, create_mess
                         "(2023-04-29 12:34:56 > 2022-04-29 12:34:56)."
                     ),
                     long_description=(
-                        "Field 'testedDateUtc' on sample 'a9071f9c-0e3c-42c9-bef2-1045e827f9df' contains the value "
+                        "Field 'testedDateUtc' on sample 'UUID_002' contains the value "
                         "'2023-04-29 12:34:56' which is too recent and should be lower than '2022-04-29 12:34:56'."
                     ),
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),

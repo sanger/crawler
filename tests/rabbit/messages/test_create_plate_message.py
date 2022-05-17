@@ -62,7 +62,7 @@ def test_total_samples_gives_expected_value(subject):
 
 def test_message_uuid_gives_expected_value(subject):
     assert subject.message_uuid.name == FIELD_MESSAGE_UUID
-    assert subject.message_uuid.value == "b01aa0ad-7b19-4f94-87e9-70d74fb8783c"
+    assert subject.message_uuid.value == "CREATE_PLATE_UUID"
 
 
 def test_message_create_date_gives_expected_value(subject):
@@ -137,7 +137,7 @@ def test_sample_root_sample_id_gives_expected_value(subject):
 def test_sample_uuid_gives_expected_value(subject):
     sample = subject.samples.value[0]
     assert sample.sample_uuid.name == FIELD_SAMPLE_UUID
-    assert sample.sample_uuid.value == "0aae6004-8e01-4f7a-9d50-91c51052813f"
+    assert sample.sample_uuid.value == "UUID_001"
 
 
 def test_sample_tested_date_gives_expected_value(subject):
