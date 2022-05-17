@@ -11,7 +11,7 @@ from crawler.processing.create_plate_exporter import CreatePlateExporter
 from crawler.processing.create_plate_validator import CreatePlateValidator
 from crawler.rabbit.avro_encoder import AvroEncoder
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackMessage
-from crawler.rabbit.messages.create_plate_message import CreatePlateError, CreatePlateMessage
+from crawler.rabbit.messages.create_plate_message import CreatePlateError, CreatePlateMessage, ErrorType
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,6 +40,7 @@ class CreatePlateProcessor:
             LOGGER.error(f"Unhandled error while processing message: {type(ex)} {str(ex)}")
             create_message.add_error(
                 CreatePlateError(
+                    type=ErrorType.UnhandledProcessingError,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING,
                     description="An unhandled error occurred while processing the message.",
                 )
@@ -50,33 +51,18 @@ class CreatePlateProcessor:
 
         # We don't want to continue with the export to DART if we weren't able to get the samples into MongoDB.
         if create_message.has_errors:
-            try:
-                exporter.record_import()
-            except Exception as ex:
-                LOGGER.exception(ex)
-
+            exporter.record_import()
             return False  # Send the message to dead letters
 
-        # Export to DART, logging any error that might occur.
-        try:
-            exporter.export_to_dart()
-        except Exception as ex:
-            LOGGER.exception(ex)
-
-        # Record the import no matter the success or not of prior steps.
-        try:
-            exporter.record_import()
-        except Exception as ex:
-            LOGGER.exception(ex)
-
-        # No need to dead letter the message even if there were errors while exporting to DART or recording an import.
-        # Neither of those situations can be dealt with by PAM who sent the message.
+        # Export to DART and record the import no matter the success or not of prior steps.  Then acknowledge the
+        # message as processed since PAM cannot fix issues we had with DART export or recording the import.
+        exporter.export_to_dart()
+        exporter.record_import()
         return True  # Acknowledge the message has been processed
 
     def _publish_feedback(self, create_message):
-        message_uuid = create_message.message_uuid.value
         feedback_message = CreateFeedbackMessage(
-            sourceMessageUuid=message_uuid,
+            sourceMessageUuid=create_message.message_uuid.value,
             countOfTotalSamples=create_message.total_samples,
             countOfValidSamples=create_message.validated_samples,
             operationWasErrorFree=not create_message.has_errors,

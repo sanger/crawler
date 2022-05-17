@@ -1,6 +1,6 @@
 import copy
 from typing import NamedTuple
-from unittest.mock import ANY, MagicMock, PropertyMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 
@@ -12,8 +12,8 @@ from crawler.constants import (
 )
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_processor import CreatePlateProcessor
-from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError
-from crawler.rabbit.messages.create_plate_message import CreatePlateError, CreatePlateMessage, MessageField
+from crawler.rabbit.messages.create_feedback_message import CreateFeedbackMessage
+from crawler.rabbit.messages.create_plate_message import CreatePlateError, CreatePlateMessage, ErrorType, MessageField
 from tests.testing_objects import CREATE_PLATE_MESSAGE
 
 
@@ -74,6 +74,27 @@ def subject(config, mock_avro_encoder, mock_validator, mock_exporter):
     return CreatePlateProcessor(MagicMock(), MagicMock(), config)
 
 
+def assert_feedback_was_published(subject, message, avro_encoder):
+    feedback_message = CreateFeedbackMessage(
+        sourceMessageUuid=message.message_uuid.value,
+        countOfTotalSamples=message.total_samples,
+        countOfValidSamples=message.validated_samples,
+        operationWasErrorFree=not message.has_errors,
+        errors=message.feedback_errors,
+    )
+
+    avro_encoder.encode.assert_called_once()
+    assert avro_encoder.encode.call_args.args[0][0] == feedback_message
+
+    subject._basic_publisher.publish_message.assert_called_once_with(
+        RABBITMQ_FEEDBACK_EXCHANGE,
+        RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
+        ENCODED_MESSAGE.body,
+        RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
+        ENCODED_MESSAGE.version,
+    )
+
+
 def test_constructor_creates_appropriate_encoder(mock_avro_encoder):
     schema_registry = MagicMock()
     CreatePlateProcessor(schema_registry, MagicMock(), MagicMock())
@@ -101,14 +122,10 @@ def test_process_uses_exporter(subject, mock_exporter, message_wrapper_class):
     mock_exporter.return_value.export_to_mongo.assert_called_once()
 
 
-def test_process_publishes_feedback_when_no_issues_found(subject):
-    with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as create_plate_message:
-        with patch(
-            "crawler.processing.create_plate_processor.CreatePlateProcessor._publish_feedback"
-        ) as publish_feedback:
-            subject.process(MagicMock())
+def test_process_publishes_feedback_when_no_issues_found(subject, mock_avro_encoder, message_wrapper_class):
+    subject.process(MagicMock())
 
-    publish_feedback.assert_called_once_with(create_plate_message.return_value)
+    assert_feedback_was_published(subject, message_wrapper_class.return_value, mock_avro_encoder.return_value)
 
 
 def test_process_records_import_when_no_issues_found(subject, mock_exporter):
@@ -146,35 +163,39 @@ def test_process_when_transient_error_from_exporter(subject, mock_logger, mock_e
 
 
 def test_process_when_another_exception_from_the_validator(
-    subject, mock_logger, mock_exporter, mock_validator, message_wrapper_class
+    subject, mock_logger, mock_exporter, mock_validator, mock_avro_encoder, message_wrapper_class
 ):
     another_exception = KeyError("key")
     mock_validator.return_value.validate.side_effect = another_exception
-    with patch("crawler.processing.create_plate_processor.CreatePlateProcessor._publish_feedback") as publish_feedback:
-        result = subject.process(MagicMock())
+    result = subject.process(MagicMock())
 
+    assert result is False
     mock_logger.error.assert_called_once()
     message_wrapper_class.return_value.add_error.assert_called_once_with(
-        CreatePlateError(origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING, description=ANY)
+        CreatePlateError(
+            type=ErrorType.UnhandledProcessingError, origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING, description=ANY
+        )
     )
-    publish_feedback.assert_called_once_with(message_wrapper_class.return_value)
     mock_exporter.return_value.record_import.assert_called_once()
-    assert result is False
+    assert_feedback_was_published(subject, message_wrapper_class.return_value, mock_avro_encoder.return_value)
 
 
-def test_process_when_another_exception_from_the_exporter(subject, mock_logger, mock_exporter, message_wrapper_class):
+def test_process_when_another_exception_from_the_exporter(
+    subject, mock_logger, mock_exporter, mock_avro_encoder, message_wrapper_class
+):
     another_exception = KeyError("key")
     mock_exporter.return_value.export_to_mongo.side_effect = another_exception
-    with patch("crawler.processing.create_plate_processor.CreatePlateProcessor._publish_feedback") as publish_feedback:
-        result = subject.process(MagicMock())
+    result = subject.process(MagicMock())
 
+    assert result is False
     mock_logger.error.assert_called_once()
     message_wrapper_class.return_value.add_error.assert_called_once_with(
-        CreatePlateError(origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING, description=ANY)
+        CreatePlateError(
+            type=ErrorType.UnhandledProcessingError, origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING, description=ANY
+        )
     )
-    publish_feedback.assert_called_once_with(message_wrapper_class.return_value)
+    assert_feedback_was_published(subject, message_wrapper_class.return_value, mock_avro_encoder.return_value)
     mock_exporter.return_value.record_import.assert_called_once()
-    assert result is False
 
 
 def test_process_records_the_import_when_errors_after_mongo_export(subject, mock_exporter):
@@ -186,88 +207,3 @@ def test_process_records_the_import_when_errors_after_mongo_export(subject, mock
     assert result is False
     exporter.record_import.assert_called_once()
     exporter.export_to_dart.assert_not_called()
-
-
-def test_process_logs_raised_exception_while_recording_import(subject, mock_logger, mock_exporter):
-    exporter = mock_exporter.return_value
-
-    record_error = KeyError()
-    exporter.record_import.side_effect = record_error
-
-    subject.process(MagicMock())
-
-    mock_logger.exception.assert_called_once_with(record_error)
-
-
-def test_process_logs_errors_from_dart_export(subject, mock_logger, mock_exporter):
-    exporter = mock_exporter.return_value
-    export_error = KeyError()
-    exporter.export_to_dart.side_effect = export_error
-
-    result = subject.process(MagicMock())
-
-    assert result is True
-    exporter.export_to_dart.assert_called_once()
-    exporter.record_import.assert_called_once()
-    mock_logger.exception.assert_called_once_with(export_error)
-
-
-def test_process_logs_errors_from_recording_import(subject, mock_logger, mock_exporter):
-    exporter = mock_exporter.return_value
-    export_error = KeyError()
-    exporter.record_import.side_effect = export_error
-
-    result = subject.process(MagicMock())
-
-    assert result is True
-    exporter.export_to_dart.assert_called_once()
-    exporter.record_import.assert_called_once()
-    mock_logger.exception.assert_called_once_with(export_error)
-
-
-def test_publish_feedback_encodes_valid_message(subject, mock_avro_encoder):
-    create_message = CreatePlateMessage(CREATE_PLATE_MESSAGE)
-    subject._publish_feedback(create_message)
-
-    mock_avro_encoder.return_value.encode.assert_called_once()
-    feedback_message = mock_avro_encoder.return_value.encode.call_args.args[0][0]
-    assert feedback_message["sourceMessageUuid"] == "b01aa0ad-7b19-4f94-87e9-70d74fb8783c"
-    assert feedback_message["countOfTotalSamples"] == 3
-    assert feedback_message["countOfValidSamples"] == 0  # We haven't validated the message
-    assert feedback_message["operationWasErrorFree"] is True
-    assert feedback_message["errors"] == []
-
-
-def test_publish_feedback_publishes_valid_message(subject, create_plate_message):
-    subject._publish_feedback(create_plate_message)
-
-    subject._basic_publisher.publish_message.assert_called_once_with(
-        RABBITMQ_FEEDBACK_EXCHANGE,
-        RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
-        ENCODED_MESSAGE.body,
-        RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
-        ENCODED_MESSAGE.version,
-    )
-
-
-@pytest.mark.parametrize(
-    "message_errors",
-    [
-        ([CreateFeedbackError(origin="message_error_1", description="desc_1")]),
-        (
-            [
-                CreateFeedbackError(origin="message_error_1", description="desc_1"),
-                CreateFeedbackError(origin="message_error_2", description="desc_2"),
-            ]
-        ),
-    ],
-)
-def test_publish_feedback_encodes_errors(subject, create_plate_message, mock_avro_encoder, message_errors):
-    with patch.object(CreatePlateMessage, "feedback_errors", new_callable=PropertyMock) as errors_attribute:
-        errors_attribute.return_value = message_errors
-        subject._publish_feedback(create_plate_message)
-
-    mock_avro_encoder.return_value.encode.assert_called_once()
-    feedback_message = mock_avro_encoder.return_value.encode.call_args.args[0][0]
-    assert feedback_message["operationWasErrorFree"] is False
-    assert feedback_message["errors"] == message_errors

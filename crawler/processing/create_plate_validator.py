@@ -8,7 +8,7 @@ from crawler.constants import (
 )
 from crawler.exceptions import TransientRabbitError
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
-from crawler.rabbit.messages.create_plate_message import CreatePlateError
+from crawler.rabbit.messages.create_plate_message import CreatePlateError, ErrorType
 
 
 class CreatePlateValidator:
@@ -41,6 +41,7 @@ class CreatePlateValidator:
         if lab_id_field.value not in [c[CENTRE_KEY_LAB_ID_DEFAULT] for c in self.centres]:
             self._message.add_error(
                 CreatePlateError(
+                    type=ErrorType.CentreNotConfigured,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
                     description=(
                         f"The lab ID provided '{lab_id_field.value}' "
@@ -55,9 +56,9 @@ class CreatePlateValidator:
         if not plate_barcode_field.value:
             self._message.add_error(
                 CreatePlateError(
+                    type=ErrorType.UnpopulatedField,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
-                    description="Field value is not populated.",
-                    long_description=f"Value for field '{plate_barcode_field.name}' has not been populated.",
+                    description=f"Value for field '{plate_barcode_field.name}' has not been populated.",
                     field=plate_barcode_field.name,
                 )
             )
@@ -73,6 +74,7 @@ class CreatePlateValidator:
         for sample_uuid in self._message.duplicated_sample_values[sample_uuid_field_name]:
             self._message.add_error(
                 CreatePlateError(
+                    type=ErrorType.NonUniqueValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=f"Sample UUID {sample_uuid} exists more than once in the message.",
                     sample_uuid=sample_uuid,
@@ -89,11 +91,9 @@ class CreatePlateValidator:
         if not field.value:
             self._message.add_error(
                 CreatePlateError(
+                    type=ErrorType.UnpopulatedField,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
-                    description="Field value is not populated.",
-                    long_description=(
-                        f"Value for field '{field.name}' on sample '{sample_uuid}' has not been populated."
-                    ),
+                    description=f"Value for field '{field.name}' on sample '{sample_uuid}' has not been populated.",
                     sample_uuid=sample_uuid,
                     field=field.name,
                 )
@@ -111,9 +111,9 @@ class CreatePlateValidator:
         if normalised_value in self._message.duplicated_sample_values[field.name]:
             self._message.add_error(
                 CreatePlateError(
+                    type=ErrorType.NonUniqueValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
-                    description=f"Field value is not unique across samples ({field.value}).",
-                    long_description=(
+                    description=(
                         f"Field '{field.name}' on sample '{sample_uuid}' contains the value '{field.value}' "
                         "which is used in more than one sample but should be unique."
                     ),
@@ -130,9 +130,9 @@ class CreatePlateValidator:
         if not regex.match(field.value):
             self._message.add_error(
                 CreatePlateError(
+                    type=ErrorType.InvalidFormatValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
-                    description=f"Field value does not match regex ({regex.pattern}).",
-                    long_description=(
+                    description=(
                         f"Field '{field.name}' on sample '{sample_uuid}' contains the value '{field.value}' "
                         "which doesn't match the expected format for values in this field."
                     ),
@@ -149,9 +149,9 @@ class CreatePlateValidator:
         if field.value > timestamp:
             self._message.add_error(
                 CreatePlateError(
+                    type=ErrorType.OutOfRangeValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
-                    description=f"Field value repesents a timestamp that is too recent ({field.value} > {timestamp}).",
-                    long_description=(
+                    description=(
                         f"Field '{field.name}' on sample '{sample_uuid}' contains the value '{field.value}' "
                         f"which is too recent and should be lower than '{timestamp}'."
                     ),

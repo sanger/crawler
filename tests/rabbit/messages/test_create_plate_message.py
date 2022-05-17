@@ -23,6 +23,7 @@ from crawler.rabbit.messages.create_plate_message import (
     CreatePlateError,
     CreatePlateMessage,
     CreatePlateSample,
+    ErrorType,
 )
 from tests.testing_objects import CREATE_PLATE_MESSAGE
 
@@ -62,7 +63,7 @@ def test_total_samples_gives_expected_value(subject):
 
 def test_message_uuid_gives_expected_value(subject):
     assert subject.message_uuid.name == FIELD_MESSAGE_UUID
-    assert subject.message_uuid.value == "b01aa0ad-7b19-4f94-87e9-70d74fb8783c"
+    assert subject.message_uuid.value == "CREATE_PLATE_UUID"
 
 
 def test_message_create_date_gives_expected_value(subject):
@@ -137,7 +138,7 @@ def test_sample_root_sample_id_gives_expected_value(subject):
 def test_sample_uuid_gives_expected_value(subject):
     sample = subject.samples.value[0]
     assert sample.sample_uuid.name == FIELD_SAMPLE_UUID
-    assert sample.sample_uuid.value == "0aae6004-8e01-4f7a-9d50-91c51052813f"
+    assert sample.sample_uuid.value == "UUID_001"
 
 
 def test_sample_tested_date_gives_expected_value(subject):
@@ -212,47 +213,37 @@ def test_duplicated_sample_values_calls_expected_methods():
 
 
 @pytest.mark.parametrize("description", ["description_1", "description_2"])
-@pytest.mark.parametrize("long_description", [None, "long_desc_1", "long_desc_2"])
-def test_add_error_logs_the_error_description(subject, logger, description, long_description):
+def test_add_error_logs_the_error_description(subject, logger, description):
     subject.add_error(
         CreatePlateError(
+            type=ErrorType.UnpopulatedField,
             origin="origin",
             description=description,
-            long_description=long_description,
         )
     )
 
     logger.error.assert_called_once()
     logged_error = logger.error.call_args.args[0]
-
-    if long_description is None:
-        assert description in logged_error
-    else:
-        assert long_description in logged_error
+    assert description in logged_error
 
 
 @pytest.mark.parametrize("description", ["description_1", "description_2"])
-@pytest.mark.parametrize("long_description", [None, "long_desc_1", "long_desc_2"])
-def test_add_error_records_the_textual_error(subject, description, long_description):
+def test_add_error_records_the_textual_error(subject, description):
     subject.add_error(
         CreatePlateError(
+            type=ErrorType.UnpopulatedField,
             origin="origin",
             description=description,
-            long_description=long_description,
         )
     )
 
     assert len(subject.textual_errors) == 1
     added_error = subject.textual_errors[0]
-
-    if long_description is None:
-        assert added_error == description
-    else:
-        assert added_error == long_description
+    assert added_error == description
 
 
 def test_textual_errors_list_is_immutable(subject):
-    subject.add_error(CreatePlateError(origin="origin", description="description"))
+    subject.add_error(CreatePlateError(type=ErrorType.UnpopulatedField, origin="origin", description="description"))
 
     errors = subject.textual_errors
     assert len(errors) == 1
@@ -261,24 +252,25 @@ def test_textual_errors_list_is_immutable(subject):
     assert len(subject.textual_errors) == 1  # Hasn't been modified
 
 
+@pytest.mark.parametrize("type", [ErrorType.UnpopulatedField, ErrorType.NonUniqueValue])
 @pytest.mark.parametrize("origin", ["origin_1", "origin_2"])
 @pytest.mark.parametrize("description", ["description_1", "description_2"])
 @pytest.mark.parametrize("sample_uuid", ["uuid_1", "uuid_2"])
 @pytest.mark.parametrize("field", ["field_1", "field_2"])
-@pytest.mark.parametrize("long_description", [None, "long_desc_1", "long_desc_2"])
-def test_add_error_records_the_feedback_error(subject, origin, description, sample_uuid, field, long_description):
+def test_add_error_records_the_feedback_error(subject, type, origin, description, sample_uuid, field):
     subject.add_error(
         CreatePlateError(
+            type=type,
             origin=origin,
             description=description,
             sample_uuid=sample_uuid,
             field=field,
-            long_description=long_description,
         )
     )
 
     assert len(subject.feedback_errors) == 1
     added_error = subject.feedback_errors[0]
+    assert added_error["typeId"] == int(type)
     assert added_error["origin"] == origin
     assert added_error["description"] == description
     assert added_error["sampleUuid"] == sample_uuid
@@ -286,7 +278,7 @@ def test_add_error_records_the_feedback_error(subject, origin, description, samp
 
 
 def test_feedback_errors_list_is_immutable(subject):
-    subject.add_error(CreatePlateError(origin="origin", description="description"))
+    subject.add_error(CreatePlateError(type=ErrorType.UnpopulatedField, origin="origin", description="description"))
 
     errors = subject.feedback_errors
     assert len(errors) == 1

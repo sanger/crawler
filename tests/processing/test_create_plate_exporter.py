@@ -1,13 +1,23 @@
 import copy
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 
-from crawler.constants import COLLECTION_SOURCE_PLATES, FIELD_LH_SOURCE_PLATE_UUID
+from crawler.constants import (
+    COLLECTION_SOURCE_PLATES,
+    FIELD_LH_SOURCE_PLATE_UUID,
+    RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
+)
 from crawler.db.mongo import get_mongo_collection
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_exporter import CreatePlateExporter
-from crawler.rabbit.messages.create_plate_message import FIELD_LAB_ID, FIELD_PLATE, CreatePlateMessage
+from crawler.rabbit.messages.create_plate_message import (
+    FIELD_LAB_ID,
+    FIELD_PLATE,
+    CreatePlateError,
+    CreatePlateMessage,
+    ErrorType,
+)
 from tests.testing_objects import CREATE_PLATE_MESSAGE
 
 
@@ -89,16 +99,22 @@ def test_export_to_mongo_puts_a_source_plate_in_mongo_only_once(subject, mongo_d
     assert create_plate_message.has_errors is False
 
 
-def test_export_to_mongo_adds_an_error_when_source_plate_exists_for_another_lab_id(subject, create_plate_message):
+def test_export_to_mongo_adds_an_error_when_source_plate_exists_for_another_lab_id(subject):
     # Get the source plate added once
     subject.export_to_mongo()
 
-    assert create_plate_message.has_errors is False
-
     subject._message._body[FIELD_PLATE][FIELD_LAB_ID] = "NULL"
-    subject.export_to_mongo()
+    with patch.object(CreatePlateMessage, "add_error") as add_error:
+        subject.export_to_mongo()
 
-    assert create_plate_message.has_errors is True
+    add_error.assert_called_once_with(
+        CreatePlateError(
+            type=ErrorType.NonUniqueValue,
+            origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
+            description=ANY,
+            field=FIELD_LAB_ID,
+        )
+    )
 
 
 def test_export_to_mongo_logs_error_correctly_on_exception(subject, logger):
