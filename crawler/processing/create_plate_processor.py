@@ -63,9 +63,8 @@ class CreatePlateProcessor:
         return True  # Acknowledge the message has been processed
 
     def _publish_feedback(self, create_message):
-        message_uuid = create_message.message_uuid.value
         feedback_message = CreateFeedbackMessage(
-            sourceMessageUuid=message_uuid,
+            sourceMessageUuid=create_message.message_uuid.value,
             countOfTotalSamples=create_message.total_samples,
             countOfValidSamples=create_message.validated_samples,
             operationWasErrorFree=not create_message.has_errors,
