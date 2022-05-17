@@ -69,8 +69,9 @@ from crawler.rabbit.messages.create_plate_message import FIELD_MUST_SEQUENCE as 
 from crawler.rabbit.messages.create_plate_message import FIELD_PLATE as CREATE_PLATE_PLATE
 from crawler.rabbit.messages.create_plate_message import FIELD_PLATE_BARCODE as CREATE_PLATE_PLATE_BARCODE
 from crawler.rabbit.messages.create_plate_message import FIELD_PLATE_COORDINATE as CREATE_PLATE_PLATE_COORDINATE
-from crawler.rabbit.messages.create_plate_message import \
-    FIELD_PREFERENTIALLY_SEQUENCE as CREATE_PLATE_PREFERENTIALLY_SEQUENCE
+from crawler.rabbit.messages.create_plate_message import (
+    FIELD_PREFERENTIALLY_SEQUENCE as CREATE_PLATE_PREFERENTIALLY_SEQUENCE,
+)
 from crawler.rabbit.messages.create_plate_message import FIELD_RESULT as CREATE_PLATE_RESULT
 from crawler.rabbit.messages.create_plate_message import FIELD_RNA_ID as CREATE_PLATE_RNA_ID
 from crawler.rabbit.messages.create_plate_message import FIELD_ROOT_SAMPLE_ID as CREATE_PLATE_ROOT_SAMPLE_ID
