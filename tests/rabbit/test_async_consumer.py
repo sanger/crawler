@@ -275,7 +275,7 @@ def test_on_message_passes_relevant_info_to_process_message(subject, mock_logger
     subject.on_message(channel, basic_deliver, properties, body)
 
     # Assert
-    mock_logger.info.assert_has_calls([call(ANY, delivery_tag, app_id, body), call(ANY, delivery_tag)])
+    mock_logger.info.assert_has_calls([call(ANY, delivery_tag, app_id), call(ANY, delivery_tag)])
     subject._process_message.assert_called_once_with(headers, body)
 
     channel.basic_ack.assert_has_calls(ack_calls)
