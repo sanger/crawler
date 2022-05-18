@@ -37,7 +37,7 @@ class CreatePlateValidator:
         """Find a centre from the list of those we're accepting RabbitMQ messages for and store the config for it."""
         lab_id_field = self._message.lab_id
         try:
-            self._message.centre_conf = next(
+            self._message.centre_config = next(
                 (c for c in self.centres if c[CENTRE_KEY_LAB_ID_DEFAULT] == lab_id_field.value)
             )
         except StopIteration:

@@ -55,7 +55,7 @@ class CreatePlateExporter:
 
             create_import_record(
                 imports_collection,
-                self._message.centre_conf,
+                self._message.centre_config,
                 self._samples_inserted,
                 self._message.plate_barcode.value,
                 self._message.textual_errors_summary,

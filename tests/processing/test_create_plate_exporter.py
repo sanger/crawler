@@ -1,9 +1,11 @@
 import copy
+from datetime import datetime
 from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 
 from crawler.constants import (
+    COLLECTION_IMPORTS,
     COLLECTION_SOURCE_PLATES,
     FIELD_LH_SOURCE_PLATE_UUID,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
@@ -136,3 +138,47 @@ def test_export_to_mongo_logs_error_correctly_on_exception(subject, logger):
     assert str(timeout_error) in log_message
 
     logger.exception.assert_called_once_with(timeout_error)
+
+
+def test_record_import_creates_a_valid_import_record(freezer, subject, mongo_database, create_plate_message, centre):
+    _, mongo_database = mongo_database
+
+    create_plate_message.centre_config = centre.centre_config  # Simulate validation setting the centre config.
+    subject._samples_inserted = 3  # Simulate inserting all the records.
+
+    subject.record_import()
+
+    imports_collection = get_mongo_collection(mongo_database, COLLECTION_IMPORTS)
+
+    assert (
+        imports_collection.count_documents(
+            {
+                "date": datetime.utcnow(),  # Time has been frozen for this test.
+                "centre_name": "Alderley",
+                "csv_file_used": "PLATE-001",
+                "number_of_records": 3,
+                "errors": ["No errors were reported during processing."],
+            }
+        )
+        == 1
+    )
+
+
+def test_record_import_logs_an_exception_if_getting_mongo_collection_raises(subject, logger):
+    raised_exception = Exception()
+
+    with patch("crawler.processing.create_plate_exporter.get_mongo_collection") as get_mongo_collection:
+        get_mongo_collection.side_effect = raised_exception
+        subject.record_import()
+
+    logger.exception.assert_called_once_with(raised_exception)
+
+
+def test_record_import_logs_an_exception_if_creating_import_record_raises(subject, logger):
+    raised_exception = Exception()
+
+    with patch("crawler.processing.create_plate_exporter.create_import_record") as create_import_record:
+        create_import_record.side_effect = raised_exception
+        subject.record_import()
+
+    logger.exception.assert_called_once_with(raised_exception)

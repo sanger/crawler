@@ -100,7 +100,7 @@ class CreatePlateSample:
 class CreatePlateMessage:
     def __init__(self, body):
         self._body = body
-        self.centre_conf: Optional[CentreConf] = None
+        self.centre_config: Optional[CentreConf] = None
 
         self.validated_samples = 0
         self._textual_errors = []
