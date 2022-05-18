@@ -3,11 +3,11 @@ from typing import NamedTuple, Optional
 
 from pymongo.database import Database
 
-from crawler.constants import COLLECTION_SOURCE_PLATES
+from crawler.constants import COLLECTION_IMPORTS, COLLECTION_SOURCE_PLATES
 from crawler.constants import FIELD_BARCODE as MONGO_PLATE_BARCODE
 from crawler.constants import FIELD_LAB_ID as MONGO_LAB_ID
 from crawler.constants import FIELD_LH_SOURCE_PLATE_UUID, RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE
-from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.exceptions import TransientRabbitError
 from crawler.helpers.general_helpers import create_source_plate_doc
 from crawler.rabbit.messages.create_plate_message import CreatePlateError, ErrorType
@@ -26,6 +26,7 @@ class CreatePlateExporter:
         self._config = config
 
         self._plate_uuid = None
+        self._samples_inserted = 0
 
     def export_to_mongo(self):
         try:
@@ -50,7 +51,15 @@ class CreatePlateExporter:
 
     def record_import(self):
         try:
-            pass  # Record import
+            imports_collection = get_mongo_collection(self._mongo_db, COLLECTION_IMPORTS)
+
+            create_import_record(
+                imports_collection,
+                self._message.centre_conf,
+                self._samples_inserted,
+                self._message.plate_barcode.value,
+                self._message.textual_errors_summary,
+            )
         except Exception as ex:
             LOGGER.exception(ex)
 

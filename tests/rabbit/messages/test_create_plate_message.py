@@ -237,19 +237,9 @@ def test_add_error_records_the_textual_error(subject, description):
         )
     )
 
-    assert len(subject.textual_errors) == 1
-    added_error = subject.textual_errors[0]
+    assert len(subject._textual_errors) == 1
+    added_error = subject._textual_errors[0]
     assert added_error == description
-
-
-def test_textual_errors_list_is_immutable(subject):
-    subject.add_error(CreatePlateError(type=ErrorType.UnpopulatedField, origin="origin", description="description"))
-
-    errors = subject.textual_errors
-    assert len(errors) == 1
-    errors.remove(errors[0])
-    assert len(errors) == 0
-    assert len(subject.textual_errors) == 1  # Hasn't been modified
 
 
 @pytest.mark.parametrize("type", [ErrorType.UnpopulatedField, ErrorType.NonUniqueValue])
