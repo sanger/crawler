@@ -6,6 +6,7 @@ from typing import Any, NamedTuple, Optional
 from crawler.helpers.general_helpers import extract_duplicated_values as extract_dupes
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError
+from crawler.types import CentreConf
 
 LOGGER = logging.getLogger(__name__)
 
@@ -99,6 +100,7 @@ class CreatePlateSample:
 class CreatePlateMessage:
     def __init__(self, body):
         self._body = body
+        self.centre_conf: Optional[CentreConf] = None
 
         self.validated_samples = 0
         self._textual_errors = []

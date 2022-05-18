@@ -23,7 +23,6 @@ class CreatePlateProcessor:
         self._config = config
 
     def process(self, message):
-        self._centres = None
         create_message = CreatePlateMessage(message.message)
         validator = CreatePlateValidator(create_message, self._config)
         exporter = CreatePlateExporter(create_message, self._config)

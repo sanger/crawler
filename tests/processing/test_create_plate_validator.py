@@ -100,7 +100,8 @@ def assert_validate_when_message_is_valid(
 
     subject.validate()
 
-    assert create_message.feedback_errors == []
+    assert create_message.centre_conf is not None
+    assert create_message.has_errors is False
     assert create_message.total_samples == 1
     assert create_message.validated_samples == 1
 
@@ -329,6 +330,7 @@ def test_validate_adds_error_when_lab_id_not_enabled(subject, create_message, ad
         )
     )
 
+    assert create_message.centre_conf is None
     assert create_message.total_samples == 3
     assert create_message.validated_samples == 3
 

@@ -19,6 +19,7 @@ class CreatePlateValidator:
         self._centres = None
 
     def validate(self):
+        self._set_centre_conf()
         self._validate_plate()
         self._validate_samples()
 
@@ -32,13 +33,14 @@ class CreatePlateValidator:
 
         return self._centres
 
-    def _validate_plate(self):
-        """Perform validation of the plate field in the message values for sanity.
-        This does not check that the message can be inserted into the relevant databases.
-        """
-        # Check that the plate is from a centre we are accepting RabbitMQ messages for.
+    def _set_centre_conf(self):
+        """Find a centre from the list of those we're accepting RabbitMQ messages for and store the config for it."""
         lab_id_field = self._message.lab_id
-        if lab_id_field.value not in [c[CENTRE_KEY_LAB_ID_DEFAULT] for c in self.centres]:
+        try:
+            self._message.centre_conf = next(
+                (c for c in self.centres if c[CENTRE_KEY_LAB_ID_DEFAULT] == lab_id_field.value)
+            )
+        except StopIteration:
             self._message.add_error(
                 CreatePlateError(
                     type=ErrorType.CentreNotConfigured,
@@ -51,6 +53,10 @@ class CreatePlateValidator:
                 )
             )
 
+    def _validate_plate(self):
+        """Perform validation of the plate field in the message values for sanity.
+        This does not check that the message can be inserted into the relevant databases.
+        """
         # Ensure that the plate barcode isn't an empty string.
         plate_barcode_field = self._message.plate_barcode
         if not plate_barcode_field.value:
