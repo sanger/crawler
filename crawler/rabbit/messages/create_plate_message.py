@@ -1,5 +1,7 @@
 import logging
-from typing import Any, NamedTuple
+from dataclasses import dataclass
+from enum import IntEnum
+from typing import Any, NamedTuple, Optional
 
 from crawler.helpers.general_helpers import extract_duplicated_values as extract_dupes
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
@@ -26,9 +28,27 @@ FIELD_SAMPLES = "samples"
 FIELD_TESTED_DATE = "testedDateUtc"
 
 
+class ErrorType(IntEnum):
+    UnhandledProcessingError = 1
+    CentreNotConfigured = 2
+    UnpopulatedField = 3
+    NonUniqueValue = 4
+    InvalidFormatValue = 5
+    OutOfRangeValue = 6
+
+
 class MessageField(NamedTuple):
     name: str
     value: Any
+
+
+@dataclass
+class CreatePlateError:
+    type: ErrorType
+    origin: str
+    description: str
+    sample_uuid: Optional[str] = None
+    field: Optional[str] = None
 
 
 class CreatePlateSample:
@@ -81,14 +101,23 @@ class CreatePlateMessage:
         self._body = body
 
         self.validated_samples = 0
-        self._errors = []
+        self._textual_errors = []
+        self._feedback_errors = []
 
         self._duplicated_sample_values = None
         self._samples = None
 
     @property
-    def errors(self):
-        return self._errors.copy()
+    def textual_errors(self):
+        return self._textual_errors.copy()
+
+    @property
+    def feedback_errors(self):
+        return self._feedback_errors.copy()
+
+    @property
+    def has_errors(self):
+        return len(self.textual_errors) > 0 or len(self.feedback_errors) > 0
 
     @property
     def total_samples(self):
@@ -132,15 +161,15 @@ class CreatePlateMessage:
 
         return self._duplicated_sample_values
 
-    def add_error(self, origin, description, sample_uuid="", field=""):
-        LOGGER.error(
-            f"Error found in message with origin '{origin}', sampleUuid '{sample_uuid}', field '{field}': {description}"
-        )
-        self._errors.append(
+    def add_error(self, create_error):
+        LOGGER.error(f"Error in create plate message: {create_error.description}")
+        self._textual_errors.append(create_error.description)
+        self._feedback_errors.append(
             CreateFeedbackError(
-                origin=origin,
-                sampleUuid=sample_uuid,
-                field=field,
-                description=description,
+                typeId=int(create_error.type),
+                origin=create_error.origin,
+                sampleUuid=create_error.sample_uuid,
+                field=create_error.field,
+                description=create_error.description,
             )
         )

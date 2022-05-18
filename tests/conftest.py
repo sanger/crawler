@@ -77,14 +77,11 @@ def mongo_client(config):
 def mongo_database(mongo_client):
     config, mongo_client = mongo_client
     db = get_mongo_db(config, mongo_client)
-    try:
-        yield config, db
-    # Drop the database after each test to ensure they are independent
-    # A transaction may be more appropriate here, but that means significant
-    # code changes, as 'sessions' need to be passed around. I'm also not
-    # sure what version of mongo is being used in production.
-    finally:
-        mongo_client.drop_database(db)
+
+    # Ensure any existing data is gone before a test starts
+    mongo_client.drop_database(db)
+
+    yield config, db
 
 
 @pytest.fixture
