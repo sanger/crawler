@@ -16,6 +16,7 @@ from crawler.processing.create_plate_exporter import CreatePlateExporter
 from crawler.rabbit.messages.create_plate_message import (
     FIELD_LAB_ID,
     FIELD_PLATE,
+    FIELD_PLATE_BARCODE,
     CreatePlateError,
     CreatePlateMessage,
     ErrorType,
@@ -161,6 +162,16 @@ def test_record_import_creates_a_valid_import_record(freezer, subject, mongo_dat
             }
         )
         == 1
+    )
+
+
+def test_record_import_logs_an_error_if_message_contains_no_plate_barcode(subject, logger, create_plate_message):
+    create_plate_message._body[FIELD_PLATE][FIELD_PLATE_BARCODE] = ""
+
+    subject.record_import()
+
+    logger.error.assert_called_once_with(
+        "Import record not created for message with UUID 'CREATE_PLATE_UUID' because it doesn't have a plate barcode."
     )
 
 

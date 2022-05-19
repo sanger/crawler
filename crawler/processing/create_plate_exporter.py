@@ -50,6 +50,15 @@ class CreatePlateExporter:
             LOGGER.exception(ex)
 
     def record_import(self):
+        plate_barcode = self._message.plate_barcode.value
+        if not plate_barcode:
+            # We don't record imports without a plate barcode available. They would be meaningless without the barcode.
+            LOGGER.error(
+                f"Import record not created for message with UUID '{self._message.message_uuid.value}' "
+                "because it doesn't have a plate barcode."
+            )
+            return
+
         try:
             imports_collection = get_mongo_collection(self._mongo_db, COLLECTION_IMPORTS)
 
@@ -57,7 +66,7 @@ class CreatePlateExporter:
                 imports_collection,
                 self._message.centre_config,
                 self._samples_inserted,
-                self._message.plate_barcode.value,
+                plate_barcode,
                 self._message.textual_errors_summary,
             )
         except Exception as ex:
