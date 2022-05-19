@@ -112,7 +112,7 @@ def test_export_to_mongo_adds_an_error_when_source_plate_exists_for_another_lab_
 
     add_error.assert_called_once_with(
         CreatePlateError(
-            type=ErrorType.NonUniqueValue,
+            type=ErrorType.ExportingPlateAlreadyExists,
             origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
             description=ANY,
             field=FIELD_LAB_ID,

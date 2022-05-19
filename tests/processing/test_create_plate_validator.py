@@ -323,7 +323,7 @@ def test_validate_adds_error_when_lab_id_not_enabled(subject, create_message, ad
 
     add_error.assert_called_once_with(
         CreatePlateError(
-            type=ErrorType.CentreNotConfigured,
+            type=ErrorType.ValidationCentreNotConfigured,
             origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
             description=ANY,
             field=FIELD_LAB_ID,
@@ -342,7 +342,7 @@ def test_validate_adds_error_when_plate_barcode_is_empty(subject, create_message
 
     add_error.assert_called_once_with(
         CreatePlateError(
-            type=ErrorType.UnpopulatedField,
+            type=ErrorType.ValidationUnpopulatedField,
             origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
             description="Value for field 'plateBarcode' has not been populated.",
             field=FIELD_PLATE_BARCODE,
@@ -362,7 +362,7 @@ def test_validate_adds_single_error_when_multiple_samples_have_the_same_uuid(sub
 
     add_error.assert_called_once_with(
         CreatePlateError(
-            type=ErrorType.NonUniqueValue,
+            type=ErrorType.ValidationNonUniqueValue,
             origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
             description=ANY,
             sample_uuid=sample_uuid,
@@ -386,7 +386,7 @@ def test_validate_adds_error_when_root_sample_id_is_empty(subject, create_messag
         [
             call(
                 CreatePlateError(
-                    type=ErrorType.UnpopulatedField,
+                    type=ErrorType.ValidationUnpopulatedField,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -395,7 +395,7 @@ def test_validate_adds_error_when_root_sample_id_is_empty(subject, create_messag
             ),
             call(
                 CreatePlateError(
-                    type=ErrorType.UnpopulatedField,
+                    type=ErrorType.ValidationUnpopulatedField,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
@@ -420,7 +420,7 @@ def test_validate_adds_error_when_root_sample_id_is_not_unique(subject, create_m
         [
             call(
                 CreatePlateError(
-                    type=ErrorType.NonUniqueValue,
+                    type=ErrorType.ValidationNonUniqueValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -429,7 +429,7 @@ def test_validate_adds_error_when_root_sample_id_is_not_unique(subject, create_m
             ),
             call(
                 CreatePlateError(
-                    type=ErrorType.NonUniqueValue,
+                    type=ErrorType.ValidationNonUniqueValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
@@ -455,7 +455,7 @@ def test_validate_adds_error_when_rna_id_is_empty(subject, create_message, add_e
         [
             call(
                 CreatePlateError(
-                    type=ErrorType.UnpopulatedField,
+                    type=ErrorType.ValidationUnpopulatedField,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -464,7 +464,7 @@ def test_validate_adds_error_when_rna_id_is_empty(subject, create_message, add_e
             ),
             call(
                 CreatePlateError(
-                    type=ErrorType.UnpopulatedField,
+                    type=ErrorType.ValidationUnpopulatedField,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
@@ -489,7 +489,7 @@ def test_validate_adds_error_when_rna_id_is_not_unique(subject, create_message, 
         [
             call(
                 CreatePlateError(
-                    type=ErrorType.NonUniqueValue,
+                    type=ErrorType.ValidationNonUniqueValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -498,7 +498,7 @@ def test_validate_adds_error_when_rna_id_is_not_unique(subject, create_message, 
             ),
             call(
                 CreatePlateError(
-                    type=ErrorType.NonUniqueValue,
+                    type=ErrorType.ValidationNonUniqueValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
@@ -524,7 +524,7 @@ def test_validate_adds_error_when_cog_uk_id_is_empty(subject, create_message, ad
         [
             call(
                 CreatePlateError(
-                    type=ErrorType.UnpopulatedField,
+                    type=ErrorType.ValidationUnpopulatedField,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -533,7 +533,7 @@ def test_validate_adds_error_when_cog_uk_id_is_empty(subject, create_message, ad
             ),
             call(
                 CreatePlateError(
-                    type=ErrorType.UnpopulatedField,
+                    type=ErrorType.ValidationUnpopulatedField,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
@@ -558,7 +558,7 @@ def test_validate_adds_error_when_cog_uk_id_is_not_unique(subject, create_messag
         [
             call(
                 CreatePlateError(
-                    type=ErrorType.NonUniqueValue,
+                    type=ErrorType.ValidationNonUniqueValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -567,7 +567,7 @@ def test_validate_adds_error_when_cog_uk_id_is_not_unique(subject, create_messag
             ),
             call(
                 CreatePlateError(
-                    type=ErrorType.NonUniqueValue,
+                    type=ErrorType.ValidationNonUniqueValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
@@ -594,7 +594,7 @@ def test_validate_adds_error_when_plate_coordinate_column_invalid(subject, creat
         [
             call(
                 CreatePlateError(
-                    type=ErrorType.InvalidFormatValue,
+                    type=ErrorType.ValidationInvalidFormatValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -603,7 +603,7 @@ def test_validate_adds_error_when_plate_coordinate_column_invalid(subject, creat
             ),
             call(
                 CreatePlateError(
-                    type=ErrorType.InvalidFormatValue,
+                    type=ErrorType.ValidationInvalidFormatValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
@@ -633,7 +633,7 @@ def test_validate_adds_error_when_plate_coordinate_row_invalid(subject, create_m
         [
             call(
                 CreatePlateError(
-                    type=ErrorType.InvalidFormatValue,
+                    type=ErrorType.ValidationInvalidFormatValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -642,7 +642,7 @@ def test_validate_adds_error_when_plate_coordinate_row_invalid(subject, create_m
             ),
             call(
                 CreatePlateError(
-                    type=ErrorType.InvalidFormatValue,
+                    type=ErrorType.ValidationInvalidFormatValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
@@ -670,7 +670,7 @@ def test_validate_adds_error_when_plate_coordinate_is_not_unique(
         [
             call(
                 CreatePlateError(
-                    type=ErrorType.NonUniqueValue,
+                    type=ErrorType.ValidationNonUniqueValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -679,7 +679,7 @@ def test_validate_adds_error_when_plate_coordinate_is_not_unique(
             ),
             call(
                 CreatePlateError(
-                    type=ErrorType.NonUniqueValue,
+                    type=ErrorType.ValidationNonUniqueValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),
@@ -706,7 +706,7 @@ def test_validate_adds_error_when_tested_date_is_too_recent(subject, create_mess
         [
             call(
                 CreatePlateError(
-                    type=ErrorType.OutOfRangeValue,
+                    type=ErrorType.ValidationOutOfRangeValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[0][FIELD_SAMPLE_UUID].decode(),
@@ -715,7 +715,7 @@ def test_validate_adds_error_when_tested_date_is_too_recent(subject, create_mess
             ),
             call(
                 CreatePlateError(
-                    type=ErrorType.OutOfRangeValue,
+                    type=ErrorType.ValidationOutOfRangeValue,
                     origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                     description=ANY,
                     sample_uuid=samples[1][FIELD_SAMPLE_UUID].decode(),

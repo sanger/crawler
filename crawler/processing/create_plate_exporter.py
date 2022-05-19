@@ -97,7 +97,7 @@ class CreatePlateExporter:
                     return ExportResult(
                         success=False,
                         create_plate_error=CreatePlateError(
-                            type=ErrorType.NonUniqueValue,
+                            type=ErrorType.ExportingPlateAlreadyExists,
                             origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
                             description=(
                                 f"Plate barcode '{plate_barcode}' already exists "

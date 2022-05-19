@@ -31,11 +31,12 @@ FIELD_TESTED_DATE = "testedDateUtc"
 
 class ErrorType(IntEnum):
     UnhandledProcessingError = 1
-    CentreNotConfigured = 2
-    UnpopulatedField = 3
-    NonUniqueValue = 4
-    InvalidFormatValue = 5
-    OutOfRangeValue = 6
+    ValidationCentreNotConfigured = 2
+    ValidationUnpopulatedField = 3
+    ValidationNonUniqueValue = 4
+    ValidationInvalidFormatValue = 5
+    ValidationOutOfRangeValue = 6
+    ExportingPlateAlreadyExists = 7
 
 
 class MessageField(NamedTuple):

@@ -216,7 +216,7 @@ def test_duplicated_sample_values_calls_expected_methods():
 def test_add_error_logs_the_error_description(subject, logger, description):
     subject.add_error(
         CreatePlateError(
-            type=ErrorType.UnpopulatedField,
+            type=ErrorType.ValidationUnpopulatedField,
             origin="origin",
             description=description,
         )
@@ -231,7 +231,7 @@ def test_add_error_logs_the_error_description(subject, logger, description):
 def test_add_error_records_the_textual_error(subject, description):
     subject.add_error(
         CreatePlateError(
-            type=ErrorType.UnpopulatedField,
+            type=ErrorType.ValidationUnpopulatedField,
             origin="origin",
             description=description,
         )
@@ -242,7 +242,7 @@ def test_add_error_records_the_textual_error(subject, description):
     assert added_error == description
 
 
-@pytest.mark.parametrize("type", [ErrorType.UnpopulatedField, ErrorType.NonUniqueValue])
+@pytest.mark.parametrize("type", [ErrorType.ValidationUnpopulatedField, ErrorType.ValidationNonUniqueValue])
 @pytest.mark.parametrize("origin", ["origin_1", "origin_2"])
 @pytest.mark.parametrize("description", ["description_1", "description_2"])
 @pytest.mark.parametrize("sample_uuid", ["uuid_1", "uuid_2"])
@@ -268,7 +268,9 @@ def test_add_error_records_the_feedback_error(subject, type, origin, description
 
 
 def test_feedback_errors_list_is_immutable(subject):
-    subject.add_error(CreatePlateError(type=ErrorType.UnpopulatedField, origin="origin", description="description"))
+    subject.add_error(
+        CreatePlateError(type=ErrorType.ValidationUnpopulatedField, origin="origin", description="description")
+    )
 
     errors = subject.feedback_errors
     assert len(errors) == 1
