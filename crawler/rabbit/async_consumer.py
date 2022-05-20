@@ -260,7 +260,7 @@ class AsyncConsumer(object):
         :param pika.Spec.BasicProperties: properties
         :param bytes body: The message body
         """
-        LOGGER.info("Received message # %s from %s: %s", basic_deliver.delivery_tag, properties.app_id, body)
+        LOGGER.info("Received message # %s from %s", basic_deliver.delivery_tag, properties.app_id)
         delivery_tag = basic_deliver.delivery_tag
 
         if self._process_message(properties.headers, body):

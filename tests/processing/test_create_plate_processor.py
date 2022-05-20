@@ -60,6 +60,12 @@ def message_wrapper_class():
     with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as message_wrapper_class:
         message_wrapper_class.return_value.message_uuid = MessageField("UUID_FIELD", "UUID")
         message_wrapper_class.return_value.has_errors = False
+
+        def add_error(error):
+            message_wrapper_class.return_value.has_errors = True
+
+        message_wrapper_class.return_value.add_error.side_effect = add_error
+
         yield message_wrapper_class
 
 
@@ -122,6 +128,12 @@ def test_process_publishes_feedback_when_no_issues_found(subject, mock_avro_enco
     assert_feedback_was_published(subject, message_wrapper_class.return_value, mock_avro_encoder.return_value)
 
 
+def test_process_records_import_when_no_issues_found(subject, mock_exporter):
+    subject.process(MagicMock())
+
+    mock_exporter.return_value.record_import.assert_called_once()
+
+
 def test_process_returns_true_when_no_issues_found(subject):
     result = subject.process(MagicMock())
 
@@ -151,7 +163,7 @@ def test_process_when_transient_error_from_exporter(subject, mock_logger, mock_e
 
 
 def test_process_when_another_exception_from_the_validator(
-    subject, mock_logger, mock_validator, mock_avro_encoder, message_wrapper_class
+    subject, mock_logger, mock_exporter, mock_validator, mock_avro_encoder, message_wrapper_class
 ):
     another_exception = KeyError("key")
     mock_validator.return_value.validate.side_effect = another_exception
@@ -164,6 +176,7 @@ def test_process_when_another_exception_from_the_validator(
             type=ErrorType.UnhandledProcessingError, origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING, description=ANY
         )
     )
+    mock_exporter.return_value.record_import.assert_called_once()
     assert_feedback_was_published(subject, message_wrapper_class.return_value, mock_avro_encoder.return_value)
 
 
@@ -182,15 +195,12 @@ def test_process_when_another_exception_from_the_exporter(
         )
     )
     assert_feedback_was_published(subject, message_wrapper_class.return_value, mock_avro_encoder.return_value)
+    mock_exporter.return_value.record_import.assert_called_once()
 
 
-def test_process_records_the_import_when_errors_after_mongo_export(subject, mock_exporter, message_wrapper_class):
+def test_process_records_the_import_when_errors_after_mongo_export(subject, mock_exporter):
     exporter = mock_exporter.return_value
-
-    def set_has_errors():
-        message_wrapper_class.return_value.has_errors = True
-
-    exporter.export_to_mongo.side_effect = set_has_errors
+    exporter.export_to_mongo.side_effect = KeyError()
 
     result = subject.process(MagicMock())
 

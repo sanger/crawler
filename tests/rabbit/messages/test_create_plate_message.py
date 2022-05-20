@@ -216,7 +216,7 @@ def test_duplicated_sample_values_calls_expected_methods():
 def test_add_error_logs_the_error_description(subject, logger, description):
     subject.add_error(
         CreatePlateError(
-            type=ErrorType.UnpopulatedField,
+            type=ErrorType.ValidationUnpopulatedField,
             origin="origin",
             description=description,
         )
@@ -231,28 +231,18 @@ def test_add_error_logs_the_error_description(subject, logger, description):
 def test_add_error_records_the_textual_error(subject, description):
     subject.add_error(
         CreatePlateError(
-            type=ErrorType.UnpopulatedField,
+            type=ErrorType.ValidationUnpopulatedField,
             origin="origin",
             description=description,
         )
     )
 
-    assert len(subject.textual_errors) == 1
-    added_error = subject.textual_errors[0]
+    assert len(subject._textual_errors) == 1
+    added_error = subject._textual_errors[0]
     assert added_error == description
 
 
-def test_textual_errors_list_is_immutable(subject):
-    subject.add_error(CreatePlateError(type=ErrorType.UnpopulatedField, origin="origin", description="description"))
-
-    errors = subject.textual_errors
-    assert len(errors) == 1
-    errors.remove(errors[0])
-    assert len(errors) == 0
-    assert len(subject.textual_errors) == 1  # Hasn't been modified
-
-
-@pytest.mark.parametrize("type", [ErrorType.UnpopulatedField, ErrorType.NonUniqueValue])
+@pytest.mark.parametrize("type", [ErrorType.ValidationUnpopulatedField, ErrorType.ValidationNonUniqueValue])
 @pytest.mark.parametrize("origin", ["origin_1", "origin_2"])
 @pytest.mark.parametrize("description", ["description_1", "description_2"])
 @pytest.mark.parametrize("sample_uuid", ["uuid_1", "uuid_2"])
@@ -278,10 +268,40 @@ def test_add_error_records_the_feedback_error(subject, type, origin, description
 
 
 def test_feedback_errors_list_is_immutable(subject):
-    subject.add_error(CreatePlateError(type=ErrorType.UnpopulatedField, origin="origin", description="description"))
+    subject.add_error(
+        CreatePlateError(type=ErrorType.ValidationUnpopulatedField, origin="origin", description="description")
+    )
 
     errors = subject.feedback_errors
     assert len(errors) == 1
     errors.remove(errors[0])
     assert len(errors) == 0
     assert len(subject.feedback_errors) == 1  # Hasn't been modified
+
+
+@pytest.mark.parametrize(
+    "errors, headline",
+    [
+        [[], "No errors were reported during processing."],
+        [["Error 1"], "1 error was reported during processing."],
+        [["Error 1", "Error 2"], "2 errors were reported during processing."],
+        [["Error 1", "Error 2", "Error 3"], "3 errors were reported during processing."],
+        [["Error 1", "Error 2", "Error 3", "Error 4"], "4 errors were reported during processing."],
+        [["Error 1", "Error 2", "Error 3", "Error 4", "Error 5"], "5 errors were reported during processing."],
+    ],
+)
+def test_textual_errors_summary_is_accurate_for_up_to_5_errors(subject, errors, headline):
+    subject._textual_errors = errors
+    assert subject.textual_errors_summary == [headline] + errors
+
+
+def test_textual_errors_summary_is_accurate_for_6_errors(subject):
+    subject._textual_errors = ["Error 1", "Error 2", "Error 3", "Error 4", "Error 5", "Error 6"]
+    assert subject.textual_errors_summary == [
+        "6 errors were reported during processing. Only the first 5 are shown.",
+        "Error 1",
+        "Error 2",
+        "Error 3",
+        "Error 4",
+        "Error 5",
+    ]

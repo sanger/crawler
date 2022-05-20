@@ -6,6 +6,7 @@ from typing import Any, NamedTuple, Optional
 from crawler.helpers.general_helpers import extract_duplicated_values as extract_dupes
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError
+from crawler.types import CentreConf
 
 LOGGER = logging.getLogger(__name__)
 
@@ -30,11 +31,12 @@ FIELD_TESTED_DATE = "testedDateUtc"
 
 class ErrorType(IntEnum):
     UnhandledProcessingError = 1
-    CentreNotConfigured = 2
-    UnpopulatedField = 3
-    NonUniqueValue = 4
-    InvalidFormatValue = 5
-    OutOfRangeValue = 6
+    ValidationCentreNotConfigured = 2
+    ValidationUnpopulatedField = 3
+    ValidationNonUniqueValue = 4
+    ValidationInvalidFormatValue = 5
+    ValidationOutOfRangeValue = 6
+    ExportingPlateAlreadyExists = 7
 
 
 class MessageField(NamedTuple):
@@ -99,6 +101,7 @@ class CreatePlateSample:
 class CreatePlateMessage:
     def __init__(self, body):
         self._body = body
+        self.centre_config: Optional[CentreConf] = None
 
         self.validated_samples = 0
         self._textual_errors = []
@@ -108,8 +111,21 @@ class CreatePlateMessage:
         self._samples = None
 
     @property
-    def textual_errors(self):
-        return self._textual_errors.copy()
+    def textual_errors_summary(self):
+        error_count = len(self._textual_errors)
+
+        if error_count == 0:
+            errors_label = "No errors were"
+        elif error_count == 1:
+            errors_label = "1 error was"
+        else:
+            errors_label = f"{error_count} errors were"
+
+        additional_text = " Only the first 5 are shown." if error_count > 5 else ""
+
+        error_list = [f"{errors_label} reported during processing.{additional_text}"] + self._textual_errors[:5]
+
+        return error_list
 
     @property
     def feedback_errors(self):
@@ -117,7 +133,7 @@ class CreatePlateMessage:
 
     @property
     def has_errors(self):
-        return len(self.textual_errors) > 0 or len(self.feedback_errors) > 0
+        return len(self._textual_errors) > 0 or len(self._feedback_errors) > 0
 
     @property
     def total_samples(self):

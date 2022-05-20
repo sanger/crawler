@@ -23,7 +23,6 @@ class CreatePlateProcessor:
         self._config = config
 
     def process(self, message):
-        self._centres = None
         create_message = CreatePlateMessage(message.message)
         validator = CreatePlateValidator(create_message, self._config)
         exporter = CreatePlateExporter(create_message, self._config)
@@ -45,8 +44,6 @@ class CreatePlateProcessor:
                     description="An unhandled error occurred while processing the message.",
                 )
             )
-            self._publish_feedback(create_message)
-            return False  # Send the message to dead letters
 
         # At this point, publish feedback as all remaining errors are not for PAM to be concerned with.
         self._publish_feedback(create_message)
