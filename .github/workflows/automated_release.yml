@@ -13,11 +13,6 @@ jobs:
   build_test_release_push:
     runs-on: ubuntu-latest
     services:
-      mongodb:
-        image: mongo:4.2.5
-        ports:
-          - 27017:27017
-
       mysql:
         image: mysql:5.7
         ports:
@@ -47,6 +42,12 @@ jobs:
       - name: Start a testing SFTP server
         run: |
           docker run -p "3010:22" -v ${PWD}/test:/home/foo -d atmoz/sftp foo:pass:1001
+
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.7.0
+        with:
+          mongodb-version: 4.2
+          mongodb-replica-set: heron_rs
 
       - name: Run tests against the image
         run: >-
