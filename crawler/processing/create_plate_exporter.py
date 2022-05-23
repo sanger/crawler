@@ -1,6 +1,7 @@
 import logging
 from typing import NamedTuple, Optional
 
+from pymongo.client_session import ClientSession
 from pymongo.database import Database
 
 from crawler.constants import COLLECTION_IMPORTS, COLLECTION_SOURCE_PLATES
@@ -86,7 +87,7 @@ class CreatePlateExporter:
 
         return self.__mongo_db
 
-    def _record_source_plate_in_mongo_db(self, session) -> ExportResult:
+    def _record_source_plate_in_mongo_db(self, session: ClientSession) -> ExportResult:
         """Find an existing plate in MongoDB or add a new one for the plate in the message."""
         try:
             plate_barcode = self._message.plate_barcode.value
@@ -132,5 +133,5 @@ class CreatePlateExporter:
                 f"There was an error updating MongoDB while exporting plate with barcode '{plate_barcode}'."
             )
 
-    def _record_samples_in_mongo_db(self, session) -> ExportResult:
+    def _record_samples_in_mongo_db(self, session: ClientSession) -> ExportResult:
         return ExportResult(success=True, create_plate_error=None)
