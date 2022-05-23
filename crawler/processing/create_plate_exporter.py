@@ -6,8 +6,9 @@ from pymongo.database import Database
 
 from crawler.constants import COLLECTION_IMPORTS, COLLECTION_SOURCE_PLATES
 from crawler.constants import FIELD_BARCODE as MONGO_PLATE_BARCODE
-from crawler.constants import FIELD_LAB_ID as MONGO_LAB_ID
-from crawler.constants import FIELD_LH_SOURCE_PLATE_UUID, RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE
+from crawler.constants import FIELD_LH_SOURCE_PLATE_UUID
+from crawler.constants import FIELD_MONGO_LAB_ID as MONGO_LAB_ID
+from crawler.constants import RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE
 from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.exceptions import TransientRabbitError
 from crawler.helpers.general_helpers import create_source_plate_doc

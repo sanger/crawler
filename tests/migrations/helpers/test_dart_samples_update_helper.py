@@ -10,9 +10,9 @@ from crawler.constants import (
     COLLECTION_SOURCE_PLATES,
     FIELD_BARCODE,
     FIELD_CREATED_AT,
-    FIELD_LAB_ID,
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_MONGO_LAB_ID,
     FIELD_MONGODB_ID,
     FIELD_PLATE_BARCODE,
     FIELD_RESULT,
@@ -60,7 +60,7 @@ def generate_example_samples(range, start_datetime):
                 FIELD_ROOT_SAMPLE_ID: f"TLS0000000{n}",
                 FIELD_RESULT: "Positive",
                 FIELD_PLATE_BARCODE: f"DN1000000{n}",
-                FIELD_LAB_ID: "TLS",
+                FIELD_MONGO_LAB_ID: "TLS",
                 FIELD_RNA_ID: f"rna_{n}",
                 FIELD_CREATED_AT: start_datetime + timedelta(days=n),
                 FIELD_UPDATED_AT: start_datetime + timedelta(days=n),
@@ -74,7 +74,7 @@ def generate_example_samples(range, start_datetime):
             FIELD_ROOT_SAMPLE_ID: "TLS0000000_neg",
             FIELD_RESULT: "Negative",
             FIELD_PLATE_BARCODE: "DN10000000",
-            FIELD_LAB_ID: "TLS",
+            FIELD_MONGO_LAB_ID: "TLS",
             FIELD_RNA_ID: "rna_negative",
             FIELD_CREATED_AT: start_datetime,
             FIELD_UPDATED_AT: start_datetime,
@@ -88,7 +88,7 @@ def generate_example_samples(range, start_datetime):
             FIELD_ROOT_SAMPLE_ID: "CBIQA_TLS0000000_control",
             FIELD_RESULT: "Positive",
             FIELD_PLATE_BARCODE: "DN10000000",
-            FIELD_LAB_ID: "TLS",
+            FIELD_MONGO_LAB_ID: "TLS",
             FIELD_RNA_ID: "rna_sample",
             FIELD_CREATED_AT: start_datetime,
             FIELD_UPDATED_AT: start_datetime,
@@ -129,12 +129,12 @@ def test_new_mongo_source_plate(freezer):
     lab_id = "LAB_ID_123"
     source_plate = new_mongo_source_plate(plate_barcode, lab_id)
 
-    assert {FIELD_LH_SOURCE_PLATE_UUID, FIELD_BARCODE, FIELD_LAB_ID, FIELD_UPDATED_AT, FIELD_CREATED_AT} == set(
+    assert {FIELD_LH_SOURCE_PLATE_UUID, FIELD_BARCODE, FIELD_MONGO_LAB_ID, FIELD_UPDATED_AT, FIELD_CREATED_AT} == set(
         [*source_plate]
     )
     assert uuid.UUID(str(source_plate[FIELD_LH_SOURCE_PLATE_UUID]))
     assert source_plate[FIELD_BARCODE] == plate_barcode
-    assert source_plate[FIELD_LAB_ID] == lab_id
+    assert source_plate[FIELD_MONGO_LAB_ID] == lab_id
     assert source_plate[FIELD_UPDATED_AT] == now
     assert source_plate[FIELD_CREATED_AT] == now
 

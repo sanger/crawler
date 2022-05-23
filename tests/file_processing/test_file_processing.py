@@ -48,6 +48,7 @@ from crawler.constants import (
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_LINE_NUMBER,
+    FIELD_MONGO_LAB_ID,
     FIELD_MUST_SEQUENCE,
     FIELD_PLATE_BARCODE,
     FIELD_PREFERENTIALLY_SEQUENCE,
@@ -2217,7 +2218,7 @@ def test_is_current_correctly_set(config, mlwh_connection):
             FIELD_COORDINATE: "H11",
             FIELD_RESULT: "Negative",
             FIELD_SOURCE: "Test Centre",
-            FIELD_LAB_ID: "TC",
+            FIELD_MONGO_LAB_ID: "TC",
         },
         {
             "_id": ObjectId("5f562d9931d9959b92544722"),
@@ -2227,7 +2228,7 @@ def test_is_current_correctly_set(config, mlwh_connection):
             FIELD_COORDINATE: "H11",
             FIELD_RESULT: "Positive",
             FIELD_SOURCE: "Test Centre",
-            FIELD_LAB_ID: "TC",
+            FIELD_MONGO_LAB_ID: "TC",
         },
         {
             "_id": ObjectId("5f562d9931d9959b92544723"),
@@ -2237,7 +2238,7 @@ def test_is_current_correctly_set(config, mlwh_connection):
             FIELD_COORDINATE: "H11",
             FIELD_RESULT: "Negative",
             FIELD_SOURCE: "Test Centre",
-            FIELD_LAB_ID: "TC",
+            FIELD_MONGO_LAB_ID: "TC",
         },
     ]
 
