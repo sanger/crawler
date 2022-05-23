@@ -79,7 +79,6 @@ def mongo_client(config):
 @pytest.fixture
 def mongo_collections():
     return [
-        COLLECTION_CENTRES,
         COLLECTION_IMPORTS,
         COLLECTION_SAMPLES,
         COLLECTION_PRIORITY_SAMPLES,
