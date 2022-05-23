@@ -75,8 +75,8 @@ SFTP_UPLOAD = False
 ###
 # MongoDB details
 ###
-MONGO_HOST = LOCALHOST
 MONGO_DB = "crawlerTestDB"
+MONGO_URI = f"mongodb://{LOCALHOST}:27017/{MONGO_DB}?replicaSet=heron_rs"
 
 ###
 # MLWH database details

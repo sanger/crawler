@@ -43,10 +43,8 @@ BARACODA_RETRY_ATTEMPTS = 3
 # mongo details
 ###
 MONGO_DB = "lighthouseDevelopmentDB"
-MONGO_HOST = LOCALHOST
-MONGO_PASSWORD = ""
-MONGO_PORT = 27017
-MONGO_USERNAME = ""
+MONGO_URI = f"mongodb://{LOCALHOST}:27017/{MONGO_DB}?replicaSet=heron_rs"
+
 
 ###
 # MLWH database details
