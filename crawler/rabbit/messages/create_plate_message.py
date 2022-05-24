@@ -37,6 +37,7 @@ class ErrorType(IntEnum):
     ValidationInvalidFormatValue = 5
     ValidationOutOfRangeValue = 6
     ExportingPlateAlreadyExists = 7
+    ExportingSampleAlreadyExists = 8
 
 
 class MessageField(NamedTuple):
