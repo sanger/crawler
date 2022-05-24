@@ -163,7 +163,8 @@ class CreatePlateExporter:
     def _record_samples_in_mongo_db(self, session: ClientSession) -> ExportResult:
         message_uuid = self._message.message_uuid.value
         LOGGER.debug(
-            f"Attempting to insert {self._message.total_samples} samples from message with UUID {message_uuid} into mongo..."
+            f"Attempting to insert {self._message.total_samples} "
+            f"samples from message with UUID {message_uuid} into mongo..."
         )
 
         try:
