@@ -8,6 +8,7 @@ from crawler.constants import (
     COLLECTION_IMPORTS,
     COLLECTION_SOURCE_PLATES,
     FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_MONGO_LAB_ID,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
 )
 from crawler.db.mongo import get_mongo_collection
@@ -102,7 +103,9 @@ def test_export_to_mongo_puts_a_source_plate_in_mongo_only_once(subject, mongo_d
     assert create_plate_message.has_errors is False
 
 
-def test_export_to_mongo_adds_an_error_when_source_plate_exists_for_another_lab_id(subject):
+def test_export_to_mongo_adds_an_error_when_source_plate_exists_for_another_lab_id(subject, mongo_database):
+    _, mongo_database = mongo_database
+
     # Get the source plate added once
     subject.export_to_mongo()
 
@@ -119,12 +122,17 @@ def test_export_to_mongo_adds_an_error_when_source_plate_exists_for_another_lab_
         )
     )
 
+    # NULL plate was not inserted
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+    assert source_plates_collection.count_documents({FIELD_MONGO_LAB_ID: "NULL"}) == 0
 
-def test_export_to_mongo_logs_error_correctly_on_exception(subject, logger):
+
+def test_export_to_mongo_logs_error_correctly_on_exception(subject, logger, mongo_database):
+    _, mongo_database = mongo_database
     timeout_error = TimeoutError()
 
-    with patch("crawler.processing.create_plate_exporter.get_mongo_collection") as get_mongo_collection:
-        get_mongo_collection.side_effect = timeout_error
+    with patch("crawler.processing.create_plate_exporter.get_mongo_collection") as get_collection:
+        get_collection.side_effect = timeout_error
 
         with pytest.raises(TransientRabbitError) as ex_info:
             subject.export_to_mongo()
@@ -137,6 +145,9 @@ def test_export_to_mongo_logs_error_correctly_on_exception(subject, logger):
     log_message = logger.critical.call_args.args[0]
     assert "PLATE-001" in log_message
     assert str(timeout_error) in log_message
+
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+    assert source_plates_collection.count_documents({}) == 0
 
     logger.exception.assert_called_once_with(timeout_error)
 

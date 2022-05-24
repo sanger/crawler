@@ -14,8 +14,11 @@ from crawler.constants import (
     CENTRE_KEY_DATA_SOURCE,
     CENTRE_KEY_FILE_NAMES_TO_IGNORE,
     COLLECTION_CENTRES,
+    COLLECTION_CHERRYPICK_TEST_DATA,
+    COLLECTION_IMPORTS,
     COLLECTION_PRIORITY_SAMPLES,
     COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
     FIELD_FILTERED_POSITIVE,
     FIELD_MONGODB_ID,
     MLWH_TABLE_NAME,
@@ -74,12 +77,29 @@ def mongo_client(config):
 
 
 @pytest.fixture
-def mongo_database(mongo_client):
+def mongo_collections():
+    return [
+        COLLECTION_IMPORTS,
+        COLLECTION_SAMPLES,
+        COLLECTION_PRIORITY_SAMPLES,
+        COLLECTION_SOURCE_PLATES,
+        COLLECTION_CHERRYPICK_TEST_DATA,
+    ]
+
+
+@pytest.fixture
+def mongo_database(mongo_client, mongo_collections):
     config, mongo_client = mongo_client
     db = get_mongo_db(config, mongo_client)
 
     # Ensure any existing data is gone before a test starts
     mongo_client.drop_database(db)
+
+    # Create every collection since some operations in a transaction will fail if the collection doesn't exist
+    for collection_name in mongo_collections:
+        collection = get_mongo_collection(db, collection_name)
+        collection.insert_one({})
+        collection.delete_one({})
 
     yield config, db
 

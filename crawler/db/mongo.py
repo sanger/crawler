@@ -23,29 +23,8 @@ def create_mongo_client(config: Config) -> MongoClient:
     Returns:
         MongoClient: a client used to interact with the database server
     """
-    try:
-        logger.debug("Connecting to mongo")
-
-        mongo_uri = config.MONGO_URI
-
-        return MongoClient(mongo_uri)
-    except AttributeError:
-        #  there is no MONGO_URI so try each config separately
-        mongo_host = config.MONGO_HOST
-        mongo_port = config.MONGO_PORT
-        mongo_username = config.MONGO_USERNAME
-        mongo_password = config.MONGO_PASSWORD
-        mongo_db = config.MONGO_DB
-
-        logger.debug(f"Connecting to {mongo_host} on port {mongo_port}")
-
-        return MongoClient(
-            host=mongo_host,
-            port=mongo_port,
-            username=mongo_username,
-            password=mongo_password,
-            authSource=mongo_db,
-        )
+    logger.debug("Connecting to mongo")
+    return MongoClient(config.MONGO_URI)
 
 
 def get_mongo_db(config: Config, client: MongoClient) -> Database:
