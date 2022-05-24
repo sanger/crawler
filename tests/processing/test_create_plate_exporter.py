@@ -2,13 +2,18 @@ import copy
 from datetime import datetime
 from unittest.mock import ANY, MagicMock, patch
 
+import pymongo
 import pytest
 
 from crawler.constants import (
     COLLECTION_IMPORTS,
+    COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_MONGO_LAB_ID,
+    FIELD_MONGO_RESULT,
+    FIELD_MONGO_RNA_ID,
+    FIELD_MONGO_ROOT_SAMPLE_ID,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
 )
 from crawler.db.mongo import get_mongo_collection
@@ -18,6 +23,7 @@ from crawler.rabbit.messages.create_plate_message import (
     FIELD_LAB_ID,
     FIELD_PLATE,
     FIELD_PLATE_BARCODE,
+    FIELD_SAMPLES,
     CreatePlateError,
     CreatePlateMessage,
     ErrorType,
@@ -153,6 +159,33 @@ def test_export_to_mongo_logs_error_correctly_on_exception(subject, logger, mong
     assert source_plates_collection.count_documents({}) == 0
 
     logger.exception.assert_called_once_with(timeout_error)
+
+
+def test_export_to_mongo_reverts_the_transaction_when_duplicate_samples_inserted(subject, mongo_database):
+    _, mongo_database = mongo_database
+
+    # Create an index on the samples collection
+    # TODO: Make the application itself do this when setting up the consumer.
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    samples_collection.create_index(
+        [
+            (FIELD_MONGO_ROOT_SAMPLE_ID, pymongo.ASCENDING),
+            (FIELD_MONGO_RNA_ID, pymongo.ASCENDING),
+            (FIELD_MONGO_RESULT, pymongo.ASCENDING),
+            (FIELD_MONGO_LAB_ID, pymongo.ASCENDING),
+        ],
+        unique=True,
+    )
+
+    samples = subject._message._body[FIELD_PLATE][FIELD_SAMPLES]
+    samples[0] = samples[1]
+    subject.export_to_mongo()
+
+    # No documents were inserted in either collection
+    assert samples_collection.count_documents({}) == 0
+
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+    assert source_plates_collection.count_documents({}) == 0
 
 
 def test_record_import_creates_a_valid_import_record(freezer, subject, mongo_database):

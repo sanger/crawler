@@ -4,7 +4,7 @@ from typing import NamedTuple, Optional
 
 from pymongo.client_session import ClientSession
 from pymongo.database import Database
-from pymongo.errors import DuplicateKeyError
+from pymongo.errors import BulkWriteError
 
 from crawler.constants import (
     CENTRE_KEY_NAME,
@@ -70,6 +70,7 @@ class CreatePlateExporter:
                     if not samples_result.success:
                         self._message.add_error(samples_result.create_plate_error)
                         session.abort_transaction()
+                        return
 
                     session.commit_transaction()
             finally:
@@ -170,10 +171,12 @@ class CreatePlateExporter:
         try:
             session_database = get_mongo_db(self._config, session.client)
             samples_collection = get_mongo_collection(session_database, COLLECTION_SAMPLES)
-            result = samples_collection.insert_many(documents=self._mongo_sample_docs)
-        except DuplicateKeyError as ex:
-            LOGGER.warning("DuplicateKeyError: Happens when there are duplicate samples being inserted.")
+            result = samples_collection.insert_many(documents=self._mongo_sample_docs, ordered=False, session=session)
+        except BulkWriteError as ex:
+            # TODO Dissect the error to check for DuplicateKeyErrors -- raise if not
+            LOGGER.warning("BulkWriteError: Happens when there are duplicate samples being inserted.")
             LOGGER.exception(ex)
+
             return ExportResult(
                 success=False,
                 create_plate_error=CreatePlateError(
