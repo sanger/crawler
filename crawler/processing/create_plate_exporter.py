@@ -114,7 +114,7 @@ class CreatePlateExporter:
 
     @property
     def _mongo_sample_docs(self):
-        return [self._map_sample_to_mongo(sample, index) for sample, index in enumerate(self._message.samples.value)]
+        return [self._map_sample_to_mongo(sample, index) for index, sample in enumerate(self._message.samples.value)]
 
     def _record_source_plate_in_mongo_db(self, session: ClientSession) -> ExportResult:
         """Find an existing plate in MongoDB or add a new one for the plate in the message."""

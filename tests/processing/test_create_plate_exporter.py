@@ -32,8 +32,11 @@ def logger():
 
 
 @pytest.fixture
-def create_plate_message():
-    return CreatePlateMessage(copy.deepcopy(CREATE_PLATE_MESSAGE))
+def create_plate_message(centre):
+    plate_message = CreatePlateMessage(copy.deepcopy(CREATE_PLATE_MESSAGE))
+    plate_message.centre_config = centre.centre_config  # Simulate running validation on the message.
+
+    return plate_message
 
 
 @pytest.fixture
@@ -152,10 +155,9 @@ def test_export_to_mongo_logs_error_correctly_on_exception(subject, logger, mong
     logger.exception.assert_called_once_with(timeout_error)
 
 
-def test_record_import_creates_a_valid_import_record(freezer, subject, mongo_database, create_plate_message, centre):
+def test_record_import_creates_a_valid_import_record(freezer, subject, mongo_database):
     _, mongo_database = mongo_database
 
-    create_plate_message.centre_config = centre.centre_config  # Simulate validation setting the centre config.
     subject._samples_inserted = 3  # Simulate inserting all the records.
 
     subject.record_import()
