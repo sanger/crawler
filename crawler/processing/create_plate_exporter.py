@@ -198,8 +198,9 @@ class CreatePlateExporter:
                             type=ErrorType.ExportingSampleAlreadyExists,
                             origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
                             description=(
-                                f"Sample with UUID {duplicate[FIELD_LH_SAMPLE_UUID]} was unable to be inserted because "
-                                f"another sample already exists with Lab ID = '{duplicate[FIELD_MONGO_LAB_ID]}'; "
+                                f"Sample with UUID '{duplicate[FIELD_LH_SAMPLE_UUID]}' was unable to be inserted "
+                                "because another sample already exists with "
+                                f"Lab ID = '{duplicate[FIELD_MONGO_LAB_ID]}'; "
                                 f"Root Sample ID = '{duplicate[FIELD_MONGO_ROOT_SAMPLE_ID]}'; "
                                 f"RNA ID = '{duplicate[FIELD_MONGO_RNA_ID]}'; "
                                 f"Result = '{duplicate[FIELD_MONGO_RESULT]}'"
