@@ -31,13 +31,13 @@ def create_app(config_object: str = None) -> flask.Flask:
         scheduler.init_app(app)
         scheduler.start()
 
-    config, _ = get_config(config_object)
+    config, _ = get_config(config_object or "")
     setup_mongo_indexes(config)
     start_rabbit_consumer(config)
     setup_routes(app)
 
     @app.get("/health")
-    def _():
+    def _health_check():
         """Checks the health of Crawler by checking that there is a scheduled job to run Crawler periodically"""
         if scheduler.get_job(SCHEDULER_JOB_ID_RUN_CRAWLER):
             return "Crawler is working", HTTPStatus.OK
