@@ -2,7 +2,6 @@ import logging
 from datetime import datetime
 from typing import List, NamedTuple
 
-from more_itertools import sample
 from pymongo.client_session import ClientSession
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
@@ -184,7 +183,9 @@ class CreatePlateExporter:
             except BulkWriteError as ex:
                 LOGGER.warning("BulkWriteError: will now establish whether this was because of duplicate samples.")
 
-                duplication_errors = list(filter(lambda x: x["code"] == 11000, ex.details["writeErrors"]))
+                duplication_errors = list(
+                    filter(lambda x: x["code"] == 11000, ex.details["writeErrors"])  # type: ignore
+                )
 
                 if len(duplication_errors) == 0:
                     # There weren't any duplication errors so this is not a problem with the message contents!

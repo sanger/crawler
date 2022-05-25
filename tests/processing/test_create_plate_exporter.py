@@ -2,7 +2,6 @@ import copy
 from datetime import datetime
 from unittest.mock import ANY, MagicMock, patch
 
-import pymongo
 import pytest
 
 from crawler.constants import (
@@ -11,9 +10,6 @@ from crawler.constants import (
     COLLECTION_SOURCE_PLATES,
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_MONGO_LAB_ID,
-    FIELD_MONGO_RESULT,
-    FIELD_MONGO_RNA_ID,
-    FIELD_MONGO_ROOT_SAMPLE_ID,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
 )
 from crawler.db.mongo import get_mongo_collection
