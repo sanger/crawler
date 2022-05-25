@@ -7,10 +7,12 @@ from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
 from crawler.constants import (
+    CENTRE_KEY_BIOMEK_LABWARE_CLASS,
     CENTRE_KEY_NAME,
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
+    DART_STATE_PENDING,
     FIELD_BARCODE,
     FIELD_COORDINATE,
     FIELD_CREATED_AT,
@@ -34,7 +36,11 @@ from crawler.constants import (
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_ROOT,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
 )
-from crawler.db.dart import create_dart_sql_server_conn
+from crawler.db.dart import (
+    add_dart_plate_if_doesnt_exist,
+    add_dart_well_properties_if_positive,
+    create_dart_sql_server_conn,
+)
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.exceptions import TransientRabbitError
 from crawler.helpers.db_helpers import create_mongo_import_record
@@ -77,13 +83,10 @@ class CreatePlateExporter:
                 self._mongo_db.client.close()
 
     def export_to_dart(self):
-        try:
-            result = self._record_samples_in_dart()
-            if not result.success:
-                for error in result.create_plate_errors:
-                    self._message.add_error(error)
-        except Exception as ex:
-            LOGGER.exception(ex)
+        result = self._record_samples_in_dart()
+        if not result.success:
+            for error in result.create_plate_errors:
+                self._message.add_error(error)
 
     def record_import(self):
         plate_barcode = self._message.plate_barcode.value
@@ -252,15 +255,13 @@ class CreatePlateExporter:
 
     def _record_samples_in_dart(self):
         LOGGER.info("Adding to DART")
+        message_uuid = self._message.message_uuid.value
+        plate_barcode = self._message.plate_barcode.value
 
-        if (sql_server_connection := create_dart_sql_server_conn(self.config)) is not None:
-            try:
-                pass
-            finally:
-                sql_server_connection.close()
-        else:
+        if (sql_server_connection := create_dart_sql_server_conn(self._config)) is None:
             error_description = (
-                f"Error connecting to DART database for message with UUID '{self._message.message_uuid.value}'"
+                f"Error connecting to DART database for plate with barcode '{plate_barcode}' "
+                f"in message with UUID '{message_uuid}'"
             )
             LOGGER.critical(error_description)
 
@@ -274,3 +275,48 @@ class CreatePlateExporter:
                     )
                 ],
             )
+
+        try:
+            cursor = sql_server_connection.cursor()
+
+            plate_state = add_dart_plate_if_doesnt_exist(
+                cursor,
+                self._message.plate_barcode.value,
+                self._message.centre_config[CENTRE_KEY_BIOMEK_LABWARE_CLASS],
+            )
+
+            if plate_state == DART_STATE_PENDING:
+                for sample in self._mongo_sample_docs:
+                    add_dart_well_properties_if_positive(cursor, sample, plate_barcode)
+
+            cursor.commit()
+
+            LOGGER.debug(
+                f"DART database inserts completed successfully for plate with barcode '{plate_barcode}' "
+                "in message with UUID '{message_uuid}'"
+            )
+            return ExportResult(success=True, create_plate_errors=[])
+        except Exception as ex:
+            LOGGER.exception(ex)
+
+            # Rollback statements executed since previous commit/rollback
+            cursor.rollback()
+
+            error_description = (
+                f"DART database inserts failed for plate with barcode '{plate_barcode}' "
+                f"in message with UUID '{message_uuid}'"
+            )
+            LOGGER.critical(error_description)
+
+            return ExportResult(
+                success=False,
+                create_plate_errors=[
+                    CreatePlateError(
+                        type=ErrorType.ExportingPostFeedback,  # This error will only reach the imports record
+                        origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_ROOT,
+                        description=error_description,
+                    )
+                ],
+            )
+        finally:
+            sql_server_connection.close()
