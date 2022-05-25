@@ -31,8 +31,10 @@ from crawler.constants import (
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
+    RABBITMQ_CREATE_FEEDBACK_ORIGIN_ROOT,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
 )
+from crawler.db.dart import create_dart_sql_server_conn
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.exceptions import TransientRabbitError
 from crawler.helpers.db_helpers import create_mongo_import_record
@@ -76,7 +78,10 @@ class CreatePlateExporter:
 
     def export_to_dart(self):
         try:
-            pass  # Do export
+            result = self._record_samples_in_dart()
+            if not result.success:
+                for error in result.create_plate_errors:
+                    self._message.add_error(error)
         except Exception as ex:
             LOGGER.exception(ex)
 
@@ -230,7 +235,7 @@ class CreatePlateExporter:
             FIELD_MONGO_RNA_ID: sample.rna_id.value,
             FIELD_MONGO_ROOT_SAMPLE_ID: sample.root_sample_id.value,
             FIELD_MONGO_COG_UK_ID: sample.cog_uk_id.value,
-            FIELD_MONGO_RESULT: sample.result.value,
+            FIELD_MONGO_RESULT: sample.result.value.capitalize(),
             FIELD_SOURCE: self._message.centre_config[CENTRE_KEY_NAME],
             FIELD_PLATE_BARCODE: self._message.plate_barcode.value,
             FIELD_COORDINATE: normalise_plate_coordinate(sample.plate_coordinate.value),
@@ -244,3 +249,28 @@ class CreatePlateExporter:
             FIELD_CREATED_AT: datetime.utcnow(),
             FIELD_UPDATED_AT: datetime.utcnow(),
         }
+
+    def _record_samples_in_dart(self):
+        LOGGER.info("Adding to DART")
+
+        if (sql_server_connection := create_dart_sql_server_conn(self.config)) is not None:
+            try:
+                pass
+            finally:
+                sql_server_connection.close()
+        else:
+            error_description = (
+                f"Error connecting to DART database for message with UUID '{self._message.message_uuid.value}'"
+            )
+            LOGGER.critical(error_description)
+
+            return ExportResult(
+                success=False,
+                create_plate_errors=[
+                    CreatePlateError(
+                        type=ErrorType.ExportingPostFeedback,  # This error will only reach the imports record
+                        origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_ROOT,
+                        description=error_description,
+                    )
+                ],
+            )

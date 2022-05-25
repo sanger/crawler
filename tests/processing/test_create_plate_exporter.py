@@ -261,7 +261,7 @@ def test_export_to_mongo_creates_appropriate_error_when_duplicate_samples_insert
     assert "CPTD" in error["description"]
     assert "R00T-S4MPL3-ID2" in error["description"]
     assert "RN4-1D-2" in error["description"]
-    assert "negative" in error["description"]
+    assert "Negative" in error["description"]
 
 
 def test_export_to_mongo_logs_error_correctly_on_bulk_write_error_with_mix_of_errors(subject, mongo_database):

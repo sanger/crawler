@@ -38,6 +38,7 @@ class ErrorType(IntEnum):
     ValidationOutOfRangeValue = 6
     ExportingPlateAlreadyExists = 7
     ExportingSampleAlreadyExists = 8
+    ExportingPostFeedback = 9
 
 
 class MessageField(NamedTuple):
