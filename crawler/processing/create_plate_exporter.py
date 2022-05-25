@@ -175,36 +175,39 @@ class CreatePlateExporter:
         )
 
         try:
-            session_database = get_mongo_db(self._config, session.client)
-            samples_collection = get_mongo_collection(session_database, COLLECTION_SAMPLES)
-            result = samples_collection.insert_many(documents=self._mongo_sample_docs, ordered=False, session=session)
-        except BulkWriteError as ex:
-            LOGGER.warning("BulkWriteError: will establish whether this was because of duplicate samples.")
-
-            duplication_errors = list(filter(lambda x: x["code"] == 11000, ex.details["writeErrors"]))
-
-            if len(duplication_errors) == 0:
-                # There weren't any duplication errors so this is not a problem with the message and we should retry it.
-                raise
-
-            create_plate_errors = []
-            for duplicate in [x["op"] for x in duplication_errors]:
-                create_plate_errors.append(
-                    CreatePlateError(
-                        type=ErrorType.ExportingSampleAlreadyExists,
-                        origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
-                        description=(
-                            f"Sample with UUID {duplicate[FIELD_LH_SAMPLE_UUID]} was unable to be inserted because "
-                            f"another sample already exists with Lab ID = '{duplicate[FIELD_MONGO_LAB_ID]}'; "
-                            f"Root Sample ID = '{duplicate[FIELD_MONGO_ROOT_SAMPLE_ID]}'; "
-                            f"RNA ID = '{duplicate[FIELD_MONGO_RNA_ID]}'; "
-                            f"Result = '{duplicate[FIELD_MONGO_RESULT]}'"
-                        ),
-                        sample_uuid=duplicate[FIELD_LH_SAMPLE_UUID],
-                    )
+            try:
+                session_database = get_mongo_db(self._config, session.client)
+                samples_collection = get_mongo_collection(session_database, COLLECTION_SAMPLES)
+                result = samples_collection.insert_many(
+                    documents=self._mongo_sample_docs, ordered=False, session=session
                 )
+            except BulkWriteError as ex:
+                LOGGER.warning("BulkWriteError: will now establish whether this was because of duplicate samples.")
 
-            return ExportResult(success=False, create_plate_errors=create_plate_errors)
+                duplication_errors = list(filter(lambda x: x["code"] == 11000, ex.details["writeErrors"]))
+
+                if len(duplication_errors) == 0:
+                    # There weren't any duplication errors so this is not a problem with the message contents!
+                    raise
+
+                create_plate_errors = []
+                for duplicate in [x["op"] for x in duplication_errors]:
+                    create_plate_errors.append(
+                        CreatePlateError(
+                            type=ErrorType.ExportingSampleAlreadyExists,
+                            origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                            description=(
+                                f"Sample with UUID {duplicate[FIELD_LH_SAMPLE_UUID]} was unable to be inserted because "
+                                f"another sample already exists with Lab ID = '{duplicate[FIELD_MONGO_LAB_ID]}'; "
+                                f"Root Sample ID = '{duplicate[FIELD_MONGO_ROOT_SAMPLE_ID]}'; "
+                                f"RNA ID = '{duplicate[FIELD_MONGO_RNA_ID]}'; "
+                                f"Result = '{duplicate[FIELD_MONGO_RESULT]}'"
+                            ),
+                            sample_uuid=duplicate[FIELD_LH_SAMPLE_UUID],
+                        )
+                    )
+
+                return ExportResult(success=False, create_plate_errors=create_plate_errors)
         except Exception as ex:
             LOGGER.critical(f"Error accessing MongoDB during export of samples for message UUID '{message_uuid}': {ex}")
             LOGGER.exception(ex)
