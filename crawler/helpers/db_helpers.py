@@ -27,7 +27,11 @@ logger = logging.getLogger(__name__)
 
 
 def ensure_mongo_collections_indexed(database: Database) -> None:
-    """ """
+    """Create required indexes on source_plates and samples collections in MongoDB.
+
+    Arguments:
+        database {Database}: the MongoDB database to create indexes on.
+    """
     # get or create the source plates collection
     source_plates_collection = get_mongo_collection(database, COLLECTION_SOURCE_PLATES)
 
