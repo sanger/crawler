@@ -26,6 +26,7 @@ from crawler.constants import (
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import create_mysql_connection
 from crawler.file_processing import Centre, CentreFile
+from crawler.helpers.db_helpers import ensure_mongo_collections_indexed
 from crawler.helpers.general_helpers import get_config, get_sftp_connection
 from tests.testing_objects import (
     EVENT_WH_DATA,
@@ -88,18 +89,15 @@ def mongo_collections():
 
 
 @pytest.fixture
-def mongo_database(mongo_client, mongo_collections):
+def mongo_database(mongo_client):
     config, mongo_client = mongo_client
     db = get_mongo_db(config, mongo_client)
 
     # Ensure any existing data is gone before a test starts
     mongo_client.drop_database(db)
 
-    # Create every collection since some operations in a transaction will fail if the collection doesn't exist
-    for collection_name in mongo_collections:
-        collection = get_mongo_collection(db, collection_name)
-        collection.insert_one({})
-        collection.delete_one({})
+    # Create indexes on collections -- this also creates the empty source_plates and samples collections
+    ensure_mongo_collections_indexed(db)
 
     yield config, db
 

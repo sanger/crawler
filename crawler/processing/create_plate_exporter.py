@@ -32,8 +32,9 @@ from crawler.constants import (
     FIELD_UPDATED_AT,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
 )
-from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.exceptions import TransientRabbitError
+from crawler.helpers.db_helpers import create_mongo_import_record
 from crawler.helpers.general_helpers import create_source_plate_doc
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
 from crawler.rabbit.messages.create_plate_message import CreatePlateError, ErrorType
@@ -95,7 +96,7 @@ class CreatePlateExporter:
         try:
             imports_collection = get_mongo_collection(self._mongo_db, COLLECTION_IMPORTS)
 
-            create_import_record(
+            create_mongo_import_record(
                 imports_collection,
                 self._message.centre_config,
                 self._samples_inserted,

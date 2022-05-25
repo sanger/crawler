@@ -108,9 +108,6 @@ def test_export_to_mongo_puts_a_source_plate_in_mongo_only_once(subject, mongo_d
     subject.export_to_mongo()
     assert source_plates_collection.count_documents({"barcode": "PLATE-001"}) == 1  # Still only 1
 
-    # Also this still doesn't raise an error against the message
-    assert create_plate_message.has_errors is False
-
 
 def test_export_to_mongo_adds_an_error_when_source_plate_exists_for_another_lab_id(subject, mongo_database):
     _, mongo_database = mongo_database
@@ -164,24 +161,12 @@ def test_export_to_mongo_logs_error_correctly_on_exception(subject, logger, mong
 def test_export_to_mongo_reverts_the_transaction_when_duplicate_samples_inserted(subject, mongo_database):
     _, mongo_database = mongo_database
 
-    # Create an index on the samples collection
-    # TODO: Make the application itself do this when setting up the consumer.
-    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
-    samples_collection.create_index(
-        [
-            (FIELD_MONGO_ROOT_SAMPLE_ID, pymongo.ASCENDING),
-            (FIELD_MONGO_RNA_ID, pymongo.ASCENDING),
-            (FIELD_MONGO_RESULT, pymongo.ASCENDING),
-            (FIELD_MONGO_LAB_ID, pymongo.ASCENDING),
-        ],
-        unique=True,
-    )
-
     samples = subject._message._body[FIELD_PLATE][FIELD_SAMPLES]
     samples[0] = samples[1]
     subject.export_to_mongo()
 
     # No documents were inserted in either collection
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
     assert samples_collection.count_documents({}) == 0
 
     source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
@@ -234,7 +219,7 @@ def test_record_import_logs_an_exception_if_getting_mongo_collection_raises(subj
 def test_record_import_logs_an_exception_if_creating_import_record_raises(subject, logger):
     raised_exception = Exception()
 
-    with patch("crawler.processing.create_plate_exporter.create_import_record") as create_import_record:
+    with patch("crawler.processing.create_plate_exporter.create_mongo_import_record") as create_import_record:
         create_import_record.side_effect = raised_exception
         subject.record_import()
 

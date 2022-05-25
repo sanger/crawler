@@ -23,14 +23,8 @@ from crawler.constants import (
     FIELD_RNA_ID,
     TEST_DATA_CENTRE_PREFIX,
 )
-from crawler.db.mongo import (
-    collection_exists,
-    create_index,
-    create_mongo_client,
-    get_mongo_collection,
-    get_mongo_db,
-    populate_collection,
-)
+from crawler.db.mongo import collection_exists, create_index, create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.helpers.db_helpers import populate_mongo_collection
 from crawler.types import CentreConf, Config
 
 # Centre Details
@@ -287,7 +281,7 @@ def get_centres_config(config: Config, data_source: str = "") -> List[CentreConf
         if not centres_collection_exists:
             # Populate the centres collection from the config values
             create_index(centres_collection, FIELD_CENTRE_NAME, unique=True)
-            populate_collection(centres_collection, config.CENTRES, FIELD_CENTRE_NAME)  # type: ignore
+            populate_mongo_collection(centres_collection, config.CENTRES, FIELD_CENTRE_NAME)  # type: ignore
 
         # Get the centres collection from MongoDB
         cursor = centres_collection.find()
