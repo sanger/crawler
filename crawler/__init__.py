@@ -31,8 +31,9 @@ def create_app(config_object: str = None) -> flask.Flask:
         scheduler.init_app(app)
         scheduler.start()
 
-    setup_mongo_indexes()
-    start_rabbit_consumer()
+    config, _ = get_config(config_object)
+    setup_mongo_indexes(config)
+    start_rabbit_consumer(config)
     setup_routes(app)
 
     @app.get("/health")
@@ -46,15 +47,13 @@ def create_app(config_object: str = None) -> flask.Flask:
     return app
 
 
-def setup_mongo_indexes():
-    config, _ = get_config()
+def setup_mongo_indexes(config):
     with create_mongo_client(config) as client:
         db = get_mongo_db(config, client)
         ensure_mongo_collections_indexed(db)
 
 
-def start_rabbit_consumer():
-    config, _ = get_config()
+def start_rabbit_consumer(config):
     # Flask in debug mode spawns a child process so that it can restart the process each time your code changes,
     # the new child process initializes and starts a new consumer causing more than one to exist.
     if (flask.helpers.get_debug_flag() and not werkzeug.serving.is_running_from_reloader()) or not config.RABBITMQ_HOST:
