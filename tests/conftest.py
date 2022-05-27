@@ -131,7 +131,7 @@ def mlwh_rw_db(mlwh_connection):
 
 
 @pytest.fixture
-def pyodbc_conn(config):
+def pyodbc_conn():
     with patch("pyodbc.connect") as mock_connect:
         yield mock_connect
 
