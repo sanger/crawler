@@ -10,6 +10,10 @@ from crawler.constants import (
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
+    DART_STATE_NO_PLATE,
+    DART_STATE_NO_PROP,
+    DART_STATE_PENDING,
+    DART_STATE_PICKABLE,
     FIELD_COORDINATE,
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
@@ -291,6 +295,93 @@ def test_export_to_mongo_logs_error_correctly_on_bulk_write_error_without_duplic
 
     logger.critical.assert_called_once()
     logger.exception.assert_called_once_with(bulk_write_error)
+
+
+def test_export_to_dart_connects_to_the_database(subject, pyodbc_conn):
+    subject.export_to_dart()
+
+    pyodbc_conn.assert_called()
+
+
+def test_export_to_dart_submits_plate(subject, pyodbc_conn):
+    with patch("crawler.processing.create_plate_exporter.add_dart_plate_if_doesnt_exist") as add_method:
+        subject.export_to_dart()
+
+    add_method.assert_called_once()
+
+
+def test_export_to_dart_submits_all_samples_when_plate_pending(subject, pyodbc_conn):
+    with patch("crawler.processing.create_plate_exporter.add_dart_plate_if_doesnt_exist") as add_plate_method:
+        add_plate_method.return_value = DART_STATE_PENDING
+        with patch("crawler.processing.create_plate_exporter.add_dart_well_properties_if_positive") as add_method:
+            subject.export_to_dart()
+
+    assert add_method.call_count == 3
+
+
+def test_export_to_dart_commits_to_the_database(subject):
+    with patch("crawler.processing.create_plate_exporter.create_dart_sql_server_conn") as connect:
+        subject.export_to_dart()
+
+    cursor = connect.return_value.cursor.return_value
+    cursor.commit.assert_called_once()
+
+
+def test_export_to_dart_creates_no_message_errors(subject, pyodbc_conn, logger):
+    subject.export_to_dart()
+
+    assert subject._message.has_errors is False
+
+    logger.debug.assert_called_once()
+    assert "DART database inserts completed successfully" in logger.debug.call_args.args[0]
+
+
+@pytest.mark.parametrize("plate_state", [DART_STATE_NO_PLATE, DART_STATE_NO_PROP, DART_STATE_PICKABLE])
+def test_export_to_dart_does_not_submit_any_samples_when_plate_not_pending(subject, pyodbc_conn, plate_state):
+    with patch("crawler.processing.create_plate_exporter.add_dart_plate_if_doesnt_exist") as add_plate_method:
+        add_plate_method.return_value = plate_state
+        with patch("crawler.processing.create_plate_exporter.add_dart_well_properties_if_positive") as add_method:
+            subject.export_to_dart()
+
+    add_method.assert_not_called()
+
+
+def test_export_to_dart_handles_no_connection_to_database(subject, logger):
+    with patch("crawler.processing.create_plate_exporter.create_dart_sql_server_conn") as connect:
+        connect.return_value = None
+        subject.export_to_dart()
+
+    logger.critical.assert_called_once()
+    assert "Error connecting to DART database" in logger.critical.call_args.args[0]
+
+    assert len(subject._message._textual_errors) == 1
+    assert "Error connecting to DART database" in subject._message._textual_errors[0]
+
+
+def test_export_to_dart_handles_insertion_failures(subject, pyodbc_conn, logger):
+    error = Exception("Boom!")
+
+    with patch("crawler.processing.create_plate_exporter.add_dart_plate_if_doesnt_exist") as add_plate_method:
+        add_plate_method.side_effect = error
+        subject.export_to_dart()
+
+    logger.exception.assert_called_once_with(error)
+    logger.critical.assert_called_once()
+    assert "DART database inserts failed" in logger.critical.call_args.args[0]
+
+    assert len(subject._message._textual_errors) == 1
+    assert "DART database inserts failed" in subject._message._textual_errors[0]
+
+
+def test_export_to_dart_rolls_back_on_insert_exception(subject):
+    with patch("crawler.processing.create_plate_exporter.create_dart_sql_server_conn") as connect:
+        with patch("crawler.processing.create_plate_exporter.add_dart_plate_if_doesnt_exist") as add_plate_method:
+            add_plate_method.side_effect = Exception("Boom!")
+            subject.export_to_dart()
+
+    cursor = connect.return_value.cursor.return_value
+    cursor.commit.assert_not_called()
+    cursor.rollback.assert_called_once()
 
 
 def test_record_import_creates_a_valid_import_record(freezer, subject, mongo_database):

@@ -280,9 +280,7 @@ class CreatePlateExporter:
             cursor = sql_server_connection.cursor()
 
             plate_state = add_dart_plate_if_doesnt_exist(
-                cursor,
-                self._message.plate_barcode.value,
-                self._message.centre_config[CENTRE_KEY_BIOMEK_LABWARE_CLASS],
+                cursor, plate_barcode, self._message.centre_config[CENTRE_KEY_BIOMEK_LABWARE_CLASS]
             )
 
             if plate_state == DART_STATE_PENDING:
