@@ -14,6 +14,7 @@ from crawler.helpers.general_helpers import get_config
 from crawler.rabbit.rabbit_stack import RabbitStack
 
 scheduler = APScheduler()
+rabbit_stack = RabbitStack()
 
 
 def create_app(config_object: str = None) -> flask.Flask:
@@ -38,8 +39,10 @@ def create_app(config_object: str = None) -> flask.Flask:
 
     @app.get("/health")
     def _health_check():
-        """Checks the health of Crawler by checking that there is a scheduled job to run Crawler periodically"""
-        if scheduler.get_job(SCHEDULER_JOB_ID_RUN_CRAWLER):
+        """Checks the health of Crawler by checking that there is a scheduled job to run Crawler periodically and an
+        instance of the Rabbit Stack subscribed to the message queue or waiting to reconnect.
+        """
+        if scheduler.get_job(SCHEDULER_JOB_ID_RUN_CRAWLER) and rabbit_stack.is_healthy:
             return "Crawler is working", HTTPStatus.OK
 
         return "Crawler is not working correctly", HTTPStatus.INTERNAL_SERVER_ERROR
@@ -59,7 +62,7 @@ def start_rabbit_consumer(config):
     if (flask.helpers.get_debug_flag() and not werkzeug.serving.is_running_from_reloader()) or not config.RABBITMQ_HOST:
         return
 
-    RabbitStack().bring_stack_up()
+    rabbit_stack.bring_stack_up()
 
 
 def setup_routes(app):

@@ -50,6 +50,10 @@ class AsyncConsumer(object):
         # for higher consumer throughput
         self._prefetch_count = 1
 
+    @property
+    def is_healthy(self):
+        return self._consuming or self.should_reconnect
+
     @staticmethod
     def _reap_last_connection_workflow_error(error):
         """Extract exception value from the last connection attempt

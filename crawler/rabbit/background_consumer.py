@@ -32,6 +32,10 @@ class BackgroundConsumer(Thread):
             self._maybe_reconnect()
 
     @property
+    def is_healthy(self):
+        return self._consumer.is_healthy
+
+    @property
     def _consumer(self):
         if self._consumer_var is None:
             self._consumer_var = AsyncConsumer(self._server_details, self._queue, self._process_message)
