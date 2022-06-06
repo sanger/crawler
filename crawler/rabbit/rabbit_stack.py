@@ -9,7 +9,11 @@ from crawler.types import RabbitServerDetails
 class RabbitStack:
     def __init__(self, settings_module=""):
         self._config, settings_module = get_config(settings_module)
-        self._background_consumer = None
+
+        rabbit_crud_queue = self._config.RABBITMQ_CRUD_QUEUE
+        self._background_consumer = BackgroundConsumer(
+            self._rabbit_server_details(), rabbit_crud_queue, self._rabbit_message_processor().process_message
+        )
 
     @property
     def is_healthy(self):
@@ -35,11 +39,7 @@ class RabbitStack:
         return RabbitMessageProcessor(self._schema_registry(), basic_publisher, self._config)
 
     def bring_stack_up(self):
-        if self._background_consumer is not None:
+        if self._background_consumer.is_healthy:
             return
 
-        rabbit_crud_queue = self._config.RABBITMQ_CRUD_QUEUE
-        self._background_consumer = BackgroundConsumer(
-            self._rabbit_server_details(), rabbit_crud_queue, self._rabbit_message_processor().process_message
-        )
         self._background_consumer.start()
