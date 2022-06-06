@@ -86,9 +86,10 @@ from crawler.db.dart import (
     add_dart_well_properties_if_positive,
     create_dart_sql_server_conn,
 )
-from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import insert_or_update_samples_in_mlwh
 from crawler.filtered_positive_identifier import current_filtered_positive_identifier
+from crawler.helpers.db_helpers import create_mongo_import_record
 from crawler.helpers.enums import CentreFileState
 from crawler.helpers.general_helpers import create_source_plate_doc, current_time, get_sftp_connection, pad_coordinate
 from crawler.helpers.logging_helpers import LoggingCollection
@@ -507,7 +508,7 @@ class CentreFile:
         """Writes to the imports collection with information about the CSV file processed."""
         imports_collection = get_mongo_collection(self.get_db(), COLLECTION_IMPORTS)
 
-        create_import_record(
+        create_mongo_import_record(
             imports_collection,
             self.centre_config,
             self.docs_inserted,

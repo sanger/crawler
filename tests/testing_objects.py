@@ -190,7 +190,7 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool, datetime]]] =
         FIELD_SOURCE: "test1",
         FIELD_RESULT: "Negative",
         FIELD_PLATE_BARCODE: "123",
-        FIELD_ROOT_SAMPLE_ID: "MCM003",
+        FIELD_ROOT_SAMPLE_ID: "MCM004",
         FIELD_FILTERED_POSITIVE: False,
         FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
         FIELD_FILTERED_POSITIVE_VERSION: "v0",
@@ -201,7 +201,7 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool, datetime]]] =
         FIELD_SOURCE: "test1",
         FIELD_RESULT: RESULT_VALUE_POSITIVE,
         FIELD_PLATE_BARCODE: "123",
-        FIELD_ROOT_SAMPLE_ID: "MCM003",
+        FIELD_ROOT_SAMPLE_ID: "MCM005",
         FIELD_CREATED_AT: dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) - timedelta(days=1),
     },
     {
@@ -209,7 +209,7 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool, datetime]]] =
         FIELD_SOURCE: "test2",
         FIELD_RESULT: RESULT_VALUE_POSITIVE,
         FIELD_PLATE_BARCODE: "456",
-        FIELD_ROOT_SAMPLE_ID: "MCM004",
+        FIELD_ROOT_SAMPLE_ID: "MCM006",
         FIELD_CREATED_AT: dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) - timedelta(days=2),
     },
 ]

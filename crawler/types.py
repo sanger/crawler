@@ -59,12 +59,8 @@ class Config(ModuleType):
     BARACODA_RETRY_ATTEMPTS: int
 
     # Mongo
-    MONGO_URI: str
-    MONGO_HOST: str
-    MONGO_PORT: int
-    MONGO_USERNAME: str
-    MONGO_PASSWORD: str
     MONGO_DB: str
+    MONGO_URI: str
 
     # MLWH
     MLWH_DB_HOST: str

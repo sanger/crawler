@@ -1,17 +1,43 @@
 import logging
-from typing import NamedTuple, Optional
+from datetime import datetime
+from typing import List, NamedTuple
 
 from pymongo.client_session import ClientSession
 from pymongo.database import Database
+from pymongo.errors import BulkWriteError
 
-from crawler.constants import COLLECTION_IMPORTS, COLLECTION_SOURCE_PLATES
-from crawler.constants import FIELD_BARCODE as MONGO_PLATE_BARCODE
-from crawler.constants import FIELD_LH_SOURCE_PLATE_UUID
-from crawler.constants import FIELD_MONGO_LAB_ID as MONGO_LAB_ID
-from crawler.constants import RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE
-from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.constants import (
+    CENTRE_KEY_NAME,
+    COLLECTION_IMPORTS,
+    COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
+    FIELD_BARCODE,
+    FIELD_COORDINATE,
+    FIELD_CREATED_AT,
+    FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_MONGO_COG_UK_ID,
+    FIELD_MONGO_DATE_TESTED,
+    FIELD_MONGO_FILTERED_POSITIVE,
+    FIELD_MONGO_LAB_ID,
+    FIELD_MONGO_MESSAGE_UUID,
+    FIELD_MONGO_RESULT,
+    FIELD_MONGO_RNA_ID,
+    FIELD_MONGO_ROOT_SAMPLE_ID,
+    FIELD_MONGO_SAMPLE_INDEX,
+    FIELD_MUST_SEQUENCE,
+    FIELD_PLATE_BARCODE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
+    FIELD_SOURCE,
+    FIELD_UPDATED_AT,
+    RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
+    RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+)
+from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.exceptions import TransientRabbitError
+from crawler.helpers.db_helpers import create_mongo_import_record
 from crawler.helpers.general_helpers import create_source_plate_doc
+from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
 from crawler.rabbit.messages.create_plate_message import CreatePlateError, ErrorType
 
 LOGGER = logging.getLogger(__name__)
@@ -19,7 +45,7 @@ LOGGER = logging.getLogger(__name__)
 
 class ExportResult(NamedTuple):
     success: bool
-    create_plate_error: Optional[CreatePlateError]
+    create_plate_errors: List[CreatePlateError]
 
 
 class CreatePlateExporter:
@@ -37,15 +63,12 @@ class CreatePlateExporter:
                     source_plate_result = self._record_source_plate_in_mongo_db(session)
 
                     if not source_plate_result.success:
-                        self._message.add_error(source_plate_result.create_plate_error)
-                        session.abort_transaction()
-                        return
+                        return self._abort_transaction_with_errors(session, source_plate_result.create_plate_errors)
 
                     samples_result = self._record_samples_in_mongo_db(session)
 
                     if not samples_result.success:
-                        self._message.add_error(samples_result.create_plate_error)
-                        session.abort_transaction()
+                        return self._abort_transaction_with_errors(session, samples_result.create_plate_errors)
 
                     session.commit_transaction()
             finally:
@@ -70,7 +93,7 @@ class CreatePlateExporter:
         try:
             imports_collection = get_mongo_collection(self._mongo_db, COLLECTION_IMPORTS)
 
-            create_import_record(
+            create_mongo_import_record(
                 imports_collection,
                 self._message.centre_config,
                 self._samples_inserted,
@@ -88,6 +111,15 @@ class CreatePlateExporter:
 
         return self.__mongo_db
 
+    @property
+    def _mongo_sample_docs(self):
+        return [self._map_sample_to_mongo(sample, index) for index, sample in enumerate(self._message.samples.value)]
+
+    def _abort_transaction_with_errors(self, session, errors):
+        for error in errors:
+            self._message.add_error(error)
+        session.abort_transaction()
+
     def _record_source_plate_in_mongo_db(self, session: ClientSession) -> ExportResult:
         """Find an existing plate in MongoDB or add a new one for the plate in the message."""
         try:
@@ -96,36 +128,36 @@ class CreatePlateExporter:
 
             session_database = get_mongo_db(self._config, session.client)
             source_plates_collection = get_mongo_collection(session_database, COLLECTION_SOURCE_PLATES)
-            mongo_plate = source_plates_collection.find_one(
-                filter={MONGO_PLATE_BARCODE: plate_barcode}, session=session
-            )
+            mongo_plate = source_plates_collection.find_one(filter={FIELD_BARCODE: plate_barcode}, session=session)
 
             if mongo_plate is not None:
                 # There was a plate in Mongo DB for this field barcode so check that the lab ID matches then return.
                 self._plate_uuid = mongo_plate[FIELD_LH_SOURCE_PLATE_UUID]
 
-                if mongo_plate[MONGO_LAB_ID] != lab_id_field.value:
+                if mongo_plate[FIELD_MONGO_LAB_ID] != lab_id_field.value:
                     return ExportResult(
                         success=False,
-                        create_plate_error=CreatePlateError(
-                            type=ErrorType.ExportingPlateAlreadyExists,
-                            origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
-                            description=(
-                                f"Plate barcode '{plate_barcode}' already exists "
-                                f"with a different lab ID: '{mongo_plate[MONGO_LAB_ID]}'"
-                            ),
-                            field=lab_id_field.name,
-                        ),
+                        create_plate_errors=[
+                            CreatePlateError(
+                                type=ErrorType.ExportingPlateAlreadyExists,
+                                origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
+                                description=(
+                                    f"Plate barcode '{plate_barcode}' already exists "
+                                    f"with a different lab ID: '{mongo_plate[FIELD_MONGO_LAB_ID]}'"
+                                ),
+                                field=lab_id_field.name,
+                            )
+                        ],
                     )
 
-                return ExportResult(success=True, create_plate_error=None)
+                return ExportResult(success=True, create_plate_errors=[])
 
             # Create a new plate for this message.
             mongo_plate = create_source_plate_doc(plate_barcode, lab_id_field.value)
             source_plates_collection.insert_one(mongo_plate, session=session)
             self._plate_uuid = mongo_plate[FIELD_LH_SOURCE_PLATE_UUID]
 
-            return ExportResult(success=True, create_plate_error=None)
+            return ExportResult(success=True, create_plate_errors=[])
         except Exception as ex:
             LOGGER.critical(f"Error accessing MongoDB during export of source plate '{plate_barcode}': {ex}")
             LOGGER.exception(ex)
@@ -135,4 +167,80 @@ class CreatePlateExporter:
             )
 
     def _record_samples_in_mongo_db(self, session: ClientSession) -> ExportResult:
-        return ExportResult(success=True, create_plate_error=None)
+        message_uuid = self._message.message_uuid.value
+        LOGGER.debug(
+            f"Attempting to insert {self._message.total_samples} "
+            f"samples from message with UUID {message_uuid} into mongo..."
+        )
+
+        try:
+            try:
+                session_database = get_mongo_db(self._config, session.client)
+                samples_collection = get_mongo_collection(session_database, COLLECTION_SAMPLES)
+                result = samples_collection.insert_many(
+                    documents=self._mongo_sample_docs, ordered=False, session=session
+                )
+            except BulkWriteError as ex:
+                LOGGER.warning("BulkWriteError: will now establish whether this was because of duplicate samples.")
+
+                duplication_errors = list(
+                    filter(lambda x: x["code"] == 11000, ex.details["writeErrors"])  # type: ignore
+                )
+
+                if len(duplication_errors) == 0:
+                    # There weren't any duplication errors so this is not a problem with the message contents!
+                    raise
+
+                create_plate_errors = []
+                for duplicate in [x["op"] for x in duplication_errors]:
+                    create_plate_errors.append(
+                        CreatePlateError(
+                            type=ErrorType.ExportingSampleAlreadyExists,
+                            origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                            description=(
+                                f"Sample with UUID '{duplicate[FIELD_LH_SAMPLE_UUID]}' was unable to be inserted "
+                                "because another sample already exists with "
+                                f"Lab ID = '{duplicate[FIELD_MONGO_LAB_ID]}'; "
+                                f"Root Sample ID = '{duplicate[FIELD_MONGO_ROOT_SAMPLE_ID]}'; "
+                                f"RNA ID = '{duplicate[FIELD_MONGO_RNA_ID]}'; "
+                                f"Result = '{duplicate[FIELD_MONGO_RESULT]}'"
+                            ),
+                            sample_uuid=duplicate[FIELD_LH_SAMPLE_UUID],
+                        )
+                    )
+
+                return ExportResult(success=False, create_plate_errors=create_plate_errors)
+        except Exception as ex:
+            LOGGER.critical(f"Error accessing MongoDB during export of samples for message UUID '{message_uuid}': {ex}")
+            LOGGER.exception(ex)
+
+            raise TransientRabbitError(
+                f"There was an error updating MongoDB while exporting samples for message UUID '{message_uuid}'."
+            )
+
+        self._samples_inserted = len(result.inserted_ids)
+        LOGGER.info(f"{self._samples_inserted} samples inserted into mongo.")
+
+        return ExportResult(success=True, create_plate_errors=[])
+
+    def _map_sample_to_mongo(self, sample, index):
+        return {
+            FIELD_MONGO_DATE_TESTED: sample.tested_date.value,
+            FIELD_MONGO_LAB_ID: self._message.lab_id.value,
+            FIELD_MONGO_RNA_ID: sample.rna_id.value,
+            FIELD_MONGO_ROOT_SAMPLE_ID: sample.root_sample_id.value,
+            FIELD_MONGO_COG_UK_ID: sample.cog_uk_id.value,
+            FIELD_MONGO_RESULT: sample.result.value,
+            FIELD_SOURCE: self._message.centre_config[CENTRE_KEY_NAME],
+            FIELD_PLATE_BARCODE: self._message.plate_barcode.value,
+            FIELD_COORDINATE: normalise_plate_coordinate(sample.plate_coordinate.value),
+            FIELD_MONGO_SAMPLE_INDEX: index + 1,
+            FIELD_MONGO_MESSAGE_UUID: self._message.message_uuid.value,
+            FIELD_MONGO_FILTERED_POSITIVE: sample.fit_to_pick.value,
+            FIELD_MUST_SEQUENCE: sample.must_sequence.value,
+            FIELD_PREFERENTIALLY_SEQUENCE: sample.preferentially_sequence.value,
+            FIELD_LH_SAMPLE_UUID: sample.sample_uuid.value,
+            FIELD_LH_SOURCE_PLATE_UUID: self._plate_uuid,
+            FIELD_CREATED_AT: datetime.utcnow(),
+            FIELD_UPDATED_AT: datetime.utcnow(),
+        }

@@ -3,12 +3,20 @@ from datetime import datetime
 from unittest.mock import ANY, MagicMock, patch
 
 import pytest
+from pymongo.collection import Collection
+from pymongo.errors import BulkWriteError
 
 from crawler.constants import (
     COLLECTION_IMPORTS,
+    COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
+    FIELD_COORDINATE,
+    FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_MONGO_LAB_ID,
+    FIELD_MONGO_MESSAGE_UUID,
+    FIELD_MONGO_SAMPLE_INDEX,
+    FIELD_SOURCE,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
 )
 from crawler.db.mongo import get_mongo_collection
@@ -18,6 +26,7 @@ from crawler.rabbit.messages.create_plate_message import (
     FIELD_LAB_ID,
     FIELD_PLATE,
     FIELD_PLATE_BARCODE,
+    FIELD_SAMPLES,
     CreatePlateError,
     CreatePlateMessage,
     ErrorType,
@@ -32,8 +41,11 @@ def logger():
 
 
 @pytest.fixture
-def create_plate_message():
-    return CreatePlateMessage(copy.deepcopy(CREATE_PLATE_MESSAGE))
+def create_plate_message(centre):
+    plate_message = CreatePlateMessage(copy.deepcopy(CREATE_PLATE_MESSAGE))
+    plate_message.centre_config = centre.centre_config  # Simulate running validation on the message.
+
+    return plate_message
 
 
 @pytest.fixture
@@ -74,6 +86,46 @@ def test_export_to_mongo_puts_a_source_plate_in_mongo(subject, mongo_database):
     assert source_plates_collection.count_documents({"barcode": "PLATE-001"}) == 1
 
 
+def test_export_to_mongo_puts_samples_in_mongo(subject, mongo_database):
+    _, mongo_database = mongo_database
+
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+
+    assert samples_collection.count_documents({}) == 0
+
+    subject.export_to_mongo()
+
+    assert samples_collection.count_documents({}) == 3
+    assert (
+        samples_collection.count_documents(
+            {
+                FIELD_MONGO_MESSAGE_UUID: "CREATE_PLATE_UUID",
+                FIELD_MONGO_LAB_ID: "CPTD",
+                FIELD_SOURCE: "Alderley",
+            }
+        )
+        == 3
+    )
+    assert (
+        samples_collection.count_documents(
+            {FIELD_MONGO_SAMPLE_INDEX: 1, FIELD_LH_SAMPLE_UUID: "UUID_001", FIELD_COORDINATE: "A01"}
+        )
+        == 1
+    )
+    assert (
+        samples_collection.count_documents(
+            {FIELD_MONGO_SAMPLE_INDEX: 2, FIELD_LH_SAMPLE_UUID: "UUID_002", FIELD_COORDINATE: "E06"}
+        )
+        == 1
+    )
+    assert (
+        samples_collection.count_documents(
+            {FIELD_MONGO_SAMPLE_INDEX: 3, FIELD_LH_SAMPLE_UUID: "UUID_003", FIELD_COORDINATE: "H12"}
+        )
+        == 1
+    )
+
+
 def test_export_to_mongo_sets_the_source_plate_uuid(subject, mongo_database):
     _, mongo_database = mongo_database
 
@@ -98,9 +150,6 @@ def test_export_to_mongo_puts_a_source_plate_in_mongo_only_once(subject, mongo_d
 
     subject.export_to_mongo()
     assert source_plates_collection.count_documents({"barcode": "PLATE-001"}) == 1  # Still only 1
-
-    # Also this still doesn't raise an error against the message
-    assert create_plate_message.has_errors is False
 
 
 def test_export_to_mongo_adds_an_error_when_source_plate_exists_for_another_lab_id(subject, mongo_database):
@@ -127,7 +176,7 @@ def test_export_to_mongo_adds_an_error_when_source_plate_exists_for_another_lab_
     assert source_plates_collection.count_documents({FIELD_MONGO_LAB_ID: "NULL"}) == 0
 
 
-def test_export_to_mongo_logs_error_correctly_on_exception(subject, logger, mongo_database):
+def test_export_to_mongo_logs_error_correctly_on_source_plate_exception(subject, logger, mongo_database):
     _, mongo_database = mongo_database
     timeout_error = TimeoutError()
 
@@ -149,13 +198,104 @@ def test_export_to_mongo_logs_error_correctly_on_exception(subject, logger, mong
     source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
     assert source_plates_collection.count_documents({}) == 0
 
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    assert samples_collection.count_documents({}) == 0
+
     logger.exception.assert_called_once_with(timeout_error)
 
 
-def test_record_import_creates_a_valid_import_record(freezer, subject, mongo_database, create_plate_message, centre):
+def test_export_to_mongo_logs_error_correctly_on_samples_exception(subject, logger, mongo_database):
+    _, mongo_database = mongo_database
+    timeout_error = TimeoutError()
+
+    with patch.object(Collection, "insert_many", side_effect=timeout_error):
+        with pytest.raises(TransientRabbitError) as ex_info:
+            subject.export_to_mongo()
+
+    assert ex_info.value.message == (
+        "There was an error updating MongoDB while exporting samples for message UUID 'CREATE_PLATE_UUID'."
+    )
+
+    logger.critical.assert_called_once()
+    log_message = logger.critical.call_args.args[0]
+    assert "CREATE_PLATE_UUID" in log_message
+    assert str(timeout_error) in log_message
+
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+    assert source_plates_collection.count_documents({}) == 0
+
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    assert samples_collection.count_documents({}) == 0
+
+    logger.exception.assert_called_once_with(timeout_error)
+
+
+def test_export_to_mongo_reverts_the_transaction_when_duplicate_samples_inserted(subject, mongo_database):
     _, mongo_database = mongo_database
 
-    create_plate_message.centre_config = centre.centre_config  # Simulate validation setting the centre config.
+    samples = subject._message._body[FIELD_PLATE][FIELD_SAMPLES]
+    samples[0] = samples[1]
+    subject.export_to_mongo()
+
+    # No documents were inserted in either collection
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    assert samples_collection.count_documents({}) == 0
+
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+    assert source_plates_collection.count_documents({}) == 0
+
+
+def test_export_to_mongo_creates_appropriate_error_when_duplicate_samples_inserted(subject, mongo_database):
+    _, mongo_database = mongo_database
+
+    samples = subject._message._body[FIELD_PLATE][FIELD_SAMPLES]
+    samples[0] = samples[1]
+    subject.export_to_mongo()
+
+    assert len(subject._message.feedback_errors) == 1
+    error = subject._message.feedback_errors[0]
+    assert error["typeId"] == 8
+    assert error["origin"] == "sample"
+    assert error["sampleUuid"] == "UUID_002"
+    assert "UUID_002" in error["description"]
+    assert "CPTD" in error["description"]
+    assert "R00T-S4MPL3-ID2" in error["description"]
+    assert "RN4-1D-2" in error["description"]
+    assert "negative" in error["description"]
+
+
+def test_export_to_mongo_logs_error_correctly_on_bulk_write_error_with_mix_of_errors(subject, mongo_database):
+    _, mongo_database = mongo_database
+    bulk_write_error = BulkWriteError(
+        {"errorLabels": [], "writeErrors": [{"code": 11000, "op": MagicMock()}, {"code": 999}]}
+    )
+
+    with patch.object(Collection, "insert_many", side_effect=bulk_write_error):
+        subject.export_to_mongo()
+
+    # No documents were inserted in either collection
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    assert samples_collection.count_documents({}) == 0
+
+    source_plates_collection = get_mongo_collection(mongo_database, COLLECTION_SOURCE_PLATES)
+    assert source_plates_collection.count_documents({}) == 0
+
+
+def test_export_to_mongo_logs_error_correctly_on_bulk_write_error_without_duplicates(subject, logger, mongo_database):
+    _, mongo_database = mongo_database
+    bulk_write_error = BulkWriteError({"errorLabels": [], "writeErrors": [{"code": 999}]})
+
+    with patch.object(Collection, "insert_many", side_effect=bulk_write_error):
+        with pytest.raises(TransientRabbitError):
+            subject.export_to_mongo()
+
+    logger.critical.assert_called_once()
+    logger.exception.assert_called_once_with(bulk_write_error)
+
+
+def test_record_import_creates_a_valid_import_record(freezer, subject, mongo_database):
+    _, mongo_database = mongo_database
+
     subject._samples_inserted = 3  # Simulate inserting all the records.
 
     subject.record_import()
@@ -199,7 +339,7 @@ def test_record_import_logs_an_exception_if_getting_mongo_collection_raises(subj
 def test_record_import_logs_an_exception_if_creating_import_record_raises(subject, logger):
     raised_exception = Exception()
 
-    with patch("crawler.processing.create_plate_exporter.create_import_record") as create_import_record:
+    with patch("crawler.processing.create_plate_exporter.create_mongo_import_record") as create_import_record:
         create_import_record.side_effect = raised_exception
         subject.record_import()
 
