@@ -11,6 +11,8 @@ from pika.adapters.utils.connection_workflow import (
 )
 from pika.exceptions import AMQPConnectionError
 
+from crawler.exceptions import TransientRabbitError
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -267,12 +269,15 @@ class AsyncConsumer(object):
         LOGGER.info("Received message # %s from %s", basic_deliver.delivery_tag, properties.app_id)
         delivery_tag = basic_deliver.delivery_tag
 
-        if self._process_message(properties.headers, body):
-            LOGGER.info("Acknowledging message %s", delivery_tag)
-            channel.basic_ack(delivery_tag)
-        else:
-            LOGGER.info("Rejecting message %s", delivery_tag)
-            channel.basic_nack(delivery_tag, requeue=False)
+        try:
+            if self._process_message(properties.headers, body):
+                LOGGER.info("Acknowledging message %s", delivery_tag)
+                channel.basic_ack(delivery_tag)
+            else:
+                LOGGER.info("Rejecting message %s", delivery_tag)
+                channel.basic_nack(delivery_tag, requeue=False)
+        except TransientRabbitError:
+            self.reconnect()
 
     def stop_consuming(self):
         """Tell RabbitMQ that you would like to stop consuming by sending the
