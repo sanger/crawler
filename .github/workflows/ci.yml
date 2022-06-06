@@ -12,6 +12,9 @@ on:
       - develop
       - master
 
+env:
+  SETTINGS_MODULE: crawler.config.test
+
 jobs:
   black:
     runs-on: ubuntu-latest
