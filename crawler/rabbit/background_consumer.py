@@ -2,6 +2,7 @@ import logging
 import time
 from threading import Thread
 
+from crawler.exceptions import TransientRabbitError
 from crawler.rabbit.async_consumer import AsyncConsumer
 
 LOGGER = logging.getLogger(__name__)
@@ -51,7 +52,9 @@ class BackgroundConsumer(Thread):
             self._consumer_var = None
 
     def _get_reconnect_delay(self):
-        if self._consumer.was_consuming:
+        if self._consumer.had_transient_error:
+            self._reconnect_delay = 30
+        elif self._consumer.was_consuming:
             self._reconnect_delay = 0
         else:
             self._reconnect_delay += 1

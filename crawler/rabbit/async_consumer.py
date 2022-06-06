@@ -39,6 +39,7 @@ class AsyncConsumer(object):
         """
         self.should_reconnect = False
         self.was_consuming = False
+        self.had_transient_error = False
 
         self._connection = None
         self._channel = None
@@ -230,6 +231,7 @@ class AsyncConsumer(object):
             self.add_on_cancel_callback()
             self._consumer_tag = self._channel.basic_consume(self._queue, self.on_message)
             self.was_consuming = True
+            self.had_transient_error = False
             self._consuming = True
         else:
             LOGGER.error("No channel to consume from")
@@ -270,14 +272,17 @@ class AsyncConsumer(object):
         delivery_tag = basic_deliver.delivery_tag
 
         try:
-            if self._process_message(properties.headers, body):
-                LOGGER.info("Acknowledging message %s", delivery_tag)
-                channel.basic_ack(delivery_tag)
-            else:
-                LOGGER.info("Rejecting message %s", delivery_tag)
-                channel.basic_nack(delivery_tag, requeue=False)
+            should_ack_message = self._process_message(properties.headers, body)
         except TransientRabbitError:
-            self.reconnect()
+            self.had_transient_error = True
+            raise
+
+        if should_ack_message:
+            LOGGER.info("Acknowledging message %s", delivery_tag)
+            channel.basic_ack(delivery_tag)
+        else:
+            LOGGER.info("Rejecting message %s", delivery_tag)
+            channel.basic_nack(delivery_tag, requeue=False)
 
     def stop_consuming(self):
         """Tell RabbitMQ that you would like to stop consuming by sending the

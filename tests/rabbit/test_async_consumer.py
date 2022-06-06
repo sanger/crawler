@@ -287,10 +287,12 @@ def test_on_message_handles_transient_rabbit_error(subject):
     subject._process_message = Mock(side_effect=TransientRabbitError("Boom!"))
     channel = MagicMock()
 
-    with patch("crawler.rabbit.async_consumer.AsyncConsumer.reconnect") as reconnect:
+    assert subject.had_transient_error is False
+
+    with pytest.raises(TransientRabbitError):
         subject.on_message(channel, MagicMock(), MagicMock(), "")
 
-    reconnect.assert_called_once()
+    assert subject.had_transient_error is True
     channel.basic_ack.assert_not_called()
     channel.basic_nack.assert_not_called()
 
