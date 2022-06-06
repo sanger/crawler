@@ -2,7 +2,6 @@ import logging
 import time
 from threading import Thread
 
-from crawler.exceptions import TransientRabbitError
 from crawler.rabbit.async_consumer import AsyncConsumer
 
 LOGGER = logging.getLogger(__name__)

@@ -292,9 +292,9 @@ def test_on_message_handles_transient_rabbit_error(subject):
     with pytest.raises(TransientRabbitError):
         subject.on_message(channel, MagicMock(), MagicMock(), "")
 
-    assert subject.had_transient_error is True
     channel.basic_ack.assert_not_called()
     channel.basic_nack.assert_not_called()
+    assert subject.had_transient_error is True
 
 
 def test_stop_consuming_calls_the_channel_method(subject, mock_logger):
