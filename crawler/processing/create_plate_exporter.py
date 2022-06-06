@@ -254,15 +254,7 @@ class CreatePlateExporter:
         }
 
     def _record_samples_in_dart(self):
-        LOGGER.info("Adding to DART")
-        message_uuid = self._message.message_uuid.value
-        plate_barcode = self._message.plate_barcode.value
-
-        if (sql_server_connection := create_dart_sql_server_conn(self._config)) is None:
-            error_description = (
-                f"Error connecting to DART database for plate with barcode '{plate_barcode}' "
-                f"in message with UUID '{message_uuid}'"
-            )
+        def export_result_with_error(error_description):
             LOGGER.critical(error_description)
 
             return ExportResult(
@@ -274,6 +266,16 @@ class CreatePlateExporter:
                         description=error_description,
                     )
                 ],
+            )
+
+        LOGGER.info("Adding to DART")
+        message_uuid = self._message.message_uuid.value
+        plate_barcode = self._message.plate_barcode.value
+
+        if (sql_server_connection := create_dart_sql_server_conn(self._config)) is None:
+            return export_result_with_error(
+                f"Error connecting to DART database for plate with barcode '{plate_barcode}' "
+                f"in message with UUID '{message_uuid}'"
             )
 
         try:
@@ -300,21 +302,9 @@ class CreatePlateExporter:
             # Rollback statements executed since previous commit/rollback
             cursor.rollback()
 
-            error_description = (
+            return export_result_with_error(
                 f"DART database inserts failed for plate with barcode '{plate_barcode}' "
                 f"in message with UUID '{message_uuid}'"
-            )
-            LOGGER.critical(error_description)
-
-            return ExportResult(
-                success=False,
-                create_plate_errors=[
-                    CreatePlateError(
-                        type=ErrorType.ExportingPostFeedback,  # This error will only reach the imports record
-                        origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_ROOT,
-                        description=error_description,
-                    )
-                ],
             )
         finally:
             sql_server_connection.close()
