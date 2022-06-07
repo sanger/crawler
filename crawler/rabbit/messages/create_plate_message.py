@@ -5,6 +5,7 @@ from typing import Any, NamedTuple, Optional
 
 from crawler.helpers.general_helpers import extract_duplicated_values as extract_dupes
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
+from crawler.rabbit.messages.base_message import BaseMessage
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError
 from crawler.types import CentreConf
 
@@ -100,7 +101,7 @@ class CreatePlateSample:
         return MessageField(FIELD_TESTED_DATE, self._body[FIELD_TESTED_DATE])
 
 
-class CreatePlateMessage:
+class CreatePlateMessage(BaseMessage):
     def __init__(self, body):
         self._body = body
         self.centre_config: Optional[CentreConf] = None

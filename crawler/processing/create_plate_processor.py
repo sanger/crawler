@@ -7,6 +7,7 @@ from crawler.constants import (
     RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
 )
 from crawler.exceptions import TransientRabbitError
+from crawler.processing.base_processor import BaseProcessor
 from crawler.processing.create_plate_exporter import CreatePlateExporter
 from crawler.processing.create_plate_validator import CreatePlateValidator
 from crawler.rabbit.avro_encoder import AvroEncoder
@@ -16,7 +17,7 @@ from crawler.rabbit.messages.create_plate_message import CreatePlateError, Creat
 LOGGER = logging.getLogger(__name__)
 
 
-class CreatePlateProcessor:
+class CreatePlateProcessor(BaseProcessor):
     def __init__(self, schema_registry, basic_publisher, config):
         self._encoder = AvroEncoder(schema_registry, RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK)
         self._basic_publisher = basic_publisher

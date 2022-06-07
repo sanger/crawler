@@ -1,9 +1,10 @@
 import logging
 
-from crawler.constants import RABBITMQ_SUBJECT_CREATE_PLATE
+from crawler.constants import RABBITMQ_SUBJECT_CREATE_PLATE, RABBITMQ_SUBJECT_UPDATE_SAMPLE
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_processor import CreatePlateProcessor
 from crawler.processing.rabbit_message import RabbitMessage
+from crawler.processing.update_sample_processor import UpdateSampleProcessor
 from crawler.rabbit.avro_encoder import AvroEncoder
 
 LOGGER = logging.getLogger(__name__)
@@ -18,7 +19,10 @@ class RabbitMessageProcessor:
         self._processors = {
             RABBITMQ_SUBJECT_CREATE_PLATE: CreatePlateProcessor(
                 self._schema_registry, self._basic_publisher, self._config
-            )
+            ),
+            RABBITMQ_SUBJECT_UPDATE_SAMPLE: UpdateSampleProcessor(
+                self._schema_registry, self._basic_publisher, self._config
+            ),
         }
 
     def process_message(self, headers, body):

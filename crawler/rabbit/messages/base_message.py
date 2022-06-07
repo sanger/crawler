@@ -1,0 +1,2 @@
+class BaseMessage:
+    pass
