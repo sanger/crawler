@@ -32,6 +32,10 @@ class BackgroundConsumer(Thread):
             self._maybe_reconnect()
 
     @property
+    def is_healthy(self):
+        return self._consumer.is_healthy
+
+    @property
     def _consumer(self):
         if self._consumer_var is None:
             self._consumer_var = AsyncConsumer(self._server_details, self._queue, self._process_message)
@@ -47,7 +51,9 @@ class BackgroundConsumer(Thread):
             self._consumer_var = None
 
     def _get_reconnect_delay(self):
-        if self._consumer.was_consuming:
+        if self._consumer.had_transient_error:
+            self._reconnect_delay = 30
+        elif self._consumer.was_consuming:
             self._reconnect_delay = 0
         else:
             self._reconnect_delay += 1

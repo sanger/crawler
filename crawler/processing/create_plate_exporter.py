@@ -7,10 +7,12 @@ from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
 from crawler.constants import (
+    CENTRE_KEY_BIOMEK_LABWARE_CLASS,
     CENTRE_KEY_NAME,
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
+    DART_STATE_PENDING,
     FIELD_BARCODE,
     FIELD_COORDINATE,
     FIELD_CREATED_AT,
@@ -31,7 +33,13 @@ from crawler.constants import (
     FIELD_SOURCE,
     FIELD_UPDATED_AT,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
+    RABBITMQ_CREATE_FEEDBACK_ORIGIN_ROOT,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+)
+from crawler.db.dart import (
+    add_dart_plate_if_doesnt_exist,
+    add_dart_well_properties_if_positive,
+    create_dart_sql_server_conn,
 )
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.exceptions import TransientRabbitError
@@ -75,10 +83,10 @@ class CreatePlateExporter:
                 self._mongo_db.client.close()
 
     def export_to_dart(self):
-        try:
-            pass  # Do export
-        except Exception as ex:
-            LOGGER.exception(ex)
+        result = self._record_samples_in_dart()
+        if not result.success:
+            for error in result.create_plate_errors:
+                self._message.add_error(error)
 
     def record_import(self):
         plate_barcode = self._message.plate_barcode.value
@@ -230,7 +238,7 @@ class CreatePlateExporter:
             FIELD_MONGO_RNA_ID: sample.rna_id.value,
             FIELD_MONGO_ROOT_SAMPLE_ID: sample.root_sample_id.value,
             FIELD_MONGO_COG_UK_ID: sample.cog_uk_id.value,
-            FIELD_MONGO_RESULT: sample.result.value,
+            FIELD_MONGO_RESULT: sample.result.value.capitalize(),
             FIELD_SOURCE: self._message.centre_config[CENTRE_KEY_NAME],
             FIELD_PLATE_BARCODE: self._message.plate_barcode.value,
             FIELD_COORDINATE: normalise_plate_coordinate(sample.plate_coordinate.value),
@@ -244,3 +252,59 @@ class CreatePlateExporter:
             FIELD_CREATED_AT: datetime.utcnow(),
             FIELD_UPDATED_AT: datetime.utcnow(),
         }
+
+    def _record_samples_in_dart(self):
+        def export_result_with_error(error_description):
+            LOGGER.critical(error_description)
+
+            return ExportResult(
+                success=False,
+                create_plate_errors=[
+                    CreatePlateError(
+                        type=ErrorType.ExportingPostFeedback,  # This error will only reach the imports record
+                        origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_ROOT,
+                        description=error_description,
+                    )
+                ],
+            )
+
+        LOGGER.info("Adding to DART")
+        message_uuid = self._message.message_uuid.value
+        plate_barcode = self._message.plate_barcode.value
+
+        if (sql_server_connection := create_dart_sql_server_conn(self._config)) is None:
+            return export_result_with_error(
+                f"Error connecting to DART database for plate with barcode '{plate_barcode}' "
+                f"in message with UUID '{message_uuid}'"
+            )
+
+        try:
+            cursor = sql_server_connection.cursor()
+
+            plate_state = add_dart_plate_if_doesnt_exist(
+                cursor, plate_barcode, self._message.centre_config[CENTRE_KEY_BIOMEK_LABWARE_CLASS]
+            )
+
+            if plate_state == DART_STATE_PENDING:
+                for sample in self._mongo_sample_docs:
+                    add_dart_well_properties_if_positive(cursor, sample, plate_barcode)
+
+            cursor.commit()
+
+            LOGGER.debug(
+                f"DART database inserts completed successfully for plate with barcode '{plate_barcode}' "
+                "in message with UUID '{message_uuid}'"
+            )
+            return ExportResult(success=True, create_plate_errors=[])
+        except Exception as ex:
+            LOGGER.exception(ex)
+
+            # Rollback statements executed since previous commit/rollback
+            cursor.rollback()
+
+            return export_result_with_error(
+                f"DART database inserts failed for plate with barcode '{plate_barcode}' "
+                f"in message with UUID '{message_uuid}'"
+            )
+        finally:
+            sql_server_connection.close()

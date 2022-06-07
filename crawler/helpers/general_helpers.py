@@ -131,7 +131,7 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
 
 
 def get_config(settings_module: str = "") -> Tuple[Config, str]:
-    """Get the config for the app by importing a module named by an environmental variable. This allows easy switching
+    """Get the config for the app by importing a module named by an environment variable. This allows easy switching
     between environments and inheriting default config values.
 
     Arguments:
@@ -149,7 +149,7 @@ def get_config(settings_module: str = "") -> Tuple[Config, str]:
 
         return config_module, settings_module
     except KeyError as e:
-        sys.exit(f"{e} required in environmental variables for config")
+        sys.exit(f"{e} required in environment variables for config.")
 
 
 def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:

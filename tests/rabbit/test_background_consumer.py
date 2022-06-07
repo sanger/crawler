@@ -56,8 +56,9 @@ def test_run_starts_consumer_and_stops_on_keyboard_interrupt(subject):
 def test_maybe_reconnect_sleeps_longer_each_time(subject):
     with patch("crawler.rabbit.background_consumer.time.sleep") as sleep_func:
         with patch("crawler.rabbit.background_consumer.AsyncConsumer") as consumer:
-            consumer.return_value.was_consuming = False
             consumer.return_value.should_reconnect = True
+            consumer.return_value.had_transient_error = False
+            consumer.return_value.was_consuming = False
 
             subject._maybe_reconnect()
             sleep_func.assert_called_with(1)
@@ -80,11 +81,25 @@ def test_maybe_reconnect_sleeps_longer_each_time(subject):
 def test_maybe_reconnect_sleeps_zero_seconds_if_consumer_was_consuming(subject):
     with patch("crawler.rabbit.background_consumer.time.sleep") as sleep_func:
         with patch("crawler.rabbit.background_consumer.AsyncConsumer") as consumer:
-            consumer.return_value.was_consuming = True
             consumer.return_value.should_reconnect = True
+            consumer.return_value.had_transient_error = False
+            consumer.return_value.was_consuming = True
 
             for _ in range(5):
                 subject._maybe_reconnect()
                 sleep_func.assert_called_with(0)
+
+            assert consumer.return_value.stop.call_count == 5
+
+
+def test_maybe_reconnect_sleeps_30_seconds_if_consumer_had_transient_error(subject):
+    with patch("crawler.rabbit.background_consumer.time.sleep") as sleep_func:
+        with patch("crawler.rabbit.background_consumer.AsyncConsumer") as consumer:
+            consumer.return_value.should_reconnect = True
+            consumer.return_value.had_transient_error = True
+
+            for _ in range(5):
+                subject._maybe_reconnect()
+                sleep_func.assert_called_with(30)
 
             assert consumer.return_value.stop.call_count == 5
