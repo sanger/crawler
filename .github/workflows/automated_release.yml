@@ -36,6 +36,7 @@ jobs:
           docker run
           --network host
           --entrypoint ''
+          --env SETTINGS_MODULE=crawler.config.test
           docker.pkg.github.com/${IMAGE_NAME}:${BRANCH_NAME}
           python setup_test_db.py
 
