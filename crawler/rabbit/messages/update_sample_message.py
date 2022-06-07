@@ -4,7 +4,7 @@ from enum import IntEnum
 from typing import Any, NamedTuple, Optional
 
 from crawler.rabbit.messages.base_message import BaseMessage
-from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError
+from crawler.rabbit.messages.update_feedback_message import UpdateFeedbackError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -90,15 +90,14 @@ class UpdateSampleMessage(BaseMessage):
 
         return MessageField(FIELD_UPDATED_FIELDS, self._updated_fields)
 
-    def add_error(self, create_error):
-        LOGGER.error(f"Error in create plate message: {create_error.description}")
-        self._textual_errors.append(create_error.description)
+    def add_error(self, update_error):
+        LOGGER.error(f"Error in create plate message: {update_error.description}")
+        self._textual_errors.append(update_error.description)
         self._feedback_errors.append(
-            CreateFeedbackError(
-                typeId=int(create_error.type),
-                origin=create_error.origin,
-                sampleUuid=create_error.sample_uuid,
-                field=create_error.field,
-                description=create_error.description,
+            UpdateFeedbackError(
+                typeId=int(update_error.type),
+                origin=update_error.origin,
+                field=update_error.field,
+                description=update_error.description,
             )
         )
