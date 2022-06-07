@@ -9,12 +9,12 @@ from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError
 LOGGER = logging.getLogger(__name__)
 
 
-FIELD_MESSAGE_UUID = "messageUuid"
 FIELD_MESSAGE_CREATE_DATE = "messageCreateDateUtc"
+FIELD_MESSAGE_UUID = "messageUuid"
+FIELD_NAME = "name"
 FIELD_SAMPLE = "sample"
 FIELD_SAMPLE_UUID = "sampleUuid"
 FIELD_UPDATED_FIELDS = "updatedFields"
-FIELD_NAME = "name"
 FIELD_VALUE = "value"
 
 
@@ -78,7 +78,7 @@ class UpdateSampleMessage(BaseMessage):
 
     @property
     def sample_uuid(self):
-        return MessageField(FIELD_SAMPLE_UUID, self._body[FIELD_SAMPLE][FIELD_SAMPLE_UUID])
+        return MessageField(FIELD_SAMPLE_UUID, self._body[FIELD_SAMPLE][FIELD_SAMPLE_UUID].decode())
 
     @property
     def updated_fields(self):
