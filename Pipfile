@@ -19,7 +19,7 @@ responses = "*"
 
 [packages]
 colorlog = "~=6.6"
-fastavro = "~=1.4"
+fastavro = "~=1.5"
 flask = "~=2.1"
 flask-apscheduler = "~=1.12"
 gunicorn = "~=20.1"
