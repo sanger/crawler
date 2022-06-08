@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "db2a6da881e144dc427ce02972bc72fd4eaa28073c056bf60a5794fed4bcc4f3"
+            "sha256": "6ed36879aa0ad30b25cfc4273bd07b5d45370bb8ed368185013cd18e63a5d35e"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -282,25 +282,22 @@
         },
         "fastavro": {
             "hashes": [
-                "sha256:1df7cd4248c0dbbd0c9be4643eb416f6e4f058211b6eaf4e15286813ab2a70ff",
-                "sha256:28c0d63eb286e64e9da79e083e299c33f1df65a490a1d79444dc453950daca40",
-                "sha256:2a9d418dbcba12e85ae1fd395d92917d592544b0dfe64db13ffebeb4959dd67f",
-                "sha256:3b04882e04192a64c06a8487a168e289f71cd31e51e1275bd34bb19d70669b48",
-                "sha256:4e4b81c09346d6f47153b3c391e8f65bef0fc4dfd19b0e2bc7843f00e07ee1be",
-                "sha256:4fca5343950963545c1dd9db17e0451daf19fa50ac9e44313abd20e88cef3e48",
-                "sha256:6326d763939a2a9de560dd88035a9902660145745b6dda2060be5caee3d8e779",
-                "sha256:772527b59c4294f44f42328a4d2defe67a6db5f203f65257e698a1ff5b476a2f",
-                "sha256:7a8f273ac00f20adebfa394aea4219caf76844134ea21b53d393a1ae9a54f828",
-                "sha256:97c47004fb7e6a1f38d729124e9607128577a15ee5a4d10c7f680251f1a4f204",
-                "sha256:a38a954a45422fffedd1f65283b3ed8f32965a8399f545189d0b75e450407ff2",
-                "sha256:b289e4ed691f0fc5919ffc1c8d4bcb626055deaf75a5a2bca9015dc2367d95af",
-                "sha256:bc41b3495a34a17e17e77c7bc82ddaa5edaec82e103e763d0fb60cbb4d0efff0",
-                "sha256:e5888f81600c7cd62aeb9ed86b63d6e63dc9ad040b404c0ab42f4194f170d2b6",
-                "sha256:e88cc1f73421d3f60c21fa982fdb91411ac068506442d3a984a2b6ea400ae9dc",
-                "sha256:fee2240cff5a249458df604893abcc571efa178fa9b01f4ae0fa824295da3b54"
+                "sha256:2ced94205a8b7471671e5e0f13dda5f0304c5e62c9a11d3fcbf0a6c868c2c714",
+                "sha256:31b394a0c92e3b55e507cc05ac67fa3d6643a871d72b6bcbdfd5470101a3f04e",
+                "sha256:5f4b6e367e0fe9dc10350d02e208fd9258175f2ca03d6c87773665dd8bc75b76",
+                "sha256:7578c82fefb8b803934a8cbb4ecca4c955e76eee9e280f87394ab10e967f1997",
+                "sha256:7934f4c4d578bce88fecfb550ae80587bc17e7f56e5e46b63a3250e38efc2948",
+                "sha256:890e1a39b61f19605ba7b65691546ec2718d0f9daa29c67365f9a4f76846daef",
+                "sha256:952d24b4da3747facaeb98d607686bd4003e073dea1ad76a9cb97b603268837f",
+                "sha256:9db7c52467a773542796597e7cca1dbb244749a00ca0c8c2931d3469268abd59",
+                "sha256:bbad1299763da33765b1db4d655f59df0c8d84376a4ef4daba7b5ad78c7b01f7",
+                "sha256:bea07403b0a6e476a110a766c89265200711c29fcd0afd448e02df956cf3fd3c",
+                "sha256:cb97ad0898be7b24528eb5b72c749276e4aa7904f19ac35ff3e2ef0e2d32abfa",
+                "sha256:dbb3b6750ef5e210ca0127bfb16110da015a243b23e67692e5d4fdd886df19d5",
+                "sha256:fad930b9981156054c73025ee868692e56bff005e2eb48238c344fcc4dbe125f"
             ],
             "index": "pypi",
-            "version": "==1.4.12"
+            "version": "==1.5.0"
         },
         "flask": {
             "hashes": [
@@ -904,11 +901,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:68e45d17c9281ba25dc0104eadd2647172b3472d9e01f911efa57965e8d51a36",
-                "sha256:a43bdedf853c670e5fed28e5623403bad2f73cf02f9a2774e91def6bda8265a7"
+                "sha256:d1746e7fd520e83bbe210d02fff1aa1a425ad671c7a9da7d246ec2401a087198",
+                "sha256:e7d11f3db616cda0751372244c2ba798e8e56a28e096ec4529010b803485f3fe"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==62.3.2"
+            "version": "==62.3.3"
         },
         "six": {
             "hashes": [
@@ -1524,7 +1521,7 @@
                 "sha256:6657594ee297170d19f67d55c05852a874e7eb634f4f753dbd667855e07c1708",
                 "sha256:f1c24655a0da0d1b67f07e17a5e6b2a105894e6824b92096378bb3668ef02376"
             ],
-            "markers": "python_version < '3.10'",
+            "markers": "python_version >= '3.7'",
             "version": "==4.2.0"
         },
         "urllib3": {
