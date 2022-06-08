@@ -5,6 +5,7 @@ from typing import Any, NamedTuple, Optional
 
 from crawler.helpers.general_helpers import extract_duplicated_values as extract_dupes
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
+from crawler.rabbit.messages.base_message import BaseMessage
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError
 from crawler.types import CentreConf
 
@@ -100,34 +101,17 @@ class CreatePlateSample:
         return MessageField(FIELD_TESTED_DATE, self._body[FIELD_TESTED_DATE])
 
 
-class CreatePlateMessage:
+class CreatePlateMessage(BaseMessage):
     def __init__(self, body):
+        super().__init__()
         self._body = body
         self.centre_config: Optional[CentreConf] = None
 
         self.validated_samples = 0
-        self._textual_errors = []
         self._feedback_errors = []
 
         self._duplicated_sample_values = None
         self._samples = None
-
-    @property
-    def textual_errors_summary(self):
-        error_count = len(self._textual_errors)
-
-        if error_count == 0:
-            errors_label = "No errors were"
-        elif error_count == 1:
-            errors_label = "1 error was"
-        else:
-            errors_label = f"{error_count} errors were"
-
-        additional_text = " Only the first 5 are shown." if error_count > 5 else ""
-
-        error_list = [f"{errors_label} reported during processing.{additional_text}"] + self._textual_errors[:5]
-
-        return error_list
 
     @property
     def feedback_errors(self):
@@ -135,7 +119,7 @@ class CreatePlateMessage:
 
     @property
     def has_errors(self):
-        return len(self._textual_errors) > 0 or len(self._feedback_errors) > 0
+        return len(self._feedback_errors) > 0
 
     @property
     def total_samples(self):
@@ -181,7 +165,7 @@ class CreatePlateMessage:
 
     def add_error(self, create_error):
         LOGGER.error(f"Error in create plate message: {create_error.description}")
-        self._textual_errors.append(create_error.description)
+        self.add_textual_error(create_error.description)
         self._feedback_errors.append(
             CreateFeedbackError(
                 typeId=int(create_error.type),

@@ -274,9 +274,12 @@ RABBITMQ_HEADER_KEY_SUBJECT = "subject"
 RABBITMQ_HEADER_KEY_VERSION = "version"
 
 RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK = "feedback.created.plate"
+RABBITMQ_ROUTING_KEY_UPDATE_SAMPLE_FEEDBACK = "feedback.updated.sample"
 
 RABBITMQ_SUBJECT_CREATE_PLATE = "create-plate-map"
 RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK = "create-plate-map-feedback"
+RABBITMQ_SUBJECT_UPDATE_SAMPLE = "update-plate-map-sample"
+RABBITMQ_SUBJECT_UPDATE_SAMPLE_FEEDBACK = "update-plate-map-sample-feedback"
 
 
 ###

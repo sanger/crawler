@@ -78,6 +78,13 @@ from crawler.rabbit.messages.create_plate_message import FIELD_ROOT_SAMPLE_ID as
 from crawler.rabbit.messages.create_plate_message import FIELD_SAMPLE_UUID as CREATE_PLATE_SAMPLE_UUID
 from crawler.rabbit.messages.create_plate_message import FIELD_SAMPLES as CREATE_PLATE_SAMPLES
 from crawler.rabbit.messages.create_plate_message import FIELD_TESTED_DATE as CREATE_PLATE_TESTED_DATE
+from crawler.rabbit.messages.update_sample_message import FIELD_MESSAGE_CREATE_DATE as UPDATE_SAMPLE_MESSAGE_CREATE_DATE
+from crawler.rabbit.messages.update_sample_message import FIELD_MESSAGE_UUID as UPDATE_SAMPLE_MESSAGE_UUID
+from crawler.rabbit.messages.update_sample_message import FIELD_NAME as UPDATE_SAMPLE_NAME
+from crawler.rabbit.messages.update_sample_message import FIELD_SAMPLE as UPDATE_SAMPLE_SAMPLE
+from crawler.rabbit.messages.update_sample_message import FIELD_SAMPLE_UUID as UPDATE_SAMPLE_SAMPLE_UUID
+from crawler.rabbit.messages.update_sample_message import FIELD_UPDATED_FIELDS as UPDATE_SAMPLE_UPDATED_FIELDS
+from crawler.rabbit.messages.update_sample_message import FIELD_VALUE as UPDATE_SAMPLE_VALUE
 
 TESTING_SAMPLES: List[Dict[str, Union[str, bool, ObjectId]]] = [
     {
@@ -717,6 +724,25 @@ CREATE_PLATE_MESSAGE = {
                 CREATE_PLATE_FIT_TO_PICK: True,
                 CREATE_PLATE_RESULT: "void",
                 CREATE_PLATE_TESTED_DATE: datetime(2022, 4, 10, 11, 45, 25),
+            },
+        ],
+    },
+}
+
+
+UPDATE_SAMPLE_MESSAGE = {
+    UPDATE_SAMPLE_MESSAGE_UUID: b"UPDATE_SAMPLE_MESSAGE_UUID",
+    UPDATE_SAMPLE_MESSAGE_CREATE_DATE: datetime.utcnow(),
+    UPDATE_SAMPLE_SAMPLE: {
+        UPDATE_SAMPLE_SAMPLE_UUID: b"UPDATE_SAMPLE_UUID",
+        UPDATE_SAMPLE_UPDATED_FIELDS: [
+            {
+                UPDATE_SAMPLE_NAME: "mustSequence",
+                UPDATE_SAMPLE_VALUE: True,
+            },
+            {
+                UPDATE_SAMPLE_NAME: "preferentiallySequence",
+                UPDATE_SAMPLE_VALUE: False,
             },
         ],
     },
