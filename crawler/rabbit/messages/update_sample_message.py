@@ -37,28 +37,11 @@ class UpdateSampleError:
 
 class UpdateSampleMessage(BaseMessage):
     def __init__(self, body):
+        super().__init__()
         self._body = body
 
-        self._textual_errors = []
         self._feedback_errors = []
         self._updated_fields = None
-
-    @property
-    def textual_errors_summary(self):
-        error_count = len(self._textual_errors)
-
-        if error_count == 0:
-            errors_label = "No errors were"
-        elif error_count == 1:
-            errors_label = "1 error was"
-        else:
-            errors_label = f"{error_count} errors were"
-
-        additional_text = " Only the first 5 are shown." if error_count > 5 else ""
-
-        error_list = [f"{errors_label} reported during processing.{additional_text}"] + self._textual_errors[:5]
-
-        return error_list
 
     @property
     def feedback_errors(self):
@@ -66,7 +49,7 @@ class UpdateSampleMessage(BaseMessage):
 
     @property
     def has_errors(self):
-        return len(self._textual_errors) > 0 or len(self._feedback_errors) > 0
+        return len(self._feedback_errors) > 0
 
     @property
     def message_uuid(self):
@@ -92,7 +75,7 @@ class UpdateSampleMessage(BaseMessage):
 
     def add_error(self, update_error):
         LOGGER.error(f"Error in create plate message: {update_error.description}")
-        self._textual_errors.append(update_error.description)
+        self.add_textual_error(update_error.description)
         self._feedback_errors.append(
             UpdateFeedbackError(
                 typeId=int(update_error.type),
