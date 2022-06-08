@@ -20,7 +20,7 @@ class UpdateSampleValidator:
                 UpdateSampleError(
                     type=ErrorType.ValidationNonUniqueFieldName,
                     origin=RABBITMQ_UPDATE_FEEDBACK_ORIGIN_FIELD,
-                    description=f"Field with name {duped_name} exists more than once in the fields to update.",
+                    description=f"Field with name '{duped_name}' exists more than once in the fields to update.",
                     field=updated_fields.name,
                 )
             )
