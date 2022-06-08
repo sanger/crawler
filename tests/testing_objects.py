@@ -742,7 +742,7 @@ UPDATE_SAMPLE_MESSAGE = {
             },
             {
                 UPDATE_SAMPLE_NAME: "preferentiallySequence",
-                UPDATE_SAMPLE_VALUE: True,
+                UPDATE_SAMPLE_VALUE: False,
             },
         ],
     },

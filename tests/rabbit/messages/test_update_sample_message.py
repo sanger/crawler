@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from crawler.rabbit.messages.create_plate_message import FIELD_SAMPLE_UUID
 from crawler.rabbit.messages.update_sample_message import (
     FIELD_MESSAGE_CREATE_DATE,
     FIELD_MESSAGE_UUID,
@@ -41,6 +42,21 @@ def test_message_uuid_gives_expected_value(subject):
 def test_message_create_date_gives_expected_value(subject):
     assert subject.message_create_date.name == FIELD_MESSAGE_CREATE_DATE
     assert type(subject.message_create_date.value) == datetime
+
+
+def test_sample_uuid_gives_expected_value(subject):
+    assert subject.sample_uuid.name == FIELD_SAMPLE_UUID
+    assert subject.sample_uuid.value == "UPDATE_SAMPLE_UUID"
+
+
+def test_updated_fields_gives_expected_values(subject):
+    assert len(subject.updated_fields) == 2
+
+    msField = next(x for x in subject.updated_fields.value if x.name == "mustSequence")
+    assert msField.value is True
+
+    psField = next(x for x in subject.updated_fields.value if x.name == "preferentiallySequence")
+    assert psField.value is False
 
 
 @pytest.mark.parametrize("description", ["description_1", "description_2"])
