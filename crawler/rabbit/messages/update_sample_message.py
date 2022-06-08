@@ -20,6 +20,7 @@ FIELD_VALUE = "value"
 
 class ErrorType(IntEnum):
     UnhandledProcessingError = 101
+    ValidationNonUniqueFieldName = 102
 
 
 class MessageField(NamedTuple):
