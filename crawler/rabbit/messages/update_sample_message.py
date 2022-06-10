@@ -18,9 +18,17 @@ FIELD_UPDATED_FIELDS = "updatedFields"
 FIELD_VALUE = "value"
 
 
+# Update errors: 100 - 199
 class ErrorType(IntEnum):
-    UnhandledProcessingError = 101
-    ValidationNonUniqueFieldName = 102
+    # Parsing errors: 100 - 119
+    UnhandledProcessingError = 100
+
+    # Validation errors: 120 - 159
+    ValidationNonUniqueFieldName = 120
+
+    # Exporter errors: 160 - 199
+    ExporterSampleDoesNotExist = 160
+    ExporterMessageOutOfDate = 161
 
 
 class MessageField(NamedTuple):
