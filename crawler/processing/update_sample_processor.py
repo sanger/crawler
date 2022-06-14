@@ -34,10 +34,7 @@ class UpdateSampleProcessor(BaseProcessor):
             if not update_message.has_errors:
                 exporter.verify_sample_in_mongo()
             if not update_message.has_errors:
-                exporter.verify_plate_status_in_cherrytrack()
-            if not update_message.has_errors:
-                # TODO: Verify plate status with DART
-                pass
+                exporter.verify_plate_status()
             if not update_message.has_errors:
                 # TODO: Export updates to Mongo
                 pass
