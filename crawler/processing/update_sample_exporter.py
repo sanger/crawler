@@ -1,6 +1,8 @@
 import logging
+from http import HTTPStatus
 from typing import List, NamedTuple
 
+import requests
 from pymongo.client_session import ClientSession
 from pymongo.database import Database
 
@@ -36,6 +38,23 @@ class UpdateSampleExporter:
                 self._validate_mongo_properties(session)
             finally:
                 self._mongo_db.client.close()
+
+    def verify_plate_status_in_cherrytrack(self):
+        self._verify_plate_barcode_is_set()
+        if self._does_cherrytrack_source_plate_exist():
+            self._message.add_error(
+                UpdateSampleError(
+                    type=ErrorType.ExporterPlateAlreadyPicked,
+                    origin=RABBITMQ_UPDATE_FEEDBACK_ORIGIN_ROOT,
+                    description=(
+                        f"Sample is on plate with barcode '{self._plate_barcode}' which has already been picked."
+                    ),
+                )
+            )
+
+    def verify_plate_status_in_dart(self):
+        self._verify_plate_barcode_is_set()
+        pass
 
     def update_mongo(self):
         with self._mongo_db.client.start_session() as session:
@@ -105,4 +124,22 @@ class UpdateSampleExporter:
 
             raise TransientRabbitError(
                 f"There was an error accessing MongoDB while looking up sample with UUID '{sample_uuid.value}'."
+            )
+
+    def _verify_plate_barcode_is_set(self):
+        if self._plate_barcode is None:
+            raise ValueError(
+                "No plate barcode was set -- this probably means verify_sample_in_mongo"
+                "was not called first in the exporter."
+            )
+
+    def _does_cherrytrack_source_plate_exist(self):
+        cherrytrack_url = f"{self._config.CHERRYTRACK_BASE_URL}/source-plates/{self._plate_barcode}"
+
+        try:
+            response = requests.get(cherrytrack_url)
+            return response.status_code == HTTPStatus.OK
+        except Exception:
+            raise TransientRabbitError(
+                f"Unable to make a request to Cherrytrack for plate with barcode {self._plate_barcode}."
             )

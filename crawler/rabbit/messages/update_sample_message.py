@@ -29,6 +29,7 @@ class ErrorType(IntEnum):
     # Exporter errors: 160 - 199
     ExporterSampleDoesNotExist = 160
     ExporterMessageOutOfDate = 161
+    ExporterPlateAlreadyPicked = 162
 
 
 class MessageField(NamedTuple):
