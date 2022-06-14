@@ -4,6 +4,7 @@ from typing_extensions import NotRequired
 
 
 class CreateFeedbackError(TypedDict):
+    typeId: int
     origin: str
     sampleUuid: NotRequired[str]
     field: NotRequired[str]

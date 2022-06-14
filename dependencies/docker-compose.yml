@@ -14,13 +14,18 @@ services:
 
   # A MongoDB service as close to production as currently possible
   # To run it as a standalone container:
-  #   docker run --name mongo -d -p 27017:27017 mongo:4.2
+  #   docker run --name mongo -d -p 27017:27017 --entrypoint="/usr/bin/mongod --bind_ip_all --replSet heron_rs" mongo:4.2
   mongo-4.2:
     image: mongo:4.2
+    container_name: mongo
     ports:
       - "27017:27017"
+    networks:
+      - external
     volumes:
       - mongo-volume:/data/db
+      - ./scripts/mongo-init-replica-set.sh:/scripts/rs-init.sh
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "heron_rs" ]
 
   # A MS SQL Server service as close to production as currently possible
   # To run it as a standalone container:

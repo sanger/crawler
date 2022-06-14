@@ -11,6 +11,8 @@ from pika.adapters.utils.connection_workflow import (
 )
 from pika.exceptions import AMQPConnectionError
 
+from crawler.exceptions import TransientRabbitError
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -37,6 +39,7 @@ class AsyncConsumer(object):
         """
         self.should_reconnect = False
         self.was_consuming = False
+        self.had_transient_error = False
 
         self._connection = None
         self._channel = None
@@ -224,6 +227,7 @@ class AsyncConsumer(object):
             self.add_on_cancel_callback()
             self._consumer_tag = self._channel.basic_consume(self._queue, self.on_message)
             self.was_consuming = True
+            self.had_transient_error = False
             self._consuming = True
         else:
             LOGGER.error("No channel to consume from")
@@ -260,10 +264,16 @@ class AsyncConsumer(object):
         :param pika.Spec.BasicProperties: properties
         :param bytes body: The message body
         """
-        LOGGER.info("Received message # %s from %s: %s", basic_deliver.delivery_tag, properties.app_id, body)
+        LOGGER.info("Received message # %s from %s", basic_deliver.delivery_tag, properties.app_id)
         delivery_tag = basic_deliver.delivery_tag
 
-        if self._process_message(properties.headers, body):
+        try:
+            should_ack_message = self._process_message(properties.headers, body)
+        except TransientRabbitError:
+            self.had_transient_error = True
+            raise
+
+        if should_ack_message:
             LOGGER.info("Acknowledging message %s", delivery_tag)
             channel.basic_ack(delivery_tag)
         else:

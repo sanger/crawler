@@ -65,6 +65,7 @@ from crawler.constants import (
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_LINE_NUMBER,
+    FIELD_MONGO_LAB_ID,
     FIELD_MONGODB_ID,
     FIELD_PLATE_BARCODE,
     FIELD_RESULT,
@@ -85,9 +86,10 @@ from crawler.db.dart import (
     add_dart_well_properties_if_positive,
     create_dart_sql_server_conn,
 )
-from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import insert_or_update_samples_in_mlwh
 from crawler.filtered_positive_identifier import current_filtered_positive_identifier
+from crawler.helpers.db_helpers import create_mongo_import_record
 from crawler.helpers.enums import CentreFileState
 from crawler.helpers.general_helpers import create_source_plate_doc, current_time, get_sftp_connection, pad_coordinate
 from crawler.helpers.logging_helpers import LoggingCollection
@@ -506,7 +508,7 @@ class CentreFile:
         """Writes to the imports collection with information about the CSV file processed."""
         imports_collection = get_mongo_collection(self.get_db(), COLLECTION_IMPORTS)
 
-        create_import_record(
+        create_mongo_import_record(
             imports_collection,
             self.centre_config,
             self.docs_inserted,
@@ -542,7 +544,7 @@ class CentreFile:
                         FIELD_ROOT_SAMPLE_ID: wrong_instance[FIELD_ROOT_SAMPLE_ID],
                         FIELD_RNA_ID: wrong_instance[FIELD_RNA_ID],
                         FIELD_RESULT: wrong_instance[FIELD_RESULT],
-                        FIELD_LAB_ID: wrong_instance[FIELD_LAB_ID],
+                        FIELD_MONGO_LAB_ID: wrong_instance[FIELD_MONGO_LAB_ID],
                     }
                 )[0]
                 if not (entry):
@@ -585,13 +587,13 @@ class CentreFile:
         def update_doc_from_source_plate(
             row: ModifiedRow, existing_plate: SourcePlateDoc, skip_lab_check: bool = False
         ) -> None:
-            if skip_lab_check or self.is_consolidated or row[FIELD_LAB_ID] == existing_plate[FIELD_LAB_ID]:
+            if skip_lab_check or self.is_consolidated or row[FIELD_LAB_ID] == existing_plate[FIELD_MONGO_LAB_ID]:
                 row[FIELD_LH_SOURCE_PLATE_UUID] = existing_plate[FIELD_LH_SOURCE_PLATE_UUID]
                 updated_docs.append(row)
             else:
                 error_message = (
                     f"Source plate barcode '{row[FIELD_PLATE_BARCODE]}' in file '{self.file_name}' already exists "
-                    f"with a different lab_id: {existing_plate[FIELD_LAB_ID]}"
+                    f"with a different lab_id: {existing_plate[FIELD_MONGO_LAB_ID]}"
                 )
                 self.logging_collection.add_error("TYPE 25", error_message)
                 logger.error(error_message)
@@ -616,7 +618,7 @@ class CentreFile:
                     continue
 
                 # then add a new plate
-                new_plate = create_source_plate_doc(str(plate_barcode), str(doc[FIELD_LAB_ID]))
+                new_plate = create_source_plate_doc(str(plate_barcode), str(doc[FIELD_MONGO_LAB_ID]))
                 new_plates.append(new_plate)
                 update_doc_from_source_plate(doc, new_plate, True)
 

@@ -39,9 +39,9 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
     FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_LAB_ID,
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_MONGO_LAB_ID,
     FIELD_MONGODB_ID,
     FIELD_MUST_SEQUENCE,
     FIELD_PLATE_BARCODE,
@@ -131,7 +131,7 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
 
 
 def get_config(settings_module: str = "") -> Tuple[Config, str]:
-    """Get the config for the app by importing a module named by an environmental variable. This allows easy switching
+    """Get the config for the app by importing a module named by an environment variable. This allows easy switching
     between environments and inheriting default config values.
 
     Arguments:
@@ -149,7 +149,7 @@ def get_config(settings_module: str = "") -> Tuple[Config, str]:
 
         return config_module, settings_module
     except KeyError as e:
-        sys.exit(f"{e} required in environmental variables for config")
+        sys.exit(f"{e} required in environment variables for config.")
 
 
 def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:
@@ -171,7 +171,7 @@ def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:
         MLWH_RESULT: sample.get(FIELD_RESULT),
         MLWH_DATE_TESTED: sample.get(FIELD_DATE_TESTED),
         MLWH_SOURCE: sample.get(FIELD_SOURCE),
-        MLWH_LAB_ID: sample.get(FIELD_LAB_ID),
+        MLWH_LAB_ID: sample.get(FIELD_MONGO_LAB_ID),
         # channel fields
         MLWH_CH1_TARGET: sample.get(FIELD_CH1_TARGET),
         MLWH_CH1_RESULT: sample.get(FIELD_CH1_RESULT),
@@ -348,7 +348,7 @@ def map_mongo_doc_to_dart_well_props(sample: SampleDoc) -> DartWellProp:
         DART_STATE: DART_STATE_PICKABLE if is_sample_pickable(sample) else DART_EMPTY_VALUE,
         DART_ROOT_SAMPLE_ID: str(sample[FIELD_ROOT_SAMPLE_ID]),
         DART_RNA_ID: str(sample[FIELD_RNA_ID]),
-        DART_LAB_ID: str(sample.get(FIELD_LAB_ID, DART_EMPTY_VALUE)),
+        DART_LAB_ID: str(sample.get(FIELD_MONGO_LAB_ID, DART_EMPTY_VALUE)),
         DART_LH_SAMPLE_UUID: str(sample.get(FIELD_LH_SAMPLE_UUID, DART_EMPTY_VALUE)),
     }
 
@@ -366,7 +366,7 @@ def create_source_plate_doc(plate_barcode: str, lab_id: str) -> SourcePlateDoc:
     return {
         FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4()),
         FIELD_BARCODE: plate_barcode,
-        FIELD_LAB_ID: lab_id,
+        FIELD_MONGO_LAB_ID: lab_id,
         FIELD_UPDATED_AT: datetime.utcnow(),
         FIELD_CREATED_AT: datetime.utcnow(),
     }

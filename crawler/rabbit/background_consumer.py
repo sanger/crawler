@@ -16,6 +16,7 @@ class BackgroundConsumer(Thread):
         super().__init__()
         self.name = type(self).__name__
         self.daemon = True
+        self._running = False
         self._reconnect_delay = 0
         self._server_details = server_details
         self._queue = queue
@@ -23,13 +24,21 @@ class BackgroundConsumer(Thread):
         self._consumer_var = None
 
     def run(self):
-        while True:
-            try:
-                self._consumer.run()
-            except KeyboardInterrupt:
-                self._consumer.stop()
-                break
-            self._maybe_reconnect()
+        self._running = True
+        try:
+            while True:
+                try:
+                    self._consumer.run()
+                except KeyboardInterrupt:
+                    self._consumer.stop()
+                    break
+                self._maybe_reconnect()
+        finally:
+            self._running = False
+
+    @property
+    def is_healthy(self):
+        return self._running
 
     @property
     def _consumer(self):
@@ -47,7 +56,9 @@ class BackgroundConsumer(Thread):
             self._consumer_var = None
 
     def _get_reconnect_delay(self):
-        if self._consumer.was_consuming:
+        if self._consumer.had_transient_error:
+            self._reconnect_delay = 30
+        elif self._consumer.was_consuming:
             self._reconnect_delay = 0
         else:
             self._reconnect_delay += 1

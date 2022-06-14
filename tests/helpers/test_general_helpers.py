@@ -22,9 +22,9 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
     FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_LAB_ID,
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_MONGO_LAB_ID,
     FIELD_MONGODB_ID,
     FIELD_MUST_SEQUENCE,
     FIELD_PLATE_BARCODE,
@@ -124,7 +124,7 @@ def test_map_mongo_sample_to_mysql(config):
         FIELD_RESULT: "Negative",
         FIELD_DATE_TESTED: date_tested,
         FIELD_SOURCE: "Test Centre",
-        FIELD_LAB_ID: "TC",
+        FIELD_MONGO_LAB_ID: "TC",
         FIELD_FILTERED_POSITIVE: True,
         FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
         FIELD_FILTERED_POSITIVE_TIMESTAMP: filtered_positive_timestamp,
@@ -170,7 +170,7 @@ def test_map_mongo_sample_to_mysql_with_copy(config):
         FIELD_RESULT: "Negative",
         FIELD_DATE_TESTED: date_tested,
         FIELD_SOURCE: "Test Centre",
-        FIELD_LAB_ID: "TC",
+        FIELD_MONGO_LAB_ID: "TC",
         FIELD_CREATED_AT: created_at,
         FIELD_UPDATED_AT: updated_at,
     }
@@ -284,7 +284,7 @@ def test_map_mongo_doc_to_dart_well_props(config):
         FIELD_FILTERED_POSITIVE: True,
         FIELD_ROOT_SAMPLE_ID: "ABC00000004",
         FIELD_RNA_ID: "TC-rna-00000029_H01",
-        FIELD_LAB_ID: "TC",
+        FIELD_MONGO_LAB_ID: "TC",
         FIELD_LH_SAMPLE_UUID: test_uuid,
     }
 
@@ -360,7 +360,7 @@ def test_create_source_plate_doc(freezer):
 
         assert source_plate[FIELD_LH_SOURCE_PLATE_UUID] == str(test_uuid)
         assert source_plate[FIELD_BARCODE] == plate_barcode
-        assert source_plate[FIELD_LAB_ID] == lab_id
+        assert source_plate[FIELD_MONGO_LAB_ID] == lab_id
         assert source_plate[FIELD_UPDATED_AT] == now
         assert source_plate[FIELD_CREATED_AT] == now
 

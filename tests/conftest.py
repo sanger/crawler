@@ -14,8 +14,11 @@ from crawler.constants import (
     CENTRE_KEY_DATA_SOURCE,
     CENTRE_KEY_FILE_NAMES_TO_IGNORE,
     COLLECTION_CENTRES,
+    COLLECTION_CHERRYPICK_TEST_DATA,
+    COLLECTION_IMPORTS,
     COLLECTION_PRIORITY_SAMPLES,
     COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
     FIELD_FILTERED_POSITIVE,
     FIELD_MONGODB_ID,
     MLWH_TABLE_NAME,
@@ -23,6 +26,7 @@ from crawler.constants import (
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import create_mysql_connection
 from crawler.file_processing import Centre, CentreFile
+from crawler.helpers.db_helpers import ensure_mongo_collections_indexed
 from crawler.helpers.general_helpers import get_config, get_sftp_connection
 from tests.testing_objects import (
     EVENT_WH_DATA,
@@ -74,17 +78,28 @@ def mongo_client(config):
 
 
 @pytest.fixture
+def mongo_collections():
+    return [
+        COLLECTION_IMPORTS,
+        COLLECTION_SAMPLES,
+        COLLECTION_PRIORITY_SAMPLES,
+        COLLECTION_SOURCE_PLATES,
+        COLLECTION_CHERRYPICK_TEST_DATA,
+    ]
+
+
+@pytest.fixture
 def mongo_database(mongo_client):
     config, mongo_client = mongo_client
     db = get_mongo_db(config, mongo_client)
-    try:
-        yield config, db
-    # Drop the database after each test to ensure they are independent
-    # A transaction may be more appropriate here, but that means significant
-    # code changes, as 'sessions' need to be passed around. I'm also not
-    # sure what version of mongo is being used in production.
-    finally:
-        mongo_client.drop_database(db)
+
+    # Ensure any existing data is gone before a test starts
+    mongo_client.drop_database(db)
+
+    # Create indexes on collections -- this also creates the empty source_plates and samples collections
+    ensure_mongo_collections_indexed(db)
+
+    yield config, db
 
 
 @pytest.fixture
@@ -116,7 +131,7 @@ def mlwh_rw_db(mlwh_connection):
 
 
 @pytest.fixture
-def pyodbc_conn(config):
+def pyodbc_conn():
     with patch("pyodbc.connect") as mock_connect:
         yield mock_connect
 

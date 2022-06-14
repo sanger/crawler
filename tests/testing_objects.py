@@ -55,27 +55,29 @@ from crawler.constants import (
     MLWH_SOURCE,
     MLWH_UPDATED_AT,
     PLATE_EVENT_DESTINATION_CREATED,
-    RABBITMQ_FIELD_COG_UK_ID,
-    RABBITMQ_FIELD_FIT_TO_PICK,
-    RABBITMQ_FIELD_LAB_ID,
-    RABBITMQ_FIELD_MESSAGE_CREATE_DATE,
-    RABBITMQ_FIELD_MESSAGE_UUID,
-    RABBITMQ_FIELD_MUST_SEQUENCE,
-    RABBITMQ_FIELD_PLATE,
-    RABBITMQ_FIELD_PLATE_BARCODE,
-    RABBITMQ_FIELD_PLATE_COORDINATE,
-    RABBITMQ_FIELD_PREFERENTIALLY_SEQUENCE,
-    RABBITMQ_FIELD_RESULT,
-    RABBITMQ_FIELD_RNA_ID,
-    RABBITMQ_FIELD_ROOT_SAMPLE_ID,
-    RABBITMQ_FIELD_SAMPLE_UUID,
-    RABBITMQ_FIELD_SAMPLES,
-    RABBITMQ_FIELD_TESTED_DATE,
     RESULT_VALUE_NEGATIVE,
     RESULT_VALUE_POSITIVE,
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
 )
+from crawler.rabbit.messages.create_plate_message import FIELD_COG_UK_ID as CREATE_PLATE_COG_UK_ID
+from crawler.rabbit.messages.create_plate_message import FIELD_FIT_TO_PICK as CREATE_PLATE_FIT_TO_PICK
+from crawler.rabbit.messages.create_plate_message import FIELD_LAB_ID as CREATE_PLATE_LAB_ID
+from crawler.rabbit.messages.create_plate_message import FIELD_MESSAGE_CREATE_DATE as CREATE_PLATE_MESSAGE_CREATE_DATE
+from crawler.rabbit.messages.create_plate_message import FIELD_MESSAGE_UUID as CREATE_PLATE_MESSAGE_UUID
+from crawler.rabbit.messages.create_plate_message import FIELD_MUST_SEQUENCE as CREATE_PLATE_MUST_SEQUENCE
+from crawler.rabbit.messages.create_plate_message import FIELD_PLATE as CREATE_PLATE_PLATE
+from crawler.rabbit.messages.create_plate_message import FIELD_PLATE_BARCODE as CREATE_PLATE_PLATE_BARCODE
+from crawler.rabbit.messages.create_plate_message import FIELD_PLATE_COORDINATE as CREATE_PLATE_PLATE_COORDINATE
+from crawler.rabbit.messages.create_plate_message import (
+    FIELD_PREFERENTIALLY_SEQUENCE as CREATE_PLATE_PREFERENTIALLY_SEQUENCE,
+)
+from crawler.rabbit.messages.create_plate_message import FIELD_RESULT as CREATE_PLATE_RESULT
+from crawler.rabbit.messages.create_plate_message import FIELD_RNA_ID as CREATE_PLATE_RNA_ID
+from crawler.rabbit.messages.create_plate_message import FIELD_ROOT_SAMPLE_ID as CREATE_PLATE_ROOT_SAMPLE_ID
+from crawler.rabbit.messages.create_plate_message import FIELD_SAMPLE_UUID as CREATE_PLATE_SAMPLE_UUID
+from crawler.rabbit.messages.create_plate_message import FIELD_SAMPLES as CREATE_PLATE_SAMPLES
+from crawler.rabbit.messages.create_plate_message import FIELD_TESTED_DATE as CREATE_PLATE_TESTED_DATE
 
 TESTING_SAMPLES: List[Dict[str, Union[str, bool, ObjectId]]] = [
     {
@@ -188,7 +190,7 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool, datetime]]] =
         FIELD_SOURCE: "test1",
         FIELD_RESULT: "Negative",
         FIELD_PLATE_BARCODE: "123",
-        FIELD_ROOT_SAMPLE_ID: "MCM003",
+        FIELD_ROOT_SAMPLE_ID: "MCM004",
         FIELD_FILTERED_POSITIVE: False,
         FIELD_FILTERED_POSITIVE_TIMESTAMP: "2020-01-01T00:00:00.000Z",
         FIELD_FILTERED_POSITIVE_VERSION: "v0",
@@ -199,7 +201,7 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool, datetime]]] =
         FIELD_SOURCE: "test1",
         FIELD_RESULT: RESULT_VALUE_POSITIVE,
         FIELD_PLATE_BARCODE: "123",
-        FIELD_ROOT_SAMPLE_ID: "MCM003",
+        FIELD_ROOT_SAMPLE_ID: "MCM005",
         FIELD_CREATED_AT: dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) - timedelta(days=1),
     },
     {
@@ -207,7 +209,7 @@ FILTERED_POSITIVE_TESTING_SAMPLES: List[Dict[str, Union[str, bool, datetime]]] =
         FIELD_SOURCE: "test2",
         FIELD_RESULT: RESULT_VALUE_POSITIVE,
         FIELD_PLATE_BARCODE: "456",
-        FIELD_ROOT_SAMPLE_ID: "MCM004",
+        FIELD_ROOT_SAMPLE_ID: "MCM006",
         FIELD_CREATED_AT: dateutil.parser.parse(FILTERED_POSITIVE_FIELDS_SET_DATE) - timedelta(days=2),
     },
 ]
@@ -672,48 +674,49 @@ MLWH_SAMPLE_COMPLETE = {
     MLWH_UPDATED_AT: datetime.utcnow(),
 }
 
+
 CREATE_PLATE_MESSAGE = {
-    RABBITMQ_FIELD_MESSAGE_UUID: b"b01aa0ad-7b19-4f94-87e9-70d74fb8783c",
-    RABBITMQ_FIELD_MESSAGE_CREATE_DATE: datetime.utcnow(),
-    RABBITMQ_FIELD_PLATE: {
-        RABBITMQ_FIELD_LAB_ID: "CPTD",
-        RABBITMQ_FIELD_PLATE_BARCODE: "PLATE-001",
-        RABBITMQ_FIELD_SAMPLES: [
+    CREATE_PLATE_MESSAGE_UUID: b"CREATE_PLATE_UUID",
+    CREATE_PLATE_MESSAGE_CREATE_DATE: datetime.utcnow(),
+    CREATE_PLATE_PLATE: {
+        CREATE_PLATE_LAB_ID: "CPTD",
+        CREATE_PLATE_PLATE_BARCODE: "PLATE-001",
+        CREATE_PLATE_SAMPLES: [
             {
-                RABBITMQ_FIELD_SAMPLE_UUID: b"0aae6004-8e01-4f7a-9d50-91c51052813f",
-                RABBITMQ_FIELD_ROOT_SAMPLE_ID: "R00T-S4MPL3-ID1",
-                RABBITMQ_FIELD_RNA_ID: "RN4-1D-1",
-                RABBITMQ_FIELD_COG_UK_ID: "C0G-UK-ID-1",
-                RABBITMQ_FIELD_PLATE_COORDINATE: "A1",
-                RABBITMQ_FIELD_PREFERENTIALLY_SEQUENCE: False,
-                RABBITMQ_FIELD_MUST_SEQUENCE: False,
-                RABBITMQ_FIELD_FIT_TO_PICK: True,
-                RABBITMQ_FIELD_RESULT: "positive",
-                RABBITMQ_FIELD_TESTED_DATE: datetime(2022, 4, 10, 11, 45, 25),
+                CREATE_PLATE_SAMPLE_UUID: b"UUID_001",
+                CREATE_PLATE_ROOT_SAMPLE_ID: "R00T-S4MPL3-ID1",
+                CREATE_PLATE_RNA_ID: "RN4-1D-1",
+                CREATE_PLATE_COG_UK_ID: "C0G-UK-ID-1",
+                CREATE_PLATE_PLATE_COORDINATE: "A1",
+                CREATE_PLATE_PREFERENTIALLY_SEQUENCE: False,
+                CREATE_PLATE_MUST_SEQUENCE: False,
+                CREATE_PLATE_FIT_TO_PICK: True,
+                CREATE_PLATE_RESULT: "positive",
+                CREATE_PLATE_TESTED_DATE: datetime(2022, 4, 10, 11, 45, 25),
             },
             {
-                RABBITMQ_FIELD_SAMPLE_UUID: b"a9071f9c-0e3c-42c9-bef2-1045e827f9df",
-                RABBITMQ_FIELD_ROOT_SAMPLE_ID: "R00T-S4MPL3-ID2",
-                RABBITMQ_FIELD_RNA_ID: "RN4-1D-2",
-                RABBITMQ_FIELD_PLATE_COORDINATE: "E6",
-                RABBITMQ_FIELD_COG_UK_ID: "C0G-UK-ID-2",
-                RABBITMQ_FIELD_PREFERENTIALLY_SEQUENCE: False,
-                RABBITMQ_FIELD_MUST_SEQUENCE: True,
-                RABBITMQ_FIELD_FIT_TO_PICK: False,
-                RABBITMQ_FIELD_RESULT: "negative",
-                RABBITMQ_FIELD_TESTED_DATE: datetime(2022, 4, 10, 11, 45, 25),
+                CREATE_PLATE_SAMPLE_UUID: b"UUID_002",
+                CREATE_PLATE_ROOT_SAMPLE_ID: "R00T-S4MPL3-ID2",
+                CREATE_PLATE_RNA_ID: "RN4-1D-2",
+                CREATE_PLATE_PLATE_COORDINATE: "E6",
+                CREATE_PLATE_COG_UK_ID: "C0G-UK-ID-2",
+                CREATE_PLATE_PREFERENTIALLY_SEQUENCE: False,
+                CREATE_PLATE_MUST_SEQUENCE: True,
+                CREATE_PLATE_FIT_TO_PICK: False,
+                CREATE_PLATE_RESULT: "negative",
+                CREATE_PLATE_TESTED_DATE: datetime(2022, 4, 10, 11, 45, 25),
             },
             {
-                RABBITMQ_FIELD_SAMPLE_UUID: b"51275977-1270-4507-8142-7892bb957e67",
-                RABBITMQ_FIELD_ROOT_SAMPLE_ID: "R00T-S4MPL3-ID3",
-                RABBITMQ_FIELD_RNA_ID: "RN4-1D-3",
-                RABBITMQ_FIELD_PLATE_COORDINATE: "H12",
-                RABBITMQ_FIELD_COG_UK_ID: "C0G-UK-ID-3",
-                RABBITMQ_FIELD_PREFERENTIALLY_SEQUENCE: True,
-                RABBITMQ_FIELD_MUST_SEQUENCE: True,
-                RABBITMQ_FIELD_FIT_TO_PICK: True,
-                RABBITMQ_FIELD_RESULT: "void",
-                RABBITMQ_FIELD_TESTED_DATE: datetime(2022, 4, 10, 11, 45, 25),
+                CREATE_PLATE_SAMPLE_UUID: b"UUID_003",
+                CREATE_PLATE_ROOT_SAMPLE_ID: "R00T-S4MPL3-ID3",
+                CREATE_PLATE_RNA_ID: "RN4-1D-3",
+                CREATE_PLATE_PLATE_COORDINATE: "H12",
+                CREATE_PLATE_COG_UK_ID: "C0G-UK-ID-3",
+                CREATE_PLATE_PREFERENTIALLY_SEQUENCE: True,
+                CREATE_PLATE_MUST_SEQUENCE: True,
+                CREATE_PLATE_FIT_TO_PICK: True,
+                CREATE_PLATE_RESULT: "void",
+                CREATE_PLATE_TESTED_DATE: datetime(2022, 4, 10, 11, 45, 25),
             },
         ],
     },
