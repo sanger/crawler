@@ -64,7 +64,7 @@ class UpdateSampleExporter:
 
         return self.__mongo_db
 
-    def _validate_mongo_properties(self, session: ClientSession) -> ExportResult:
+    def _validate_mongo_properties(self, session: ClientSession) -> None:
         try:
             sample_uuid = self._message.sample_uuid
             message_create_date = self._message.message_create_date
