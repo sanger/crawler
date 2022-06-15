@@ -34,6 +34,7 @@ class UpdateSampleExporter:
         self._config = config
 
         self._plate_barcode = None
+        self._plate_missing_in_dart = False
 
     def verify_sample_in_mongo(self):
         with self._mongo_db.client.start_session() as session:
@@ -158,25 +159,19 @@ class UpdateSampleExporter:
         try:
             plate_state = get_dart_plate_state(sql_server_connection.cursor(), str(self._plate_barcode))
 
-            if plate_state == DART_STATE_PENDING:
-                return True
-
-            if plate_state == DART_STATE_NO_PLATE:
-                self._message.add_error(
-                    UpdateSampleError(
-                        type=ErrorType.ExporterPlateNotInDART,
-                        origin=RABBITMQ_UPDATE_FEEDBACK_ORIGIN_ROOT,
-                        description=(
-                            f"Sample is on plate with barcode '{self._plate_barcode}' which is missing from DART. "
-                            "This shouldn't be possible unless a previous create message was not inserted into "
-                            "DART correctly."
-                        ),
-                    )
-                )
+            if plate_state not in (DART_STATE_NO_PLATE, DART_STATE_PENDING):
+                self._add_plate_already_picked_error()
                 return False
 
-            self._add_plate_already_picked_error()
-            return False
+            if plate_state == DART_STATE_NO_PLATE:
+                self._plate_missing_in_dart = True
+                LOGGER.critical(
+                    f"DART database was queried to check the state of plate with barcode '{self._plate_barcode}' but "
+                    "the plate does not exist. Manual transfer of this plate and its samples from Mongo to DART "
+                    "will be needed."
+                )
+
+            return True
         except Exception as ex:
             LOGGER.exception(ex)
             raise TransientRabbitError("Error querying the DART database to check source plate state.")
