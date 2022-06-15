@@ -42,18 +42,9 @@ class UpdateSampleExporter:
             finally:
                 self._mongo_db.client.close()
 
-    def verify_plate_status(self):
+    def verify_plate_state(self):
         self._verify_plate_barcode_is_set()
-        if self._does_cherrytrack_source_plate_exist() or self._is_dart_source_plate_picked():
-            self._message.add_error(
-                UpdateSampleError(
-                    type=ErrorType.ExporterPlateAlreadyPicked,
-                    origin=RABBITMQ_UPDATE_FEEDBACK_ORIGIN_ROOT,
-                    description=(
-                        f"Sample is on plate with barcode '{self._plate_barcode}' which has already been picked."
-                    ),
-                )
-            )
+        self._verify_plate_not_in_cherrytrack() and self._verify_plate_state_in_dart()
 
     def update_mongo(self):
         with self._mongo_db.client.start_session() as session:
@@ -132,27 +123,60 @@ class UpdateSampleExporter:
                 "was not called first in the exporter."
             )
 
-    def _does_cherrytrack_source_plate_exist(self):
+    def _add_plate_already_picked_error(self):
+        self._message.add_error(
+            UpdateSampleError(
+                type=ErrorType.ExporterPlateAlreadyPicked,
+                origin=RABBITMQ_UPDATE_FEEDBACK_ORIGIN_ROOT,
+                description=f"Sample is on plate with barcode '{self._plate_barcode}' which has already been picked.",
+            )
+        )
+
+    def _verify_plate_not_in_cherrytrack(self):
         LOGGER.info("Checking for source plate in Cherrytrack")
 
         try:
             cherrytrack_url = f"{self._config.CHERRYTRACK_BASE_URL}/source-plates/{self._plate_barcode}"
             response = requests.get(cherrytrack_url)
-            return response.status_code == HTTPStatus.OK
+
+            if response.status_code == HTTPStatus.OK:
+                self._add_plate_already_picked_error()
+                return False
+
+            return True
         except Exception:
             raise TransientRabbitError(
                 f"Unable to make a request to Cherrytrack for plate with barcode {self._plate_barcode}."
             )
 
-    def _is_dart_source_plate_picked(self):
+    def _verify_plate_state_in_dart(self):
         LOGGER.info("Checking source plate state in DART")
 
         if (sql_server_connection := create_dart_sql_server_conn(self._config)) is None:
             raise TransientRabbitError("Error connecting to the DART database to check source plate state.")
 
         try:
-            plate_state = get_dart_plate_state(sql_server_connection.cursor(), self._plate_barcode)
-            return plate_state not in (DART_STATE_NO_PLATE, DART_STATE_PENDING)
+            plate_state = get_dart_plate_state(sql_server_connection.cursor(), str(self._plate_barcode))
+
+            if plate_state == DART_STATE_PENDING:
+                return True
+
+            if plate_state == DART_STATE_NO_PLATE:
+                self._message.add_error(
+                    UpdateSampleError(
+                        type=ErrorType.ExporterPlateNotInDART,
+                        origin=RABBITMQ_UPDATE_FEEDBACK_ORIGIN_ROOT,
+                        description=(
+                            f"Sample is on plate with barcode '{self._plate_barcode}' which is missing from DART. "
+                            "This shouldn't be possible unless a previous create message was not inserted into "
+                            "DART correctly."
+                        ),
+                    )
+                )
+                return False
+
+            self._add_plate_already_picked_error()
+            return False
         except Exception as ex:
             LOGGER.exception(ex)
             raise TransientRabbitError("Error querying the DART database to check source plate state.")

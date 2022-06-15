@@ -34,7 +34,7 @@ class UpdateSampleProcessor(BaseProcessor):
             if not update_message.has_errors:
                 exporter.verify_sample_in_mongo()
             if not update_message.has_errors:
-                exporter.verify_plate_status()
+                exporter.verify_plate_state()
             if not update_message.has_errors:
                 # TODO: Export updates to Mongo
                 pass
