@@ -36,8 +36,7 @@ class UpdateSampleProcessor(BaseProcessor):
             if not update_message.has_errors:
                 exporter.verify_plate_state()
             if not update_message.has_errors:
-                # TODO: Export updates to Mongo
-                pass
+                exporter.update_mongo()
         except TransientRabbitError as ex:
             LOGGER.error(f"Transient error while processing message: {ex.message}")
             raise  # Cause the consumer to restart and try this message again.  Ideally we will delay the consumer.
@@ -57,7 +56,7 @@ class UpdateSampleProcessor(BaseProcessor):
         if update_message.has_errors:
             return False  # Errors up to this point mean we should send the message to dead-letters.
 
-        # TODO: Export updates to DART
+        exporter.update_dart()
 
         return True  # The message has been processed whether DART worked or not.
 
