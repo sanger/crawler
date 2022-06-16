@@ -50,6 +50,12 @@ def validator():
 
 
 @pytest.fixture
+def exporter():
+    with patch("crawler.processing.update_sample_processor.UpdateSampleExporter") as exporter:
+        yield exporter
+
+
+@pytest.fixture
 def update_sample_message():
     return UpdateSampleMessage(copy.deepcopy(UPDATE_SAMPLE_MESSAGE))
 
@@ -69,7 +75,7 @@ def message_wrapper_class():
 
 
 @pytest.fixture
-def subject(config, avro_encoder, validator):
+def subject(config, avro_encoder, exporter, validator):
     return UpdateSampleProcessor(MagicMock(), MagicMock(), config)
 
 
