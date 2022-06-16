@@ -39,7 +39,7 @@ class UpdateSampleProcessor(BaseProcessor):
                 exporter.update_mongo()
         except TransientRabbitError as ex:
             LOGGER.error(f"Transient error while processing message: {ex.message}")
-            raise  # Cause the consumer to restart and try this message again.  Ideally we will delay the consumer.
+            raise  # Cause the consumer to restart and try this message again.
         except Exception as ex:
             LOGGER.error(f"Unhandled error while processing message: {type(ex)} {str(ex)}")
             update_message.add_error(
