@@ -9,6 +9,7 @@ from migrations import (
     update_filtered_positives,
     update_legacy_filtered_positives,
     update_mlwh_with_legacy_samples,
+    back_populate_source_plate_and_sample_uuids,
 )
 
 config, settings_module = get_config("")
@@ -27,6 +28,7 @@ logging.config.dictConfig(config.LOGGING)
 # python run_migration.py update_mlwh_with_legacy_samples 200115_1200 200216_0900
 # python run_migration.py update_mlwh_and_dart_with_legacy_samples 200115_1200 200216_0900
 # python run_migration.py update_filtered_positives
+# python run_migration.py back_populate_source_plate_and_sample_uuids ./mydir/mybarcodesfile.csv
 ##
 
 print("Migration names:")
@@ -35,6 +37,7 @@ print("* update_mlwh_and_dart_with_legacy_samples")
 print("* update_filtered_positives")
 print("* update_legacy_filtered_positives")
 print("* back_populate_uuids")
+print("* back_populate_source_plate_and_sample_uuids")
 
 
 def migration_update_mlwh_with_legacy_samples():
@@ -103,6 +106,17 @@ def migration_update_legacy_filtered_positives():
     print("Running update_legacy_filtered_positives migration")
     update_legacy_filtered_positives.run(s_start_datetime=s_start_datetime, s_end_datetime=s_end_datetime)
 
+def migration_back_populate_source_plate_and_sample_uuids():
+    if not len(sys.argv) == 3:
+        print(
+            "Please add a filepath argument to the csv file of barcodes for this migration "
+            "(e.g. ./mydir/myfile.csv), aborting"
+        )
+        return
+
+    s_filepath = sys.argv[2]
+    print("Running back_populate_source_plate_and_sample_uuids migration")
+    back_populate_source_plate_and_sample_uuids.run(s_filepath=s_filepath)
 
 def migration_by_name(migration_name):
     switcher = {
