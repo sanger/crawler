@@ -85,7 +85,7 @@ class UpdateSampleMessage(BaseMessage):
         return MessageField(FIELD_UPDATED_FIELDS, self._updated_fields)
 
     def add_error(self, update_error):
-        LOGGER.error(f"Error in create plate message: {update_error.description}")
+        LOGGER.error(f"Error in update sample message: {update_error.description}")
         self.add_textual_error(update_error.description)
         self._feedback_errors.append(
             UpdateFeedbackError(
