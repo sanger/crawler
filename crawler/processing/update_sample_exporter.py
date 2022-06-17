@@ -37,11 +37,11 @@ class UpdateSampleExporter:
         self._plate_missing_in_dart = False
 
     def verify_sample_in_mongo(self):
-        with self._mongo_db.client.start_session() as session:
-            try:
+        try:
+            with self._mongo_db.client.start_session() as session:
                 self._validate_mongo_properties(session)
-            finally:
-                self._mongo_db.client.close()
+        finally:
+            self._mongo_db.client.close()
 
     def verify_plate_state(self):
         self._verify_plate_barcode_is_set()
