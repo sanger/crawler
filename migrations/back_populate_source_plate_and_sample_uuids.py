@@ -6,16 +6,19 @@ import os
 import stat
 # from typing import Any, Dict, Final, Iterator, List, Optional, Set, Tuple, cast
 from typing import List
+from csv import DictReader
 
 # from typing import Any, Dict, Iterator, List, Tuple
 
 # from bson.objectid import ObjectId
 from pymongo.collection import Collection
+from pymongo.database import Database
 
 from crawler.constants import (
     COLLECTION_SOURCE_PLATES,
     COLLECTION_SAMPLES,
     FIELD_MONGODB_ID,
+    FIELD_MONGO_LAB_ID,
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_LH_SAMPLE_UUID,
     FIELD_PLATE_BARCODE,
@@ -39,6 +42,13 @@ Assumptions:
 1. checked source plates do not already have lh_source_plate_uuid or lh_sample_uuid in either
 the mongo 'source_plate' or 'samples' collections, or in the MLWH lighthouse_sample table
 2. the samples do not have any duplicates for the same RNA Id in either mongo or MLWH
+
+Csv file format: 'barcode' as the header on the first line, then one source plate barcode per line
+e.g.
+barcode
+AP-12345678
+AP-23456789
+etc.
 
 Steps:
 1.  validate the file in the supplied filepath
@@ -89,21 +99,58 @@ def validate_args(
 
     return filepath
 
+# Validate whether the filepath supplied leads to a valid csv file
 def valid_filepath(s_filepath: str) -> bool:
-  # TODO
   mode = os.lstat(s_filepath).st_mode
   return is_csv_file(mode, s_filepath)
 
+# extract barcodes from the csv file
 def extract_barcodes(config: Config, filepath: str) -> List[str]:
-  # TODO
-  extracted_barcodes = ['GLS000001', 'GLS000002']
+  extracted_barcodes : List[str] = []
+  try:
+     with open(filepath, newline="") as csvfile:
+       csvreader = DictReader(csvfile)
+       for row in csvreader:
+         extracted_barcodes.append(row['barcode'])
+
+  except Exception as e:
+        logger.critical("Error reading source barcodes file " f"{filepath}")
+        logger.exception(e)
+
   return extracted_barcodes
 
 def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]):
   for source_plate_barcode in source_plate_barcodes:
     logger.info(f"Processing source plate barcode {source_plate_barcode}")
 
-  # TODO
+    with create_mongo_client(config) as client:
+      mongo_db = get_mongo_db(config, client)
+
+      samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
+
+      # List[SampleDoc]
+      sample_docs = get_samples_for_source_plate(samples_collection, source_plate_barcode)
+
+      # iterate through samples
+      current_source_plate_uuid = None
+      for sample_doc in sample_docs:
+        # will every sample doc have a plate_barcode and lab id?
+        logger.info(f"Sample in well {sample_doc['coordinate']}")
+
+        if current_source_plate_uuid == None:
+          logger.info("setting source plate uuid")
+          # TODO extract lab id from sample doc
+          lab_id = sample_doc[FIELD_MONGO_LAB_ID]
+          logger.info(f"lab id = {lab_id}")
+          # TODO generate source_plate_uuid and create source_plate record
+          current_source_plate_uuid = create_mongo_source_plate_record(mongo_db, source_plate_barcode, lab_id)
+
+        # TODO generate lh_sample_uuid
+
+        # TODO update sample in Mongo ‘samples’ to set lh_source_plate uuid, lh_sample_uuid, and updated_timestamp
+
+        # TODO update sample in MLWH 'lighthouse_samples' to set lh_source_plate, lh_sample_uuid, and updated_timestamp
+
   return
 
 def is_csv_file(mode: int, file_name: str) -> bool:
@@ -113,15 +160,15 @@ def is_csv_file(mode: int, file_name: str) -> bool:
 
     return False
 
-def create_mongo_source_plate_record(source_plate_barcode: str, lab_id: str) -> str:
+def create_mongo_source_plate_record(mongo_db: Database, source_plate_barcode: str, lab_id: str) -> str:
     try:
-        source_plates_collection = get_mongo_collection(self.get_db(), COLLECTION_SOURCE_PLATES)
+        source_plates_collection = get_mongo_collection(mongo_db, COLLECTION_SOURCE_PLATES)
 
         new_plate_doc = create_source_plate_doc(source_plate_barcode, lab_id)
         new_plate_uuid = new_plate_doc[FIELD_LH_SOURCE_PLATE_UUID]
 
         logger.debug("Attempting to insert new source plate for barcode " f"{source_plate_barcode}")
-        source_plates_collection.insert(new_plate_doc)
+        source_plates_collection.insert_one(new_plate_doc)
 
         return new_plate_uuid
 

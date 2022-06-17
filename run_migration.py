@@ -116,7 +116,7 @@ def migration_back_populate_source_plate_and_sample_uuids():
 
     s_filepath = sys.argv[2]
     print("Running back_populate_source_plate_and_sample_uuids migration")
-    back_populate_source_plate_and_sample_uuids.run(s_filepath=s_filepath)
+    back_populate_source_plate_and_sample_uuids.run(config, s_filepath=s_filepath)
 
 def migration_by_name(migration_name):
     switcher = {
@@ -125,6 +125,7 @@ def migration_by_name(migration_name):
         "update_filtered_positives": migration_update_filtered_positives,
         "update_legacy_filtered_positives": migration_update_legacy_filtered_positives,
         "back_populate_uuids": migration_back_populate_uuids,
+        "back_populate_source_plate_and_sample_uuids": migration_back_populate_source_plate_and_sample_uuids,
     }
     # Get the function from switcher dictionary
     func = switcher.get(migration_name, lambda: print("Invalid migration name, aborting"))
