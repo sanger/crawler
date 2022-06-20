@@ -147,14 +147,16 @@ class UpdateSampleExporter:
             return True
         except Exception:
             raise TransientRabbitError(
-                f"Unable to make a request to Cherrytrack for plate with barcode {self._plate_barcode}."
+                f"Unable to make a request to Cherrytrack for plate with barcode '{self._plate_barcode}'."
             )
 
     def _verify_plate_state_in_dart(self):
         LOGGER.info("Checking source plate state in DART")
 
         if (sql_server_connection := create_dart_sql_server_conn(self._config)) is None:
-            raise TransientRabbitError("Error connecting to the DART database to check source plate state.")
+            raise TransientRabbitError(
+                f"Error connecting to the DART database to check state for plate with barcode '{self._plate_barcode}'."
+            )
 
         try:
             plate_state = get_dart_plate_state(sql_server_connection.cursor(), str(self._plate_barcode))
@@ -174,6 +176,8 @@ class UpdateSampleExporter:
             return True
         except Exception as ex:
             LOGGER.exception(ex)
-            raise TransientRabbitError("Error querying the DART database to check source plate state.")
+            raise TransientRabbitError(
+                f"Error querying the DART database to check state for plate with barcode '{self._plate_barcode}'."
+            )
         finally:
             sql_server_connection.close()
