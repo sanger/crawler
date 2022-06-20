@@ -1,15 +1,12 @@
-import csv
 import logging
 import logging.config
 import os
 import stat
 from csv import DictReader
 from datetime import datetime
-# from typing import Any, Dict, Final, Iterator, List, Optional, Set, Tuple, cast
 from typing import List
-from uuid import uuid4
+from uuid import uuid
 
-# from bson.objectid import ObjectId
 from pymongo.collection import Collection
 from pymongo.database import Database
 
@@ -17,22 +14,13 @@ from crawler.constants import (COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES,
                                FIELD_LH_SAMPLE_UUID,
                                FIELD_LH_SOURCE_PLATE_UUID, FIELD_MONGO_LAB_ID,
                                FIELD_MONGODB_ID, FIELD_PLATE_BARCODE,
-                               FIELD_UPDATED_AT, MLWH_LH_SAMPLE_UUID,
-                               MLWH_LH_SOURCE_PLATE_UUID, MLWH_MONGODB_ID,
-                               MLWH_UPDATED_AT, MONGO_DATETIME_FORMAT)
+                               FIELD_UPDATED_AT)
 from crawler.db.mongo import (create_mongo_client, get_mongo_collection,
                               get_mongo_db)
-from crawler.db.mysql import (create_mysql_connection,
-                              run_mysql_executemany_query)
-# from crawler.db.mysql import create_mysql_connection
-# from crawler.db.mysql import insert_or_update_samples_in_mlwh
-from crawler.helpers.general_helpers import (create_source_plate_doc,
-                                             map_mongo_to_sql_common)
+from crawler.db.mysql import (create_mysql_connection, run_mysql_executemany_query)
+from crawler.helpers.general_helpers import (create_source_plate_doc)
 from crawler.sql_queries import SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID
-from crawler.types import Config, SampleDoc, SourcePlateDoc
-
-# from typing import Any, Dict, Iterator, List, Tuple
-
+from crawler.types import Config, SampleDoc
 
 
 logger = logging.getLogger(__name__)
@@ -81,9 +69,16 @@ def run(config: Config, s_filepath: str) -> None:
     update_uuids_mongo_and_mlwh(config=config, source_plate_barcodes=source_plate_barcodes)
 
 
-def validate_args(
-    config: Config, s_filepath: str
-) -> str:
+def validate_args(config: Config, s_filepath: str) -> str:
+    """Validate the supplied arguments
+
+    Arguments:
+        config {Config} -- application config specifying database details
+        s_filepath {str} -- the filepath of the csv file containing the list of source plate barcodes
+
+    Returns:
+        str -- the filepath if valid
+    """
     base_msg = "Aborting run: "
     if not config:
         msg = f"{base_msg} Config required"
@@ -99,13 +94,33 @@ def validate_args(
 
     return filepath
 
-# Validate whether the filepath supplied leads to a valid csv file
-def valid_filepath(s_filepath: str) -> bool:
-    mode = os.lstat(s_filepath).st_mode
-    return is_csv_file(mode, s_filepath)
 
-# extract barcodes from the csv file
+def valid_filepath(s_filepath: str) -> bool:
+    """Determine if the filepath argument supplied corresponds to a csv file
+
+    Arguments:
+        s_filepath {str} -- the filepath of the csv file containing the list of source plate barcodes
+
+    Returns:
+        bool -- whether the filepath corresponds to a csv file
+    """
+    if stat.S_ISREG(os.lstat(s_filepath).st_mode):
+        file_name, file_extension = os.path.splitext(file_name)
+        return file_extension == ".csv"
+
+    return False
+
+
 def extract_barcodes(config: Config, filepath: str) -> List[str]:
+    """Extract the list of barcodes from the csv file
+
+    Arguments:
+        config {Config} -- application config specifying database details
+        filepath {str} -- the filepath of the csv file containing the list of source plate barcodes
+
+    Returns:
+        List[str] -- list of source plate barcodes
+    """
     extracted_barcodes : List[str] = []
     try:
         with open(filepath, newline="") as csvfile:
@@ -118,6 +133,7 @@ def extract_barcodes(config: Config, filepath: str) -> List[str]:
           logger.exception(e)
 
     return extracted_barcodes
+
 
 def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]):
     """Updates source plate and sample uuids in both mongo and mlwh
@@ -196,6 +212,7 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
 
     return
 
+
 def update_mongo_sample_uuid_and_source_plate_uuid(samples_collection: Collection, sample_doc: SampleDoc) -> bool:
     """Updates a sample in the Mongo samples collection
 
@@ -247,12 +264,6 @@ def update_mlwh_sample_uuid_and_source_plate_uuid(config: Config, sample_doc: Sa
     else:
         return False
 
-def is_csv_file(mode: int, file_name: str) -> bool:
-    if stat.S_ISREG(mode):
-        file_name, file_extension = os.path.splitext(file_name)
-        return file_extension == ".csv"
-
-    return False
 
 def create_mongo_source_plate_record(mongo_db: Database, source_plate_barcode: str, lab_id: str) -> str:
     """Creates a mongo source_plate collection row
@@ -279,6 +290,7 @@ def create_mongo_source_plate_record(mongo_db: Database, source_plate_barcode: s
     except Exception as e:
         logger.critical(f"Error inserting a source plate row for barcode {source_plate_barcode} and lab id {lab_id}")
         logger.exception(e)
+
 
 def get_samples_for_source_plate(samples_collection: Collection, source_plate_barcode: str) -> List[SampleDoc]:
     """Fetches the mongo samples collection rows for a given plate barcode
