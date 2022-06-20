@@ -1,39 +1,39 @@
 import csv
-from datetime import datetime
 import logging
 import logging.config
 import os
 import stat
+from csv import DictReader
+from datetime import datetime
 # from typing import Any, Dict, Final, Iterator, List, Optional, Set, Tuple, cast
 from typing import List
-from csv import DictReader
-
-# from typing import Any, Dict, Iterator, List, Tuple
+from uuid import uuid4
 
 # from bson.objectid import ObjectId
 from pymongo.collection import Collection
 from pymongo.database import Database
 
-from crawler.constants import (
-    COLLECTION_SOURCE_PLATES,
-    COLLECTION_SAMPLES,
-    FIELD_MONGODB_ID,
-    FIELD_MONGO_LAB_ID,
-    FIELD_LH_SOURCE_PLATE_UUID,
-    FIELD_LH_SAMPLE_UUID,
-    FIELD_PLATE_BARCODE,
-    FIELD_UPDATED_AT,
-    MLWH_MONGODB_ID,
-    MLWH_LH_SOURCE_PLATE_UUID,
-    MLWH_LH_SAMPLE_UUID,
-    MLWH_UPDATED_AT,
-    MONGO_DATETIME_FORMAT,
-)
-from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.constants import (COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES,
+                               FIELD_LH_SAMPLE_UUID,
+                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_MONGO_LAB_ID,
+                               FIELD_MONGODB_ID, FIELD_PLATE_BARCODE,
+                               FIELD_UPDATED_AT, MLWH_LH_SAMPLE_UUID,
+                               MLWH_LH_SOURCE_PLATE_UUID, MLWH_MONGODB_ID,
+                               MLWH_UPDATED_AT, MONGO_DATETIME_FORMAT)
+from crawler.db.mongo import (create_mongo_client, get_mongo_collection,
+                              get_mongo_db)
+from crawler.db.mysql import (create_mysql_connection,
+                              run_mysql_executemany_query)
 # from crawler.db.mysql import create_mysql_connection
 # from crawler.db.mysql import insert_or_update_samples_in_mlwh
-from crawler.helpers.general_helpers import create_source_plate_doc
+from crawler.helpers.general_helpers import (create_source_plate_doc,
+                                             map_mongo_to_sql_common)
+from crawler.sql_queries import SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID
 from crawler.types import Config, SampleDoc, SourcePlateDoc
+
+# from typing import Any, Dict, Iterator, List, Tuple
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -145,13 +145,52 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
           # TODO generate source_plate_uuid and create source_plate record
           current_source_plate_uuid = create_mongo_source_plate_record(mongo_db, source_plate_barcode, lab_id)
 
+        sample_doc[FIELD_LH_SOURCE_PLATE_UUID] = current_source_plate_uuid
         # TODO generate lh_sample_uuid
+        if not sample_doc[FIELD_LH_SAMPLE_UUID]:
+            sample_doc[FIELD_LH_SAMPLE_UUID] = uuid4()
 
         # TODO update sample in Mongo ‘samples’ to set lh_source_plate uuid, lh_sample_uuid, and updated_timestamp
+        mongo_sample = samples_collection.find_one_and_update(
+            filter={
+                FIELD_MONGODB_ID: sample_doc[FIELD_MONGODB_ID],
+            },
+            update={
+                "$set": {
+                    FIELD_LH_SAMPLE_UUID: sample_doc[FIELD_LH_SAMPLE_UUID],
+                    FIELD_LH_SOURCE_PLATE_UUID: sample_doc[FIELD_LH_SOURCE_PLATE_UUID],
+                    FIELD_UPDATED_AT: datetime.utcnow(),
+                }
+            },
+        )
+
+        update_mlwh_sample_uuid_and_source_plate_uuid(config, sample_doc)
+
 
         # TODO update sample in MLWH 'lighthouse_samples' to set lh_source_plate, lh_sample_uuid, and updated_timestamp
 
   return
+
+
+
+def update_mlwh_sample_uuid_and_source_plate_uuid(config: Config, sample_doc: SampleDoc) -> bool:
+    """Bulk updates sample filtered positive fields in the MLWH database
+
+    Arguments:
+        config {Config} -- application config specifying database details
+        samples {List[Dict[str, str]]} -- the list of samples whose filtered positive fields should be updated
+
+    Returns:
+        bool -- whether the updates completed successfully
+    """
+    mysql_conn = create_mysql_connection(config, False)
+
+    if mysql_conn is not None and mysql_conn.is_connected():
+        mlwh_samples = [map_mongo_to_sql_common(sample) for sample in samples]
+        run_mysql_executemany_query(mysql_conn, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID, sample_doc)
+        return True
+    else:
+        return False
 
 def is_csv_file(mode: int, file_name: str) -> bool:
     if stat.S_ISREG(mode):
