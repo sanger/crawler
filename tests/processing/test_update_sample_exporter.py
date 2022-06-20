@@ -210,9 +210,7 @@ def test_verify_plate_state_raises_transient_error_when_dart_connection_cannot_b
 
 
 @responses.activate
-def test_verify_plate_state_raises_transient_error_when_dart_connection_cannot_be_made(
-    subject, config, dart_connection
-):
+def test_verify_plate_state_raises_transient_error_when_dart_query_cannot_be_made(subject, config, dart_connection):
     set_up_response_for_cherrytrack_plate(subject, config, HTTPStatus.NOT_FOUND)
 
     with patch("crawler.processing.update_sample_exporter.get_dart_plate_state") as get_plate_state:
