@@ -1,10 +1,7 @@
-from datetime import datetime
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import patch
 
 import pytest
 
-from crawler.constants import FIELD_LH_SAMPLE_UUID
-from crawler.helpers.general_helpers import get_config
 from migrations import back_populate_source_plate_and_sample_uuids
 from migrations.back_populate_source_plate_and_sample_uuids import extract_barcodes
 
@@ -40,7 +37,7 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_not_raise_exception(
     try:
         back_populate_source_plate_and_sample_uuids.run(config, filepath)
     except Exception as exc:
-        assert False, f"back_populate raised { exc }"
+        raise AssertionError(exc)
 
 
 def test_back_populate_source_plate_uuid_and_sample_uuid_populates_sample_uuid(

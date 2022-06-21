@@ -65,7 +65,7 @@ services:
       - "8081:8081"
     volumes:
       - redpanda-volume:/var/lib/redpanda/data
-    mem_limit: 250m
+    #mem_limit: 250m
     command:
       - start
       - --overprovisioned

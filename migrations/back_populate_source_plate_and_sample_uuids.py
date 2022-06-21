@@ -4,7 +4,7 @@ import os
 import stat
 from csv import DictReader
 from datetime import datetime
-from typing import List
+from typing import Dict, List, Optional, cast
 from uuid import uuid4
 
 from pymongo.collection import Collection
@@ -135,7 +135,7 @@ def extract_barcodes(config: Config, filepath: str) -> List[str]:
     return extracted_barcodes
 
 
-def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]):
+def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]) -> None:
     """Updates source plate and sample uuids in both mongo and mlwh
 
     Arguments:
@@ -168,16 +168,16 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
                 # will every sample doc have a plate_barcode and lab id?
                 logger.info(f"Sample in well {sample_doc['coordinate']}")
 
-                if current_source_plate_uuid == None:
+                if current_source_plate_uuid is None:
                     # extract lab id from sample doc
-                    lab_id = sample_doc[FIELD_MONGO_LAB_ID]
+                    lab_id = cast(str, sample_doc[FIELD_MONGO_LAB_ID])
                     logger.info(f"Creating a source_plate collection row with lab id = {lab_id}")
                     # create source_plate record and extract lh_source_plate_uuid for next samples
                     current_source_plate_uuid = create_mongo_source_plate_record(mongo_db, source_plate_barcode, lab_id)
 
                 sample_doc[FIELD_LH_SOURCE_PLATE_UUID] = current_source_plate_uuid
                 # generate an lh_sample_uuid if the sample doesn't have one
-                if not FIELD_LH_SAMPLE_UUID in sample_doc:
+                if FIELD_LH_SAMPLE_UUID not in sample_doc:
                     sample_doc[FIELD_LH_SAMPLE_UUID] = str(uuid4())
 
                 # update sample in Mongo ‘samples’ to set lh_source_plate uuid, lh_sample_uuid, and updated_timestamp
@@ -194,7 +194,8 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
                     logger.critical("Failed to update sample in Mongo for mongo id " f"{sample_doc[FIELD_MONGODB_ID]}")
                     logger.exception(e)
 
-                # update sample in MLWH 'lighthouse_samples' to set lh_source_plate, lh_sample_uuid, and updated_timestamp
+                # update sample in MLWH 'lighthouse_samples' to set lh_source_plate,
+                # lh_sample_uuid, and updated_timestamp
                 sample_doc["_id"] = str(sample_doc["_id"])
                 try:
                     success = update_mlwh_sample_uuid_and_source_plate_uuid(config, sample_doc)
@@ -238,7 +239,7 @@ def update_mongo_sample_uuid_and_source_plate_uuid(samples_collection: Collectio
                 }
             },
         )
-        if mongo_sample == None:
+        if mongo_sample is None:
             return False
         else:
             return True
@@ -246,6 +247,7 @@ def update_mongo_sample_uuid_and_source_plate_uuid(samples_collection: Collectio
     except Exception as e:
         logger.critical("Failed to update sample in mongo for mongo id " f"{sample_doc[FIELD_MONGODB_ID]}")
         logger.exception(e)
+    return False
 
 
 def update_mlwh_sample_uuid_and_source_plate_uuid(config: Config, sample_doc: SampleDoc) -> bool:
@@ -261,13 +263,15 @@ def update_mlwh_sample_uuid_and_source_plate_uuid(config: Config, sample_doc: Sa
     mysql_conn = create_mysql_connection(config, False)
 
     if mysql_conn is not None and mysql_conn.is_connected():
-        run_mysql_executemany_query(mysql_conn, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID, [sample_doc])
+        run_mysql_executemany_query(
+            mysql_conn, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID, [cast(Dict[str, str], sample_doc)]
+        )
         return True
     else:
         return False
 
 
-def create_mongo_source_plate_record(mongo_db: Database, source_plate_barcode: str, lab_id: str) -> str:
+def create_mongo_source_plate_record(mongo_db: Database, source_plate_barcode: str, lab_id: str) -> Optional[str]:
     """Creates a mongo source_plate collection row
 
     Arguments:
@@ -287,11 +291,13 @@ def create_mongo_source_plate_record(mongo_db: Database, source_plate_barcode: s
         logger.debug(f"Attempting to insert new source plate for barcode {source_plate_barcode} and lab id {lab_id}")
         source_plates_collection.insert_one(new_plate_doc)
 
-        return new_plate_uuid
+        return cast(str, new_plate_uuid)
 
     except Exception as e:
         logger.critical(f"Error inserting a source plate row for barcode {source_plate_barcode} and lab id {lab_id}")
         logger.exception(e)
+
+    return None
 
 
 def get_samples_for_source_plate(samples_collection: Collection, source_plate_barcode: str) -> List[SampleDoc]:
