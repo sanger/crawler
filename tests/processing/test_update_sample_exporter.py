@@ -144,13 +144,14 @@ def test_verify_plate_state_adds_message_error_when_plate_in_cherrytrack(subject
 
 
 @responses.activate
-def test_verify_plate_state_raises_transient_error_when_cherrytrack_is_not_responding(subject):
+def test_verify_plate_state_raises_transient_error_when_cherrytrack_is_not_responding(subject, logger):
     subject._plate_barcode = "A_BARCODE"
     # Don't add the cherrytrack endpoint to responses
 
     with pytest.raises(TransientRabbitError) as ex_info:
         subject.verify_plate_state()
 
+    logger.exception.assert_called_once()
     assert "'A_BARCODE'" in ex_info.value.message
 
 
@@ -210,7 +211,9 @@ def test_verify_plate_state_raises_transient_error_when_dart_connection_cannot_b
 
 
 @responses.activate
-def test_verify_plate_state_raises_transient_error_when_dart_query_cannot_be_made(subject, config, dart_connection):
+def test_verify_plate_state_raises_transient_error_when_dart_query_cannot_be_made(
+    subject, config, logger, dart_connection
+):
     set_up_response_for_cherrytrack_plate(subject, config, HTTPStatus.NOT_FOUND)
 
     with patch("crawler.processing.update_sample_exporter.get_dart_plate_state") as get_plate_state:
@@ -218,6 +221,7 @@ def test_verify_plate_state_raises_transient_error_when_dart_query_cannot_be_mad
         with pytest.raises(TransientRabbitError) as ex_info:
             subject.verify_plate_state()
 
+    logger.exception.assert_called_once()
     assert "querying the DART database" in ex_info.value.message
     assert "'A_BARCODE'" in ex_info.value.message
     dart_connection.return_value.close.assert_called_once()
