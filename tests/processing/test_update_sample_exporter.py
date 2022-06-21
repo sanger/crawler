@@ -137,6 +137,7 @@ def test_verify_sample_in_mongo_when_mongo_raises_an_exception(subject, logger):
     assert "'UPDATE_SAMPLE_UUID'" in logger.critical.call_args.args[0]
 
     logger.exception.assert_called_once_with(timeout_error)
+
     assert "'UPDATE_SAMPLE_UUID'" in ex_info.value.message
 
     assert subject._plate_barcode is None
@@ -262,6 +263,7 @@ def test_update_mongo_updates_the_sample(subject, mongo_database, fields, must_s
     subject._message._body[FIELD_SAMPLE][FIELD_UPDATED_FIELDS] = [
         {"name": name, "value": value} for name, value in fields.items()
     ]
+
     subject.update_mongo()
 
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
@@ -276,3 +278,27 @@ def test_update_mongo_updates_the_sample(subject, mongo_database, fields, must_s
         assert FIELD_PREFERENTIALLY_SEQUENCE not in sample.keys()
     else:
         assert sample[FIELD_PREFERENTIALLY_SEQUENCE] == preferentially_sequence
+
+
+def test_update_mongo_logs_info(subject, logger):
+    subject.update_mongo()
+
+    logger.info.assert_called_once()
+    assert "Updating" in logger.info.call_args.args[0]
+
+
+def test_update_mongo_when_connection_fails(subject, logger):
+    exception = Exception("Boom!")
+
+    with patch("crawler.processing.update_sample_exporter.get_mongo_collection") as get_mongo_collection:
+        get_mongo_collection.side_effect = exception
+
+        with pytest.raises(TransientRabbitError) as ex_info:
+            subject.update_mongo()
+
+    logger.critical.assert_called_once()
+    assert "'UPDATE_SAMPLE_UUID'" in logger.critical.call_args.args[0]
+
+    logger.exception.assert_called_once_with(exception)
+
+    assert "'UPDATE_SAMPLE_UUID'" in ex_info.value.message
