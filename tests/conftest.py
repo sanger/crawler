@@ -38,6 +38,7 @@ from tests.testing_objects import (
     MONGO_SAMPLES_WITHOUT_FILTERED_POSITIVE_FIELDS,
     TESTING_PRIORITY_SAMPLES,
     TESTING_SAMPLES,
+    TESTING_SAMPLES_WITH_LAB_ID,
 )
 
 logger = logging.getLogger(__name__)
@@ -172,6 +173,16 @@ def centres_collection_accessor(mongo_database):
 @pytest.fixture
 def testing_samples(samples_collection_accessor):
     result = samples_collection_accessor.insert_many(TESTING_SAMPLES)
+    samples = list(samples_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
+    try:
+        yield samples
+    finally:
+        samples_collection_accessor.delete_many({})
+
+
+@pytest.fixture
+def testing_samples_with_lab_id(samples_collection_accessor):
+    result = samples_collection_accessor.insert_many(TESTING_SAMPLES_WITH_LAB_ID)
     samples = list(samples_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
     try:
         yield samples

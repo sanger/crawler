@@ -1,9 +1,16 @@
 # flake8: noqa
 
-from crawler.constants import (FIELD_COORDINATE, FIELD_PLATE_BARCODE,
-                               FIELD_ROOT_SAMPLE_ID, MLWH_IS_CURRENT,
-                               MLWH_LH_SAMPLE_UUID, MLWH_LH_SOURCE_PLATE_UUID,
-                               MLWH_MONGODB_ID, MLWH_RNA_ID, MLWH_UPDATED_AT)
+from crawler.constants import (
+    FIELD_COORDINATE,
+    FIELD_PLATE_BARCODE,
+    FIELD_ROOT_SAMPLE_ID,
+    MLWH_IS_CURRENT,
+    MLWH_LH_SAMPLE_UUID,
+    MLWH_LH_SOURCE_PLATE_UUID,
+    MLWH_MONGODB_ID,
+    MLWH_RNA_ID,
+    MLWH_UPDATED_AT,
+)
 
 # SQL query to insert multiple rows into the MLWH
 SQL_MLWH_MULTIPLE_INSERT = """
@@ -158,8 +165,8 @@ SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT = (
 SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID = (
     f"UPDATE lighthouse_sample"
     f" SET"
-    f" { MLWH_LH_SAMPLE_UUID } = %(lh_sample_uuid),"
-    f" { MLWH_LH_SOURCE_PLATE_UUID } = %(lh_source_plate_uuid),"
-    f" { MLWH_UPDATED_AT } = %(updated_at),"
-    f" WHERE { MLWH_MONGODB_ID } = %(_id)"
+    f" { MLWH_LH_SAMPLE_UUID } = %(lh_sample_uuid)s,"
+    f" { MLWH_LH_SOURCE_PLATE_UUID } = %(lh_source_plate_uuid)s,"
+    f" { MLWH_UPDATED_AT } = %(updated_at)s"
+    f" WHERE { MLWH_MONGODB_ID } = %(_id)s"
 )
