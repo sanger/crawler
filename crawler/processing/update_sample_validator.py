@@ -11,9 +11,20 @@ class UpdateSampleValidator:
         self._validate_updated_fields()
 
     def _validate_updated_fields(self):
-        """Perform validation that updated fields only contain each possible field once at most."""
+        """Perform validation that updated fields are populated and only contain each possible field once at most."""
         updated_fields = self._message.updated_fields
         field_names = [x.name for x in updated_fields.value]
+
+        if len(field_names) == 0:
+            self._message.add_error(
+                UpdateSampleError(
+                    type=ErrorType.ValidationUnpopulatedField,
+                    origin=RABBITMQ_UPDATE_FEEDBACK_ORIGIN_FIELD,
+                    description="No fields to update have been given.",
+                    field=updated_fields.name,
+                )
+            )
+            return
 
         for duped_name in extract_duplicated_values(field_names):
             self._message.add_error(

@@ -24,7 +24,8 @@ class ErrorType(IntEnum):
     UnhandledProcessingError = 100
 
     # Validation errors: 120 - 159
-    ValidationNonUniqueFieldName = 120
+    ValidationUnpopulatedField = 120
+    ValidationNonUniqueFieldName = 121
 
     # Exporter errors: 160 - 199
     ExporterSampleDoesNotExist = 160
