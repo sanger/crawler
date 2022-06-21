@@ -134,7 +134,7 @@ class UpdateSampleExporter:
         )
 
     def _verify_plate_not_in_cherrytrack(self):
-        LOGGER.info("Checking for source plate in Cherrytrack")
+        LOGGER.info("Checking for source plate in Cherrytrack.")
 
         try:
             cherrytrack_url = f"{self._config.CHERRYTRACK_BASE_URL}/source-plates/{self._plate_barcode}"
@@ -145,13 +145,14 @@ class UpdateSampleExporter:
                 return False
 
             return True
-        except Exception:
+        except Exception as ex:
+            LOGGER.exception(ex)
             raise TransientRabbitError(
                 f"Unable to make a request to Cherrytrack for plate with barcode '{self._plate_barcode}'."
             )
 
     def _verify_plate_state_in_dart(self):
-        LOGGER.info("Checking source plate state in DART")
+        LOGGER.info("Checking source plate state in DART.")
 
         if (sql_server_connection := create_dart_sql_server_conn(self._config)) is None:
             raise TransientRabbitError(
