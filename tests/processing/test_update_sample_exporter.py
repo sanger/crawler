@@ -44,6 +44,37 @@ def subject(update_sample_message, config, dart_connection):
     return UpdateSampleExporter(update_sample_message, config)
 
 
+#####
+# Helper methods
+#####
+
+
+def add_sample_to_mongo(mongo_database, updated_at=None):
+    _, mongo_database = mongo_database
+    if updated_at is None:
+        updated_at = datetime.now() - timedelta(hours=1)
+
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    samples_collection.insert_one(
+        {
+            FIELD_LH_SAMPLE_UUID: "UPDATE_SAMPLE_UUID",
+            FIELD_UPDATED_AT: updated_at,
+            FIELD_PLATE_BARCODE: "A_PLATE_BARCODE",
+        }
+    )
+
+
+def set_up_response_for_cherrytrack_plate(subject, config, http_status):
+    subject._plate_barcode = "A_BARCODE"
+    cherrytrack_url = f"{config.CHERRYTRACK_BASE_URL}/source-plates/A_BARCODE"
+    responses.add(responses.GET, cherrytrack_url, status=http_status)
+
+
+#####
+# End of helper methods
+#####
+
+
 def test_constructor_stores_arguments_as_instance_variables():
     message = MagicMock()
     config = MagicMock()
@@ -67,16 +98,8 @@ def test_verify_sample_in_mongo_when_no_sample_in_mongo(subject):
     assert subject._plate_barcode is None
 
 
-def test_verify_sample_in_mongo_when_sample_is_present(subject, mongo_database, update_sample_message):
-    _, mongo_database = mongo_database
-    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
-    samples_collection.insert_one(
-        {
-            FIELD_LH_SAMPLE_UUID: "UPDATE_SAMPLE_UUID",
-            FIELD_UPDATED_AT: datetime.now() - timedelta(hours=1),
-            FIELD_PLATE_BARCODE: "A_PLATE_BARCODE",
-        }
-    )
+def test_verify_sample_in_mongo_when_sample_is_present(subject, mongo_database):
+    add_sample_to_mongo(mongo_database)
 
     subject.verify_sample_in_mongo()
 
@@ -85,15 +108,7 @@ def test_verify_sample_in_mongo_when_sample_is_present(subject, mongo_database, 
 
 
 def test_verify_sample_in_mongo_when_sample_is_more_recently_updated_than_the_message(subject, mongo_database):
-    _, mongo_database = mongo_database
-    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
-    samples_collection.insert_one(
-        {
-            FIELD_LH_SAMPLE_UUID: "UPDATE_SAMPLE_UUID",
-            FIELD_UPDATED_AT: datetime.now() + timedelta(hours=1),
-            FIELD_PLATE_BARCODE: "A_PLATE_BARCODE",
-        }
-    )
+    add_sample_to_mongo(mongo_database, datetime.now() + timedelta(hours=1))
 
     subject.verify_sample_in_mongo()
 
@@ -125,12 +140,6 @@ def test_verify_plate_state_raises_value_error_when_plate_barcode_not_set(subjec
         subject.verify_plate_state()
 
     assert "plate barcode" in str(ex_info.value)
-
-
-def set_up_response_for_cherrytrack_plate(subject, config, http_status):
-    subject._plate_barcode = "A_BARCODE"
-    cherrytrack_url = f"{config.CHERRYTRACK_BASE_URL}/source-plates/A_BARCODE"
-    responses.add(responses.GET, cherrytrack_url, status=http_status)
 
 
 @responses.activate
