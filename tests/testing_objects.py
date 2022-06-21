@@ -5,88 +5,79 @@ from typing import Any, Dict, List, Union
 import dateutil.parser
 from bson.objectid import ObjectId
 
-from crawler.constants import (
-    EVENT_CHERRYPICK_LAYOUT_SET,
-    FIELD_COORDINATE,
-    FIELD_CREATED_AT,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_FILTERED_POSITIVE_TIMESTAMP,
-    FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_LAB_ID,
-    FIELD_LH_SAMPLE_UUID,
-    FIELD_MONGODB_ID,
-    FIELD_MUST_SEQUENCE,
-    FIELD_PLATE_BARCODE,
-    FIELD_PREFERENTIALLY_SEQUENCE,
-    FIELD_PROCESSED,
-    FIELD_RESULT,
-    FIELD_RNA_ID,
-    FIELD_ROOT_SAMPLE_ID,
-    FIELD_SAMPLE_ID,
-    FIELD_SOURCE,
-    FILTERED_POSITIVE_FIELDS_SET_DATE,
-    MLWH_CH1_CQ,
-    MLWH_CH1_RESULT,
-    MLWH_CH1_TARGET,
-    MLWH_CH2_CQ,
-    MLWH_CH2_RESULT,
-    MLWH_CH2_TARGET,
-    MLWH_CH3_CQ,
-    MLWH_CH3_RESULT,
-    MLWH_CH3_TARGET,
-    MLWH_CH4_CQ,
-    MLWH_CH4_RESULT,
-    MLWH_CH4_TARGET,
-    MLWH_COORDINATE,
-    MLWH_CREATED_AT,
-    MLWH_DATE_TESTED,
-    MLWH_FILTERED_POSITIVE,
-    MLWH_FILTERED_POSITIVE_TIMESTAMP,
-    MLWH_FILTERED_POSITIVE_VERSION,
-    MLWH_IS_CURRENT,
-    MLWH_LAB_ID,
-    MLWH_LH_SAMPLE_UUID,
-    MLWH_LH_SOURCE_PLATE_UUID,
-    MLWH_MONGODB_ID,
-    MLWH_MUST_SEQUENCE,
-    MLWH_PLATE_BARCODE,
-    MLWH_PREFERENTIALLY_SEQUENCE,
-    MLWH_RESULT,
-    MLWH_RNA_ID,
-    MLWH_ROOT_SAMPLE_ID,
-    MLWH_SOURCE,
-    MLWH_UPDATED_AT,
-    PLATE_EVENT_DESTINATION_CREATED,
-    RESULT_VALUE_NEGATIVE,
-    RESULT_VALUE_POSITIVE,
-    V0_V1_CUTOFF_TIMESTAMP,
-    V1_V2_CUTOFF_TIMESTAMP,
-)
-from crawler.rabbit.messages.create_plate_message import FIELD_COG_UK_ID as CREATE_PLATE_COG_UK_ID
-from crawler.rabbit.messages.create_plate_message import FIELD_FIT_TO_PICK as CREATE_PLATE_FIT_TO_PICK
-from crawler.rabbit.messages.create_plate_message import FIELD_LAB_ID as CREATE_PLATE_LAB_ID
-from crawler.rabbit.messages.create_plate_message import FIELD_MESSAGE_CREATE_DATE as CREATE_PLATE_MESSAGE_CREATE_DATE
-from crawler.rabbit.messages.create_plate_message import FIELD_MESSAGE_UUID as CREATE_PLATE_MESSAGE_UUID
-from crawler.rabbit.messages.create_plate_message import FIELD_MUST_SEQUENCE as CREATE_PLATE_MUST_SEQUENCE
-from crawler.rabbit.messages.create_plate_message import FIELD_PLATE as CREATE_PLATE_PLATE
-from crawler.rabbit.messages.create_plate_message import FIELD_PLATE_BARCODE as CREATE_PLATE_PLATE_BARCODE
-from crawler.rabbit.messages.create_plate_message import FIELD_PLATE_COORDINATE as CREATE_PLATE_PLATE_COORDINATE
-from crawler.rabbit.messages.create_plate_message import (
-    FIELD_PREFERENTIALLY_SEQUENCE as CREATE_PLATE_PREFERENTIALLY_SEQUENCE,
-)
-from crawler.rabbit.messages.create_plate_message import FIELD_RESULT as CREATE_PLATE_RESULT
-from crawler.rabbit.messages.create_plate_message import FIELD_RNA_ID as CREATE_PLATE_RNA_ID
-from crawler.rabbit.messages.create_plate_message import FIELD_ROOT_SAMPLE_ID as CREATE_PLATE_ROOT_SAMPLE_ID
-from crawler.rabbit.messages.create_plate_message import FIELD_SAMPLE_UUID as CREATE_PLATE_SAMPLE_UUID
-from crawler.rabbit.messages.create_plate_message import FIELD_SAMPLES as CREATE_PLATE_SAMPLES
-from crawler.rabbit.messages.create_plate_message import FIELD_TESTED_DATE as CREATE_PLATE_TESTED_DATE
-from crawler.rabbit.messages.update_sample_message import FIELD_MESSAGE_CREATE_DATE as UPDATE_SAMPLE_MESSAGE_CREATE_DATE
-from crawler.rabbit.messages.update_sample_message import FIELD_MESSAGE_UUID as UPDATE_SAMPLE_MESSAGE_UUID
-from crawler.rabbit.messages.update_sample_message import FIELD_NAME as UPDATE_SAMPLE_NAME
-from crawler.rabbit.messages.update_sample_message import FIELD_SAMPLE as UPDATE_SAMPLE_SAMPLE
-from crawler.rabbit.messages.update_sample_message import FIELD_SAMPLE_UUID as UPDATE_SAMPLE_SAMPLE_UUID
-from crawler.rabbit.messages.update_sample_message import FIELD_UPDATED_FIELDS as UPDATE_SAMPLE_UPDATED_FIELDS
-from crawler.rabbit.messages.update_sample_message import FIELD_VALUE as UPDATE_SAMPLE_VALUE
+from crawler.constants import (EVENT_CHERRYPICK_LAYOUT_SET, FIELD_COORDINATE,
+                               FIELD_CREATED_AT, FIELD_FILTERED_POSITIVE,
+                               FIELD_FILTERED_POSITIVE_TIMESTAMP,
+                               FIELD_FILTERED_POSITIVE_VERSION, FIELD_LAB_ID,
+                               FIELD_LH_SAMPLE_UUID, FIELD_MONGODB_ID,
+                               FIELD_MUST_SEQUENCE, FIELD_PLATE_BARCODE,
+                               FIELD_PREFERENTIALLY_SEQUENCE, FIELD_PROCESSED,
+                               FIELD_RESULT, FIELD_RNA_ID,
+                               FIELD_ROOT_SAMPLE_ID, FIELD_SAMPLE_ID,
+                               FIELD_SOURCE, FILTERED_POSITIVE_FIELDS_SET_DATE,
+                               MLWH_CH1_CQ, MLWH_CH1_RESULT, MLWH_CH1_TARGET,
+                               MLWH_CH2_CQ, MLWH_CH2_RESULT, MLWH_CH2_TARGET,
+                               MLWH_CH3_CQ, MLWH_CH3_RESULT, MLWH_CH3_TARGET,
+                               MLWH_CH4_CQ, MLWH_CH4_RESULT, MLWH_CH4_TARGET,
+                               MLWH_COORDINATE, MLWH_CREATED_AT,
+                               MLWH_DATE_TESTED, MLWH_FILTERED_POSITIVE,
+                               MLWH_FILTERED_POSITIVE_TIMESTAMP,
+                               MLWH_FILTERED_POSITIVE_VERSION, MLWH_IS_CURRENT,
+                               MLWH_LAB_ID, MLWH_LH_SAMPLE_UUID,
+                               MLWH_LH_SOURCE_PLATE_UUID, MLWH_MONGODB_ID,
+                               MLWH_MUST_SEQUENCE, MLWH_PLATE_BARCODE,
+                               MLWH_PREFERENTIALLY_SEQUENCE, MLWH_RESULT,
+                               MLWH_RNA_ID, MLWH_ROOT_SAMPLE_ID, MLWH_SOURCE,
+                               MLWH_UPDATED_AT,
+                               PLATE_EVENT_DESTINATION_CREATED,
+                               RESULT_VALUE_NEGATIVE, RESULT_VALUE_POSITIVE,
+                               V0_V1_CUTOFF_TIMESTAMP, V1_V2_CUTOFF_TIMESTAMP)
+from crawler.rabbit.messages.create_plate_message import \
+    FIELD_COG_UK_ID as CREATE_PLATE_COG_UK_ID
+from crawler.rabbit.messages.create_plate_message import \
+    FIELD_FIT_TO_PICK as CREATE_PLATE_FIT_TO_PICK
+from crawler.rabbit.messages.create_plate_message import \
+    FIELD_LAB_ID as CREATE_PLATE_LAB_ID
+from crawler.rabbit.messages.create_plate_message import \
+    FIELD_MESSAGE_CREATE_DATE as CREATE_PLATE_MESSAGE_CREATE_DATE
+from crawler.rabbit.messages.create_plate_message import \
+    FIELD_MESSAGE_UUID as CREATE_PLATE_MESSAGE_UUID
+from crawler.rabbit.messages.create_plate_message import \
+    FIELD_MUST_SEQUENCE as CREATE_PLATE_MUST_SEQUENCE
+from crawler.rabbit.messages.create_plate_message import \
+    FIELD_PLATE as CREATE_PLATE_PLATE
+from crawler.rabbit.messages.create_plate_message import \
+    FIELD_PLATE_BARCODE as CREATE_PLATE_PLATE_BARCODE
+from crawler.rabbit.messages.create_plate_message import \
+    FIELD_PLATE_COORDINATE as CREATE_PLATE_PLATE_COORDINATE
+from crawler.rabbit.messages.create_plate_message import \
+    FIELD_PREFERENTIALLY_SEQUENCE as CREATE_PLATE_PREFERENTIALLY_SEQUENCE
+from crawler.rabbit.messages.create_plate_message import \
+    FIELD_RESULT as CREATE_PLATE_RESULT
+from crawler.rabbit.messages.create_plate_message import \
+    FIELD_RNA_ID as CREATE_PLATE_RNA_ID
+from crawler.rabbit.messages.create_plate_message import \
+    FIELD_ROOT_SAMPLE_ID as CREATE_PLATE_ROOT_SAMPLE_ID
+from crawler.rabbit.messages.create_plate_message import \
+    FIELD_SAMPLE_UUID as CREATE_PLATE_SAMPLE_UUID
+from crawler.rabbit.messages.create_plate_message import \
+    FIELD_SAMPLES as CREATE_PLATE_SAMPLES
+from crawler.rabbit.messages.create_plate_message import \
+    FIELD_TESTED_DATE as CREATE_PLATE_TESTED_DATE
+from crawler.rabbit.messages.update_sample_message import \
+    FIELD_MESSAGE_CREATE_DATE as UPDATE_SAMPLE_MESSAGE_CREATE_DATE
+from crawler.rabbit.messages.update_sample_message import \
+    FIELD_MESSAGE_UUID as UPDATE_SAMPLE_MESSAGE_UUID
+from crawler.rabbit.messages.update_sample_message import \
+    FIELD_NAME as UPDATE_SAMPLE_NAME
+from crawler.rabbit.messages.update_sample_message import \
+    FIELD_SAMPLE as UPDATE_SAMPLE_SAMPLE
+from crawler.rabbit.messages.update_sample_message import \
+    FIELD_SAMPLE_UUID as UPDATE_SAMPLE_SAMPLE_UUID
+from crawler.rabbit.messages.update_sample_message import \
+    FIELD_UPDATED_FIELDS as UPDATE_SAMPLE_UPDATED_FIELDS
+from crawler.rabbit.messages.update_sample_message import \
+    FIELD_VALUE as UPDATE_SAMPLE_VALUE
 
 TESTING_SAMPLES: List[Dict[str, Union[str, bool, ObjectId]]] = [
     {
@@ -580,6 +571,63 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
     ],
 }
 
+MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE:  Dict[str, Any] = {
+    "lighthouse_sample": [
+        {
+            "mongodb_id": "aaaaaaaaaaaaaaaaaaaaaaa1",
+            "root_sample_id": "root_5",
+            "rna_id": "pb_4_A01",
+            "plate_barcode": "pb_4",
+            "coordinate": "A1",
+            "result": "Positive",
+            "date_tested_string": "2020-10-24 22:30:22",
+            "date_tested": datetime(2020, 10, 24, 22, 30, 22),
+            "source": "test centre",
+            "lab_id": "TC",
+            "lh_sample_uuid": None,
+        },
+        {
+            "mongodb_id": "aaaaaaaaaaaaaaaaaaaaaaa2",
+            "root_sample_id": "root_5",
+            "rna_id": "pb_4_A01",
+            "plate_barcode": "pb_4",
+            "coordinate": "A1",
+            "result": "Positive",
+            "date_tested_string": "2020-10-24 22:30:22",
+            "date_tested": datetime(2020, 10, 24, 22, 30, 22),
+            "source": "test centre",
+            "lab_id": "TC",
+            "lh_sample_uuid": None,
+        },
+        {
+            "mongodb_id": "aaaaaaaaaaaaaaaaaaaaaaa3",
+            "root_sample_id": "root_5",
+            "rna_id": "pb_4_A01",
+            "plate_barcode": "pb_4",
+            "coordinate": "A1",
+            "result": "Positive",
+            "date_tested_string": "2020-10-24 22:30:22",
+            "date_tested": datetime(2020, 10, 24, 22, 30, 22),
+            "source": "test centre",
+            "lab_id": "TC",
+            "lh_sample_uuid": None,
+        },
+        {
+            "mongodb_id": "aaaaaaaaaaaaaaaaaaaaaaa4",
+            "root_sample_id": "root_5",
+            "rna_id": "pb_4_A01",
+            "plate_barcode": "pb_4",
+            "coordinate": "A1",
+            "result": "Positive",
+            "date_tested_string": "2020-10-24 22:30:22",
+            "date_tested": datetime(2020, 10, 24, 22, 30, 22),
+            "source": "test centre",
+            "lab_id": "TC",
+            "lh_sample_uuid": None,
+        },
+    ]
+
+}
 
 MLWH_SAMPLE_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
     "sample": [

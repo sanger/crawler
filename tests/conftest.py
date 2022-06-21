@@ -10,36 +10,28 @@ import sqlalchemy
 from sqlalchemy import MetaData
 
 from crawler import create_app
-from crawler.constants import (
-    CENTRE_KEY_DATA_SOURCE,
-    CENTRE_KEY_FILE_NAMES_TO_IGNORE,
-    COLLECTION_CENTRES,
-    COLLECTION_CHERRYPICK_TEST_DATA,
-    COLLECTION_IMPORTS,
-    COLLECTION_PRIORITY_SAMPLES,
-    COLLECTION_SAMPLES,
-    COLLECTION_SOURCE_PLATES,
-    FIELD_FILTERED_POSITIVE,
-    FIELD_MONGODB_ID,
-    MLWH_TABLE_NAME,
-)
-from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.constants import (CENTRE_KEY_DATA_SOURCE,
+                               CENTRE_KEY_FILE_NAMES_TO_IGNORE,
+                               COLLECTION_CENTRES,
+                               COLLECTION_CHERRYPICK_TEST_DATA,
+                               COLLECTION_IMPORTS, COLLECTION_PRIORITY_SAMPLES,
+                               COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES,
+                               FIELD_FILTERED_POSITIVE, FIELD_MONGODB_ID,
+                               MLWH_TABLE_NAME)
+from crawler.db.mongo import (create_mongo_client, get_mongo_collection,
+                              get_mongo_db)
 from crawler.db.mysql import create_mysql_connection
 from crawler.file_processing import Centre, CentreFile
 from crawler.helpers.db_helpers import ensure_mongo_collections_indexed
 from crawler.helpers.general_helpers import get_config, get_sftp_connection
 from tests.testing_objects import (
-    EVENT_WH_DATA,
-    FILTERED_POSITIVE_TESTING_SAMPLES,
-    MLWH_SAMPLE_LIGHTHOUSE_SAMPLE,
-    MLWH_SAMPLE_STOCK_RESOURCE,
+    EVENT_WH_DATA, FILTERED_POSITIVE_TESTING_SAMPLES,
+    MLWH_SAMPLE_LIGHTHOUSE_SAMPLE, MLWH_SAMPLE_STOCK_RESOURCE,
+    MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE,
     MLWH_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS,
     MONGO_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS,
-    MONGO_SAMPLES_WITHOUT_FILTERED_POSITIVE_FIELDS,
-    TESTING_PRIORITY_SAMPLES,
-    TESTING_SAMPLES,
-    TESTING_SAMPLES_WITH_LAB_ID,
-)
+    MONGO_SAMPLES_WITHOUT_FILTERED_POSITIVE_FIELDS, TESTING_PRIORITY_SAMPLES,
+    TESTING_SAMPLES, TESTING_SAMPLES_WITH_LAB_ID)
 
 logger = logging.getLogger(__name__)
 CONFIG, _ = get_config("crawler.config.test")
@@ -320,6 +312,25 @@ def mlwh_beckman_cherrypicked(config, mlwh_sql_engine):
     finally:
         delete_data()
 
+
+@pytest.fixture
+def mlwh_samples_with_lab_id_for_migration(config, mlwh_sql_engine):
+    def delete_data():
+        delete_from_mlwh(mlwh_sql_engine, config.MLWH_LIGHTHOUSE_SAMPLE_TABLE)
+
+    try:
+        delete_data()
+
+        # inserts
+        insert_into_mlwh(
+            MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE["lighthouse_sample"],
+            mlwh_sql_engine,
+            config.MLWH_LIGHTHOUSE_SAMPLE_TABLE,
+        )
+
+        yield
+    finally:
+        delete_data()
 
 @pytest.fixture
 def mlwh_cherrypicked_samples(config, mlwh_sql_engine):
