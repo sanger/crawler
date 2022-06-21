@@ -267,7 +267,7 @@ def test_update_mongo_updates_the_sample(subject, mongo_database, fields, must_s
     subject.update_mongo()
 
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
-    sample = samples_collection.find_one({})
+    sample = samples_collection.find_one({}) or {}
 
     if must_sequence is None:
         assert FIELD_MUST_SEQUENCE not in sample.keys()
