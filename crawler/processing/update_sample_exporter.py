@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from http import HTTPStatus
 from typing import List, NamedTuple
 
@@ -11,7 +12,9 @@ from crawler.constants import (
     DART_STATE_NO_PLATE,
     DART_STATE_PENDING,
     FIELD_LH_SAMPLE_UUID,
+    FIELD_MUST_SEQUENCE,
     FIELD_PLATE_BARCODE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
     FIELD_UPDATED_AT,
     RABBITMQ_UPDATE_FEEDBACK_ORIGIN_ROOT,
 )
@@ -48,17 +51,11 @@ class UpdateSampleExporter:
         self._verify_plate_not_in_cherrytrack() and self._verify_plate_state_in_dart()
 
     def update_mongo(self):
-        with self._mongo_db.client.start_session() as session:
-            try:
-                with session.start_transaction():
-                    # source_plate_result = self._record_source_plate_in_mongo_db(session)
-
-                    # if not source_plate_result.success:
-                    #     return self._abort_transaction_with_errors(session, source_plate_result.create_plate_errors)
-
-                    session.commit_transaction()
-            finally:
-                self._mongo_db.client.close()
+        try:
+            with self._mongo_db.client.start_session() as session:
+                self._update_sample_in_mongo(session)
+        finally:
+            self._mongo_db.client.close()
 
     def update_dart(self):
         result = ExportResult(success=True, update_sample_errors=[])
@@ -73,6 +70,14 @@ class UpdateSampleExporter:
             self.__mongo_db = get_mongo_db(self._config, client)
 
         return self.__mongo_db
+
+    @property
+    def _updated_mongo_fields(self):
+        field_name_map = {"mustSequence": FIELD_MUST_SEQUENCE, "preferentiallySequence": FIELD_PREFERENTIALLY_SEQUENCE}
+        fields = {field_name_map[field.name]: field.value for field in self._message.updated_fields.value}
+        fields[FIELD_UPDATED_AT] = datetime.utcnow()
+
+        return fields
 
     def _validate_mongo_properties(self, session: ClientSession) -> None:
         try:
@@ -182,3 +187,21 @@ class UpdateSampleExporter:
             )
         finally:
             sql_server_connection.close()
+
+    def _update_sample_in_mongo(self, session):
+        LOGGER.info("Updating the sample in Mongo.")
+        sample_uuid = self._message.sample_uuid.value
+
+        try:
+            session_database = get_mongo_db(self._config, session.client)
+            samples_collection = get_mongo_collection(session_database, COLLECTION_SAMPLES)
+            samples_collection.update_one(
+                {FIELD_LH_SAMPLE_UUID: sample_uuid}, {"$set": self._updated_mongo_fields}, session=session
+            )
+        except Exception as ex:
+            LOGGER.critical(f"Error accessing MongoDB during update of sample '{sample_uuid}': {ex}")
+            LOGGER.exception(ex)
+
+            raise TransientRabbitError(
+                f"There was an error updating MongoDB while update sample with UUID '{sample_uuid}'."
+            )

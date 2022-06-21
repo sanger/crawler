@@ -12,13 +12,20 @@ from crawler.constants import (
     DART_STATE_PENDING,
     DART_STATE_PICKABLE,
     FIELD_LH_SAMPLE_UUID,
+    FIELD_MUST_SEQUENCE,
     FIELD_PLATE_BARCODE,
+    FIELD_PREFERENTIALLY_SEQUENCE,
     FIELD_UPDATED_AT,
 )
 from crawler.db.mongo import get_mongo_collection
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.update_sample_exporter import UpdateSampleExporter
-from crawler.rabbit.messages.update_sample_message import ErrorType, UpdateSampleMessage
+from crawler.rabbit.messages.update_sample_message import (
+    FIELD_SAMPLE,
+    FIELD_UPDATED_FIELDS,
+    ErrorType,
+    UpdateSampleMessage,
+)
 from tests.testing_objects import UPDATE_SAMPLE_MESSAGE
 
 
@@ -234,3 +241,38 @@ def test_verify_plate_state_raises_transient_error_when_dart_query_cannot_be_mad
     assert "querying the DART database" in ex_info.value.message
     assert "'A_BARCODE'" in ex_info.value.message
     dart_connection.return_value.close.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "fields, must_sequence, preferentially_sequence",
+    [
+        [{"mustSequence": True}, True, None],
+        [{"mustSequence": False}, False, None],
+        [{"preferentiallySequence": True}, None, True],
+        [{"preferentiallySequence": False}, None, False],
+        [{"mustSequence": True, "preferentiallySequence": True}, True, True],
+        [{"mustSequence": False, "preferentiallySequence": False}, False, False],
+    ],
+)
+def test_update_mongo_updates_the_sample(subject, mongo_database, fields, must_sequence, preferentially_sequence):
+    add_sample_to_mongo(mongo_database)
+
+    _, mongo_database = mongo_database
+
+    subject._message._body[FIELD_SAMPLE][FIELD_UPDATED_FIELDS] = [
+        {"name": name, "value": value} for name, value in fields.items()
+    ]
+    subject.update_mongo()
+
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    sample = samples_collection.find_one({})
+
+    if must_sequence is None:
+        assert FIELD_MUST_SEQUENCE not in sample.keys()
+    else:
+        assert sample[FIELD_MUST_SEQUENCE] == must_sequence
+
+    if preferentially_sequence is None:
+        assert FIELD_PREFERENTIALLY_SEQUENCE not in sample.keys()
+    else:
+        assert sample[FIELD_PREFERENTIALLY_SEQUENCE] == preferentially_sequence
