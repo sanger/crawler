@@ -32,6 +32,7 @@ class ErrorType(IntEnum):
     ExporterMessageOutOfDate = 161
     ExporterPlateAlreadyPicked = 162
     ExporterPlateNotInDART = 163
+    ExporterPostFeedback = 164
 
 
 class MessageField(NamedTuple):

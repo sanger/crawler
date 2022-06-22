@@ -1,7 +1,7 @@
+import copy
 import logging
 from datetime import datetime
 from http import HTTPStatus
-from typing import List, NamedTuple
 
 import requests
 from pymongo.client_session import ClientSession
@@ -18,17 +18,12 @@ from crawler.constants import (
     FIELD_UPDATED_AT,
     RABBITMQ_UPDATE_FEEDBACK_ORIGIN_ROOT,
 )
-from crawler.db.dart import create_dart_sql_server_conn, get_dart_plate_state
+from crawler.db.dart import add_dart_well_properties_if_positive, create_dart_sql_server_conn, get_dart_plate_state
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.exceptions import TransientRabbitError
 from crawler.rabbit.messages.update_sample_message import ErrorType, UpdateSampleError
 
 LOGGER = logging.getLogger(__name__)
-
-
-class ExportResult(NamedTuple):
-    success: bool
-    update_sample_errors: List[UpdateSampleError]
 
 
 class UpdateSampleExporter:
@@ -57,10 +52,8 @@ class UpdateSampleExporter:
             self._mongo_db.client.close()
 
     def update_dart(self):
-        result = ExportResult(success=True, update_sample_errors=[])
-        if not result.success:
-            for error in result.update_sample_errors:
-                self._message.add_error(error)
+        if not self._plate_missing_in_dart:
+            self._update_sample_in_dart()
 
     @property
     def _mongo_db(self) -> Database:
@@ -72,21 +65,34 @@ class UpdateSampleExporter:
 
     @property
     def _plate_barcode(self):
-        try:
-            return self._mongo_sample[FIELD_PLATE_BARCODE]
-        except (TypeError, KeyError) as ex:
+        if self._mongo_sample is None:
             raise ValueError(
                 "No Mongo sample was set -- this probably means verify_sample_in_mongo"
                 "was not called first in the exporter."
-            ) from ex
+            )
+
+        return self._mongo_sample[FIELD_PLATE_BARCODE]
 
     @property
     def _updated_mongo_fields(self):
         field_name_map = {"mustSequence": FIELD_MUST_SEQUENCE, "preferentiallySequence": FIELD_PREFERENTIALLY_SEQUENCE}
-        fields = {field_name_map[field.name]: field.value for field in self._message.updated_fields.value}
-        fields[FIELD_UPDATED_AT] = datetime.utcnow()
 
-        return fields
+        if not hasattr(self, "_updated_fields"):
+            self._updated_fields = {field_name_map[e.name]: e.value for e in self._message.updated_fields.value}
+            self._updated_fields[FIELD_UPDATED_AT] = datetime.utcnow()
+
+        return self._updated_fields
+
+    @property
+    def _updated_mongo_sample(self):
+        if self._mongo_sample is None:
+            return None
+
+        updated_sample = copy.deepcopy(self._mongo_sample)
+        for name, value in self._updated_mongo_fields.items():
+            updated_sample[name] = value
+
+        return updated_sample
 
     def _validate_mongo_properties(self, session: ClientSession) -> None:
         try:
@@ -205,5 +211,40 @@ class UpdateSampleExporter:
             LOGGER.exception(ex)
 
             raise TransientRabbitError(
-                f"There was an error updating MongoDB while update sample with UUID '{sample_uuid}'."
+                f"There was an error updating MongoDB while updating sample with UUID '{sample_uuid}'."
             )
+
+    def _update_sample_in_dart(self):
+        def record_dart_update_error(error_description):
+            LOGGER.critical(error_description)
+            self._message.add_error(
+                UpdateSampleError(
+                    type=ErrorType.ExporterPostFeedback,  # This error will not be fed back via RabbitMQ
+                    origin=RABBITMQ_UPDATE_FEEDBACK_ORIGIN_ROOT,
+                    description=error_description,
+                )
+            )
+
+        LOGGER.info("Updating the sample in DART.")
+        sample_uuid = self._message.sample_uuid.value
+
+        if (sql_server_connection := create_dart_sql_server_conn(self._config)) is None:
+            record_dart_update_error(f"Error connecting to DART database to update sample with UUID '{sample_uuid}'.")
+            return
+
+        try:
+            cursor = sql_server_connection.cursor()
+            add_dart_well_properties_if_positive(cursor, self._updated_mongo_sample, self._plate_barcode)
+            cursor.commit()
+        except Exception as ex:
+            LOGGER.exception(ex)
+
+            # Rollback statements executed since previous commit/rollback. Not technically required with a
+            # single operation, but this avoids future bugs if additional operations are added above.
+            cursor.rollback()
+
+            record_dart_update_error(
+                f"DART database well properties update failed for sample with UUID '{sample_uuid}'."
+            )
+        finally:
+            sql_server_connection.close()
