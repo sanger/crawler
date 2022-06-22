@@ -40,6 +40,7 @@ from tests.testing_objects import (
     TESTING_PRIORITY_SAMPLES,
     TESTING_SAMPLES,
     TESTING_SAMPLES_WITH_LAB_ID,
+    TESTING_SOURCE_PLATES,
 )
 
 logger = logging.getLogger(__name__)
@@ -162,6 +163,11 @@ def samples_collection_accessor(mongo_database):
 
 
 @pytest.fixture
+def source_plates_collection_accessor(mongo_database):
+    return get_mongo_collection(mongo_database[1], COLLECTION_SOURCE_PLATES)
+
+
+@pytest.fixture
 def priority_samples_collection_accessor(mongo_database):
     return get_mongo_collection(mongo_database[1], COLLECTION_PRIORITY_SAMPLES)
 
@@ -179,6 +185,17 @@ def testing_samples(samples_collection_accessor):
         yield samples
     finally:
         samples_collection_accessor.delete_many({})
+
+
+@pytest.fixture
+def testing_source_plates(source_plates_collection_accessor):
+    result = source_plates_collection_accessor.insert_many(TESTING_SOURCE_PLATES)
+    # source_plates = list(source_plates_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
+    try:
+        # yield source_plates
+        yield result
+    finally:
+        source_plates_collection_accessor.delete_many({})
 
 
 @pytest.fixture

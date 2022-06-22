@@ -1,9 +1,11 @@
 from unittest.mock import patch
 
 import pytest
+from pymongo import ASCENDING
 
+from crawler.constants import FIELD_RNA_ID
 from migrations import back_populate_source_plate_and_sample_uuids
-from migrations.back_populate_source_plate_and_sample_uuids import extract_barcodes
+from migrations.back_populate_source_plate_and_sample_uuids import check_samples_are_valid, extract_barcodes
 
 # ----- test fixture helpers -----
 
@@ -44,12 +46,8 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_populates_sample_uuid(
     samples_before = list(samples_collection_accessor.find({"plate_barcode": "123"}))
 
     assert len(samples_before) > 0
-    assert not ("lh_sample_uuid" in samples_before[0])
-    assert not ("lh_sample_uuid" in samples_before[1])
-
-    # It should not populate samples_before[2] because that one has already a sample_uuid
-    assert "lh_sample_uuid" in samples_before[2]
-    unchanged_uuid = samples_before[2]["lh_sample_uuid"]
+    for sample in samples_before:
+        assert not ("lh_sample_uuid" in sample)
 
     back_populate_source_plate_and_sample_uuids.run(config, filepath)
     samples_after = list(samples_collection_accessor.find({"plate_barcode": "123"}))
@@ -62,16 +60,17 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_populates_sample_uuid(
         assert not sample["lh_sample_uuid"] in viewed_uuids
         viewed_uuids.append(sample["lh_sample_uuid"])
 
-    assert unchanged_uuid in viewed_uuids
-    assert unchanged_uuid == samples_after[2]["lh_sample_uuid"]
-
     # Now we check in mlwh
-    cursor = query_lighthouse_sample.execute("SELECT COUNT(*) FROM lighthouse_sample WHERE lh_sample_uuid IS NOT NULL")
+    cursor = query_lighthouse_sample.execute(
+        "SELECT COUNT(*) FROM lighthouse_sample WHERE plate_barcode = '123' AND lh_sample_uuid IS NOT NULL"
+    )
 
     sample_count = cursor.fetchone()[0]
     assert sample_count == len(samples_after)
 
-    cursor = query_lighthouse_sample.execute("SELECT * FROM lighthouse_sample WHERE lh_sample_uuid IS NOT NULL")
+    cursor = query_lighthouse_sample.execute(
+        "SELECT * FROM lighthouse_sample WHERE plate_barcode = '123' AND lh_sample_uuid IS NOT NULL"
+    )
 
     obtained_mlwh_samples = list(cursor.fetchall())
     mongo_dict = {}
@@ -89,19 +88,18 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_works_with_two_plates(
     config, testing_samples_with_lab_id, samples_collection_accessor
 ):
     filepath = "./tests/data/populate_old_plates_2_plates.csv"
-    samples_before = list(samples_collection_accessor.find())
+    samples_before = list(
+        samples_collection_accessor.find({"plate_barcode": {"$in": ["123", "456"]}}).sort(FIELD_RNA_ID, ASCENDING)
+    )
 
     assert len(samples_before) > 0
-    assert not ("lh_sample_uuid" in samples_before[0])
-    assert not ("lh_sample_uuid" in samples_before[1])
-    assert not ("lh_sample_uuid" in samples_before[2])
-
-    # It should not populate samples_before[2] because that one has already a sample_uuid
-    assert "lh_sample_uuid" in samples_before[3]
-    unchanged_uuid = samples_before[3]["lh_sample_uuid"]
+    for sample in samples_before:
+        assert not ("lh_sample_uuid" in sample)
 
     back_populate_source_plate_and_sample_uuids.run(config, filepath)
-    samples_after = list(samples_collection_accessor.find())
+    samples_after = list(
+        samples_collection_accessor.find({"plate_barcode": {"$in": ["123", "456"]}}).sort(FIELD_RNA_ID, ASCENDING)
+    )
 
     viewed_uuids = []
     assert len(samples_after) > 0
@@ -110,9 +108,6 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_works_with_two_plates(
         assert sample["lh_sample_uuid"] is not None
         assert not sample["lh_sample_uuid"] in viewed_uuids
         viewed_uuids.append(sample["lh_sample_uuid"])
-
-    assert unchanged_uuid in viewed_uuids
-    assert unchanged_uuid == samples_after[3]["lh_sample_uuid"]
 
 
 def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid(
@@ -167,14 +162,18 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid_w
     config, testing_samples_with_lab_id, samples_collection_accessor
 ):
     filepath = "./tests/data/populate_old_plates_2_plates.csv"
-    samples_before = list(samples_collection_accessor.find())
+    samples_before = list(
+        samples_collection_accessor.find({"plate_barcode": {"$in": ["123", "456"]}}).sort(FIELD_RNA_ID, ASCENDING)
+    )
 
     assert len(samples_before) > 0
     for sample in samples_before:
         assert not ("lh_source_plate_uuid" in sample)
 
     back_populate_source_plate_and_sample_uuids.run(config, filepath)
-    samples_after = list(samples_collection_accessor.find())
+    samples_after = list(
+        samples_collection_accessor.find({"plate_barcode": {"$in": ["123", "456"]}}).sort(FIELD_RNA_ID, ASCENDING)
+    )
 
     assert len(samples_after) == len(samples_before)
     source_plate_uuid = samples_after[0]["lh_source_plate_uuid"]
@@ -229,3 +228,41 @@ def test_extract_barcodes_read_barcodes(config):
     filepath = "./tests/data/populate_old_plates.csv"
 
     assert extract_barcodes(config, filepath) == ["123"]
+
+
+def test_check_samples_are_valid_finds_problems_with_samples(
+    config,
+    testing_samples_with_lab_id,
+    samples_collection_accessor,
+    source_plates_collection_accessor,
+    testing_source_plates,
+):
+    samples_before = list(
+        samples_collection_accessor.find({"plate_barcode": {"$in": ["123", "456"]}}).sort(FIELD_RNA_ID, ASCENDING)
+    )
+
+    assert len(samples_before) > 0
+    for sample in samples_before:
+        assert not ("lh_sample_uuid" in sample)
+
+    # When both are right
+    try:
+        check_samples_are_valid(samples_collection_accessor, source_plates_collection_accessor, ["123", "456"])
+    except Exception as exc:
+        raise AssertionError(exc)
+
+    # When sample_uuid has value but source_plate_uuid has not
+    with pytest.raises(Exception):
+        check_samples_are_valid(samples_collection_accessor, source_plates_collection_accessor, ["789"])
+
+    # When source plate uuid has value but sample_uuid has not
+    with pytest.raises(Exception):
+        check_samples_are_valid(samples_collection_accessor, source_plates_collection_accessor, ["781"])
+
+    # When a sample has a plate not in source plate collection
+    with pytest.raises(Exception):
+        check_samples_are_valid(samples_collection_accessor, source_plates_collection_accessor, ["782"])
+
+    # When a source plate from input is already defined in the source plates collection
+    with pytest.raises(Exception):
+        check_samples_are_valid(samples_collection_accessor, source_plates_collection_accessor, ["783"])

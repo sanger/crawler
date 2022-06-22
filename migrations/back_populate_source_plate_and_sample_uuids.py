@@ -8,7 +8,6 @@ from typing import Dict, List, Optional, cast
 from uuid import uuid4
 
 from pymongo.collection import Collection
-from pymongo.database import Database
 
 from crawler.constants import (
     COLLECTION_SAMPLES,
@@ -25,6 +24,9 @@ from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_quer
 from crawler.helpers.general_helpers import create_source_plate_doc
 from crawler.sql_queries import SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID
 from crawler.types import Config, SampleDoc
+
+# from pymongo.database import Database
+
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +137,57 @@ def extract_barcodes(config: Config, filepath: str) -> List[str]:
     return extracted_barcodes
 
 
+def check_samples_are_valid(
+    samples_collection: Collection, source_plates_collection: Collection, source_plate_barcodes: List[str]
+) -> None:
+    """Validate that none of the samples have a source plate uuid and raise error if that is
+    the case
+    """
+    source_plates = list(source_plates_collection.find({"plate_barcode": {"$in": source_plate_barcodes}}))
+    if len(source_plates) > 0:
+        raise Exception(
+            f"Some of the plates are already present in the source plates because they may"
+            f" have already been picked which is not supported by the script: {source_plates}"
+        )
+
+    samples_with_source_plate_not_in_source_plates_collection = list(
+        samples_collection.find(
+            {"plate_barcode": {"$in": source_plate_barcodes}, "lh_source_plate_uuid": {"$ne": None}}
+        )
+    )
+    if len(samples_with_source_plate_not_in_source_plates_collection) > 0:
+        raise Exception(
+            f"Some samples do have source_plate_uuid without a record in source plates"
+            f"collection: {samples_with_source_plate_not_in_source_plates_collection}"
+        )
+
+    samples_only_source_plate = list(
+        samples_collection.find(
+            {
+                "plate_barcode": {"$in": source_plate_barcodes},
+                "lh_source_plate_uuid": {"$ne": None},
+                "lh_sample_uuid": None,
+            }
+        )
+    )
+    if len(samples_only_source_plate) > 0:
+        raise Exception(
+            f"Some of the samples have only a source plate uuid but no sample uuid: {samples_only_source_plate}"
+        )
+
+    samples_only_sample_uuid = list(
+        samples_collection.find(
+            {
+                "plate_barcode": {"$in": source_plate_barcodes},
+                "lh_sample_uuid": {"$ne": None},
+                "lh_source_plate_uuid": None,
+            }
+        )
+    )
+    if len(samples_only_sample_uuid) > 0:
+        raise Exception(f"Some of the samples have a sample uuid but no source plate uuid: {samples_only_sample_uuid}")
+
+
 def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]) -> None:
     """Updates source plate and sample uuids in both mongo and mlwh
 
@@ -151,13 +204,15 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
     counter_mlwh_update_successes = 0
     counter_mlwh_update_failures = 0
 
-    for source_plate_barcode in source_plate_barcodes:
-        logger.info(f"Processing source plate barcode {source_plate_barcode}")
+    with create_mongo_client(config) as client:
+        mongo_db = get_mongo_db(config, client)
+        samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
+        source_plates_collection = get_mongo_collection(mongo_db, COLLECTION_SOURCE_PLATES)
 
-        with create_mongo_client(config) as client:
-            mongo_db = get_mongo_db(config, client)
+        check_samples_are_valid(samples_collection, source_plates_collection, source_plate_barcodes)
 
-            samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
+        for source_plate_barcode in source_plate_barcodes:
+            logger.info(f"Processing source plate barcode {source_plate_barcode}")
 
             # List[SampleDoc]
             sample_docs = get_samples_for_source_plate(samples_collection, source_plate_barcode)
@@ -173,7 +228,9 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
                     lab_id = cast(str, sample_doc[FIELD_MONGO_LAB_ID])
                     logger.info(f"Creating a source_plate collection row with lab id = {lab_id}")
                     # create source_plate record and extract lh_source_plate_uuid for next samples
-                    current_source_plate_uuid = create_mongo_source_plate_record(mongo_db, source_plate_barcode, lab_id)
+                    current_source_plate_uuid = create_mongo_source_plate_record(
+                        source_plates_collection, source_plate_barcode, lab_id
+                    )
 
                 sample_doc[FIELD_LH_SOURCE_PLATE_UUID] = current_source_plate_uuid
                 # generate an lh_sample_uuid if the sample doesn't have one
@@ -271,7 +328,9 @@ def update_mlwh_sample_uuid_and_source_plate_uuid(config: Config, sample_doc: Sa
         return False
 
 
-def create_mongo_source_plate_record(mongo_db: Database, source_plate_barcode: str, lab_id: str) -> Optional[str]:
+def create_mongo_source_plate_record(
+    source_plates_collection: Collection, source_plate_barcode: str, lab_id: str
+) -> Optional[str]:
     """Creates a mongo source_plate collection row
 
     Arguments:
@@ -283,8 +342,6 @@ def create_mongo_source_plate_record(mongo_db: Database, source_plate_barcode: s
         bool -- whether the updates completed successfully
     """
     try:
-        source_plates_collection = get_mongo_collection(mongo_db, COLLECTION_SOURCE_PLATES)
-
         new_plate_doc = create_source_plate_doc(source_plate_barcode, lab_id)
         new_plate_uuid = new_plate_doc[FIELD_LH_SOURCE_PLATE_UUID]
 
