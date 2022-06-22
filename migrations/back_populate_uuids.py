@@ -6,22 +6,18 @@ from typing import Any, Dict, Iterator, List, Tuple
 from bson.objectid import ObjectId
 from pymongo.collection import Collection
 
-from crawler.constants import (
-    COLLECTION_SAMPLES,
-    FIELD_CREATED_AT,
-    FIELD_LH_SAMPLE_UUID,
-    FIELD_MONGODB_ID,
-    FIELD_UPDATED_AT,
-    MLWH_LH_SAMPLE_UUID,
-    MLWH_MONGODB_ID,
-    MONGO_DATETIME_FORMAT,
-)
-from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.constants import (COLLECTION_SAMPLES, FIELD_CREATED_AT,
+                               FIELD_LH_SAMPLE_UUID, FIELD_MONGODB_ID,
+                               FIELD_UPDATED_AT, MLWH_LH_SAMPLE_UUID,
+                               MLWH_MONGODB_ID, MONGO_DATETIME_FORMAT)
+from crawler.db.mongo import (create_mongo_client, get_mongo_collection,
+                              get_mongo_db)
 from crawler.db.mysql import create_mysql_connection
 from crawler.helpers.cherrypicked_samples import extract_required_cp_info
 from crawler.types import Config, SampleDoc
 from migrations.helpers.shared_helper import valid_datetime_string
-from migrations.helpers.update_filtered_positives_helper import update_dart_fields
+from migrations.helpers.update_filtered_positives_helper import \
+    update_dart_fields
 
 logger = logging.getLogger(__name__)
 

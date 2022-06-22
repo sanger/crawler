@@ -392,6 +392,11 @@ def get_table(sql_engine, table_name):
     metadata.reflect()
     return metadata.tables[table_name]
 
+@pytest.fixture
+def query_lighthouse_sample(mlwh_sql_engine):
+    table = get_table(mlwh_sql_engine, 'lighthouse_sample')
+    with mlwh_sql_engine.begin() as connection:
+        yield connection
 
 @pytest.fixture
 def event_wh_sql_engine(config):

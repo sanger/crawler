@@ -35,7 +35,7 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_not_raise_exception(
 
 
 def test_back_populate_source_plate_uuid_and_sample_uuid_populates_sample_uuid(
-    config, testing_samples_with_lab_id, samples_collection_accessor, mlwh_connection,
+    config, testing_samples_with_lab_id, samples_collection_accessor, query_lighthouse_sample,
     mlwh_samples_with_lab_id_for_migration
 ):
     filepath = "./tests/data/populate_old_plates.csv"
@@ -64,10 +64,18 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_populates_sample_uuid(
     assert unchanged_uuid == samples_after[2]["lh_sample_uuid"]
 
     # Now we check in mlwh
-    cursor = mlwh_connection.cursor()
-    cursor.execute("SELECT COUNT(*) FROM lighthouse_sample WHERE lh_sample_uuid<>NULL")
+    cursor = query_lighthouse_sample.execute("SELECT COUNT(*) FROM lighthouse_sample WHERE lh_sample_uuid IS NOT NULL")
+
     sample_count = cursor.fetchone()[0]
     assert sample_count == len(samples_after)
+
+    cursor = query_lighthouse_sample.execute("SELECT * FROM lighthouse_sample WHERE lh_sample_uuid IS NOT NULL")
+    obtained_mlwh_samples = cursor.fetchall()
+    pos = 0
+    for sample in samples_after:
+        assert str(sample['_id']) == obtained_mlwh_samples[pos]['mongodb_id']
+        assert sample['lh_sample_uuid'] == obtained_mlwh_samples[pos]['lh_sample_uuid']
+        pos = pos + 1
 
 
 
