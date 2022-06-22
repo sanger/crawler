@@ -219,7 +219,7 @@ class UpdateSampleExporter:
             LOGGER.critical(error_description)
             self._message.add_error(
                 UpdateSampleError(
-                    type=ErrorType.ExporterPostFeedback,  # This error will not be fed back via RabbitMQ
+                    type=ErrorType.ExporterDARTUpdateFailed,  # This error will not be fed back via RabbitMQ
                     origin=RABBITMQ_UPDATE_FEEDBACK_ORIGIN_ROOT,
                     description=error_description,
                 )

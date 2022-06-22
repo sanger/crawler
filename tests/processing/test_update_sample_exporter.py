@@ -1,7 +1,7 @@
 import copy
 from datetime import datetime, timedelta
 from http import HTTPStatus
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 import responses
@@ -56,24 +56,30 @@ def subject(update_sample_message, config, dart_connection):
 #####
 
 
-def add_sample_to_mongo(mongo_database, updated_at=None):
-    _, mongo_database = mongo_database
+def dummy_mongo_sample(updated_at=None):
     if updated_at is None:
         updated_at = datetime.now() - timedelta(hours=1)
 
+    return {
+        FIELD_LH_SAMPLE_UUID: "UPDATE_SAMPLE_UUID",
+        FIELD_UPDATED_AT: updated_at,
+        FIELD_PLATE_BARCODE: "A_PLATE_BARCODE",
+    }
+
+
+def add_sample_to_mongo(mongo_database, updated_at=None):
+    _, mongo_database = mongo_database
     samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
-    samples_collection.insert_one(
-        {
-            FIELD_LH_SAMPLE_UUID: "UPDATE_SAMPLE_UUID",
-            FIELD_UPDATED_AT: updated_at,
-            FIELD_PLATE_BARCODE: "A_PLATE_BARCODE",
-        }
-    )
+    samples_collection.insert_one(dummy_mongo_sample(updated_at))
+
+
+def add_mongo_sample_to_subject(subject):
+    subject._mongo_sample = dummy_mongo_sample()
 
 
 def set_up_response_for_cherrytrack_plate(subject, config, http_status):
-    subject._mongo_sample = {FIELD_PLATE_BARCODE: "A_BARCODE"}
-    cherrytrack_url = f"{config.CHERRYTRACK_BASE_URL}/source-plates/A_BARCODE"
+    add_mongo_sample_to_subject(subject)
+    cherrytrack_url = f"{config.CHERRYTRACK_BASE_URL}/source-plates/A_PLATE_BARCODE"
     responses.add(responses.GET, cherrytrack_url, status=http_status)
 
 
@@ -162,14 +168,14 @@ def test_verify_plate_state_adds_message_error_when_plate_in_cherrytrack(subject
 
 @responses.activate
 def test_verify_plate_state_raises_transient_error_when_cherrytrack_is_not_responding(subject, logger):
-    subject._mongo_sample = {FIELD_PLATE_BARCODE: "A_BARCODE"}
+    add_mongo_sample_to_subject(subject)
     # Don't add the cherrytrack endpoint to responses
 
     with pytest.raises(TransientRabbitError) as ex_info:
         subject.verify_plate_state()
 
     logger.exception.assert_called_once()
-    assert "'A_BARCODE'" in ex_info.value.message
+    assert "'A_PLATE_BARCODE'" in ex_info.value.message
 
 
 @responses.activate
@@ -224,7 +230,7 @@ def test_verify_plate_state_raises_transient_error_when_dart_connection_cannot_b
         subject.verify_plate_state()
 
     assert "connecting to the DART database" in ex_info.value.message
-    assert "'A_BARCODE'" in ex_info.value.message
+    assert "'A_PLATE_BARCODE'" in ex_info.value.message
 
 
 @responses.activate
@@ -240,7 +246,7 @@ def test_verify_plate_state_raises_transient_error_when_dart_query_cannot_be_mad
 
     logger.exception.assert_called_once()
     assert "querying the DART database" in ex_info.value.message
-    assert "'A_BARCODE'" in ex_info.value.message
+    assert "'A_PLATE_BARCODE'" in ex_info.value.message
     dart_connection.return_value.close.assert_called_once()
 
 
@@ -302,3 +308,78 @@ def test_update_mongo_when_connection_fails(subject, logger):
     logger.exception.assert_called_once_with(exception)
 
     assert "'UPDATE_SAMPLE_UUID'" in ex_info.value.message
+
+
+def test_update_dart_connects_to_the_database(subject, dart_connection):
+    subject.update_dart()
+
+    dart_connection.assert_called()
+
+
+def test_update_dart_logs_if_dart_connection_fails(subject, dart_connection, logger):
+    add_mongo_sample_to_subject(subject)
+    dart_connection.return_value = None
+
+    subject.update_dart()
+
+    logger.critical.assert_called_once()
+    assert "'UPDATE_SAMPLE_UUID'" in logger.critical.call_args.args[0]
+
+    assert len(subject._message.feedback_errors) == 1
+    assert subject._message.feedback_errors[0]["typeId"] == ErrorType.ExporterDARTUpdateFailed
+
+
+@pytest.mark.parametrize(
+    "fields, must_sequence, preferentially_sequence",
+    [
+        [{"mustSequence": True}, True, None],
+        [{"mustSequence": False}, False, None],
+        [{"preferentiallySequence": True}, None, True],
+        [{"preferentiallySequence": False}, None, False],
+        [{"mustSequence": True, "preferentiallySequence": True}, True, True],
+        [{"mustSequence": False, "preferentiallySequence": False}, False, False],
+    ],
+)
+def test_update_dart_updates_well_properties_with_correct_values(
+    subject, dart_connection, fields, must_sequence, preferentially_sequence
+):
+    add_mongo_sample_to_subject(subject)
+
+    subject._message._body[FIELD_SAMPLE][FIELD_UPDATED_FIELDS] = [
+        {"name": name, "value": value} for name, value in fields.items()
+    ]
+
+    with patch("crawler.processing.update_sample_exporter.add_dart_well_properties_if_positive") as add_method:
+        subject.update_dart()
+
+    assert len(subject._message.feedback_errors) == 0
+
+    add_method.assert_called_once_with(dart_connection.return_value.cursor(), ANY, "A_PLATE_BARCODE")
+    updated_sample = add_method.call_args.args[1]
+
+    if must_sequence is None:
+        assert FIELD_MUST_SEQUENCE not in updated_sample.keys()
+    else:
+        assert updated_sample[FIELD_MUST_SEQUENCE] == must_sequence
+
+    if preferentially_sequence is None:
+        assert FIELD_PREFERENTIALLY_SEQUENCE not in updated_sample.keys()
+    else:
+        assert updated_sample[FIELD_PREFERENTIALLY_SEQUENCE] == preferentially_sequence
+
+
+def test_update_dart_logs_if_update_well_properties_for_dart_fails(subject, logger):
+    add_mongo_sample_to_subject(subject)
+    add_exception = Exception("Boom!")
+
+    with patch("crawler.processing.update_sample_exporter.add_dart_well_properties_if_positive") as add_method:
+        add_method.side_effect = add_exception
+        subject.update_dart()
+
+    logger.exception.assert_called_once_with(add_exception)
+
+    logger.critical.assert_called_once()
+    assert "'UPDATE_SAMPLE_UUID'" in logger.critical.call_args.args[0]
+
+    assert len(subject._message.feedback_errors) == 1
+    assert subject._message.feedback_errors[0]["typeId"] == ErrorType.ExporterDARTUpdateFailed
