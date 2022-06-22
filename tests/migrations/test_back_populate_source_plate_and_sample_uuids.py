@@ -3,8 +3,7 @@ from unittest.mock import patch
 import pytest
 
 from migrations import back_populate_source_plate_and_sample_uuids
-from migrations.back_populate_source_plate_and_sample_uuids import \
-    extract_barcodes
+from migrations.back_populate_source_plate_and_sample_uuids import extract_barcodes
 
 # ----- test fixture helpers -----
 
@@ -35,8 +34,11 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_not_raise_exception(
 
 
 def test_back_populate_source_plate_uuid_and_sample_uuid_populates_sample_uuid(
-    config, testing_samples_with_lab_id, samples_collection_accessor, query_lighthouse_sample,
-    mlwh_samples_with_lab_id_for_migration
+    config,
+    testing_samples_with_lab_id,
+    samples_collection_accessor,
+    query_lighthouse_sample,
+    mlwh_samples_with_lab_id_for_migration,
 ):
     filepath = "./tests/data/populate_old_plates.csv"
     samples_before = list(samples_collection_accessor.find({"plate_barcode": "123"}))
@@ -70,13 +72,17 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_populates_sample_uuid(
     assert sample_count == len(samples_after)
 
     cursor = query_lighthouse_sample.execute("SELECT * FROM lighthouse_sample WHERE lh_sample_uuid IS NOT NULL")
-    obtained_mlwh_samples = cursor.fetchall()
-    pos = 0
-    for sample in samples_after:
-        assert str(sample['_id']) == obtained_mlwh_samples[pos]['mongodb_id']
-        assert sample['lh_sample_uuid'] == obtained_mlwh_samples[pos]['lh_sample_uuid']
-        pos = pos + 1
 
+    obtained_mlwh_samples = list(cursor.fetchall())
+    mongo_dict = {}
+    for sample in samples_after:
+        mongo_dict[str(sample["_id"])] = sample["lh_sample_uuid"]
+    mlwh_dict = {}
+    for mlsample in obtained_mlwh_samples:
+        mlwh_dict[mlsample["mongodb_id"]] = mlsample["lh_sample_uuid"]
+
+    for mongo_id in mongo_dict.keys():
+        assert mongo_dict[mongo_id] == mlwh_dict[mongo_id]
 
 
 def test_back_populate_source_plate_uuid_and_sample_uuid_works_with_two_plates(
@@ -110,8 +116,13 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_works_with_two_plates(
 
 
 def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid(
-    config, testing_samples_with_lab_id, samples_collection_accessor
+    config,
+    testing_samples_with_lab_id,
+    samples_collection_accessor,
+    query_lighthouse_sample,
+    mlwh_samples_with_lab_id_for_migration,
 ):
+
     filepath = "./tests/data/populate_old_plates.csv"
     samples_before = list(samples_collection_accessor.find({"plate_barcode": "123"}))
 
@@ -127,6 +138,30 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid(
     for sample in samples_after:
         assert sample["lh_source_plate_uuid"] is not None
         assert sample["lh_source_plate_uuid"] == source_plate_uuid
+
+    # Now we check in mlwh
+    cursor = query_lighthouse_sample.execute(
+        "SELECT COUNT(*) FROM lighthouse_sample WHERE lh_source_plate_uuid IS NOT NULL"
+    )
+
+    sample_count = cursor.fetchone()[0]
+    assert sample_count == len(samples_after)
+
+    cursor = query_lighthouse_sample.execute(
+        "SELECT * FROM lighthouse_sample WHERE lh_source_plate_uuid IS NOT NULL ORDER BY mongodb_id ASC"
+    )
+
+    obtained_mlwh_samples = list(cursor.fetchall())
+    mongo_dict = {}
+    for sample in samples_after:
+        mongo_dict[str(sample["_id"])] = sample["lh_source_plate_uuid"]
+    mlwh_dict = {}
+    for mlsample in obtained_mlwh_samples:
+        mlwh_dict[mlsample["mongodb_id"]] = mlsample["lh_source_plate_uuid"]
+
+    for mongo_id in mongo_dict.keys():
+        assert mongo_dict[mongo_id] == mlwh_dict[mongo_id]
+
 
 def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid_with_two_plates_input(
     config, testing_samples_with_lab_id, samples_collection_accessor
