@@ -36,7 +36,7 @@ class UpdateSampleExporter:
         self._message = message
         self._config = config
 
-        self._plate_barcode = None
+        self._mongo_sample = None
         self._plate_missing_in_dart = False
 
     def verify_sample_in_mongo(self):
@@ -47,7 +47,6 @@ class UpdateSampleExporter:
             self._mongo_db.client.close()
 
     def verify_plate_state(self):
-        self._verify_plate_barcode_is_set()
         self._verify_plate_not_in_cherrytrack() and self._verify_plate_state_in_dart()
 
     def update_mongo(self):
@@ -70,6 +69,16 @@ class UpdateSampleExporter:
             self.__mongo_db = get_mongo_db(self._config, client)
 
         return self.__mongo_db
+
+    @property
+    def _plate_barcode(self):
+        try:
+            return self._mongo_sample[FIELD_PLATE_BARCODE]
+        except (TypeError, KeyError) as ex:
+            raise ValueError(
+                "No Mongo sample was set -- this probably means verify_sample_in_mongo"
+                "was not called first in the exporter."
+            ) from ex
 
     @property
     def _updated_mongo_fields(self):
@@ -113,20 +122,13 @@ class UpdateSampleExporter:
                 )
                 return
 
-            self._plate_barcode = sample[FIELD_PLATE_BARCODE]
+            self._mongo_sample = sample
         except Exception as ex:
             LOGGER.critical(f"Error accessing MongoDB looking up sample with UUID '{sample_uuid.value}': {ex}")
             LOGGER.exception(ex)
 
             raise TransientRabbitError(
                 f"There was an error accessing MongoDB while looking up sample with UUID '{sample_uuid.value}'."
-            )
-
-    def _verify_plate_barcode_is_set(self):
-        if self._plate_barcode is None:
-            raise ValueError(
-                "No plate barcode was set -- this probably means verify_sample_in_mongo"
-                "was not called first in the exporter."
             )
 
     def _add_plate_already_picked_error(self):

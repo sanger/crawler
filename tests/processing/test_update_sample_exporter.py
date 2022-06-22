@@ -72,7 +72,7 @@ def add_sample_to_mongo(mongo_database, updated_at=None):
 
 
 def set_up_response_for_cherrytrack_plate(subject, config, http_status):
-    subject._plate_barcode = "A_BARCODE"
+    subject._mongo_sample = {FIELD_PLATE_BARCODE: "A_BARCODE"}
     cherrytrack_url = f"{config.CHERRYTRACK_BASE_URL}/source-plates/A_BARCODE"
     responses.add(responses.GET, cherrytrack_url, status=http_status)
 
@@ -102,7 +102,7 @@ def test_verify_sample_in_mongo_when_no_sample_in_mongo(subject):
 
     assert len(subject._message.feedback_errors) == 1
     assert subject._message.feedback_errors[0]["typeId"] == ErrorType.ExporterSampleDoesNotExist
-    assert subject._plate_barcode is None
+    assert subject._mongo_sample is None
 
 
 def test_verify_sample_in_mongo_when_sample_is_present(subject, mongo_database):
@@ -121,7 +121,7 @@ def test_verify_sample_in_mongo_when_sample_is_more_recently_updated_than_the_me
 
     assert len(subject._message.feedback_errors) == 1
     assert subject._message.feedback_errors[0]["typeId"] == ErrorType.ExporterMessageOutOfDate
-    assert subject._plate_barcode is None
+    assert subject._mongo_sample is None
 
 
 def test_verify_sample_in_mongo_when_mongo_raises_an_exception(subject, logger):
@@ -140,14 +140,14 @@ def test_verify_sample_in_mongo_when_mongo_raises_an_exception(subject, logger):
 
     assert "'UPDATE_SAMPLE_UUID'" in ex_info.value.message
 
-    assert subject._plate_barcode is None
+    assert subject._mongo_sample is None
 
 
 def test_verify_plate_state_raises_value_error_when_plate_barcode_not_set(subject):
     with pytest.raises(ValueError) as ex_info:
         subject.verify_plate_state()
 
-    assert "plate barcode" in str(ex_info.value)
+    assert "Mongo sample" in str(ex_info.value)
 
 
 @responses.activate
@@ -162,7 +162,7 @@ def test_verify_plate_state_adds_message_error_when_plate_in_cherrytrack(subject
 
 @responses.activate
 def test_verify_plate_state_raises_transient_error_when_cherrytrack_is_not_responding(subject, logger):
-    subject._plate_barcode = "A_BARCODE"
+    subject._mongo_sample = {FIELD_PLATE_BARCODE: "A_BARCODE"}
     # Don't add the cherrytrack endpoint to responses
 
     with pytest.raises(TransientRabbitError) as ex_info:
