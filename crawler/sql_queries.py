@@ -5,6 +5,9 @@ from crawler.constants import (
     FIELD_PLATE_BARCODE,
     FIELD_ROOT_SAMPLE_ID,
     MLWH_IS_CURRENT,
+    MLWH_LH_SAMPLE_UUID,
+    MLWH_LH_SOURCE_PLATE_UUID,
+    MLWH_MONGODB_ID,
     MLWH_RNA_ID,
     MLWH_UPDATED_AT,
 )
@@ -157,4 +160,18 @@ SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT = (
     f" { MLWH_IS_CURRENT } = false,"
     f" { MLWH_UPDATED_AT } = %s"
     f" WHERE { MLWH_RNA_ID } IN (%s)"
+)
+
+SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID = (
+    f"UPDATE lighthouse_sample"
+    f" SET"
+    f" { MLWH_LH_SAMPLE_UUID } = %(lh_sample_uuid)s,"
+    f" { MLWH_LH_SOURCE_PLATE_UUID } = %(lh_source_plate_uuid)s,"
+    f" { MLWH_UPDATED_AT } = %(updated_at)s"
+    f" WHERE { MLWH_MONGODB_ID } = %(_id)s"
+)
+
+
+SQL_MLWH_COUNT_BARCODES = (
+    f"SELECT COUNT(*)" f" FROM lighthouse_sample" f" WHERE lighthouse_sample.plate_barcode IN (%(barcodes)s)"
 )
