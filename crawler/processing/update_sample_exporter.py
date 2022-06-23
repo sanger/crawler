@@ -5,7 +5,6 @@ from http import HTTPStatus
 
 import requests
 from pymongo.client_session import ClientSession
-from pymongo.database import Database
 
 from crawler.constants import (
     COLLECTION_SAMPLES,
@@ -38,7 +37,7 @@ class UpdateSampleExporter:
 
         self._plate_missing_in_dart = False
 
-        self._updated_sample = None
+        self._updated_sample = {}
         self.__mongo_db = None
         self.__mongo_sample = None
 
@@ -64,7 +63,7 @@ class UpdateSampleExporter:
             self._update_sample_in_dart()
 
     @property
-    def _mongo_db(self) -> Database:
+    def _mongo_db(self):
         if self.__mongo_db is None:
             client = create_mongo_client(self._config)
             self.__mongo_db = get_mongo_db(self._config, client)
@@ -90,7 +89,7 @@ class UpdateSampleExporter:
         self.__mongo_sample = mongo_sample
 
         if mongo_sample is None:
-            self._updated_sample = None
+            self._updated_sample = {}
             return
 
         self._updated_sample = copy.deepcopy(mongo_sample)
