@@ -18,7 +18,7 @@ from migrations.back_populate_source_plate_and_sample_uuids import (
     ExceptionSourcePlateDefined,
     check_samples_are_valid,
     extract_barcodes,
-    mlwh_count_samples_from_barcodes,
+    mlwh_count_samples_from_mongo_ids,
 )
 
 # ----- test fixture helpers -----
@@ -285,12 +285,30 @@ def test_check_samples_are_valid_finds_problems_with_samples(
         check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["783"])
 
 
-def test_count_samples_from_barcodes(config, mlwh_samples_with_lab_id_for_migration):
-    value = mlwh_count_samples_from_barcodes(config, ["123", "456"])
+def test_count_samples_from_mongo_ids(config, mlwh_samples_with_lab_id_for_migration):
+    value = mlwh_count_samples_from_mongo_ids(
+        config,
+        [
+            "aaaaaaaaaaaaaaaaaaaaaaa1",
+            "aaaaaaaaaaaaaaaaaaaaaaa2",
+            "aaaaaaaaaaaaaaaaaaaaaaa3",
+            "aaaaaaaaaaaaaaaaaaaaaaa4",
+        ],
+    )
     assert value == 4
 
-    value = mlwh_count_samples_from_barcodes(config, ["123"])
+    value = mlwh_count_samples_from_mongo_ids(
+        config,
+        [
+            "aaaaaaaaaaaaaaaaaaaaaaa1",
+            "aaaaaaaaaaaaaaaaaaaaaaa4",
+            "aaaaaaaaaaaaaaaaaaaaaaa5",
+        ],
+    )
     assert value == 3
 
-    value = mlwh_count_samples_from_barcodes(config, ["456"])
+    value = mlwh_count_samples_from_mongo_ids(config, ["aaaaaaaaaaaaaaaaaaaaaaa6"])
     assert value == 1
+
+    value = mlwh_count_samples_from_mongo_ids(config, ["ASDFASDFASF"])
+    assert value == 0
