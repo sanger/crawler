@@ -50,6 +50,12 @@ def validator():
 
 
 @pytest.fixture
+def exporter():
+    with patch("crawler.processing.update_sample_processor.UpdateSampleExporter") as exporter:
+        yield exporter
+
+
+@pytest.fixture
 def update_sample_message():
     return UpdateSampleMessage(copy.deepcopy(UPDATE_SAMPLE_MESSAGE))
 
@@ -69,7 +75,7 @@ def message_wrapper_class():
 
 
 @pytest.fixture
-def subject(config, avro_encoder, validator):
+def subject(config, avro_encoder, exporter, validator):
     return UpdateSampleProcessor(MagicMock(), MagicMock(), config)
 
 
@@ -105,6 +111,15 @@ def test_process_uses_validator(subject, message_wrapper_class, validator):
     validator.return_value.validate.assert_called_once()
 
 
+def test_process_uses_exporter(subject, message_wrapper_class, exporter, config):
+    subject.process(MagicMock())
+    exporter.assert_called_once_with(message_wrapper_class.return_value, config)
+    exporter.return_value.verify_sample_in_mongo.assert_called_once()
+    exporter.return_value.verify_plate_state.assert_called_once()
+    exporter.return_value.update_mongo.assert_called_once()
+    exporter.return_value.update_dart.assert_called_once()
+
+
 def test_process_publishes_feedback_when_no_issues_found(subject, message_wrapper_class, avro_encoder):
     subject.process(MagicMock())
 
@@ -117,7 +132,7 @@ def test_process_returns_true_when_no_issues_found(subject):
     assert result is True
 
 
-def test_process_when_transient_error_from_validator(subject, logger, validator):
+def test_process_when_transient_error_from_the_validator(subject, logger, validator):
     transient_error = TransientRabbitError("Test transient error")
     validator.return_value.validate.side_effect = transient_error
 
@@ -133,6 +148,35 @@ def test_process_when_another_exception_from_the_validator(
 ):
     another_exception = KeyError("key")
     validator.return_value.validate.side_effect = another_exception
+    result = subject.process(MagicMock())
+
+    assert result is False
+    logger.error.assert_called_once()
+    message_wrapper_class.return_value.add_error.assert_called_once_with(
+        UpdateSampleError(
+            type=ErrorType.UnhandledProcessingError, origin=RABBITMQ_UPDATE_FEEDBACK_ORIGIN_PARSING, description=ANY
+        )
+    )
+
+    assert_feedback_was_published(subject, message_wrapper_class.return_value, avro_encoder.return_value)
+
+
+def test_process_when_transient_error_from_the_exporter(subject, logger, exporter):
+    transient_error = TransientRabbitError("Test transient error")
+    exporter.return_value.verify_sample_in_mongo.side_effect = transient_error
+
+    with pytest.raises(TransientRabbitError) as ex_info:
+        subject.process(MagicMock())
+
+    logger.error.assert_called_once()
+    assert ex_info.value == transient_error
+
+
+def test_process_when_another_exception_from_the_exporter(
+    subject, message_wrapper_class, logger, exporter, avro_encoder
+):
+    another_exception = KeyError("key")
+    exporter.return_value.verify_sample_in_mongo.side_effect = another_exception
     result = subject.process(MagicMock())
 
     assert result is False

@@ -18,9 +18,21 @@ FIELD_UPDATED_FIELDS = "updatedFields"
 FIELD_VALUE = "value"
 
 
+# Update errors: 100 - 199
 class ErrorType(IntEnum):
-    UnhandledProcessingError = 101
-    ValidationNonUniqueFieldName = 102
+    # Parsing errors: 100 - 119
+    UnhandledProcessingError = 100
+
+    # Validation errors: 120 - 159
+    ValidationUnpopulatedField = 120
+    ValidationNonUniqueFieldName = 121
+
+    # Exporter errors: 160 - 199
+    ExporterSampleDoesNotExist = 160
+    ExporterMessageOutOfDate = 161
+    ExporterPlateAlreadyPicked = 162
+    ExporterPlateNotInDART = 163
+    ExporterDARTUpdateFailed = 164
 
 
 class MessageField(NamedTuple):
@@ -75,7 +87,7 @@ class UpdateSampleMessage(BaseMessage):
         return MessageField(FIELD_UPDATED_FIELDS, self._updated_fields)
 
     def add_error(self, update_error):
-        LOGGER.error(f"Error in create plate message: {update_error.description}")
+        LOGGER.error(f"Error in update sample message: {update_error.description}")
         self.add_textual_error(update_error.description)
         self._feedback_errors.append(
             UpdateFeedbackError(

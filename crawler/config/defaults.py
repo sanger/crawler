@@ -40,6 +40,11 @@ BARACODA_BASE_URL = f"http://{LOCALHOST}:8000"
 BARACODA_RETRY_ATTEMPTS = 3
 
 ###
+# Cherrytrack
+###
+CHERRYTRACK_BASE_URL = f"http://{LOCALHOST}:8000"
+
+###
 # mongo details
 ###
 MONGO_DB = "lighthouseDevelopmentDB"
