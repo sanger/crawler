@@ -25,7 +25,7 @@ from crawler.constants import (
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
 from crawler.helpers.general_helpers import create_source_plate_doc
-from crawler.sql_queries import SQL_MLWH_COUNT_BARCODES, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID
+from crawler.sql_queries import SQL_MLWH_COUNT_MONGO_IDS, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID
 from crawler.types import Config, SampleDoc
 
 logger = logging.getLogger(__name__)
@@ -220,7 +220,7 @@ def check_samples_are_valid(
     list_mongo_ids = [str(x[FIELD_MONGODB_ID]) for x in query_mongo]
 
     # select count of rows from MLWH for list_mongo_ids
-    count_mlwh_rows = mlwh_count_samples_from_barcodes(config, source_plate_barcodes)
+    count_mlwh_rows = mlwh_count_samples_from_mongo_ids(config, list_mongo_ids)
 
     # check numbers of rows matches
     count_mongo_rows = len(list_mongo_ids)
@@ -371,21 +371,21 @@ def update_mlwh_sample_uuid_and_source_plate_uuid(config: Config, sample_doc: Sa
         return False
 
 
-def mlwh_count_samples_from_barcodes(config: Config, barcodes: List[str]) -> int:
-    """Updates a sample in the sample in the MLWH database
+def mlwh_count_samples_from_mongo_ids(config: Config, mongo_ids: List[str]) -> int:
+    """Count samples from mongo_ids
 
     Arguments:
         config {Config} -- application config specifying database details
-        sample_doc {SampleDoc} -- the sample document whose fields should be updated
+        mongo_ids {List[str]} -- the list of mongo_ids to find
 
     Returns:
-        bool -- whether the updates completed successfully
+        int -- number of samples
     """
     mysql_conn = create_mysql_connection(config, False)
 
     if mysql_conn is not None and mysql_conn.is_connected():
         cursor: CMySQLCursor = mysql_conn.cursor()
-        query_str = SQL_MLWH_COUNT_BARCODES % {"barcodes": str(barcodes).strip("[]")}
+        query_str = SQL_MLWH_COUNT_MONGO_IDS % {"mongo_ids": str(mongo_ids).strip("[]")}
         cursor.execute(query_str)
         return cast(int, cursor.fetchone()[0])
     else:

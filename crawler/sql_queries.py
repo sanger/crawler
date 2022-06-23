@@ -172,6 +172,6 @@ SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID = (
 )
 
 
-SQL_MLWH_COUNT_BARCODES = (
-    f"SELECT COUNT(*)" f" FROM lighthouse_sample" f" WHERE lighthouse_sample.plate_barcode IN (%(barcodes)s)"
+SQL_MLWH_COUNT_MONGO_IDS = (
+    f"SELECT COUNT(*)" f" FROM lighthouse_sample" f" WHERE lighthouse_sample.mongodb_id IN (%(mongo_ids)s)"
 )
