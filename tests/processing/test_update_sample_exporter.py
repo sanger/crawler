@@ -73,12 +73,12 @@ def add_sample_to_mongo(mongo_database, updated_at=None):
     samples_collection.insert_one(dummy_mongo_sample(updated_at))
 
 
-def add_mongo_sample_to_subject(subject):
+def add_sample_to_subject(subject):
     subject._mongo_sample = dummy_mongo_sample()
 
 
 def set_up_response_for_cherrytrack_plate(subject, config, http_status):
-    add_mongo_sample_to_subject(subject)
+    add_sample_to_subject(subject)
     cherrytrack_url = f"{config.CHERRYTRACK_BASE_URL}/source-plates/A_PLATE_BARCODE"
     responses.add(responses.GET, cherrytrack_url, status=http_status)
 
@@ -168,7 +168,7 @@ def test_verify_plate_state_adds_message_error_when_plate_in_cherrytrack(subject
 
 @responses.activate
 def test_verify_plate_state_raises_transient_error_when_cherrytrack_is_not_responding(subject, logger):
-    add_mongo_sample_to_subject(subject)
+    add_sample_to_subject(subject)
     # Don't add the cherrytrack endpoint to responses
 
     with pytest.raises(TransientRabbitError) as ex_info:
@@ -262,13 +262,13 @@ def test_verify_plate_state_raises_transient_error_when_dart_query_cannot_be_mad
     ],
 )
 def test_update_mongo_updates_the_sample(subject, mongo_database, fields, must_sequence, preferentially_sequence):
-    add_sample_to_mongo(mongo_database)
-
-    _, mongo_database = mongo_database
-
     subject._message._body[FIELD_SAMPLE][FIELD_UPDATED_FIELDS] = [
         {"name": name, "value": value} for name, value in fields.items()
     ]
+
+    add_sample_to_mongo(mongo_database)
+    add_sample_to_subject(subject)
+    _, mongo_database = mongo_database
 
     subject.update_mongo()
 
@@ -287,6 +287,8 @@ def test_update_mongo_updates_the_sample(subject, mongo_database, fields, must_s
 
 
 def test_update_mongo_logs_info(subject, logger):
+    add_sample_to_subject(subject)
+
     subject.update_mongo()
 
     logger.info.assert_called_once()
@@ -317,7 +319,7 @@ def test_update_dart_connects_to_the_database(subject, dart_connection):
 
 
 def test_update_dart_logs_if_dart_connection_fails(subject, dart_connection, logger):
-    add_mongo_sample_to_subject(subject)
+    add_sample_to_subject(subject)
     dart_connection.return_value = None
 
     subject.update_dart()
@@ -343,11 +345,11 @@ def test_update_dart_logs_if_dart_connection_fails(subject, dart_connection, log
 def test_update_dart_updates_well_properties_with_correct_values(
     subject, dart_connection, fields, must_sequence, preferentially_sequence
 ):
-    add_mongo_sample_to_subject(subject)
-
     subject._message._body[FIELD_SAMPLE][FIELD_UPDATED_FIELDS] = [
         {"name": name, "value": value} for name, value in fields.items()
     ]
+
+    add_sample_to_subject(subject)
 
     with patch("crawler.processing.update_sample_exporter.add_dart_well_properties_if_positive") as add_method:
         subject.update_dart()
@@ -369,7 +371,7 @@ def test_update_dart_updates_well_properties_with_correct_values(
 
 
 def test_update_dart_logs_if_update_well_properties_for_dart_fails(subject, logger):
-    add_mongo_sample_to_subject(subject)
+    add_sample_to_subject(subject)
     add_exception = Exception("Boom!")
 
     with patch("crawler.processing.update_sample_exporter.add_dart_well_properties_if_positive") as add_method:

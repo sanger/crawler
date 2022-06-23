@@ -25,14 +25,22 @@ from crawler.rabbit.messages.update_sample_message import ErrorType, UpdateSampl
 
 LOGGER = logging.getLogger(__name__)
 
+FIELD_NAME_MAP = {
+    "mustSequence": FIELD_MUST_SEQUENCE,
+    "preferentiallySequence": FIELD_PREFERENTIALLY_SEQUENCE,
+}
+
 
 class UpdateSampleExporter:
     def __init__(self, message, config):
         self._message = message
         self._config = config
 
-        self._mongo_sample = None
         self._plate_missing_in_dart = False
+
+        self._updated_sample = None
+        self.__mongo_db = None
+        self.__mongo_sample = None
 
     def verify_sample_in_mongo(self):
         try:
@@ -57,7 +65,7 @@ class UpdateSampleExporter:
 
     @property
     def _mongo_db(self) -> Database:
-        if not hasattr(self, "__mongo_db"):
+        if self.__mongo_db is None:
             client = create_mongo_client(self._config)
             self.__mongo_db = get_mongo_db(self._config, client)
 
@@ -74,25 +82,22 @@ class UpdateSampleExporter:
         return self._mongo_sample[FIELD_PLATE_BARCODE]
 
     @property
-    def _updated_mongo_fields(self):
-        field_name_map = {"mustSequence": FIELD_MUST_SEQUENCE, "preferentiallySequence": FIELD_PREFERENTIALLY_SEQUENCE}
+    def _mongo_sample(self):
+        return self.__mongo_sample
 
-        if not hasattr(self, "_updated_fields"):
-            self._updated_fields = {field_name_map[e.name]: e.value for e in self._message.updated_fields.value}
-            self._updated_fields[FIELD_UPDATED_AT] = datetime.utcnow()
+    @_mongo_sample.setter
+    def _mongo_sample(self, mongo_sample):
+        self.__mongo_sample = mongo_sample
 
-        return self._updated_fields
+        if mongo_sample is None:
+            self._updated_sample = None
+            return
 
-    @property
-    def _updated_mongo_sample(self):
-        if self._mongo_sample is None:
-            return None
+        self._updated_sample = copy.deepcopy(mongo_sample)
 
-        updated_sample = copy.deepcopy(self._mongo_sample)
-        for name, value in self._updated_mongo_fields.items():
-            updated_sample[name] = value
-
-        return updated_sample
+        self._updated_sample[FIELD_UPDATED_AT] = datetime.utcnow()
+        for field in self._message.updated_fields.value:
+            self._updated_sample[FIELD_NAME_MAP[field.name]] = field.value
 
     def _validate_mongo_properties(self, session: ClientSession) -> None:
         try:
@@ -203,9 +208,7 @@ class UpdateSampleExporter:
         try:
             session_database = get_mongo_db(self._config, session.client)
             samples_collection = get_mongo_collection(session_database, COLLECTION_SAMPLES)
-            samples_collection.update_one(
-                {FIELD_LH_SAMPLE_UUID: sample_uuid}, {"$set": self._updated_mongo_fields}, session=session
-            )
+            samples_collection.replace_one({FIELD_LH_SAMPLE_UUID: sample_uuid}, self._updated_sample, session=session)
         except Exception as ex:
             LOGGER.critical(f"Error accessing MongoDB during update of sample '{sample_uuid}': {ex}")
             LOGGER.exception(ex)
@@ -234,7 +237,7 @@ class UpdateSampleExporter:
 
         try:
             cursor = sql_server_connection.cursor()
-            add_dart_well_properties_if_positive(cursor, self._updated_mongo_sample, self._plate_barcode)
+            add_dart_well_properties_if_positive(cursor, self._updated_sample, self._plate_barcode)
             cursor.commit()
         except Exception as ex:
             LOGGER.exception(ex)
