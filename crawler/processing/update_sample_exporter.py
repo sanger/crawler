@@ -79,6 +79,8 @@ class UpdateSampleExporter:
     def update_dart(self):
         """Update the DART database with the newly updated Mongo document. If any step of the update fails, a relevant
         error message will be added to the message, but no errors will be raised.
+
+        Note:  This method will raise an exception if called before verify_sample_in_mongo().
         """
         if not self._plate_missing_in_dart:
             self._update_sample_in_dart()
