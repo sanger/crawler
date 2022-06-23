@@ -170,3 +170,8 @@ SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID = (
     f" { MLWH_UPDATED_AT } = %(updated_at)s"
     f" WHERE { MLWH_MONGODB_ID } = %(_id)s"
 )
+
+
+SQL_MLWH_COUNT_BARCODES = (
+    f"SELECT COUNT(*)" f" FROM lighthouse_sample" f" WHERE lighthouse_sample.plate_barcode IN (%(barcodes)s)"
+)

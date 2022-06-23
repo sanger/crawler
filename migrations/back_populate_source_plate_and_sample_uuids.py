@@ -7,14 +7,17 @@ from datetime import datetime
 from typing import Dict, List, Optional, cast
 from uuid import uuid4
 
+from mysql.connector.cursor_cext import CMySQLCursor
 from pymongo.collection import Collection
 
 from crawler.constants import (
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
+    FIELD_COORDINATE,
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_MONGO_LAB_ID,
+    FIELD_MONGO_SOURCE_PLATE_BARCODE,
     FIELD_MONGODB_ID,
     FIELD_PLATE_BARCODE,
     FIELD_UPDATED_AT,
@@ -22,13 +25,27 @@ from crawler.constants import (
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
 from crawler.helpers.general_helpers import create_source_plate_doc
-from crawler.sql_queries import SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID
+from crawler.sql_queries import SQL_MLWH_COUNT_BARCODES, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID
 from crawler.types import Config, SampleDoc
 
-# from pymongo.database import Database
-
-
 logger = logging.getLogger(__name__)
+
+
+class ExceptionSampleWithSampleUUIDNotSourceUUID(Exception):
+    pass
+
+
+class ExceptionSampleWithSourceUUIDNotSampleUUID(Exception):
+    pass
+
+
+class ExceptionSourcePlateDefined(Exception):
+    pass
+
+
+class ExceptionSampleCountsForMongoAndMLWHNotMatching(Exception):
+    pass
+
 
 """
 Assumptions:
@@ -128,7 +145,7 @@ def extract_barcodes(config: Config, filepath: str) -> List[str]:
         with open(filepath, newline="") as csvfile:
             csvreader = DictReader(csvfile)
             for row in csvreader:
-                extracted_barcodes.append(row["barcode"])
+                extracted_barcodes.append(row[FIELD_MONGO_SOURCE_PLATE_BARCODE])
 
     except Exception as e:
         logger.critical("Error reading source barcodes file " f"{filepath}")
@@ -138,54 +155,80 @@ def extract_barcodes(config: Config, filepath: str) -> List[str]:
 
 
 def check_samples_are_valid(
-    samples_collection: Collection, source_plates_collection: Collection, source_plate_barcodes: List[str]
+    config: Config,
+    samples_collection: Collection,
+    source_plates_collection: Collection,
+    source_plate_barcodes: List[str],
 ) -> None:
-    """Validate that none of the samples have a source plate uuid and raise error if that is
+    """
+    Validate that none of the samples have a source plate uuid and raise error if that is
     the case
     """
-    source_plates = list(source_plates_collection.find({"plate_barcode": {"$in": source_plate_barcodes}}))
+    source_plates = list(
+        source_plates_collection.find({FIELD_MONGO_SOURCE_PLATE_BARCODE: {"$in": source_plate_barcodes}})
+    )
     if len(source_plates) > 0:
-        raise Exception(
+        raise ExceptionSourcePlateDefined(
             f"Some of the plates are already present in the source plates because they may"
             f" have already been picked which is not supported by the script: {source_plates}"
         )
 
-    samples_with_source_plate_not_in_source_plates_collection = list(
-        samples_collection.find(
-            {"plate_barcode": {"$in": source_plate_barcodes}, "lh_source_plate_uuid": {"$ne": None}}
-        )
-    )
-    if len(samples_with_source_plate_not_in_source_plates_collection) > 0:
-        raise Exception(
-            f"Some samples do have source_plate_uuid without a record in source plates"
-            f"collection: {samples_with_source_plate_not_in_source_plates_collection}"
-        )
-
+    """
+    Validate that samples do not have a source plate uuid but no sample uuid
+    """
     samples_only_source_plate = list(
         samples_collection.find(
             {
-                "plate_barcode": {"$in": source_plate_barcodes},
-                "lh_source_plate_uuid": {"$ne": None},
-                "lh_sample_uuid": None,
+                FIELD_PLATE_BARCODE: {"$in": source_plate_barcodes},
+                FIELD_LH_SOURCE_PLATE_UUID: {"$ne": None},
+                FIELD_LH_SAMPLE_UUID: None,
             }
         )
     )
     if len(samples_only_source_plate) > 0:
-        raise Exception(
+        raise ExceptionSampleWithSourceUUIDNotSampleUUID(
             f"Some of the samples have only a source plate uuid but no sample uuid: {samples_only_source_plate}"
         )
 
+    """
+    Validate that samples do not have a sample uuid but no source plate uuid
+    """
     samples_only_sample_uuid = list(
         samples_collection.find(
             {
-                "plate_barcode": {"$in": source_plate_barcodes},
-                "lh_sample_uuid": {"$ne": None},
-                "lh_source_plate_uuid": None,
+                FIELD_PLATE_BARCODE: {"$in": source_plate_barcodes},
+                FIELD_LH_SAMPLE_UUID: {"$ne": None},
+                FIELD_LH_SOURCE_PLATE_UUID: None,
             }
         )
     )
     if len(samples_only_sample_uuid) > 0:
-        raise Exception(f"Some of the samples have a sample uuid but no source plate uuid: {samples_only_sample_uuid}")
+        raise ExceptionSampleWithSampleUUIDNotSourceUUID(
+            f"Some of the samples have a sample uuid but no source plate uuid: {samples_only_sample_uuid}"
+        )
+
+    """
+    Validate that there are matching sample rows in both mongo and mlwh for the list of barcodes supplied
+    i.e. that the sample rows are present in both databases ready to be updated
+    """
+    # select mongodb ids from mongo for barcodes list
+    query_mongo = list(
+        # fetch just the mongo ids
+        samples_collection.find({FIELD_PLATE_BARCODE: {"$in": source_plate_barcodes}}, {FIELD_MONGODB_ID: 1})
+    )
+
+    list_mongo_ids = [str(x[FIELD_MONGODB_ID]) for x in query_mongo]
+
+    # select count of rows from MLWH for list_mongo_ids
+    count_mlwh_rows = mlwh_count_samples_from_barcodes(config, source_plate_barcodes)
+
+    # check numbers of rows matches
+    count_mongo_rows = len(list_mongo_ids)
+    if count_mongo_rows != count_mlwh_rows:
+        raise ExceptionSampleCountsForMongoAndMLWHNotMatching(
+            f"The number of samples for the list of barcodes in Mongo does not match"
+            f"the number in the MLWH: {count_mongo_rows}!={count_mlwh_rows}"
+        )
 
 
 def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]) -> None:
@@ -209,7 +252,7 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
         source_plates_collection = get_mongo_collection(mongo_db, COLLECTION_SOURCE_PLATES)
 
-        check_samples_are_valid(samples_collection, source_plates_collection, source_plate_barcodes)
+        check_samples_are_valid(config, samples_collection, source_plates_collection, source_plate_barcodes)
 
         for source_plate_barcode in source_plate_barcodes:
             logger.info(f"Processing source plate barcode {source_plate_barcode}")
@@ -221,7 +264,7 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
             current_source_plate_uuid = None
             for sample_doc in sample_docs:
                 # will every sample doc have a plate_barcode and lab id?
-                logger.info(f"Sample in well {sample_doc['coordinate']}")
+                logger.info(f"Sample in well {sample_doc[FIELD_COORDINATE]}")
 
                 if current_source_plate_uuid is None:
                     # extract lab id from sample doc
@@ -253,7 +296,7 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
 
                 # update sample in MLWH 'lighthouse_samples' to set lh_source_plate,
                 # lh_sample_uuid, and updated_timestamp
-                sample_doc["_id"] = str(sample_doc["_id"])
+                sample_doc[FIELD_MONGODB_ID] = str(sample_doc[FIELD_MONGODB_ID])
                 try:
                     success = update_mlwh_sample_uuid_and_source_plate_uuid(config, sample_doc)
                     if success:
@@ -326,6 +369,27 @@ def update_mlwh_sample_uuid_and_source_plate_uuid(config: Config, sample_doc: Sa
         return True
     else:
         return False
+
+
+def mlwh_count_samples_from_barcodes(config: Config, barcodes: List[str]) -> int:
+    """Updates a sample in the sample in the MLWH database
+
+    Arguments:
+        config {Config} -- application config specifying database details
+        sample_doc {SampleDoc} -- the sample document whose fields should be updated
+
+    Returns:
+        bool -- whether the updates completed successfully
+    """
+    mysql_conn = create_mysql_connection(config, False)
+
+    if mysql_conn is not None and mysql_conn.is_connected():
+        cursor: CMySQLCursor = mysql_conn.cursor()
+        query_str = SQL_MLWH_COUNT_BARCODES % {"barcodes": str(barcodes).strip("[]")}
+        cursor.execute(query_str)
+        return cast(int, cursor.fetchone()[0])
+    else:
+        raise Exception("Cannot connect mysql")
 
 
 def create_mongo_source_plate_record(

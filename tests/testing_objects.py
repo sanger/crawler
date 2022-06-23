@@ -708,6 +708,20 @@ MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
             "lh_sample_uuid": None,
             "lh_source_plate_uuid": "test2",
         },
+        {
+            "mongodb_id": "aaaaaaaaaaaaaaaaaaaaaaa7",
+            "root_sample_id": "root_7",
+            "rna_id": "pb_7_A01",
+            "plate_barcode": "782",
+            "coordinate": "B2",
+            "result": "Positive",
+            "date_tested_string": "2020-10-24 22:30:22",
+            "date_tested": datetime(2020, 10, 24, 22, 30, 22),
+            "source": "test centre",
+            "lab_id": "TC",
+            "lh_sample_uuid": "my_sample_uuid",
+            "lh_source_plate_uuid": "my_source_plate_uuid",
+        },
     ]
 }
 
