@@ -42,6 +42,12 @@ class UpdateSampleExporter:
         self.__mongo_sample = None
 
     def verify_sample_in_mongo(self):
+        """Verify that the sample in the message exists in the Mongo database and that the document to be updated
+        has not been updated more recently than the message creation timestamp. If either check fails, relevant
+        errors will be added to the message.
+
+        Raises a TransientRabbitError if Mongo is unreachable or cannot be queried.
+        """
         try:
             with self._mongo_db.client.start_session() as session:
                 self._validate_mongo_properties(session)
@@ -49,9 +55,21 @@ class UpdateSampleExporter:
             self._mongo_db.client.close()
 
     def verify_plate_state(self):
+        """Verify that the plate has not already been picked by either Biosero or Beckman machines. If it has, a
+        relevant error will be added to the message.
+
+        Raises a TransientRabbitError if either Cherrytrack or DART are unreachable or cannot be queried.
+
+        Note:  This method will raise an exception if called before verify_sample_in_mongo().
+        """
         self._verify_plate_not_in_cherrytrack() and self._verify_plate_state_in_dart()
 
     def update_mongo(self):
+        """Updates Mongo by replacing the document for the sample with a new one where the requested fields have been
+        updated.
+
+        Raises a TransientRabbitError if Mongo is unreachable or cannot be queried.
+        """
         try:
             with self._mongo_db.client.start_session() as session:
                 self._update_sample_in_mongo(session)
@@ -59,6 +77,9 @@ class UpdateSampleExporter:
             self._mongo_db.client.close()
 
     def update_dart(self):
+        """Update the DART database with the newly updated Mongo document. If any step of the update fails, a relevant
+        error message will be added to the message, but no errors will be raised.
+        """
         if not self._plate_missing_in_dart:
             self._update_sample_in_dart()
 

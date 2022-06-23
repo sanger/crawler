@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from http import HTTPStatus
 from unittest.mock import ANY, MagicMock, patch
 
+import bson
 import pytest
 import responses
 
@@ -12,6 +13,7 @@ from crawler.constants import (
     DART_STATE_PENDING,
     DART_STATE_PICKABLE,
     FIELD_LH_SAMPLE_UUID,
+    FIELD_MONGODB_ID,
     FIELD_MUST_SEQUENCE,
     FIELD_PLATE_BARCODE,
     FIELD_PREFERENTIALLY_SEQUENCE,
@@ -61,6 +63,7 @@ def dummy_mongo_sample(updated_at=None):
         updated_at = datetime.now() - timedelta(hours=1)
 
     return {
+        FIELD_MONGODB_ID: bson.ObjectId("6289d647b4defff7d4451f61"),
         FIELD_LH_SAMPLE_UUID: "UPDATE_SAMPLE_UUID",
         FIELD_UPDATED_AT: updated_at,
         FIELD_PLATE_BARCODE: "A_PLATE_BARCODE",
