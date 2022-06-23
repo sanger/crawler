@@ -69,6 +69,8 @@ class UpdateSampleExporter:
         updated.
 
         Raises a TransientRabbitError if Mongo is unreachable or cannot be queried.
+
+        Note:  This method will raise an exception if called before verify_sample_in_mongo().
         """
         try:
             with self._mongo_db.client.start_session() as session:
