@@ -784,8 +784,8 @@ MLWH_SAMPLE_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "1",
             "root_sample_id": "root_5",
-            "rna_id": "pb_9_A01",
-            "plate_barcode": "pb_9",
+            "rna_id": "pb_4_A01",
+            "plate_barcode": "pb_4",
             "coordinate": "A1",
             "result": "Positive",
             "date_tested_string": "2020-10-24 22:30:22",
