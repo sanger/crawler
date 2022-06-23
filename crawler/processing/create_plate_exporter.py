@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import List, NamedTuple
 
 from pymongo.client_session import ClientSession
-from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
 from crawler.constants import (
@@ -63,24 +62,22 @@ class CreatePlateExporter:
 
         self._plate_uuid = None
         self._samples_inserted = 0
+        self.__mongo_db = None
 
     def export_to_mongo(self):
         with self._mongo_db.client.start_session() as session:
-            try:
-                with session.start_transaction():
-                    source_plate_result = self._record_source_plate_in_mongo_db(session)
+            with session.start_transaction():
+                source_plate_result = self._record_source_plate_in_mongo_db(session)
 
-                    if not source_plate_result.success:
-                        return self._abort_transaction_with_errors(session, source_plate_result.create_plate_errors)
+                if not source_plate_result.success:
+                    return self._abort_transaction_with_errors(session, source_plate_result.create_plate_errors)
 
-                    samples_result = self._record_samples_in_mongo_db(session)
+                samples_result = self._record_samples_in_mongo_db(session)
 
-                    if not samples_result.success:
-                        return self._abort_transaction_with_errors(session, samples_result.create_plate_errors)
+                if not samples_result.success:
+                    return self._abort_transaction_with_errors(session, samples_result.create_plate_errors)
 
-                    session.commit_transaction()
-            finally:
-                self._mongo_db.client.close()
+                session.commit_transaction()
 
     def export_to_dart(self):
         result = self._record_samples_in_dart()
@@ -112,8 +109,8 @@ class CreatePlateExporter:
             LOGGER.exception(ex)
 
     @property
-    def _mongo_db(self) -> Database:
-        if not hasattr(self, "__mongo_db"):
+    def _mongo_db(self):
+        if self.__mongo_db is None:
             client = create_mongo_client(self._config)
             self.__mongo_db = get_mongo_db(self._config, client)
 

@@ -8,6 +8,7 @@ from crawler.constants import (
 )
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.base_processor import BaseProcessor
+from crawler.processing.update_sample_exporter import UpdateSampleExporter
 from crawler.processing.update_sample_validator import UpdateSampleValidator
 from crawler.rabbit.avro_encoder import AvroEncoder
 from crawler.rabbit.messages.update_feedback_message import UpdateFeedbackMessage
@@ -25,16 +26,20 @@ class UpdateSampleProcessor(BaseProcessor):
     def process(self, message):
         update_message = UpdateSampleMessage(message.message)
         validator = UpdateSampleValidator(update_message)
+        exporter = UpdateSampleExporter(update_message, self._config)
 
         # First validate the message and then export the updates to MongoDB.
         try:
             validator.validate()
             if not update_message.has_errors:
-                # Export here
-                pass
+                exporter.verify_sample_in_mongo()
+            if not update_message.has_errors:
+                exporter.verify_plate_state()
+            if not update_message.has_errors:
+                exporter.update_mongo()
         except TransientRabbitError as ex:
             LOGGER.error(f"Transient error while processing message: {ex.message}")
-            raise  # Cause the consumer to restart and try this message again.  Ideally we will delay the consumer.
+            raise  # Cause the consumer to restart and try this message again.
         except Exception as ex:
             LOGGER.error(f"Unhandled error while processing message: {type(ex)} {str(ex)}")
             update_message.add_error(
@@ -45,9 +50,15 @@ class UpdateSampleProcessor(BaseProcessor):
                 )
             )
 
+        # At this point, publish feedback as all remaining errors are not for PAM to be concerned with.
         self._publish_feedback(update_message)
 
-        return not update_message.has_errors  # Acknowledge the message as either successful or to go to dead letters
+        if update_message.has_errors:
+            return False  # Errors up to this point mean we should send the message to dead-letters.
+
+        exporter.update_dart()
+
+        return True  # The message has been processed whether DART worked or not.
 
     def _publish_feedback(self, update_message):
         feedback_message = UpdateFeedbackMessage(

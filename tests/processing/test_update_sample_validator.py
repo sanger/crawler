@@ -40,6 +40,21 @@ def test_validate_generates_no_errors_for_valid_message(subject, update_message)
     assert update_message.has_errors is False
 
 
+def test_validate_adds_error_when_no_updated_fields_given(subject, update_message, add_error):
+    update_message._body[FIELD_SAMPLE][FIELD_UPDATED_FIELDS] = []
+
+    subject.validate()
+
+    add_error.assert_called_once_with(
+        UpdateSampleError(
+            type=ErrorType.ValidationUnpopulatedField,
+            origin=RABBITMQ_UPDATE_FEEDBACK_ORIGIN_FIELD,
+            description=ANY,
+            field=FIELD_UPDATED_FIELDS,
+        )
+    )
+
+
 @pytest.mark.parametrize(
     "field_names, duped_name",
     [
