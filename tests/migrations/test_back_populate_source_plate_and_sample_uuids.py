@@ -17,7 +17,6 @@ from migrations.back_populate_source_plate_and_sample_uuids import (
     ExceptionSampleWithSourceUUIDNotSampleUUID,
     ExceptionSourcePlateDefined,
     check_samples_are_valid,
-    extract_barcodes,
     mlwh_count_samples_from_mongo_ids,
 )
 
@@ -31,6 +30,14 @@ def mock_helper_imports():
             "migrations.update_filtered_positives.positive_result_samples_from_mongo"
         ) as mock_get_positive_samples:
             yield mock_get_plate_barcodes, mock_get_positive_samples
+
+
+def check_sample_not_contains_sample_uuid(sample):
+    assert (FIELD_LH_SAMPLE_UUID not in sample) or (sample[FIELD_LH_SAMPLE_UUID] is None)
+
+
+def check_sample_not_contains_source_plate_uuid(sample):
+    assert (FIELD_LH_SOURCE_PLATE_UUID not in sample) or (sample[FIELD_LH_SOURCE_PLATE_UUID] is None)
 
 
 def test_back_populate_source_plate_uuid_and_sample_uuid_missing_file(config):
@@ -61,7 +68,7 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_populates_sample_uuid(
 
     assert len(samples_before) > 0
     for sample in samples_before:
-        assert not (FIELD_LH_SAMPLE_UUID in sample)
+        check_sample_not_contains_sample_uuid(sample)
 
     back_populate_source_plate_and_sample_uuids.run(config, filepath)
     samples_after = list(samples_collection_accessor.find({FIELD_PLATE_BARCODE: "123"}))
@@ -101,14 +108,14 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_populates_sample_uuid(
 def test_back_populate_source_plate_uuid_and_sample_uuid_works_with_two_plates(
     config, testing_samples_with_lab_id, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
 ):
-    filepath = "./tests/data/populate_old_plates_2_plates.csv"
+    filepath = "./tests/data/populate_old_plates_2.csv"
     samples_before = list(
         samples_collection_accessor.find({FIELD_PLATE_BARCODE: {"$in": ["123", "456"]}}).sort(FIELD_RNA_ID, ASCENDING)
     )
 
     assert len(samples_before) > 0
     for sample in samples_before:
-        assert not (FIELD_LH_SAMPLE_UUID in sample)
+        check_sample_not_contains_sample_uuid(sample)
 
     back_populate_source_plate_and_sample_uuids.run(config, filepath)
     samples_after = list(
@@ -137,7 +144,7 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid(
 
     assert len(samples_before) > 0
     for sample in samples_before:
-        assert not (FIELD_LH_SOURCE_PLATE_UUID in sample)
+        check_sample_not_contains_source_plate_uuid(sample)
 
     back_populate_source_plate_and_sample_uuids.run(config, filepath)
     samples_after = list(samples_collection_accessor.find({FIELD_PLATE_BARCODE: "123"}))
@@ -175,14 +182,14 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid(
 def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid_with_two_plates_input(
     config, testing_samples_with_lab_id, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
 ):
-    filepath = "./tests/data/populate_old_plates_2_plates.csv"
+    filepath = "./tests/data/populate_old_plates_2.csv"
     samples_before = list(
         samples_collection_accessor.find({FIELD_PLATE_BARCODE: {"$in": ["123", "456"]}}).sort(FIELD_RNA_ID, ASCENDING)
     )
 
     assert len(samples_before) > 0
     for sample in samples_before:
-        assert not (FIELD_LH_SOURCE_PLATE_UUID in sample)
+        check_sample_not_contains_source_plate_uuid(sample)
 
     back_populate_source_plate_and_sample_uuids.run(config, filepath)
     samples_after = list(
@@ -191,13 +198,14 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid_w
 
     assert len(samples_after) == len(samples_before)
     source_plate_uuid = samples_after[0][FIELD_LH_SOURCE_PLATE_UUID]
-    source_plate_uuid_second = samples_after[1][FIELD_LH_SOURCE_PLATE_UUID]
+    source_plate_uuid_second = samples_after[3][FIELD_LH_SOURCE_PLATE_UUID]
+    assert source_plate_uuid != source_plate_uuid_second
     assert source_plate_uuid is not None
     assert source_plate_uuid_second is not None
     assert samples_after[0][FIELD_LH_SOURCE_PLATE_UUID] == source_plate_uuid
-    assert samples_after[1][FIELD_LH_SOURCE_PLATE_UUID] == source_plate_uuid_second
+    assert samples_after[1][FIELD_LH_SOURCE_PLATE_UUID] == source_plate_uuid
     assert samples_after[2][FIELD_LH_SOURCE_PLATE_UUID] == source_plate_uuid
-    assert samples_after[3][FIELD_LH_SOURCE_PLATE_UUID] == source_plate_uuid
+    assert samples_after[3][FIELD_LH_SOURCE_PLATE_UUID] == source_plate_uuid_second
 
 
 def test_back_populate_source_plate_uuid_and_sample_uuid_dont_change_source_plate_other_barcodes(
@@ -208,14 +216,14 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_dont_change_source_plat
 
     assert len(samples_before) > 0
     for sample in samples_before:
-        assert not (FIELD_LH_SOURCE_PLATE_UUID in sample)
+        check_sample_not_contains_source_plate_uuid(sample)
 
     back_populate_source_plate_and_sample_uuids.run(config, filepath)
     samples_after = list(samples_collection_accessor.find({FIELD_PLATE_BARCODE: "456"}))
 
     assert len(samples_after) == len(samples_before)
     assert len(samples_before) > 0
-    for sample in samples_before:
+    for sample in samples_after:
         assert not (FIELD_LH_SOURCE_PLATE_UUID in sample)
 
 
@@ -227,21 +235,15 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_dont_change_sample_uuid
 
     assert len(samples_before) > 0
     for sample in samples_before:
-        assert not (FIELD_LH_SAMPLE_UUID in sample)
+        check_sample_not_contains_sample_uuid(sample)
 
     back_populate_source_plate_and_sample_uuids.run(config, filepath)
     samples_after = list(samples_collection_accessor.find({FIELD_PLATE_BARCODE: "456"}))
 
     assert len(samples_after) == len(samples_before)
     assert len(samples_before) > 0
-    for sample in samples_before:
-        assert not (FIELD_LH_SAMPLE_UUID in sample)
-
-
-def test_extract_barcodes_read_barcodes(config):
-    filepath = "./tests/data/populate_old_plates.csv"
-
-    assert extract_barcodes(config, filepath) == ["123"]
+    for sample in samples_after:
+        check_sample_not_contains_sample_uuid(sample)
 
 
 def test_check_samples_are_valid_finds_problems_with_samples(
@@ -258,7 +260,7 @@ def test_check_samples_are_valid_finds_problems_with_samples(
 
     assert len(samples_before) > 0
     for sample in samples_before:
-        assert not (FIELD_LH_SAMPLE_UUID in sample)
+        check_sample_not_contains_sample_uuid(sample)
 
     # When both are right
     try:

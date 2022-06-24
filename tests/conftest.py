@@ -33,6 +33,7 @@ from tests.testing_objects import (
     FILTERED_POSITIVE_TESTING_SAMPLES,
     MLWH_SAMPLE_LIGHTHOUSE_SAMPLE,
     MLWH_SAMPLE_STOCK_RESOURCE,
+    MLWH_SAMPLE_UNCONNECTED_LIGHTHOUSE_SAMPLE,
     MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE,
     MLWH_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS,
     MONGO_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS,
@@ -350,6 +351,26 @@ def mlwh_samples_with_lab_id_for_migration(config, mlwh_sql_engine):
         # inserts
         insert_into_mlwh(
             MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE["lighthouse_sample"],
+            mlwh_sql_engine,
+            config.MLWH_LIGHTHOUSE_SAMPLE_TABLE,
+        )
+
+        yield
+    finally:
+        delete_data()
+
+
+@pytest.fixture
+def mlwh_testing_samples_unconnected(config, mlwh_sql_engine):
+    def delete_data():
+        delete_from_mlwh(mlwh_sql_engine, config.MLWH_LIGHTHOUSE_SAMPLE_TABLE)
+
+    try:
+        delete_data()
+
+        # inserts
+        insert_into_mlwh(
+            MLWH_SAMPLE_UNCONNECTED_LIGHTHOUSE_SAMPLE["lighthouse_sample"],
             mlwh_sql_engine,
             config.MLWH_LIGHTHOUSE_SAMPLE_TABLE,
         )

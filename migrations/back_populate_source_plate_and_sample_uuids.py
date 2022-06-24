@@ -1,8 +1,5 @@
 import logging
 import logging.config
-import os
-import stat
-from csv import DictReader
 from datetime import datetime
 from typing import Dict, List, Optional, cast
 from uuid import uuid4
@@ -24,9 +21,10 @@ from crawler.constants import (
 )
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
-from crawler.helpers.general_helpers import create_source_plate_doc
+from crawler.helpers.general_helpers import create_source_plate_doc, map_mongo_to_sql_common
 from crawler.sql_queries import SQL_MLWH_COUNT_MONGO_IDS, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID
 from crawler.types import Config, SampleDoc
+from migrations.helpers.shared_helper import extract_barcodes, validate_args
 
 logger = logging.getLogger(__name__)
 
@@ -86,72 +84,6 @@ def run(config: Config, s_filepath: str) -> None:
 
     logger.info(f"Source plate barcodes {source_plate_barcodes}")
     update_uuids_mongo_and_mlwh(config=config, source_plate_barcodes=source_plate_barcodes)
-
-
-def validate_args(config: Config, s_filepath: str) -> str:
-    """Validate the supplied arguments
-
-    Arguments:
-        config {Config} -- application config specifying database details
-        s_filepath {str} -- the filepath of the csv file containing the list of source plate barcodes
-
-    Returns:
-        str -- the filepath if valid
-    """
-    base_msg = "Aborting run: "
-    if not config:
-        msg = f"{base_msg} Config required"
-        logger.error(msg)
-        raise Exception(msg)
-
-    if not valid_filepath(s_filepath):
-        msg = f"{base_msg} Unable to confirm valid csv file from supplied filepath"
-        logger.error(msg)
-        raise Exception(msg)
-
-    filepath = s_filepath
-
-    return filepath
-
-
-def valid_filepath(s_filepath: str) -> bool:
-    """Determine if the filepath argument supplied corresponds to a csv file
-
-    Arguments:
-        s_filepath {str} -- the filepath of the csv file containing the list of source plate barcodes
-
-    Returns:
-        bool -- whether the filepath corresponds to a csv file
-    """
-    if stat.S_ISREG(os.lstat(s_filepath).st_mode):
-        file_name, file_extension = os.path.splitext(s_filepath)
-        return file_extension == ".csv"
-
-    return False
-
-
-def extract_barcodes(config: Config, filepath: str) -> List[str]:
-    """Extract the list of barcodes from the csv file
-
-    Arguments:
-        config {Config} -- application config specifying database details
-        filepath {str} -- the filepath of the csv file containing the list of source plate barcodes
-
-    Returns:
-        List[str] -- list of source plate barcodes
-    """
-    extracted_barcodes: List[str] = []
-    try:
-        with open(filepath, newline="") as csvfile:
-            csvreader = DictReader(csvfile)
-            for row in csvreader:
-                extracted_barcodes.append(row[FIELD_MONGO_SOURCE_PLATE_BARCODE])
-
-    except Exception as e:
-        logger.critical("Error reading source barcodes file " f"{filepath}")
-        logger.exception(e)
-
-    return extracted_barcodes
 
 
 def check_samples_are_valid(
@@ -277,7 +209,7 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
 
                 sample_doc[FIELD_LH_SOURCE_PLATE_UUID] = current_source_plate_uuid
                 # generate an lh_sample_uuid if the sample doesn't have one
-                if FIELD_LH_SAMPLE_UUID not in sample_doc:
+                if FIELD_LH_SAMPLE_UUID not in sample_doc or (sample_doc[FIELD_LH_SAMPLE_UUID] is None):
                     sample_doc[FIELD_LH_SAMPLE_UUID] = str(uuid4())
 
                 # update sample in Mongo ‘samples’ to set lh_source_plate uuid, lh_sample_uuid, and updated_timestamp
@@ -363,8 +295,10 @@ def update_mlwh_sample_uuid_and_source_plate_uuid(config: Config, sample_doc: Sa
     mysql_conn = create_mysql_connection(config, False)
 
     if mysql_conn is not None and mysql_conn.is_connected():
+        sample_mongo = map_mongo_to_sql_common(sample_doc)
+        sample_mongo[FIELD_UPDATED_AT] = datetime.now()
         run_mysql_executemany_query(
-            mysql_conn, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID, [cast(Dict[str, str], sample_doc)]
+            mysql_conn, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID, [cast(Dict[str, str], sample_mongo)]
         )
         return True
     else:

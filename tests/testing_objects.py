@@ -3,10 +3,12 @@ from decimal import Decimal
 from typing import Any, Dict, List, Union
 
 import dateutil.parser
+from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
 
 from crawler.constants import (
     EVENT_CHERRYPICK_LAYOUT_SET,
+    FIELD_CH1_CQ,
     FIELD_COORDINATE,
     FIELD_CREATED_AT,
     FIELD_FILTERED_POSITIVE,
@@ -131,23 +133,30 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool, ObjectId]]] = [
     },
 ]
 
-TESTING_SAMPLES_WITH_LAB_ID: List[Dict[str, Union[str, bool, ObjectId]]] = [
+TESTING_SAMPLES_WITH_LAB_ID: List[Dict[str, Union[str, bool, ObjectId, Decimal128, None]]] = [
     {
         FIELD_COORDINATE: "A01",
         FIELD_SOURCE: "Test Centre",
         FIELD_RESULT: "Positive",
         FIELD_PLATE_BARCODE: "123",
-        FIELD_RNA_ID: "A01aaa",
+        FIELD_RNA_ID: "123_A01",
         FIELD_ROOT_SAMPLE_ID: "MCM001",
         FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa1"),
         FIELD_LAB_ID: "ALDP",
+        # This ch1_cq value is to test is not happening bug with mySql:
+        # mysql_connector.MySQLInterfaceError: Python type Decimal128 cannot be converted
+        FIELD_CH1_CQ: Decimal128("23.696882151458"),
+        # Added this settings to null to check that sample uuid and source plate are generated
+        # also when they are null
+        FIELD_LH_SAMPLE_UUID: None,
+        FIELD_LH_SOURCE_PLATE_UUID: None,
     },
     {
         FIELD_COORDINATE: "A01",
         FIELD_SOURCE: "Test Centre",
         FIELD_RESULT: "Positive",
         FIELD_PLATE_BARCODE: "456",
-        FIELD_RNA_ID: "A01aab",
+        FIELD_RNA_ID: "456_A01",
         FIELD_ROOT_SAMPLE_ID: "MCM002",
         FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa2"),
         FIELD_LAB_ID: "MILK",
@@ -157,7 +166,7 @@ TESTING_SAMPLES_WITH_LAB_ID: List[Dict[str, Union[str, bool, ObjectId]]] = [
         FIELD_SOURCE: "Test Centre",
         FIELD_RESULT: "Positive",
         FIELD_PLATE_BARCODE: "123",
-        FIELD_RNA_ID: "B01aaa",
+        FIELD_RNA_ID: "123_B01",
         FIELD_ROOT_SAMPLE_ID: "MCM003",
         FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa3"),
         FIELD_LAB_ID: "ALDP",
@@ -167,7 +176,7 @@ TESTING_SAMPLES_WITH_LAB_ID: List[Dict[str, Union[str, bool, ObjectId]]] = [
         FIELD_SOURCE: "Test Centre",
         FIELD_RESULT: "Positive",
         FIELD_PLATE_BARCODE: "123",
-        FIELD_RNA_ID: "B03aaa",
+        FIELD_RNA_ID: "123_C01",
         FIELD_ROOT_SAMPLE_ID: "MCM004",
         FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa4"),
         FIELD_LAB_ID: "ALDP",
@@ -177,7 +186,7 @@ TESTING_SAMPLES_WITH_LAB_ID: List[Dict[str, Union[str, bool, ObjectId]]] = [
         FIELD_SOURCE: "Test Centre",
         FIELD_RESULT: "Positive",
         FIELD_PLATE_BARCODE: "789",
-        FIELD_RNA_ID: "B04aaa",
+        FIELD_RNA_ID: "789_C01",
         FIELD_ROOT_SAMPLE_ID: "MCM004",
         FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa5"),
         FIELD_LAB_ID: "ALDP",
@@ -188,7 +197,7 @@ TESTING_SAMPLES_WITH_LAB_ID: List[Dict[str, Union[str, bool, ObjectId]]] = [
         FIELD_SOURCE: "Test Centre",
         FIELD_RESULT: "Positive",
         FIELD_PLATE_BARCODE: "781",
-        FIELD_RNA_ID: "B05aaa",
+        FIELD_RNA_ID: "781_C01",
         FIELD_ROOT_SAMPLE_ID: "MCM004",
         FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa6"),
         FIELD_LAB_ID: "ALDP",
@@ -199,7 +208,7 @@ TESTING_SAMPLES_WITH_LAB_ID: List[Dict[str, Union[str, bool, ObjectId]]] = [
         FIELD_SOURCE: "Test Centre",
         FIELD_RESULT: "Positive",
         FIELD_PLATE_BARCODE: "782",
-        FIELD_RNA_ID: "B06aaa",
+        FIELD_RNA_ID: "782_D01",
         FIELD_ROOT_SAMPLE_ID: "MCM005",
         FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa7"),
         FIELD_LAB_ID: "ALDP",
@@ -211,7 +220,7 @@ TESTING_SAMPLES_WITH_LAB_ID: List[Dict[str, Union[str, bool, ObjectId]]] = [
         FIELD_SOURCE: "Test Centre",
         FIELD_RESULT: "Positive",
         FIELD_PLATE_BARCODE: "783",
-        FIELD_RNA_ID: "B07aaa",
+        FIELD_RNA_ID: "783_D02",
         FIELD_ROOT_SAMPLE_ID: "MCM006",
         FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa8"),
         FIELD_LAB_ID: "ALDP",
@@ -624,6 +633,105 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_lims": "SQSCP",
         }
     ],
+}
+
+MLWH_SAMPLE_UNCONNECTED_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
+    "lighthouse_sample": [
+        {
+            "mongodb_id": "DISCONNECTED_1",
+            "root_sample_id": "root_1",
+            "rna_id": "123_A01",
+            "plate_barcode": "123",
+            "coordinate": "A1",
+            "result": "Positive",
+            "date_tested_string": "2020-10-24 22:30:22",
+            "date_tested": datetime(2020, 10, 24, 22, 30, 22),
+            "source": "test centre",
+            "lab_id": "TC",
+            "lh_sample_uuid": None,
+        },
+        {
+            "mongodb_id": "DISCONNECTED_2",
+            "root_sample_id": "root_2",
+            "rna_id": "456_A01",
+            "plate_barcode": "456",
+            "coordinate": "A1",
+            "result": "Positive",
+            "date_tested_string": "2020-10-24 22:30:22",
+            "date_tested": datetime(2020, 10, 24, 22, 30, 22),
+            "source": "test centre",
+            "lab_id": "TC",
+            "lh_sample_uuid": None,
+        },
+        {
+            "mongodb_id": "DISCONNECTED_3",
+            "root_sample_id": "root_3",
+            "rna_id": "123_B01",
+            "plate_barcode": "123",
+            "coordinate": "A1",
+            "result": "Positive",
+            "date_tested_string": "2020-10-24 22:30:22",
+            "date_tested": datetime(2020, 10, 24, 22, 30, 22),
+            "source": "test centre",
+            "lab_id": "TC",
+            "lh_sample_uuid": None,
+        },
+        {
+            "mongodb_id": "DISCONNECTED_4",
+            "root_sample_id": "root_4",
+            "rna_id": "123_C01",
+            "plate_barcode": "123",
+            "coordinate": "A1",
+            "result": "Positive",
+            "date_tested_string": "2020-10-24 22:30:22",
+            "date_tested": datetime(2020, 10, 24, 22, 30, 22),
+            "source": "test centre",
+            "lab_id": "TC",
+            "lh_sample_uuid": None,
+        },
+        {
+            "mongodb_id": "DISCONNECTED_5",
+            "root_sample_id": "root_5",
+            "rna_id": "789_C01",
+            "plate_barcode": "789",
+            "coordinate": "C1",
+            "result": "Positive",
+            "date_tested_string": "2020-10-24 22:30:22",
+            "date_tested": datetime(2020, 10, 24, 22, 30, 22),
+            "source": "test centre",
+            "lab_id": "TC",
+            "lh_sample_uuid": "test1",
+            "lh_source_plate_uuid": None,
+        },
+        {
+            "mongodb_id": "DISCONNECTED_6",
+            "root_sample_id": "root_6",
+            "rna_id": "781_C01",
+            "plate_barcode": "781",
+            "coordinate": "C1",
+            "result": "Positive",
+            "date_tested_string": "2020-10-24 22:30:22",
+            "date_tested": datetime(2020, 10, 24, 22, 30, 22),
+            "source": "test centre",
+            "lab_id": "TC",
+            "lh_sample_uuid": None,
+            "lh_source_plate_uuid": "test2",
+        },
+        {
+            "mongodb_id": "DISCONNECTED_7",
+            "root_sample_id": "root_7",
+            "rna_id": "782_D01",
+            "plate_barcode": "782",
+            "coordinate": "D1",
+            "result": "Positive",
+            "date_tested_string": "2020-10-24 22:30:22",
+            "date_tested": datetime(2020, 10, 24, 22, 30, 22),
+            "source": "test centre",
+            "lab_id": "TC",
+            "lh_sample_uuid": "my_sample_uuid",
+            "lh_source_plate_uuid": "my_source_plate_uuid",
+        },
+    ]
 }
 
 MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {

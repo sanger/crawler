@@ -6,6 +6,7 @@ from crawler.helpers.general_helpers import get_config
 from migrations import (
     back_populate_source_plate_and_sample_uuids,
     back_populate_uuids,
+    reconnect_mlwh_with_mongo,
     update_dart,
     update_filtered_positives,
     update_legacy_filtered_positives,
@@ -37,6 +38,7 @@ print("* update_filtered_positives")
 print("* update_legacy_filtered_positives")
 print("* back_populate_uuids")
 print("* back_populate_source_plate_and_sample_uuids")
+print("* reconnect_mlwh_with_mongo (ONLY RUN THIS MIGRATION IN TESTING ENVIRONMENTS)")
 
 
 def migration_update_mlwh_with_legacy_samples():
@@ -71,6 +73,18 @@ def migration_update_filtered_positives():
     print("Running update_filtered_positives migration")
     omit_dart = sys.argv[2] == "omit_dart" if 2 < len(sys.argv) else False
     update_filtered_positives.run(omit_dart=omit_dart)
+
+
+def migration_reconnect_mlwh_with_mongo():
+    if not len(sys.argv) == 3:
+        print("Please add a csv file, aborting")
+        return
+
+    csv_file = sys.argv[2]
+
+    print("Running reconnect_mlwh_with_mongo")
+
+    reconnect_mlwh_with_mongo.run(config, csv_file)
 
 
 def migration_back_populate_source_plate_and_sample_uuids():
@@ -126,6 +140,7 @@ def migration_by_name(migration_name):
         "update_legacy_filtered_positives": migration_update_legacy_filtered_positives,
         "back_populate_uuids": migration_back_populate_uuids,
         "back_populate_source_plate_and_sample_uuids": migration_back_populate_source_plate_and_sample_uuids,
+        "reconnect_mlwh_with_mongo": migration_reconnect_mlwh_with_mongo,
     }
     # Get the function from switcher dictionary
     func = switcher.get(migration_name, lambda: print("Invalid migration name, aborting"))
