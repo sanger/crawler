@@ -10,23 +10,22 @@ from uuid import uuid4
 from mysql.connector.cursor_cext import CMySQLCursor
 from pymongo.collection import Collection
 
-from crawler.constants import (
-    COLLECTION_SAMPLES,
-    COLLECTION_SOURCE_PLATES,
-    FIELD_COORDINATE,
-    FIELD_LH_SAMPLE_UUID,
-    FIELD_LH_SOURCE_PLATE_UUID,
-    FIELD_MONGO_LAB_ID,
-    FIELD_MONGO_SOURCE_PLATE_BARCODE,
-    FIELD_MONGODB_ID,
-    FIELD_PLATE_BARCODE,
-    FIELD_UPDATED_AT,
-)
-from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
-from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
-from crawler.helpers.general_helpers import create_source_plate_doc, map_mongo_to_sql_common
-from crawler.sql_queries import SQL_MLWH_COUNT_MONGO_IDS, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID
+from crawler.constants import (COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES,
+                               FIELD_COORDINATE, FIELD_LH_SAMPLE_UUID,
+                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_MONGO_LAB_ID,
+                               FIELD_MONGO_SOURCE_PLATE_BARCODE,
+                               FIELD_MONGODB_ID, FIELD_PLATE_BARCODE,
+                               FIELD_UPDATED_AT)
+from crawler.db.mongo import (create_mongo_client, get_mongo_collection,
+                              get_mongo_db)
+from crawler.db.mysql import (create_mysql_connection,
+                              run_mysql_executemany_query)
+from crawler.helpers.general_helpers import (create_source_plate_doc,
+                                             map_mongo_to_sql_common)
+from crawler.sql_queries import (SQL_MLWH_COUNT_MONGO_IDS,
+                                 SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID)
 from crawler.types import Config, SampleDoc
+from migrations.helpers.shared_helper import extract_barcodes
 
 logger = logging.getLogger(__name__)
 
@@ -128,30 +127,6 @@ def valid_filepath(s_filepath: str) -> bool:
         return file_extension == ".csv"
 
     return False
-
-
-def extract_barcodes(config: Config, filepath: str) -> List[str]:
-    """Extract the list of barcodes from the csv file
-
-    Arguments:
-        config {Config} -- application config specifying database details
-        filepath {str} -- the filepath of the csv file containing the list of source plate barcodes
-
-    Returns:
-        List[str] -- list of source plate barcodes
-    """
-    extracted_barcodes: List[str] = []
-    try:
-        with open(filepath, newline="") as csvfile:
-            csvreader = DictReader(csvfile)
-            for row in csvreader:
-                extracted_barcodes.append(row[FIELD_MONGO_SOURCE_PLATE_BARCODE])
-
-    except Exception as e:
-        logger.critical("Error reading source barcodes file " f"{filepath}")
-        logger.exception(e)
-
-    return extracted_barcodes
 
 
 def check_samples_are_valid(

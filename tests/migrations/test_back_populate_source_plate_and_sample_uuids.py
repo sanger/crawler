@@ -3,23 +3,16 @@ from unittest.mock import patch
 import pytest
 from pymongo import ASCENDING
 
-from crawler.constants import (
-    FIELD_LH_SAMPLE_UUID,
-    FIELD_LH_SOURCE_PLATE_UUID,
-    FIELD_MONGODB_ID,
-    FIELD_PLATE_BARCODE,
-    FIELD_RNA_ID,
-    MLWH_MONGODB_ID,
-)
+from crawler.constants import (FIELD_LH_SAMPLE_UUID,
+                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_MONGODB_ID,
+                               FIELD_PLATE_BARCODE, FIELD_RNA_ID,
+                               MLWH_MONGODB_ID)
 from migrations import back_populate_source_plate_and_sample_uuids
 from migrations.back_populate_source_plate_and_sample_uuids import (
     ExceptionSampleWithSampleUUIDNotSourceUUID,
-    ExceptionSampleWithSourceUUIDNotSampleUUID,
-    ExceptionSourcePlateDefined,
-    check_samples_are_valid,
-    extract_barcodes,
-    mlwh_count_samples_from_mongo_ids,
-)
+    ExceptionSampleWithSourceUUIDNotSampleUUID, ExceptionSourcePlateDefined,
+    check_samples_are_valid, extract_barcodes,
+    mlwh_count_samples_from_mongo_ids)
 
 # ----- test fixture helpers -----
 
@@ -101,7 +94,7 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_populates_sample_uuid(
 def test_back_populate_source_plate_uuid_and_sample_uuid_works_with_two_plates(
     config, testing_samples_with_lab_id, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
 ):
-    filepath = "./tests/data/populate_old_plates_2_plates.csv"
+    filepath = "./tests/data/populate_old_plates_2.csv"
     samples_before = list(
         samples_collection_accessor.find({FIELD_PLATE_BARCODE: {"$in": ["123", "456"]}}).sort(FIELD_RNA_ID, ASCENDING)
     )
@@ -175,7 +168,7 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid(
 def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid_with_two_plates_input(
     config, testing_samples_with_lab_id, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
 ):
-    filepath = "./tests/data/populate_old_plates_2_plates.csv"
+    filepath = "./tests/data/populate_old_plates_2.csv"
     samples_before = list(
         samples_collection_accessor.find({FIELD_PLATE_BARCODE: {"$in": ["123", "456"]}}).sort(FIELD_RNA_ID, ASCENDING)
     )
@@ -238,10 +231,6 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_dont_change_sample_uuid
         assert not (FIELD_LH_SAMPLE_UUID in sample)
 
 
-def test_extract_barcodes_read_barcodes(config):
-    filepath = "./tests/data/populate_old_plates.csv"
-
-    assert extract_barcodes(config, filepath) == ["123"]
 
 
 def test_check_samples_are_valid_finds_problems_with_samples(

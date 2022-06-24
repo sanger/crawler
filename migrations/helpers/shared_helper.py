@@ -1,10 +1,13 @@
 import logging
 import sys
 import traceback
+from csv import DictReader
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
-from crawler.constants import MONGO_DATETIME_FORMAT
+from crawler.constants import (FIELD_MONGO_SOURCE_PLATE_BARCODE,
+                               MONGO_DATETIME_FORMAT)
+from crawler.types import Config
 
 logger = logging.getLogger(__name__)
 
@@ -36,3 +39,27 @@ def valid_datetime_string(s_datetime: Optional[str]) -> bool:
     except Exception:
         print_exception()
         return False
+
+
+def extract_barcodes(config: Config, filepath: str) -> List[str]:
+    """Extract the list of barcodes from the csv file
+
+    Arguments:
+        config {Config} -- application config specifying database details
+        filepath {str} -- the filepath of the csv file containing the list of source plate barcodes
+
+    Returns:
+        List[str] -- list of source plate barcodes
+    """
+    extracted_barcodes: List[str] = []
+    try:
+        with open(filepath, newline="") as csvfile:
+            csvreader = DictReader(csvfile)
+            for row in csvreader:
+                extracted_barcodes.append(row[FIELD_MONGO_SOURCE_PLATE_BARCODE])
+
+    except Exception as e:
+        logger.critical("Error reading source barcodes file " f"{filepath}")
+        logger.exception(e)
+
+    return extracted_barcodes
