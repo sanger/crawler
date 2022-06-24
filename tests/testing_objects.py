@@ -133,7 +133,7 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool, ObjectId]]] = [
     },
 ]
 
-TESTING_SAMPLES_WITH_LAB_ID: List[Dict[str, Union[str, bool, ObjectId, Decimal128]]] = [
+TESTING_SAMPLES_WITH_LAB_ID: List[Dict[str, Union[str, bool, ObjectId, Decimal128, None]]] = [
     {
         FIELD_COORDINATE: "A01",
         FIELD_SOURCE: "Test Centre",
@@ -146,6 +146,10 @@ TESTING_SAMPLES_WITH_LAB_ID: List[Dict[str, Union[str, bool, ObjectId, Decimal12
         # This ch1_cq value is to test is not happening bug with mySql:
         # mysql_connector.MySQLInterfaceError: Python type Decimal128 cannot be converted
         FIELD_CH1_CQ: Decimal128("23.696882151458"),
+        # Added this settings to null to check that sample uuid and source plate are generated
+        # also when they are null
+        FIELD_LH_SAMPLE_UUID: None,
+        FIELD_LH_SOURCE_PLATE_UUID: None,
     },
     {
         FIELD_COORDINATE: "A01",

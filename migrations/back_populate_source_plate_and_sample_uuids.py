@@ -209,7 +209,7 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
 
                 sample_doc[FIELD_LH_SOURCE_PLATE_UUID] = current_source_plate_uuid
                 # generate an lh_sample_uuid if the sample doesn't have one
-                if FIELD_LH_SAMPLE_UUID not in sample_doc:
+                if FIELD_LH_SAMPLE_UUID not in sample_doc or (sample_doc[FIELD_LH_SAMPLE_UUID] is None):
                     sample_doc[FIELD_LH_SAMPLE_UUID] = str(uuid4())
 
                 # update sample in Mongo ‘samples’ to set lh_source_plate uuid, lh_sample_uuid, and updated_timestamp
