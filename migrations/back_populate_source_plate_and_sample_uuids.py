@@ -1,8 +1,5 @@
 import logging
 import logging.config
-import os
-import stat
-from csv import DictReader
 from datetime import datetime
 from typing import Dict, List, Optional, cast
 from uuid import uuid4
@@ -10,22 +7,24 @@ from uuid import uuid4
 from mysql.connector.cursor_cext import CMySQLCursor
 from pymongo.collection import Collection
 
-from crawler.constants import (COLLECTION_SAMPLES, COLLECTION_SOURCE_PLATES,
-                               FIELD_COORDINATE, FIELD_LH_SAMPLE_UUID,
-                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_MONGO_LAB_ID,
-                               FIELD_MONGO_SOURCE_PLATE_BARCODE,
-                               FIELD_MONGODB_ID, FIELD_PLATE_BARCODE,
-                               FIELD_UPDATED_AT)
-from crawler.db.mongo import (create_mongo_client, get_mongo_collection,
-                              get_mongo_db)
-from crawler.db.mysql import (create_mysql_connection,
-                              run_mysql_executemany_query)
-from crawler.helpers.general_helpers import (create_source_plate_doc,
-                                             map_mongo_to_sql_common)
-from crawler.sql_queries import (SQL_MLWH_COUNT_MONGO_IDS,
-                                 SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID)
+from crawler.constants import (
+    COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
+    FIELD_COORDINATE,
+    FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_MONGO_LAB_ID,
+    FIELD_MONGO_SOURCE_PLATE_BARCODE,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_UPDATED_AT,
+)
+from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
+from crawler.helpers.general_helpers import create_source_plate_doc, map_mongo_to_sql_common
+from crawler.sql_queries import SQL_MLWH_COUNT_MONGO_IDS, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID
 from crawler.types import Config, SampleDoc
-from migrations.helpers.shared_helper import extract_barcodes
+from migrations.helpers.shared_helper import extract_barcodes, validate_args
 
 logger = logging.getLogger(__name__)
 
@@ -85,48 +84,6 @@ def run(config: Config, s_filepath: str) -> None:
 
     logger.info(f"Source plate barcodes {source_plate_barcodes}")
     update_uuids_mongo_and_mlwh(config=config, source_plate_barcodes=source_plate_barcodes)
-
-
-def validate_args(config: Config, s_filepath: str) -> str:
-    """Validate the supplied arguments
-
-    Arguments:
-        config {Config} -- application config specifying database details
-        s_filepath {str} -- the filepath of the csv file containing the list of source plate barcodes
-
-    Returns:
-        str -- the filepath if valid
-    """
-    base_msg = "Aborting run: "
-    if not config:
-        msg = f"{base_msg} Config required"
-        logger.error(msg)
-        raise Exception(msg)
-
-    if not valid_filepath(s_filepath):
-        msg = f"{base_msg} Unable to confirm valid csv file from supplied filepath"
-        logger.error(msg)
-        raise Exception(msg)
-
-    filepath = s_filepath
-
-    return filepath
-
-
-def valid_filepath(s_filepath: str) -> bool:
-    """Determine if the filepath argument supplied corresponds to a csv file
-
-    Arguments:
-        s_filepath {str} -- the filepath of the csv file containing the list of source plate barcodes
-
-    Returns:
-        bool -- whether the filepath corresponds to a csv file
-    """
-    if stat.S_ISREG(os.lstat(s_filepath).st_mode):
-        file_name, file_extension = os.path.splitext(s_filepath)
-        return file_extension == ".csv"
-
-    return False
 
 
 def check_samples_are_valid(

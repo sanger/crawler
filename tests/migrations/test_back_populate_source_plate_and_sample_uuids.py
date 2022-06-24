@@ -3,16 +3,22 @@ from unittest.mock import patch
 import pytest
 from pymongo import ASCENDING
 
-from crawler.constants import (FIELD_LH_SAMPLE_UUID,
-                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_MONGODB_ID,
-                               FIELD_PLATE_BARCODE, FIELD_RNA_ID,
-                               MLWH_MONGODB_ID)
+from crawler.constants import (
+    FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_BARCODE,
+    FIELD_RNA_ID,
+    MLWH_MONGODB_ID,
+)
 from migrations import back_populate_source_plate_and_sample_uuids
 from migrations.back_populate_source_plate_and_sample_uuids import (
     ExceptionSampleWithSampleUUIDNotSourceUUID,
-    ExceptionSampleWithSourceUUIDNotSampleUUID, ExceptionSourcePlateDefined,
-    check_samples_are_valid, extract_barcodes,
-    mlwh_count_samples_from_mongo_ids)
+    ExceptionSampleWithSourceUUIDNotSampleUUID,
+    ExceptionSourcePlateDefined,
+    check_samples_are_valid,
+    mlwh_count_samples_from_mongo_ids,
+)
 
 # ----- test fixture helpers -----
 
@@ -184,13 +190,14 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid_w
 
     assert len(samples_after) == len(samples_before)
     source_plate_uuid = samples_after[0][FIELD_LH_SOURCE_PLATE_UUID]
-    source_plate_uuid_second = samples_after[1][FIELD_LH_SOURCE_PLATE_UUID]
+    source_plate_uuid_second = samples_after[3][FIELD_LH_SOURCE_PLATE_UUID]
+    assert source_plate_uuid != source_plate_uuid_second
     assert source_plate_uuid is not None
     assert source_plate_uuid_second is not None
     assert samples_after[0][FIELD_LH_SOURCE_PLATE_UUID] == source_plate_uuid
-    assert samples_after[1][FIELD_LH_SOURCE_PLATE_UUID] == source_plate_uuid_second
+    assert samples_after[1][FIELD_LH_SOURCE_PLATE_UUID] == source_plate_uuid
     assert samples_after[2][FIELD_LH_SOURCE_PLATE_UUID] == source_plate_uuid
-    assert samples_after[3][FIELD_LH_SOURCE_PLATE_UUID] == source_plate_uuid
+    assert samples_after[3][FIELD_LH_SOURCE_PLATE_UUID] == source_plate_uuid_second
 
 
 def test_back_populate_source_plate_uuid_and_sample_uuid_dont_change_source_plate_other_barcodes(
@@ -229,8 +236,6 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_dont_change_sample_uuid
     assert len(samples_before) > 0
     for sample in samples_before:
         assert not (FIELD_LH_SAMPLE_UUID in sample)
-
-
 
 
 def test_check_samples_are_valid_finds_problems_with_samples(

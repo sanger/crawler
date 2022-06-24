@@ -1,5 +1,4 @@
-from migrations.helpers.shared_helper import (extract_barcodes,
-                                              valid_datetime_string)
+from migrations.helpers.shared_helper import extract_barcodes, valid_datetime_string
 
 # ----- valid_datetime_string tests -----
 
@@ -15,7 +14,6 @@ def test_extract_barcodes_read_barcodes(config):
     filepath = "./tests/data/populate_old_plates.csv"
 
     assert extract_barcodes(config, filepath) == ["123"]
-
 
     filepath = "./tests/data/populate_old_plates_2.csv"
 
