@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from http import HTTPStatus
 
+import pytz
 import requests
 from pymongo.client_session import ClientSession
 
@@ -143,7 +144,7 @@ class UpdateSampleExporter:
                 )
                 return
 
-            if sample[FIELD_UPDATED_AT] > message_create_date.value:
+            if sample[FIELD_UPDATED_AT].replace(tzinfo=pytz.UTC) > message_create_date.value:
                 self._message.add_error(
                     UpdateSampleError(
                         type=ErrorType.ExporterMessageOutOfDate,
