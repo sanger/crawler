@@ -49,11 +49,8 @@ class UpdateSampleExporter:
 
         Raises a TransientRabbitError if Mongo is unreachable or cannot be queried.
         """
-        try:
-            with self._mongo_db.client.start_session() as session:
-                self._validate_mongo_properties(session)
-        finally:
-            self._mongo_db.client.close()
+        with self._mongo_db.client.start_session() as session:
+            self._validate_mongo_properties(session)
 
     def verify_plate_state(self):
         """Verify that the plate has not already been picked by either Biosero or Beckman machines. If it has, a
@@ -73,11 +70,8 @@ class UpdateSampleExporter:
 
         Note:  This method will raise an exception if called before verify_sample_in_mongo().
         """
-        try:
-            with self._mongo_db.client.start_session() as session:
-                self._update_sample_in_mongo(session)
-        finally:
-            self._mongo_db.client.close()
+        with self._mongo_db.client.start_session() as session:
+            self._update_sample_in_mongo(session)
 
     def update_dart(self):
         """Update the DART database with the newly updated Mongo document. If any step of the update fails, a relevant
