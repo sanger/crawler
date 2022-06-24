@@ -165,10 +165,10 @@ SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT = (
 SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID = (
     f"UPDATE lighthouse_sample"
     f" SET"
-    f" { MLWH_LH_SAMPLE_UUID } = %(lh_sample_uuid)s,"
-    f" { MLWH_LH_SOURCE_PLATE_UUID } = %(lh_source_plate_uuid)s,"
-    f" { MLWH_UPDATED_AT } = %(updated_at)s"
-    f" WHERE { MLWH_MONGODB_ID } = %(_id)s"
+    f" { MLWH_LH_SAMPLE_UUID } = %({MLWH_LH_SAMPLE_UUID})s,"
+    f" { MLWH_LH_SOURCE_PLATE_UUID } = %({MLWH_LH_SOURCE_PLATE_UUID})s,"
+    f" { MLWH_UPDATED_AT } = %({MLWH_UPDATED_AT})s"
+    f" WHERE { MLWH_MONGODB_ID } = %({MLWH_MONGODB_ID})s"
 )
 
 

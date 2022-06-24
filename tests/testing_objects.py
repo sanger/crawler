@@ -3,10 +3,12 @@ from decimal import Decimal
 from typing import Any, Dict, List, Union
 
 import dateutil.parser
+from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
 
 from crawler.constants import (
     EVENT_CHERRYPICK_LAYOUT_SET,
+    FIELD_CH1_CQ,
     FIELD_COORDINATE,
     FIELD_CREATED_AT,
     FIELD_FILTERED_POSITIVE,
@@ -131,7 +133,7 @@ TESTING_SAMPLES: List[Dict[str, Union[str, bool, ObjectId]]] = [
     },
 ]
 
-TESTING_SAMPLES_WITH_LAB_ID: List[Dict[str, Union[str, bool, ObjectId]]] = [
+TESTING_SAMPLES_WITH_LAB_ID: List[Dict[str, Union[str, bool, ObjectId, Decimal128]]] = [
     {
         FIELD_COORDINATE: "A01",
         FIELD_SOURCE: "Test Centre",
@@ -141,6 +143,9 @@ TESTING_SAMPLES_WITH_LAB_ID: List[Dict[str, Union[str, bool, ObjectId]]] = [
         FIELD_ROOT_SAMPLE_ID: "MCM001",
         FIELD_MONGODB_ID: ObjectId("aaaaaaaaaaaaaaaaaaaaaaa1"),
         FIELD_LAB_ID: "ALDP",
+        # This ch1_cq value is to test is not happening bug with mySql:
+        # mysql_connector.MySQLInterfaceError: Python type Decimal128 cannot be converted
+        FIELD_CH1_CQ: Decimal128("23.696882151458"),
     },
     {
         FIELD_COORDINATE: "A01",

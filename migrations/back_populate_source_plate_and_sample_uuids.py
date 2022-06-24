@@ -24,7 +24,7 @@ from crawler.constants import (
 )
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_query
-from crawler.helpers.general_helpers import create_source_plate_doc
+from crawler.helpers.general_helpers import create_source_plate_doc, map_mongo_to_sql_common
 from crawler.sql_queries import SQL_MLWH_COUNT_MONGO_IDS, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID
 from crawler.types import Config, SampleDoc
 
@@ -363,8 +363,10 @@ def update_mlwh_sample_uuid_and_source_plate_uuid(config: Config, sample_doc: Sa
     mysql_conn = create_mysql_connection(config, False)
 
     if mysql_conn is not None and mysql_conn.is_connected():
+        sample_mongo = map_mongo_to_sql_common(sample_doc)
+        sample_mongo[FIELD_UPDATED_AT] = datetime.now()
         run_mysql_executemany_query(
-            mysql_conn, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID, [cast(Dict[str, str], sample_doc)]
+            mysql_conn, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID, [cast(Dict[str, str], sample_mongo)]
         )
         return True
     else:
