@@ -22,8 +22,9 @@ encoded_message = string_writer.getvalue()
 string_reader = StringIO(encoded_message)
 decoded_message = next(json_reader(string_reader, schema))
 
-
 print(f"UTC now: {UTC_NOW}")
 print(f"Encoded message: {encoded_message}")
-print(f"Decoded message: {decoded_message}")
-print(f"Decoded timestamp: {decoded_message['timestamp']}")
+print(f"Decoded message: {decoded_message!r}")
+
+if type(decoded_message) == dict:
+    print(f"Decoded timestamp: {decoded_message['timestamp']}")
