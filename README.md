@@ -62,11 +62,26 @@ The following tools are required for development:
 
 ### Additional Dependencies
 
+Some activities in Crawler require additional dependencies from other
+repositories.
+
+#### Test data generator (requires Baracoda)
+
 If you intend to test/develop/use the test data generation functionality of
 Crawler at the `/v1/cherrypick-test-data` endpoint, you will also need to be
 running a local instance of [Baracoda](https://github.com/sanger/baracoda).  If
 you need to change the port Crawler uses to contact Baracoda, you can do so in
 the `BARACODA_BASE_URL` in the config file `crawler/config/defaults.py`.
+
+#### Update sample message processing (requires Cherrytrack)
+
+If you will be sending RabbitMQ messages to update plate map samples, the system
+will check Cherrytrack to see whether the plate has already been picked.
+Cherrytrack can be run locally from a clone of [its
+repository](https://github.com/sanger/cherrytrack).  If you need Crawler to
+communicate with Cherrytrack on a different port, you can change the port used
+by updating the  `CHERRYTRACK_BASE_URL` in the config file
+`crawler/config/defaults.py`.
 
 ## Getting Started
 
