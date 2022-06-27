@@ -1,9 +1,8 @@
 import copy
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from http import HTTPStatus
 
-import pytz
 import requests
 from pymongo.client_session import ClientSession
 
@@ -138,7 +137,7 @@ class UpdateSampleExporter:
                 )
                 return
 
-            sample_updated_at = sample[FIELD_UPDATED_AT].replace(tzinfo=pytz.UTC)
+            sample_updated_at = sample[FIELD_UPDATED_AT].replace(tzinfo=timezone.utc)
             if sample_updated_at > message_create_date.value:
                 self._message.add_error(
                     UpdateSampleError(
