@@ -12,6 +12,9 @@ saves valid data to MongoDB.
 <!-- toc -->
 
 - [Requirements for Development](#requirements-for-development)
+  * [Additional Dependencies](#additional-dependencies)
+    + [Test data generator (requires Baracoda)](#test-data-generator-requires-baracoda)
+    + [Update sample message processing (requires Cherrytrack)](#update-sample-message-processing-requires-cherrytrack)
 - [Getting Started](#getting-started)
   * [Configuring Environment](#configuring-environment)
   * [Setup Steps](#setup-steps)
@@ -20,11 +23,11 @@ saves valid data to MongoDB.
   * [Updating the MLWH `lighthouse_sample` Table](#updating-the-mlwh-lighthouse_sample-table)
   * [Migrating Legacy Data to DART](#migrating-legacy-data-to-dart)
 - [Priority Samples](#priority-samples)
-  * [Glossary](#glossary)
   * [Filtered Positive Rules](#filtered-positive-rules)
     + [Version 0 `v0`](#version-0-v0)
     + [Version 1 `v1`](#version-1-v1)
-    + [Version 2 `v2` - **Current Version**](#version-2-v2---current-version)
+    + [Version 2 `v2`](#version-2-v2)
+    + [Version 3 `v3` - **Current Version**](#version-3-v3---current-version)
     + [Propagating Filtered Positive version changes to MongoDB, MLWH and (optionally) DART](#propagating-filtered-positive-version-changes-to-mongodb-mlwh-and-optionally-dart)
 - [Testing](#testing)
   * [Testing Requirements](#testing-requirements)
