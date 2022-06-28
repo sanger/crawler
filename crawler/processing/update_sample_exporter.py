@@ -1,6 +1,6 @@
 import copy
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from http import HTTPStatus
 
 import requests
@@ -48,11 +48,8 @@ class UpdateSampleExporter:
 
         Raises a TransientRabbitError if Mongo is unreachable or cannot be queried.
         """
-        try:
-            with self._mongo_db.client.start_session() as session:
-                self._validate_mongo_properties(session)
-        finally:
-            self._mongo_db.client.close()
+        with self._mongo_db.client.start_session() as session:
+            self._validate_mongo_properties(session)
 
     def verify_plate_state(self):
         """Verify that the plate has not already been picked by either Biosero or Beckman machines. If it has, a
@@ -72,11 +69,8 @@ class UpdateSampleExporter:
 
         Note:  This method will raise an exception if called before verify_sample_in_mongo().
         """
-        try:
-            with self._mongo_db.client.start_session() as session:
-                self._update_sample_in_mongo(session)
-        finally:
-            self._mongo_db.client.close()
+        with self._mongo_db.client.start_session() as session:
+            self._update_sample_in_mongo(session)
 
     def update_dart(self):
         """Update the DART database with the newly updated Mongo document. If any step of the update fails, a relevant
@@ -143,13 +137,15 @@ class UpdateSampleExporter:
                 )
                 return
 
-            if sample[FIELD_UPDATED_AT] > message_create_date.value:
+            # datetime objects are immutable so calling .replace() on the Mongo document doesn't alter the original
+            sample_updated_at = sample[FIELD_UPDATED_AT].replace(tzinfo=timezone.utc)
+            if sample_updated_at > message_create_date.value:
                 self._message.add_error(
                     UpdateSampleError(
                         type=ErrorType.ExporterMessageOutOfDate,
                         origin=RABBITMQ_UPDATE_FEEDBACK_ORIGIN_ROOT,
                         description=(
-                            f"The sample was last updated at '{sample[FIELD_UPDATED_AT]}' which is more "
+                            f"The sample was last updated at '{sample_updated_at}' which is more "
                             f"recent than the message creation date '{message_create_date.value}'."
                         ),
                         field=message_create_date.name,

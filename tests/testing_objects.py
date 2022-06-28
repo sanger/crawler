@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Union
 
@@ -982,7 +982,7 @@ MLWH_SAMPLE_COMPLETE = {
 
 CREATE_PLATE_MESSAGE = {
     CREATE_PLATE_MESSAGE_UUID: b"CREATE_PLATE_UUID",
-    CREATE_PLATE_MESSAGE_CREATE_DATE: datetime.utcnow(),
+    CREATE_PLATE_MESSAGE_CREATE_DATE: datetime.now(timezone.utc),
     CREATE_PLATE_PLATE: {
         CREATE_PLATE_LAB_ID: "CPTD",
         CREATE_PLATE_PLATE_BARCODE: "PLATE-001",
@@ -997,7 +997,7 @@ CREATE_PLATE_MESSAGE = {
                 CREATE_PLATE_MUST_SEQUENCE: False,
                 CREATE_PLATE_FIT_TO_PICK: True,
                 CREATE_PLATE_RESULT: "positive",
-                CREATE_PLATE_TESTED_DATE: datetime(2022, 4, 10, 11, 45, 25),
+                CREATE_PLATE_TESTED_DATE: datetime(2022, 4, 10, 11, 45, 25, tzinfo=timezone.utc),
             },
             {
                 CREATE_PLATE_SAMPLE_UUID: b"UUID_002",
@@ -1009,7 +1009,7 @@ CREATE_PLATE_MESSAGE = {
                 CREATE_PLATE_MUST_SEQUENCE: True,
                 CREATE_PLATE_FIT_TO_PICK: False,
                 CREATE_PLATE_RESULT: "negative",
-                CREATE_PLATE_TESTED_DATE: datetime(2022, 4, 10, 11, 45, 25),
+                CREATE_PLATE_TESTED_DATE: datetime(2022, 4, 10, 11, 45, 25, tzinfo=timezone.utc),
             },
             {
                 CREATE_PLATE_SAMPLE_UUID: b"UUID_003",
@@ -1021,7 +1021,7 @@ CREATE_PLATE_MESSAGE = {
                 CREATE_PLATE_MUST_SEQUENCE: True,
                 CREATE_PLATE_FIT_TO_PICK: True,
                 CREATE_PLATE_RESULT: "void",
-                CREATE_PLATE_TESTED_DATE: datetime(2022, 4, 10, 11, 45, 25),
+                CREATE_PLATE_TESTED_DATE: datetime(2022, 4, 10, 11, 45, 25, tzinfo=timezone.utc),
             },
         ],
     },
@@ -1030,7 +1030,7 @@ CREATE_PLATE_MESSAGE = {
 
 UPDATE_SAMPLE_MESSAGE = {
     UPDATE_SAMPLE_MESSAGE_UUID: b"UPDATE_SAMPLE_MESSAGE_UUID",
-    UPDATE_SAMPLE_MESSAGE_CREATE_DATE: datetime.utcnow(),
+    UPDATE_SAMPLE_MESSAGE_CREATE_DATE: datetime.now(timezone.utc),
     UPDATE_SAMPLE_SAMPLE: {
         UPDATE_SAMPLE_SAMPLE_UUID: b"UPDATE_SAMPLE_UUID",
         UPDATE_SAMPLE_UPDATED_FIELDS: [

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, call, patch
 
 import pytest
@@ -139,7 +139,7 @@ def test_sample_uuid_gives_expected_value(subject):
 def test_sample_tested_date_gives_expected_value(subject):
     sample = subject.samples.value[0]
     assert sample.tested_date.name == FIELD_TESTED_DATE
-    assert sample.tested_date.value == datetime(2022, 4, 10, 11, 45, 25)
+    assert sample.tested_date.value == datetime(2022, 4, 10, 11, 45, 25, tzinfo=timezone.utc)
 
 
 def test_duplicated_sample_values_gives_no_duplicates_for_good_message(subject):
