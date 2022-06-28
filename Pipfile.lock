@@ -233,7 +233,7 @@
                 "sha256:2857e29ff0d34db842cd7ca3230549d1a697f96ee6d3fb071cfa6c7393832597",
                 "sha256:6881edbebdb17b39b4eaaa821b438bf6eddffb4468cf344f09f89def34a8b1df"
             ],
-            "markers": "python_full_version >= '3.5.0'",
+            "markers": "python_version >= '3.5'",
             "version": "==2.0.12"
         },
         "click": {
@@ -282,22 +282,26 @@
         },
         "fastavro": {
             "hashes": [
-                "sha256:0053347a92add6f448837ff00099b0a7200ec5dd58e173743d856d65d0574ddb",
-                "sha256:04438b592980633ccf5d1de7798480a634ca581ae7575ab7671ba16773b6b428",
-                "sha256:0815da740ced2261f90b0ddbb5bbe645e9c893c8f00e5dc8d30b8ec20f3c7fa9",
-                "sha256:0ab92ab744f9172da0791bfad0495d785c7c4f5a68924e3c6c6b39b78b044b11",
-                "sha256:0b00b1711511981c4e2dd4a27ba5ae20897fe41ec7ab52eda868626d445081e5",
-                "sha256:0f1ed38042a2a90a7a5da170006459e73134f4c14f4fda9ebba99017adb1b14c",
-                "sha256:6b4f8551ccbe0c9b19867b8c93029e8cfe8fa3757245caae6228f35ef0656371",
-                "sha256:84ca1a60cecd710ead076585b56b954ab3e6e001d8e7384cb4ed20019b29e7a9",
-                "sha256:920d170560198741fa196a62a97c220173339766e6c14369c5c68bfe8cdafa25",
-                "sha256:b5ff657c0d48553492d8356a30b6112fcc6db69adce6bba31135272bc9d87d82",
-                "sha256:df83ebdd7b67b52a37bc84c6e25f7056f756fb216c5c8e5c95ae1673fcbb6015",
-                "sha256:fb3491c88e7962a6b820548ddd12b9c0f6296ebd2385a3021296f14bfe35189a",
-                "sha256:ff241b5ce36df7af7461d001ca98fec6eacd56c4754c8ac7718e2d4b7b690a82"
+                "sha256:2c4777ebd022aecb05829b52359351746fb8ac1f3958385e524addde22d212c4",
+                "sha256:3600c5b8ccc0c5dfab5927486d71ba79ac155b0eeecce517d86e191a5186110c",
+                "sha256:45b7bfabf42bb3882071599eef49228039febbb1b8801b3a65bf32d717eea075",
+                "sha256:49398a773fab076725abf8926525092c455f2cb2ae58127d69fcc132d970fd6e",
+                "sha256:4c447c81bf9002aa0258bb8e208698744b4e22362548d5423f718c92c22ce572",
+                "sha256:5de3473c759c884f88c0e4e078538b9199416183bd4f49a6baf39468d7c0900c",
+                "sha256:746d97e41d24c838c70a44cb4e6a7e4109f20923fda5a6de18482e31db06ccdd",
+                "sha256:7699d1283062f11a3bbfb705f1f2d3fae0f7a1238ae3ca6234c7c9208b0a11a6",
+                "sha256:778d134d144d025f72ed98f60b5a63d363f473c5b19a32f4173e2e11e7f30be9",
+                "sha256:7e4ccdf1142a01b5a10b9451cc7f2e82b0bf4d2593921b9aa8d66a4758f42ee7",
+                "sha256:8bfd03691fb57771b0f4d4a241bd5d5f2e622cbd55e88ab3718a58b7e8e00bdb",
+                "sha256:90517b77f9d8362efe8deaa3da06673f0ef961e973bd9daa49aba998d8ca849e",
+                "sha256:cc162420a6619debb8aabffc961e8f9aa442dfb0246115c421a0fa108c5e0796",
+                "sha256:db4f1a65dfa6d26b4be74d9aacd13467a17928ada2c15096b401288671689e44",
+                "sha256:e6f23f1f4e2726408a35d2f2b279c29da41a989351a0f8c28ec62348f01be977",
+                "sha256:ee7ffc6882834499fd53877a08cdadbb107821a559bb78278dbbb3685ae92788",
+                "sha256:faa8c9cd4920c2e4e4131dae2e5fb050cc64533c22384d5dbba55c6a6463771e"
             ],
             "index": "pypi",
-            "version": "==1.5.1"
+            "version": "==1.5.2"
         },
         "flask": {
             "hashes": [
@@ -452,7 +456,7 @@
                 "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff",
                 "sha256:9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d"
             ],
-            "markers": "python_full_version >= '3.5.0'",
+            "markers": "python_version >= '3.5'",
             "version": "==3.3"
         },
         "importlib-metadata": {
@@ -1135,7 +1139,7 @@
                 "sha256:2857e29ff0d34db842cd7ca3230549d1a697f96ee6d3fb071cfa6c7393832597",
                 "sha256:6881edbebdb17b39b4eaaa821b438bf6eddffb4468cf344f09f89def34a8b1df"
             ],
-            "markers": "python_full_version >= '3.5.0'",
+            "markers": "python_version >= '3.5'",
             "version": "==2.0.12"
         },
         "click": {
@@ -1225,7 +1229,7 @@
                 "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff",
                 "sha256:9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d"
             ],
-            "markers": "python_full_version >= '3.5.0'",
+            "markers": "python_version >= '3.5'",
             "version": "==3.3"
         },
         "iniconfig": {
