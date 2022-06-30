@@ -138,7 +138,7 @@ class AsyncConsumer(object):
         """
         self._channel = None
         if self._connection and self._closing:
-            LOGGER.info("Connection closed, already closing -- stopping the IOLoop")
+            LOGGER.debug("Connection closed, already closing -- stopping the IOLoop")
             self._connection.ioloop.stop()
         else:
             LOGGER.warning("Connection closed, reconnect necessary: %s", reason)
@@ -318,7 +318,7 @@ class AsyncConsumer(object):
         """
         self._connection = self.connect()
         if self._connection:
-            LOGGER.info("Connection made -- starting the IOLoop")
+            LOGGER.debug("Connection made -- starting the IOLoop")
             self._connection.ioloop.start()
         else:
             LOGGER.error("Connection was not established to start the IOLoop on")
@@ -333,19 +333,20 @@ class AsyncConsumer(object):
         communicate with RabbitMQ. All of the commands issued prior to starting
         the IOLoop will be buffered but not processed.
         """
-        LOGGER.info("Stop consumer requested")
+        LOGGER.debug("Stop requested")
         if self._closing:
-            LOGGER.info("Consumer is already closing -- stop request ignored")
+            LOGGER.debug("Consumer is already closing -- stop request ignored")
         else:
-            LOGGER.info("Closing the consumer")
+            LOGGER.info("Stopping")
+            LOGGER.debug("Closing the consumer")
             self._closing = True
             if self._consuming:
-                LOGGER.info("Consumer was consuming -- stopping consumption")
+                LOGGER.debug("Consumer was consuming -- stopping consumption")
                 self.stop_consuming()
                 if self._connection:
-                    LOGGER.info("Connection still exists -- starting the IOLoop")
+                    LOGGER.debug("Connection still exists -- starting the IOLoop")
                     self._connection.ioloop.start()
             elif self._connection:
-                LOGGER.info("Consumer was not consuming -- stopping the IOLoop")
+                LOGGER.debug("Consumer was not consuming -- stopping the IOLoop")
                 self._connection.ioloop.stop()
             LOGGER.info("Stopped")
