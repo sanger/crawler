@@ -29,6 +29,10 @@ def create_app(config_object: str = None) -> flask.Flask:
     logging.config.dictConfig(app.config["LOGGING"])
 
     if app.config.get("SCHEDULER_RUN", False):
+        # Add debug level logging for APScheduler -- note that logging.py needs to enable DEBUG logging for
+        # apscheduler as well for this to appear in the logs.
+        logging.getLogger("apscheduler").setLevel(logging.DEBUG)
+
         scheduler.init_app(app)
         scheduler.start()
 

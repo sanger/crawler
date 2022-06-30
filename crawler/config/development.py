@@ -20,3 +20,5 @@ ADD_TO_DART = False
 ###
 LOGGING["loggers"]["crawler"]["level"] = "DEBUG"
 LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream_dev"]
+LOGGING["loggers"]["apscheduler"]["level"] = "DEBUG"
+LOGGING["loggers"]["apscheduler"]["handlers"] = ["colored_stream_dev"]
