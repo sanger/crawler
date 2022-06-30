@@ -122,7 +122,7 @@ class AsyncConsumer(object):
         :param pika.SelectConnection _unused_connection: The connection
         :param Exception err: The error
         """
-        # Note that err is likely to be an AMQPConnectionWorkflowFailed error.  Unfortunatley this means the actual
+        # Note that err is likely to be an AMQPConnectionWorkflowFailed error.  Unfortunately this means the actual
         # cause of the error is wrapped a few layers deep and the type of err does not generate a useful string
         # description.  As such, we'll use a static method pulled from Pika source code to extract the description.
         LOGGER.error("Connection open failed: %s", AsyncConsumer._reap_last_connection_workflow_error(err))
@@ -138,6 +138,7 @@ class AsyncConsumer(object):
         """
         self._channel = None
         if self._connection and self._closing:
+            LOGGER.info("Connection closed, already closing -- stopping the IOLoop")
             self._connection.ioloop.stop()
         else:
             LOGGER.warning("Connection closed, reconnect necessary: %s", reason)
@@ -317,6 +318,7 @@ class AsyncConsumer(object):
         """
         self._connection = self.connect()
         if self._connection:
+            LOGGER.info("Connection made -- starting the IOLoop")
             self._connection.ioloop.start()
         else:
             LOGGER.error("Connection was not established to start the IOLoop on")
@@ -331,13 +333,19 @@ class AsyncConsumer(object):
         communicate with RabbitMQ. All of the commands issued prior to starting
         the IOLoop will be buffered but not processed.
         """
-        if not self._closing:
+        LOGGER.info("Stop consumer requested")
+        if self._closing:
+            LOGGER.info("Consumer is already closing -- stop request ignored")
+        else:
+            LOGGER.info("Closing the consumer")
             self._closing = True
-            LOGGER.info("Stopping")
             if self._consuming:
+                LOGGER.info("Consumer was consuming -- stopping consumption")
                 self.stop_consuming()
                 if self._connection:
+                    LOGGER.info("Connection still exists -- starting the IOLoop")
                     self._connection.ioloop.start()
             elif self._connection:
+                LOGGER.info("Consumer was not consuming -- stopping the IOLoop")
                 self._connection.ioloop.stop()
             LOGGER.info("Stopped")
