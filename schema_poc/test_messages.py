@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 cherrypicked_message = {
     "samples": [
@@ -13,7 +13,7 @@ cherrypicked_message = {
 
 create_message = {
     "messageUuid": b"b01aa0ad-7b19-4f94-87e9-70d74fb8783c",
-    "messageCreateDateUtc": datetime.utcnow(),
+    "messageCreateDateUtc": datetime.now(timezone.utc),
     "plate": {
         "labId": "CPTD",
         "plateBarcode": "BARCODE001",
@@ -28,7 +28,7 @@ create_message = {
                 "preferentiallySequence": True,
                 "mustSequence": True,
                 "fitToPick": True,
-                "testedDateUtc": datetime(2022, 2, 1, 13, 45, 8),
+                "testedDateUtc": datetime(2022, 2, 1, 13, 45, 8, tzinfo=timezone.utc),
             },
             {
                 "sampleUuid": b"d1631fe4-6fd3-4f35-add1-8de2f54802c2",
@@ -40,7 +40,7 @@ create_message = {
                 "preferentiallySequence": False,
                 "mustSequence": False,
                 "fitToPick": True,
-                "testedDateUtc": datetime(2022, 2, 1, 13, 45, 14),
+                "testedDateUtc": datetime(2022, 2, 1, 13, 45, 14, tzinfo=timezone.utc),
             },
         ],
     },
@@ -81,12 +81,12 @@ create_feedback_message = {
 
 update_message = {
     "messageUuid": b"78fedc85-fa9d-494d-951e-779d208e8c0e",
-    "messageCreateDateUtc": datetime.utcnow(),
+    "messageCreateDateUtc": datetime.now(timezone.utc),
     "sample": {
-        "sampleUuid": b"3f51febc-aeb7-4aee-a730-20d6d308df60",
+        "sampleUuid": b"dd490ee5-fd1d-456d-99fd-eb9d3861e0f6",
         "updatedFields": [
-            {"name": "preferentiallySequence", "value": True},
-            {"name": "mustSequence", "value": True},
+            {"name": "preferentiallySequence", "value": False},
+            {"name": "mustSequence", "value": False},
         ],
     },
 }
