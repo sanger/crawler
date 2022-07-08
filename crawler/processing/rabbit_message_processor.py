@@ -1,13 +1,9 @@
 import logging
 from typing import cast
 
-from crawler.constants import (RABBITMQ_SUBJECT_CREATE_PLATE,
-                               RABBITMQ_SUBJECT_UPDATE_SAMPLE)
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.base_processor import BaseProcessor
-from crawler.processing.create_plate_processor import CreatePlateProcessor
 from crawler.processing.rabbit_message import RabbitMessage
-from crawler.processing.update_sample_processor import UpdateSampleProcessor
 from crawler.rabbit.avro_encoder import AvroEncoder
 
 LOGGER = logging.getLogger(__name__)
