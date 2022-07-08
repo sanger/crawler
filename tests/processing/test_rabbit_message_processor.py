@@ -37,7 +37,7 @@ def avro_encoder():
 
 @pytest.fixture
 def create_plate_processor():
-    with patch("crawler.processing.rabbit_message_processor.CreatePlateProcessor") as create_processor:
+    with patch("crawler.config.processors.CreatePlateProcessor") as create_processor:
         yield create_processor
 
 
