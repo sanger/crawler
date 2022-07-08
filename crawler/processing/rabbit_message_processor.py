@@ -1,7 +1,10 @@
 import logging
+from typing import cast
 
-from crawler.constants import RABBITMQ_SUBJECT_CREATE_PLATE, RABBITMQ_SUBJECT_UPDATE_SAMPLE
+from crawler.constants import (RABBITMQ_SUBJECT_CREATE_PLATE,
+                               RABBITMQ_SUBJECT_UPDATE_SAMPLE)
 from crawler.exceptions import TransientRabbitError
+from crawler.processing.base_processor import BaseProcessor
 from crawler.processing.create_plate_processor import CreatePlateProcessor
 from crawler.processing.rabbit_message import RabbitMessage
 from crawler.processing.update_sample_processor import UpdateSampleProcessor
@@ -16,14 +19,18 @@ class RabbitMessageProcessor:
         self._basic_publisher = basic_publisher
         self._config = config
 
-        self._processors = {
-            RABBITMQ_SUBJECT_CREATE_PLATE: CreatePlateProcessor(
-                self._schema_registry, self._basic_publisher, self._config
-            ),
-            RABBITMQ_SUBJECT_UPDATE_SAMPLE: UpdateSampleProcessor(
-                self._schema_registry, self._basic_publisher, self._config
-            ),
-        }
+        self._build_processors()
+
+    def _build_processors(self):
+        self._processors = {}
+        for subject in self._config.PROCESSORS.keys():
+            self._processors[subject] = self._build_processor_for_subject(subject)
+
+    def _build_processor_for_subject(self, subject: str) -> BaseProcessor:
+        processor_instance_builder = self._config.PROCESSORS[subject]
+        return cast(
+            BaseProcessor, processor_instance_builder(self._schema_registry, self._basic_publisher, self._config)
+        )
 
     def process_message(self, headers, body):
         message = RabbitMessage(headers, body)
