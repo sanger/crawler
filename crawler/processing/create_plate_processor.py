@@ -2,6 +2,7 @@ import logging
 
 from crawler.config.defaults import RABBITMQ_FEEDBACK_EXCHANGE
 from crawler.constants import (
+    CENTRE_KEY_FEEDBACK_ROUTING_KEY_PREFIX,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING,
     RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
     RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
@@ -60,6 +61,10 @@ class CreatePlateProcessor(BaseProcessor):
         exporter.record_import()
         return True  # Acknowledge the message has been processed
 
+    def _feedback_routing_key(self, centre_config):
+        prefix = centre_config.get(CENTRE_KEY_FEEDBACK_ROUTING_KEY_PREFIX, "")
+        return prefix + RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK
+
     def _publish_feedback(self, create_message):
         feedback_message = CreateFeedbackMessage(
             sourceMessageUuid=create_message.message_uuid.value,
@@ -72,7 +77,7 @@ class CreatePlateProcessor(BaseProcessor):
         encoded_message = self._encoder.encode([feedback_message])
         self._basic_publisher.publish_message(
             RABBITMQ_FEEDBACK_EXCHANGE,
-            RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
+            self._feedback_routing_key(create_message.centre_config),
             encoded_message.body,
             RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
             encoded_message.version,
