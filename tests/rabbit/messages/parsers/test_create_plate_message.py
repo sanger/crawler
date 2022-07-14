@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from crawler.rabbit.messages.create_plate_message import (
+from crawler.rabbit.messages.parsers.create_plate_message import (
     FIELD_COG_UK_ID,
     FIELD_FIT_TO_PICK,
     FIELD_LAB_ID,
@@ -30,7 +30,7 @@ from tests.testing_objects import CREATE_PLATE_MESSAGE
 
 @pytest.fixture
 def logger():
-    with patch("crawler.rabbit.messages.create_plate_message.LOGGER") as logger:
+    with patch("crawler.rabbit.messages.parsers.create_plate_message.LOGGER") as logger:
         yield logger
 
 
@@ -189,8 +189,8 @@ def test_duplicated_sample_values_gives_correct_duplicates_for_bad_message():
 def test_duplicated_sample_values_calls_expected_methods():
     subject = CreatePlateMessage(MESSAGE_WITH_DUPLICATES)
 
-    with patch("crawler.rabbit.messages.create_plate_message.extract_dupes") as extract_dupes:
-        with patch("crawler.rabbit.messages.create_plate_message.normalise_plate_coordinate") as normalise:
+    with patch("crawler.rabbit.messages.parsers.create_plate_message.extract_dupes") as extract_dupes:
+        with patch("crawler.rabbit.messages.parsers.create_plate_message.normalise_plate_coordinate") as normalise:
             normalise.return_value = "A01"
             subject.duplicated_sample_values
 

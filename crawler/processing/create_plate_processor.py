@@ -13,7 +13,7 @@ from crawler.processing.create_plate_exporter import CreatePlateExporter
 from crawler.processing.create_plate_validator import CreatePlateValidator
 from crawler.rabbit.avro_encoder import AvroEncoder
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackMessage
-from crawler.rabbit.messages.create_plate_message import CreatePlateError, CreatePlateMessage, ErrorType
+from crawler.rabbit.messages.parsers.create_plate_message import CreatePlateError, CreatePlateMessage, ErrorType
 
 LOGGER = logging.getLogger(__name__)
 

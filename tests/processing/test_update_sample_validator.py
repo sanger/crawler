@@ -5,7 +5,7 @@ import pytest
 
 from crawler.constants import RABBITMQ_UPDATE_FEEDBACK_ORIGIN_FIELD
 from crawler.processing.update_sample_validator import UpdateSampleValidator
-from crawler.rabbit.messages.update_sample_message import (
+from crawler.rabbit.messages.parsers.update_sample_message import (
     FIELD_NAME,
     FIELD_SAMPLE,
     FIELD_UPDATED_FIELDS,

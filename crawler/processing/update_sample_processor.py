@@ -12,7 +12,7 @@ from crawler.processing.update_sample_exporter import UpdateSampleExporter
 from crawler.processing.update_sample_validator import UpdateSampleValidator
 from crawler.rabbit.avro_encoder import AvroEncoder
 from crawler.rabbit.messages.update_feedback_message import UpdateFeedbackMessage
-from crawler.rabbit.messages.update_sample_message import ErrorType, UpdateSampleError, UpdateSampleMessage
+from crawler.rabbit.messages.parsers.update_sample_message import ErrorType, UpdateSampleError, UpdateSampleMessage
 
 LOGGER = logging.getLogger(__name__)
 

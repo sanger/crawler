@@ -45,7 +45,7 @@ from crawler.exceptions import TransientRabbitError
 from crawler.helpers.db_helpers import create_mongo_import_record
 from crawler.helpers.general_helpers import create_source_plate_doc
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
-from crawler.rabbit.messages.create_plate_message import CreatePlateError, ErrorType
+from crawler.rabbit.messages.parsers.create_plate_message import CreatePlateError, ErrorType
 
 LOGGER = logging.getLogger(__name__)
 

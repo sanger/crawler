@@ -1,6 +1,6 @@
 from crawler.constants import RABBITMQ_UPDATE_FEEDBACK_ORIGIN_FIELD
 from crawler.helpers.general_helpers import extract_duplicated_values
-from crawler.rabbit.messages.update_sample_message import ErrorType, UpdateSampleError
+from crawler.rabbit.messages.parsers.update_sample_message import ErrorType, UpdateSampleError
 
 
 class UpdateSampleValidator:

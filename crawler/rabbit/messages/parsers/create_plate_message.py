@@ -5,8 +5,8 @@ from typing import Any, NamedTuple, Optional
 
 from crawler.helpers.general_helpers import extract_duplicated_values as extract_dupes
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
-from crawler.rabbit.messages.base_message import BaseMessage
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackError
+from crawler.rabbit.messages.parsers.base_message import BaseMessage
 from crawler.types import CentreConf
 
 LOGGER = logging.getLogger(__name__)

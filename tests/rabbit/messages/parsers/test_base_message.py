@@ -1,6 +1,6 @@
 import pytest
 
-from crawler.rabbit.messages.base_message import BaseMessage
+from crawler.rabbit.messages.parsers.base_message import BaseMessage
 
 
 @pytest.fixture

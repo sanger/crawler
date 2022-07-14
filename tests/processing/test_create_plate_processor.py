@@ -12,7 +12,7 @@ from crawler.constants import (
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_processor import CreatePlateProcessor
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackMessage
-from crawler.rabbit.messages.create_plate_message import CreatePlateError, ErrorType, MessageField
+from crawler.rabbit.messages.parsers.create_plate_message import CreatePlateError, ErrorType, MessageField
 
 
 class EncodedMessage(NamedTuple):
