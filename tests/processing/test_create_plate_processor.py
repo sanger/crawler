@@ -1,4 +1,3 @@
-import copy
 from typing import NamedTuple
 from unittest.mock import ANY, MagicMock, patch
 
@@ -13,8 +12,7 @@ from crawler.constants import (
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_processor import CreatePlateProcessor
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackMessage
-from crawler.rabbit.messages.create_plate_message import CreatePlateError, CreatePlateMessage, ErrorType, MessageField
-from tests.testing_objects import CREATE_PLATE_MESSAGE
+from crawler.rabbit.messages.create_plate_message import CreatePlateError, ErrorType, MessageField
 
 
 class EncodedMessage(NamedTuple):
