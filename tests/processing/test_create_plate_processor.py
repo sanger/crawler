@@ -32,11 +32,6 @@ def mock_logger():
 
 
 @pytest.fixture
-def create_plate_message():
-    return CreatePlateMessage(copy.deepcopy(CREATE_PLATE_MESSAGE))
-
-
-@pytest.fixture
 def mock_validator():
     with patch("crawler.processing.create_plate_processor.CreatePlateValidator") as validator:
         yield validator
@@ -56,8 +51,9 @@ def mock_avro_encoder():
 
 
 @pytest.fixture
-def message_wrapper_class():
+def message_wrapper_class(centre):
     with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as message_wrapper_class:
+        message_wrapper_class.return_value.centre_config = centre.centre_config
         message_wrapper_class.return_value.message_uuid = MessageField("UUID_FIELD", "UUID")
         message_wrapper_class.return_value.has_errors = False
 
@@ -70,7 +66,7 @@ def message_wrapper_class():
 
 
 @pytest.fixture
-def subject(config, mock_avro_encoder, mock_validator, mock_exporter):
+def subject(config, mock_avro_encoder, mock_validator, mock_exporter, message_wrapper_class):
     return CreatePlateProcessor(MagicMock(), MagicMock(), config)
 
 
