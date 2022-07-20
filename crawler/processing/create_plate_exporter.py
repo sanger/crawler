@@ -290,7 +290,7 @@ class CreatePlateExporter:
 
             LOGGER.debug(
                 f"DART database inserts completed successfully for plate with barcode '{plate_barcode}' "
-                "in message with UUID '{message_uuid}'"
+                f"in message with UUID '{message_uuid}'"
             )
             return ExportResult(success=True, create_plate_errors=[])
         except Exception as ex:
