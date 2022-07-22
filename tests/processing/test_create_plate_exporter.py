@@ -6,35 +6,25 @@ import pytest
 from pymongo.collection import Collection
 from pymongo.errors import BulkWriteError
 
-from crawler.constants import (
-    COLLECTION_IMPORTS,
-    COLLECTION_SAMPLES,
-    COLLECTION_SOURCE_PLATES,
-    DART_STATE_NO_PLATE,
-    DART_STATE_NO_PROP,
-    DART_STATE_PENDING,
-    DART_STATE_PICKABLE,
-    FIELD_COORDINATE,
-    FIELD_LH_SAMPLE_UUID,
-    FIELD_LH_SOURCE_PLATE_UUID,
-    FIELD_MONGO_LAB_ID,
-    FIELD_MONGO_MESSAGE_UUID,
-    FIELD_MONGO_SAMPLE_INDEX,
-    FIELD_SOURCE,
-    RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
-)
+from crawler.constants import (COLLECTION_IMPORTS, COLLECTION_SAMPLES,
+                               COLLECTION_SOURCE_PLATES, DART_STATE_NO_PLATE,
+                               DART_STATE_NO_PROP, DART_STATE_PENDING,
+                               DART_STATE_PICKABLE, FIELD_COORDINATE,
+                               FIELD_LH_SAMPLE_UUID,
+                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_MONGO_LAB_ID,
+                               FIELD_MONGO_MESSAGE_UUID,
+                               FIELD_MONGO_SAMPLE_INDEX, FIELD_SOURCE,
+                               RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE)
 from crawler.db.mongo import get_mongo_collection
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_exporter import CreatePlateExporter
-from crawler.rabbit.messages.create_plate_message import (
-    FIELD_LAB_ID,
-    FIELD_PLATE,
-    FIELD_PLATE_BARCODE,
-    FIELD_SAMPLES,
-    CreatePlateError,
-    CreatePlateMessage,
-    ErrorType,
-)
+from crawler.rabbit.messages.create_plate_message import (FIELD_LAB_ID,
+                                                          FIELD_PLATE,
+                                                          FIELD_PLATE_BARCODE,
+                                                          FIELD_SAMPLES,
+                                                          CreatePlateError,
+                                                          CreatePlateMessage,
+                                                          ErrorType)
 from tests.testing_objects import CREATE_PLATE_MESSAGE
 
 
