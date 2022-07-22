@@ -15,10 +15,12 @@ class RabbitMessageProcessor:
         self._basic_publisher = basic_publisher
         self._config = config
 
+        self.__processors: Optional[Dict[str, Any]] = None
+
     @property
     def _processors(self) -> Dict[str, Any]:
         if self.__processors is None:
-            self.__processors: Optional[Dict[str, Any]] = {
+            self.__processors = {
                 subject: self._build_processor_for_subject(subject) for subject in self._config.PROCESSORS.keys()
             }
 
