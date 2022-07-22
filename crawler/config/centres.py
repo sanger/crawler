@@ -22,6 +22,7 @@ from crawler.constants import (
     COLLECTION_CENTRES,
     FIELD_CENTRE_NAME,
     FIELD_RNA_ID,
+    TEST_DATA_CENTRE_LAB_ID,
     TEST_DATA_CENTRE_PREFIX,
 )
 from crawler.db.mongo import collection_exists, create_index, create_mongo_client, get_mongo_collection, get_mongo_db
@@ -254,7 +255,7 @@ CENTRES: List[CentreConf] = [
         CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: r"^$",
         CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE: r"^CPTD_\d{6}_\d{6}_\d{6}\.csv$",
         CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: False,
-        CENTRE_KEY_LAB_ID_DEFAULT: "CPTD",
+        CENTRE_KEY_LAB_ID_DEFAULT: TEST_DATA_CENTRE_LAB_ID,
         CENTRE_KEY_NAME: "Cherrypick Test Data",
         CENTRE_KEY_PREFIX: TEST_DATA_CENTRE_PREFIX,
         CENTRE_KEY_SFTP_ROOT_READ: "",

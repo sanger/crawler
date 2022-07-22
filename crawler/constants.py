@@ -116,7 +116,8 @@ FIELD_STATUS_FAILED: Final[str] = "failed"
 ###
 # cherrypicker test data
 ###
-# the prefix for the centre which processes generated data
+# the lab ID and prefix for the centre which processes generated data
+TEST_DATA_CENTRE_LAB_ID: Final[str] = "CPTD"
 TEST_DATA_CENTRE_PREFIX: Final[str] = "CPTD"
 
 # processing errors for the API endpoint for generating data
