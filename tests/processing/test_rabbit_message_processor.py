@@ -2,7 +2,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from crawler.constants import RABBITMQ_HEADER_KEY_SUBJECT, RABBITMQ_HEADER_KEY_VERSION, RABBITMQ_SUBJECT_CREATE_PLATE
+from crawler.constants import (
+    RABBITMQ_HEADER_KEY_SUBJECT,
+    RABBITMQ_HEADER_KEY_VERSION,
+    RABBITMQ_SUBJECT_CREATE_PLATE,
+    RABBITMQ_SUBJECT_UPDATE_SAMPLE,
+)
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.rabbit_message_processor import RabbitMessageProcessor
 
@@ -37,14 +42,14 @@ def avro_encoder():
 
 @pytest.fixture
 def create_plate_processor():
-    with patch("crawler.processing.rabbit_message_processor.CreatePlateProcessor") as create_processor:
+    with patch("crawler.config.processors.CreatePlateProcessor") as create_processor:
         yield create_processor
 
 
 @pytest.fixture
 def subject(config, create_plate_processor, rabbit_message, avro_encoder):
     subject = RabbitMessageProcessor(SCHEMA_REGISTRY, BASIC_PUBLISHER, config)
-    subject._processors = {RABBITMQ_SUBJECT_CREATE_PLATE: create_plate_processor.return_value}
+    subject._processors[RABBITMQ_SUBJECT_CREATE_PLATE] = create_plate_processor.return_value
     yield subject
 
 
@@ -55,7 +60,7 @@ def test_constructor_stored_passed_values(subject, config):
 
 
 def test_constructor_populated_processors_correctly(subject, create_plate_processor):
-    assert list(subject._processors.keys()) == [RABBITMQ_SUBJECT_CREATE_PLATE]
+    assert list(subject._processors.keys()) == [RABBITMQ_SUBJECT_CREATE_PLATE, RABBITMQ_SUBJECT_UPDATE_SAMPLE]
     assert subject._processors[RABBITMQ_SUBJECT_CREATE_PLATE] == create_plate_processor.return_value
 
 

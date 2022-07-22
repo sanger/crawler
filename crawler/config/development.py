@@ -1,5 +1,6 @@
 # flake8: noqa
 from crawler.config.defaults import *
+from crawler.config.processors import *
 
 # setting here will overwrite those in 'defaults.py'
 
