@@ -44,7 +44,7 @@ def create_plate_processor():
 @pytest.fixture
 def subject(config, create_plate_processor, rabbit_message, avro_encoder):
     subject = RabbitMessageProcessor(SCHEMA_REGISTRY, BASIC_PUBLISHER, config)
-    subject._processors = {RABBITMQ_SUBJECT_CREATE_PLATE: create_plate_processor.return_value}
+    subject._processors[RABBITMQ_SUBJECT_CREATE_PLATE] = create_plate_processor.return_value
     yield subject
 
 

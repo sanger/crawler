@@ -1,5 +1,5 @@
 import logging
-from typing import cast
+from typing import Any, Dict, Optional, cast
 
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.base_processor import BaseProcessor
@@ -15,13 +15,13 @@ class RabbitMessageProcessor:
         self._basic_publisher = basic_publisher
         self._config = config
 
-        self._build_processors()
-
     @property
-    def _processors(self):
+    def _processors(self) -> Dict[str, Any]:
         if self.__processors is None:
-            self.__processors = {subject: self._build_processor_for_subject(subject) for subject in self._config.PROCESSORS.keys()}
-        
+            self.__processors: Optional[Dict[str, Any]] = {
+                subject: self._build_processor_for_subject(subject) for subject in self._config.PROCESSORS.keys()
+            }
+
         return self.__processors
 
     def _build_processor_for_subject(self, subject: str) -> BaseProcessor:
