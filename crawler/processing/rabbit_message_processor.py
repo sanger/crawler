@@ -17,10 +17,12 @@ class RabbitMessageProcessor:
 
         self._build_processors()
 
-    def _build_processors(self):
-        self._processors = {}
-        for subject in self._config.PROCESSORS.keys():
-            self._processors[subject] = self._build_processor_for_subject(subject)
+    @property
+    def _processors(self):
+        if self.__processors is None:
+            self.__processors = {subject: self._build_processor_for_subject(subject) for subject in self._config.PROCESSORS.keys()}
+        
+        return self.__processors
 
     def _build_processor_for_subject(self, subject: str) -> BaseProcessor:
         processor_instance_builder = self._config.PROCESSORS[subject]
