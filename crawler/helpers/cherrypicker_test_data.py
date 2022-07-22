@@ -1,7 +1,6 @@
-import csv
 import logging
-import os
 import random
+import uuid
 from datetime import datetime
 from http import HTTPStatus
 
@@ -15,11 +14,13 @@ from crawler.constants import (
     FIELD_RNA_PCR_ID,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_VIRAL_PREP_ID,
+    TEST_DATA_CENTRE_LAB_ID,
     TEST_DATA_ERROR_BARACODA_COG_BARCODES,
     TEST_DATA_ERROR_BARACODA_CONNECTION,
     TEST_DATA_ERROR_BARACODA_UNKNOWN,
 )
 from crawler.exceptions import CherrypickerDataError
+from crawler.rabbit.messages.create_plate_message import CreatePlateMessage, Plate, Sample
 from crawler.types import Config
 
 logger = logging.getLogger(__name__)
@@ -93,44 +94,13 @@ def create_root_sample_id(barcode: str, well_num: int) -> str:
     return "RSID-%s%s" % (barcode, str(well_num).zfill(2))
 
 
-def create_viral_prep_id(barcode: str, well_num: int, well_coordinate: str) -> str:
-    return "VPID-%s%s_%s" % (barcode, str(well_num).zfill(2), well_coordinate)
-
-
 def create_rna_id(barcode: str, well_coordinate: str) -> str:
     return "%s_%s" % (barcode, well_coordinate)
 
 
-def create_rna_pcr_id(barcode: str, well_num: int, well_coordinate: str) -> str:
-    return "RNA_PCR-%s%s_%s" % (barcode, str(well_num).zfill(2), well_coordinate)
-
-
-def create_test_timestamp(dt: datetime) -> str:
-    return dt.strftime("%Y-%m-%d %H:%M:%S UTC")
-
-
-def create_row(dt: datetime, well_index: int, result: str, barcode: str, lab_id: str) -> list:
-    well_coordinate = WELL_COORDS[well_index]
-    well_num = well_index + 1
-    return [
-        create_root_sample_id(barcode, well_num),
-        create_viral_prep_id(barcode, well_num, well_coordinate),
-        create_rna_id(barcode, well_coordinate),
-        create_rna_pcr_id(barcode, well_num, well_coordinate),
-        result,
-        create_test_timestamp(dt),
-        lab_id,
-    ]
-
-
-# TODO: At the moment, dt is used as a static timestamp across all samples and all plates It could be desirable to add
-#       some random noise to this timestamp between either all samples or between plates.
-def create_plate_rows(dt, num_positives, plate_barcode, lab_id):
-    num_negatives = PLATE_SIZE - num_positives
-    outcomes = ["Positive"] * num_positives + ["Negative"] * num_negatives
-    random.shuffle(outcomes)
-
-    return [create_row(dt, i, outcome, plate_barcode, lab_id) for i, outcome in enumerate(outcomes)]
+def create_cog_uk_id(barcode: str, well_num: int) -> str:
+    padded_hex_well_num = hex(well_num)[2:].zfill(2)
+    return "%s%s" % (barcode, padded_hex_well_num)
 
 
 def flat_list_of_positives_per_plate(plate_specs: list) -> list:
@@ -138,41 +108,44 @@ def flat_list_of_positives_per_plate(plate_specs: list) -> list:
     return flatten([[specs[1]] * specs[0] for specs in plate_specs])
 
 
-def create_csv_rows(plate_specs: list, dt: datetime, list_barcodes: list, lab_id: str) -> list:
+def create_sample(dt: datetime, index: int, result: str, plate_barcode: str) -> Sample:
+    well_coordinate = WELL_COORDS[index]
+    well_num = index + 1
+    return Sample(
+        sampleUuid=str(uuid.uuid4()).encode(),
+        rootSampleId=create_root_sample_id(plate_barcode, well_num),
+        rnaId=create_rna_id(plate_barcode, well_coordinate),
+        cogUkId=create_cog_uk_id(plate_barcode, well_num),
+        plateCoordinate=well_coordinate,
+        preferentiallySequence=False,
+        mustSequence=False,
+        fitToPick=True,
+        result=result,
+        testedDateUtc=dt,
+    )
+
+
+def create_samples(dt: datetime, plate_barcode: str, num_positives: int) -> list:
+    num_negatives = PLATE_SIZE - num_positives
+    results = ["Positive"] * num_positives + ["Negative"] * num_negatives
+    random.shuffle(results)
+
+    return [create_sample(dt, index, result, plate_barcode) for index, result in enumerate(results)]
+
+
+# TODO: At the moment, dt is used as a static timestamp across all samples and all plates It could be desirable to add
+#       some random noise to this timestamp between either all samples or between plates.
+def create_plate_message(dt: datetime, plate_barcode: str, num_positives: int) -> CreatePlateMessage:
+    samples = create_samples(dt, plate_barcode, num_positives)
+    plate = Plate(labId=TEST_DATA_CENTRE_LAB_ID, plateBarcode=plate_barcode, samples=samples)
+
+    return CreatePlateMessage(messageUuid=str(uuid.uuid4()).encode(), messageCreateDateUtc=dt, plate=plate)
+
+
+def create_plate_messages(plate_specs: list, dt: datetime, list_barcodes: list) -> list:
     pos_per_plate = flat_list_of_positives_per_plate(plate_specs)
 
-    # Create lists of csv rows for each plate
-    # i.e. [ [ [ "plate1", "row1" ], [ "plate1", "row2" ] ], [ [ "plate2", "row1" ] ] ]
-    plate_rows = [create_plate_rows(dt, pos_per_plate[i], list_barcodes[i], lab_id) for i in range(len(pos_per_plate))]
-
-    # Flatten before returning
-    # i.e. [ [ "plate1", "row1" ], [ "plate1", "row2" ], [ "plate2", "row1" ] ]
-    return flatten(plate_rows)
-
-
-def write_plates_file(rows: list, path: str, filename: str) -> None:
-    logger.info(f"Writing to file: {filename}")
-
-    try:
-        if not os.path.isdir(path):
-            os.makedirs(path)
-
-        full_path = os.path.join(path, filename)
-        with open(full_path, mode="w") as plates_file:
-            plates_writer = csv.writer(plates_file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
-
-            # write header row
-            plates_writer.writerow(SAMPLES_FILE_HEADERS)
-
-            # write well rows
-            for row in rows:
-                plates_writer.writerow(row)
-
-    except Exception as e:
-        logger.error(f"Exception: {e}")
-        raise
-    else:
-        logger.info(f"Test data plates file written: {filename}")
+    return [create_plate_message(dt, list_barcodes[i], positives) for i, positives in enumerate(pos_per_plate)]
 
 
 def create_barcode_meta(plate_specs: list, list_barcodes: list) -> list:

@@ -1,18 +1,14 @@
 import json
 import logging
-import os
 from datetime import datetime
 from functools import reduce
-from typing import Any, List
+from typing import List
 
 from bson.objectid import ObjectId
 from pymongo.collection import Collection
 
 from crawler.constants import (
-    CENTRE_KEY_LAB_ID_DEFAULT,
-    CENTRE_KEY_PREFIX,
     COLLECTION_CHERRYPICK_TEST_DATA,
-    FIELD_ADD_TO_DART,
     FIELD_BARCODES,
     FIELD_EVE_UPDATED,
     FIELD_FAILURE_REASON,
@@ -25,7 +21,6 @@ from crawler.constants import (
     FIELD_STATUS_PENDING,
     FIELD_STATUS_PREPARING_DATA,
     FIELD_STATUS_STARTED,
-    TEST_DATA_CENTRE_PREFIX,
     TEST_DATA_ERROR_INVALID_PLATE_SPECS,
     TEST_DATA_ERROR_NO_RUN_FOR_ID,
     TEST_DATA_ERROR_NUMBER_OF_PLATES,
@@ -34,14 +29,8 @@ from crawler.constants import (
 )
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.exceptions import CherrypickerDataError
-from crawler.helpers.cherrypicker_test_data import (
-    create_barcode_meta,
-    create_barcodes,
-    create_csv_rows,
-    write_plates_file,
-)
+from crawler.helpers.cherrypicker_test_data import create_barcode_meta, create_barcodes, create_plate_messages
 from crawler.helpers.general_helpers import get_config
-from crawler.main import run as run_crawler
 from crawler.types import Config
 
 logger = logging.getLogger(__name__)
@@ -86,16 +75,16 @@ def process_run(config: Config, collection: Collection, run_id: str) -> List[Lis
         plate_specs, num_plates = validate_plate_specs(
             run_doc.get(FIELD_PLATE_SPECS), config.MAX_PLATES_PER_TEST_DATA_RUN
         )
-        add_to_dart = parse_bool_field(run_doc.get(FIELD_ADD_TO_DART), False)
 
         update_status(collection, run_id, FIELD_STATUS_STARTED)
         barcodes = create_barcodes(config, num_plates)
 
         update_status(collection, run_id, FIELD_STATUS_PREPARING_DATA)
-        prepare_data(plate_specs, dt, barcodes, config)
+        _ = create_plate_messages(plate_specs, dt, barcodes)
 
         update_status(collection, run_id, FIELD_STATUS_CRAWLING_DATA)
-        run_crawler(sftp=False, keep_files=False, add_to_dart=add_to_dart, centre_prefix=TEST_DATA_CENTRE_PREFIX)
+        # Submit messages to RabbitMQ and wait for feedback
+        # submit_rabbit_messages()
 
         barcode_meta = create_barcode_meta(plate_specs, barcodes)
         update_run(
@@ -149,38 +138,6 @@ def validate_plate_specs(plate_specs, max_plates_per_run):
         raise CherrypickerDataError(TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES)
 
     return plate_specs, num_plates
-
-
-def parse_bool_field(value: Any, default_value: bool) -> bool:
-    """Convert a bool or string value to a bool.
-
-    Arguments:
-        value: any -- The value to convert to a bool.
-        deafult_value: bool -- The value to use if the conversation cannot be done.
-
-    Returns:
-        The value of the bool, if it was already a bool.  If the value can be coerced into a string, True will be
-        returned if the string is the word "true" or False will be returned when the string is the word "false".
-        Strings are tested in a case insensitive manner.  In all other cases, the default value is returned.
-    """
-    if type(value) == bool:
-        return value
-    elif str(value).strip().lower() == "true":
-        return True
-    elif str(value).strip().lower() == "false":
-        return False
-
-    return default_value
-
-
-def prepare_data(plate_specs, dt, barcodes, config):
-    test_centre = next(filter(lambda c: c[CENTRE_KEY_PREFIX] == TEST_DATA_CENTRE_PREFIX, config.CENTRES))
-    downloaded_data_path = config.DIR_DOWNLOADED_DATA
-
-    csv_rows = create_csv_rows(plate_specs, dt, barcodes, test_centre[CENTRE_KEY_LAB_ID_DEFAULT])
-    plates_path = os.path.join(downloaded_data_path, TEST_DATA_CENTRE_PREFIX)
-    plates_filename = f"{TEST_DATA_CENTRE_PREFIX}_{dt.strftime('%y%m%d_%H%M%S_%f')}.csv"
-    write_plates_file(csv_rows, plates_path, plates_filename)
 
 
 def update_status(collection, run_id, status):

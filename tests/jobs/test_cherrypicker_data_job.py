@@ -1,5 +1,4 @@
 import json
-import os
 from collections import namedtuple
 from contextlib import ExitStack
 from datetime import datetime
@@ -9,8 +8,6 @@ import pytest
 from bson.objectid import ObjectId
 
 from crawler.constants import (
-    CENTRE_KEY_LAB_ID_DEFAULT,
-    CENTRE_KEY_PREFIX,
     COLLECTION_CHERRYPICK_TEST_DATA,
     FIELD_ADD_TO_DART,
     FIELD_BARCODES,
@@ -26,7 +23,6 @@ from crawler.constants import (
     FIELD_STATUS_PENDING,
     FIELD_STATUS_PREPARING_DATA,
     FIELD_STATUS_STARTED,
-    TEST_DATA_CENTRE_PREFIX,
     TEST_DATA_ERROR_INVALID_PLATE_SPECS,
     TEST_DATA_ERROR_NO_RUN_FOR_ID,
     TEST_DATA_ERROR_NUMBER_OF_PLATES,
@@ -38,7 +34,6 @@ from crawler.exceptions import CherrypickerDataError
 from crawler.helpers.general_helpers import is_found_in_list
 from crawler.jobs.cherrypicker_test_data import (
     get_run_doc,
-    prepare_data,
     process,
     process_run,
     update_run,
@@ -54,8 +49,6 @@ partial_run_doc = {
 mocked_utc_now = datetime(2021, 3, 12, 9, 41, 0)
 
 created_barcodes = ["Plate-1", "Plate-2", "Plate-3", "Plate-4"]
-
-created_csv_rows = [["Test", "CSV", "Data"], ["One", "Two", "Three"]]
 
 created_barcode_metadata = [
     ["Plate-1", "positive samples: 48"],
@@ -92,12 +85,10 @@ def mock_stack():
         datetime_mock = stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.datetime"))
         datetime_mock.utcnow.return_value = mocked_utc_now
         stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.create_barcodes", return_value=created_barcodes))
-        stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.create_csv_rows", return_value=created_csv_rows))
-        stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.write_plates_file"))
-        stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.run_crawler"))
         stack.enter_context(
             patch("crawler.jobs.cherrypicker_test_data.create_barcode_meta", return_value=created_barcode_metadata)
         )
+        stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.create_plate_messages"))
 
         yield stack
 
@@ -223,13 +214,22 @@ def test_process_run_calls_helper_methods(mongo_collection, mock_stack):
         validate_plate_specs = stack.enter_context(
             patch("crawler.jobs.cherrypicker_test_data.validate_plate_specs", return_value=(plate_specs, 6))
         )
-        prepare_data = stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.prepare_data"))
 
         process_run(config, collection, pending_id)
 
     get_run_doc.assert_called_once_with(collection, pending_id)
     validate_plate_specs.assert_called_once_with(plate_specs, config.MAX_PLATES_PER_TEST_DATA_RUN)
-    prepare_data.assert_called_once_with(plate_specs, mocked_utc_now, created_barcodes, config)
+
+
+def test_process_run_calls_create_plate_messages(mongo_collection, mock_stack):
+    config, collection = mongo_collection
+    plate_specs = [[5, 10], [15, 20], [19, 30]]
+    pending_id = insert_run(collection, plate_specs=plate_specs)
+
+    with patch("crawler.jobs.cherrypicker_test_data.create_plate_messages") as create_plate_messages:
+        process_run(config, collection, pending_id)
+
+    create_plate_messages.assert_called_with(plate_specs, mocked_utc_now, created_barcodes)
 
 
 def test_process_run_run_asks_for_correct_number_of_barcodes(mongo_collection, mock_stack):
@@ -240,32 +240,6 @@ def test_process_run_run_asks_for_correct_number_of_barcodes(mongo_collection, m
         process_run(config, collection, pending_id)
 
     create_barcodes.assert_called_with(config, 5 + 15 + 19)
-
-
-@pytest.mark.parametrize(
-    "add_to_dart, expected_dart_value",
-    [
-        [None, False],
-        [True, True],
-        [False, False],
-        [" tRuE  ", True],
-        ["  FaLsE ", False],
-        [["True"], False],
-        [{"True": True}, False],
-    ],
-)
-def test_process_run_calls_run_crawler_with_correct_parameters(
-    mongo_collection, mock_stack, add_to_dart, expected_dart_value
-):
-    config, collection = mongo_collection
-    pending_id = insert_run(collection, add_to_dart=add_to_dart)
-
-    with patch("crawler.jobs.cherrypicker_test_data.run_crawler") as run_crawler:
-        process_run(config, collection, pending_id)
-
-    run_crawler.assert_called_with(
-        sftp=False, keep_files=False, add_to_dart=expected_dart_value, centre_prefix=TEST_DATA_CENTRE_PREFIX
-    )
 
 
 @pytest.mark.parametrize(
@@ -338,28 +312,6 @@ def test_get_run_doc_raises_error_when_id_not_found(mongo_collection):
 
     assert TEST_DATA_ERROR_NO_RUN_FOR_ID in str(e_info.value)
     assert search_id in str(e_info.value)
-
-
-def test_prepare_data_calls_create_csv_rows_with_correct_parameters(config, mock_stack):
-    plate_specs = [[5, 10], [15, 20], [19, 30]]
-
-    with patch("crawler.jobs.cherrypicker_test_data.create_csv_rows") as create_csv_rows:
-        prepare_data(plate_specs, mocked_utc_now, created_barcodes, config)
-
-    test_centre = next(filter(lambda c: c[CENTRE_KEY_PREFIX] == TEST_DATA_CENTRE_PREFIX, config.CENTRES))
-    create_csv_rows.assert_called_with(
-        plate_specs, mocked_utc_now, created_barcodes, test_centre[CENTRE_KEY_LAB_ID_DEFAULT]
-    )
-
-
-def test_prepare_data_calls_write_plates_file_with_correct_parameters(config, mock_stack):
-    plate_specs = [[5, 10], [15, 20], [19, 30]]
-    with patch("crawler.jobs.cherrypicker_test_data.write_plates_file") as write_plates_file:
-        prepare_data(plate_specs, mocked_utc_now, created_barcodes, config)
-
-    plates_path = os.path.join(config.DIR_DOWNLOADED_DATA, TEST_DATA_CENTRE_PREFIX)
-    filename = "CPTD_210312_094100_000000.csv"
-    write_plates_file.assert_called_with(created_csv_rows, plates_path, filename)
 
 
 def test_update_status_calls_update_run_with_correct_parameters(mongo_collection):
