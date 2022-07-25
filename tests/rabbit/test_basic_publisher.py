@@ -60,7 +60,7 @@ def test_constructor_creates_correct_connection_parameters(uses_ssl, host, port,
 
 @pytest.mark.parametrize("exchange", ["", "exchange"])
 @pytest.mark.parametrize("routing_key", ["", "routing_key"])
-@pytest.mark.parametrize("body", ["", "body"])
+@pytest.mark.parametrize("body", ["".encode(), "body".encode()])
 @pytest.mark.parametrize("schema_subject", ["", "subject"])
 @pytest.mark.parametrize("schema_version", ["", "schema_version"])
 def test_publish_message_publishes_the_message(

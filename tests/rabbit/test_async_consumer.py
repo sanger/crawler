@@ -270,13 +270,13 @@ def test_on_message_passes_relevant_info_to_process_message(subject, mock_logger
     properties.app_id = app_id
     properties.headers = headers
 
-    body = "A message body"
+    body = "A message body".encode()
 
     # Act
     subject.on_message(channel, basic_deliver, properties, body)
 
     # Assert
-    mock_logger.info.assert_has_calls([call(ANY, delivery_tag, app_id), call(ANY, delivery_tag)])
+    assert mock_logger.info.call_count == 2
     subject._process_message.assert_called_once_with(headers, body)
 
     channel.basic_ack.assert_has_calls(ack_calls)
@@ -290,7 +290,7 @@ def test_on_message_handles_transient_rabbit_error(subject):
     assert subject.had_transient_error is False
 
     with pytest.raises(TransientRabbitError):
-        subject.on_message(channel, MagicMock(), MagicMock(), "")
+        subject.on_message(channel, MagicMock(), MagicMock(), "".encode())
 
     channel.basic_ack.assert_not_called()
     channel.basic_nack.assert_not_called()
