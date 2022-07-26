@@ -1,6 +1,14 @@
+from unittest.mock import patch
+
 import pytest
 
 from crawler.rabbit.messages.base_message import BaseMessage
+
+
+@pytest.fixture
+def logger():
+    with patch("crawler.rabbit.messages.base_message.LOGGER") as logger:
+        yield logger
 
 
 @pytest.fixture
@@ -34,3 +42,17 @@ def test_textual_errors_summary_is_accurate_for_6_errors(subject):
         "Error 4",
         "Error 5",
     ]
+
+
+@pytest.mark.parametrize(
+    "textual_errors, error_count",
+    [[[], 0], [["Error 1"], 1], [["Error 1", "Error 2"], 2], [["Error 1", "Error 2", "Error 3"], 3]],
+)
+def test_log_error_count_logs_error_count_correctly(subject, logger, textual_errors, error_count):
+    subject._textual_errors = textual_errors
+
+    subject.log_error_count()
+
+    logger.debug.assert_called_once()
+    log_message = logger.debug.call_args.args[0]
+    assert str(error_count) in log_message
