@@ -93,8 +93,10 @@ def test_publish_message_publishes_the_message(
 
 @pytest.mark.parametrize("error_count", [1, 2, 3, 4])
 def test_publish_message_retries_when_needed(subject, channel, logger, error_count):
-    unroutable_error = pika.exceptions.UnroutableError(["Boom!"])
-    channel.basic_publish.side_effect = [unroutable_error] * error_count + [None]
+    unroutable_error = pika.exceptions.UnroutableError([])
+    side_effects: list = [unroutable_error] * error_count
+    side_effects.append(None)
+    channel.basic_publish.side_effect = side_effects
 
     subject.publish_message("exchange", "routing_key", "body".encode(), "schema_subject", "schema_version")
 
@@ -107,8 +109,10 @@ def test_publish_message_retries_when_needed(subject, channel, logger, error_cou
 
 @pytest.mark.parametrize("error_count", [5, 10, 100])
 def test_publish_message_stops_retrying_after_max_retries(subject, channel, logger, error_count):
-    unroutable_error = pika.exceptions.UnroutableError(["Boom!"])
-    channel.basic_publish.side_effect = [unroutable_error] * error_count + [None]
+    unroutable_error = pika.exceptions.UnroutableError([])
+    side_effects: list = [unroutable_error] * error_count
+    side_effects.append(None)
+    channel.basic_publish.side_effect = side_effects
 
     subject.publish_message("exchange", "routing_key", "body".encode(), "schema_subject", "schema_version")
 
