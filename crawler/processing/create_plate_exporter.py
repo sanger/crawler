@@ -65,6 +65,8 @@ class CreatePlateExporter:
         self.__mongo_db = None
 
     def export_to_mongo(self):
+        LOGGER.debug("Starting export of create message to MongoDB.")
+
         with self._mongo_db.client.start_session() as session:
             with session.start_transaction():
                 source_plate_result = self._record_source_plate_in_mongo_db(session)
@@ -79,13 +81,23 @@ class CreatePlateExporter:
 
                 session.commit_transaction()
 
+        LOGGER.debug("Finished export of create message to MongoDB.")
+        self._message.log_error_count()
+
     def export_to_dart(self):
+        LOGGER.debug("Starting export of samples to DART.")
+
         result = self._record_samples_in_dart()
         if not result.success:
             for error in result.create_plate_errors:
                 self._message.add_error(error)
 
+        LOGGER.debug("Finished export of samples to DART.")
+        self._message.log_error_count()
+
     def record_import(self):
+        LOGGER.debug("Starting insert of import record to MongoDB.")
+
         plate_barcode = self._message.plate_barcode.value
         if not plate_barcode:
             # We don't record imports without a plate barcode available. They would be meaningless without the barcode.
@@ -107,6 +119,9 @@ class CreatePlateExporter:
             )
         except Exception as ex:
             LOGGER.exception(ex)
+
+        LOGGER.debug("Finished insert of import record to MongoDB.")
+        self._message.log_error_count()
 
     @property
     def _mongo_db(self):
