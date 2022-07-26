@@ -74,5 +74,5 @@ class BasicPublisher:
 
         if retry_count > 0:
             LOGGER.error(f"Publish of message to RabbitMQ required {retry_count} retries.")
-        else:
-            LOGGER.info("The message was published to RabbitMQ successfully.")
+
+        LOGGER.info("The message was published to RabbitMQ successfully.")

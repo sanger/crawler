@@ -91,6 +91,22 @@ def test_publish_message_publishes_the_message(
     assert message_properties.headers[RABBITMQ_HEADER_KEY_VERSION] == schema_version
 
 
+def test_publish_message_logs_start_and_finish_accurately(subject, logger):
+    subject.publish_message("arg1", "arg2", "body".encode(), "arg4", "arg5")
+
+    assert logger.info.call_count == 2
+
+    start_message = logger.info.call_args_list[0].args[0]
+    # Note: Message body is not logged to the regular logger
+    assert "arg1" in start_message
+    assert "arg2" in start_message
+    assert "arg4" in start_message
+    assert "arg5" in start_message
+
+    end_message = logger.info.call_args_list[1].args[0]
+    assert "successfully" in end_message
+
+
 @pytest.mark.parametrize("error_count", [1, 2, 3, 4])
 def test_publish_message_retries_when_needed(subject, channel, logger, error_count):
     unroutable_error = pika.exceptions.UnroutableError([])
@@ -102,6 +118,7 @@ def test_publish_message_retries_when_needed(subject, channel, logger, error_cou
 
     assert channel.basic_publish.call_count == error_count + 1
 
+    assert logger.info.call_count == 2
     logger.error.assert_called_once()
     log_message = logger.error.call_args.args[0]
     assert str(error_count) in log_message
@@ -118,6 +135,7 @@ def test_publish_message_stops_retrying_after_max_retries(subject, channel, logg
 
     assert channel.basic_publish.call_count == 5
 
+    assert logger.info.call_count == 1  # No success message posted
     logger.error.assert_called_once()
     log_message = logger.error.call_args.args[0]
     assert "NOT PUBLISHED" in log_message
