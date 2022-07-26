@@ -22,6 +22,12 @@ def logger():
 
 
 @pytest.fixture
+def message_logger():
+    with patch("crawler.rabbit.basic_publisher.MESSAGE_LOGGER") as message_logger:
+        yield message_logger
+
+
+@pytest.fixture
 def channel():
     yield MagicMock()
 
@@ -91,8 +97,8 @@ def test_publish_message_publishes_the_message(
     assert message_properties.headers[RABBITMQ_HEADER_KEY_VERSION] == schema_version
 
 
-def test_publish_message_logs_start_and_finish_accurately(subject, logger):
-    subject.publish_message("arg1", "arg2", "body".encode(), "arg4", "arg5")
+def test_publish_message_logs_start_and_finish_accurately(subject, logger, message_logger):
+    subject.publish_message("arg1", "arg2", '{ "key": "value" }'.encode(), "arg4", "arg5")
 
     assert logger.info.call_count == 2
 
@@ -105,6 +111,9 @@ def test_publish_message_logs_start_and_finish_accurately(subject, logger):
 
     end_message = logger.info.call_args_list[1].args[0]
     assert "successfully" in end_message
+
+    message_logger.info.assert_called_once()
+    assert '{ "key": "value" }' in message_logger.info.call_args.args[0]
 
 
 @pytest.mark.parametrize("error_count", [1, 2, 3, 4])
