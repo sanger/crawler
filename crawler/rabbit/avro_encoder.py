@@ -34,7 +34,7 @@ class AvroEncoder:
         return schema_response[RESPONSE_KEY_VERSION]
 
     def encode(self, records: List, version: str = None) -> EncodedMessage:
-        LOGGER.debug(f"Encoding AVRO message.")
+        LOGGER.debug("Encoding AVRO message.")
 
         schema_response = self._schema_response(version)
         string_writer = StringIO()
@@ -45,7 +45,7 @@ class AvroEncoder:
         )
 
     def decode(self, message: bytes, version: str) -> Any:
-        LOGGER.debug(f"Decoding AVRO message.")
+        LOGGER.debug("Decoding AVRO message.")
 
         schema_response = self._schema_response(version)
         string_reader = StringIO(message.decode("utf-8"))
