@@ -256,6 +256,8 @@ def test_export_to_mongo_creates_appropriate_error_when_duplicate_samples_insert
     samples[0] = samples[1]
     subject.export_to_mongo()
 
+    # TODO: make sure we have two conflicting samples to make this test better
+
     assert len(subject._message.feedback_errors) == 1
     error = subject._message.feedback_errors[0]
     assert error["typeId"] == 8
