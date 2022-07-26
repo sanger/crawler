@@ -1,6 +1,7 @@
 from typing import cast
 from unittest.mock import MagicMock, patch
 
+import pika
 import pytest
 from pika import PlainCredentials
 from pika.spec import PERSISTENT_DELIVERY_MODE
@@ -12,6 +13,12 @@ from crawler.types import RabbitServerDetails
 DEFAULT_SERVER_DETAILS = RabbitServerDetails(
     uses_ssl=False, host="host", port=5672, username="username", password="password", vhost="vhost"
 )
+
+
+@pytest.fixture
+def logger():
+    with patch("crawler.rabbit.basic_publisher.LOGGER") as logger:
+        yield logger
 
 
 @pytest.fixture
@@ -27,8 +34,8 @@ def blocking_connection(channel):
 
 
 @pytest.fixture
-def subject():
-    return BasicPublisher(DEFAULT_SERVER_DETAILS)
+def subject(blocking_connection):
+    return BasicPublisher(DEFAULT_SERVER_DETAILS, 0, 5)
 
 
 @pytest.mark.parametrize("uses_ssl", [True, False])
@@ -42,7 +49,7 @@ def test_constructor_creates_correct_connection_parameters(uses_ssl, host, port,
         uses_ssl=uses_ssl, host=host, port=port, username=username, password=password, vhost=vhost
     )
 
-    subject = BasicPublisher(server_details)
+    subject = BasicPublisher(server_details, 0, 3)
 
     if server_details.uses_ssl:
         assert subject._connection_params.ssl_options is not None
@@ -70,6 +77,7 @@ def test_publish_message_publishes_the_message(
 
     blocking_connection.assert_called_once_with(subject._connection_params)
     blocking_connection.return_value.channel.assert_called_once()
+    channel.confirm_delivery.assert_called_once()
     channel.basic_publish.assert_called_once()
     blocking_connection.return_value.close.assert_called_once()
 
@@ -81,3 +89,31 @@ def test_publish_message_publishes_the_message(
     assert message_properties.delivery_mode == PERSISTENT_DELIVERY_MODE
     assert message_properties.headers[RABBITMQ_HEADER_KEY_SUBJECT] == schema_subject
     assert message_properties.headers[RABBITMQ_HEADER_KEY_VERSION] == schema_version
+
+
+@pytest.mark.parametrize("error_count", [1, 2, 3, 4])
+def test_publish_message_retries_when_needed(subject, channel, logger, error_count):
+    unroutable_error = pika.exceptions.UnroutableError(["Boom!"])
+    channel.basic_publish.side_effect = [unroutable_error] * error_count + [None]
+
+    subject.publish_message("exchange", "routing_key", "body".encode(), "schema_subject", "schema_version")
+
+    assert channel.basic_publish.call_count == error_count + 1
+
+    logger.error.assert_called_once()
+    log_message = logger.error.call_args.args[0]
+    assert str(error_count) in log_message
+
+
+@pytest.mark.parametrize("error_count", [5, 10, 100])
+def test_publish_message_stops_retrying_after_max_retries(subject, channel, logger, error_count):
+    unroutable_error = pika.exceptions.UnroutableError(["Boom!"])
+    channel.basic_publish.side_effect = [unroutable_error] * error_count + [None]
+
+    subject.publish_message("exchange", "routing_key", "body".encode(), "schema_subject", "schema_version")
+
+    assert channel.basic_publish.call_count == 5
+
+    logger.error.assert_called_once()
+    log_message = logger.error.call_args.args[0]
+    assert "NOT PUBLISHED" in log_message
