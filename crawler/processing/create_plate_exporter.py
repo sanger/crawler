@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import List, NamedTuple
 
 from pymongo.client_session import ClientSession
-from pymongo.errors import BulkWriteError
 
 from crawler.constants import (
     CENTRE_KEY_BIOMEK_LABWARE_CLASS,
@@ -42,7 +41,7 @@ from crawler.db.dart import (
 )
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.exceptions import TransientRabbitError
-from crawler.helpers.db_helpers import create_mongo_import_record
+from crawler.helpers.db_helpers import create_mongo_import_record, samples_filtered_for_duplicates_in_mongo
 from crawler.helpers.general_helpers import create_source_plate_doc
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
 from crawler.rabbit.messages.create_plate_message import CreatePlateError, ErrorType
@@ -120,6 +119,20 @@ class CreatePlateExporter:
     def _mongo_sample_docs(self):
         return [self._map_sample_to_mongo(sample, index) for index, sample in enumerate(self._message.samples.value)]
 
+    @property
+    def _sample_signatures_query(self):
+        sample_queries = [
+            {
+                FIELD_MONGO_LAB_ID: sample[FIELD_MONGO_LAB_ID],
+                FIELD_MONGO_ROOT_SAMPLE_ID: sample[FIELD_MONGO_ROOT_SAMPLE_ID],
+                FIELD_MONGO_RNA_ID: sample[FIELD_MONGO_RNA_ID],
+                FIELD_MONGO_RESULT: sample[FIELD_MONGO_RESULT],
+            }
+            for sample in self._mongo_sample_docs
+        ]
+
+        return {"$or": sample_queries}
+
     def _abort_transaction_with_errors(self, session, errors):
         for error in errors:
             self._message.add_error(error)
@@ -179,42 +192,32 @@ class CreatePlateExporter:
         )
 
         try:
-            try:
-                session_database = get_mongo_db(self._config, session.client)
-                samples_collection = get_mongo_collection(session_database, COLLECTION_SAMPLES)
-                result = samples_collection.insert_many(
-                    documents=self._mongo_sample_docs, ordered=False, session=session
+            session_database = get_mongo_db(self._config, session.client)
+            samples_collection = get_mongo_collection(session_database, COLLECTION_SAMPLES)
+
+            # Note: Transactions don't support giving back errors on every document that couldn't be inserted
+            #       so we need to check for duplicate keys before doing our insert.
+            create_plate_errors = [
+                CreatePlateError(
+                    type=ErrorType.ExportingSampleAlreadyExists,
+                    origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
+                    description=(
+                        f"Sample with UUID '{sample[FIELD_LH_SAMPLE_UUID]}' was unable to be inserted "
+                        "because another sample already exists with "
+                        f"Lab ID = '{sample[FIELD_MONGO_LAB_ID]}'; "
+                        f"Root Sample ID = '{sample[FIELD_MONGO_ROOT_SAMPLE_ID]}'; "
+                        f"RNA ID = '{sample[FIELD_MONGO_RNA_ID]}'; "
+                        f"Result = '{sample[FIELD_MONGO_RESULT]}'"
+                    ),
+                    sample_uuid=sample[FIELD_LH_SAMPLE_UUID],
                 )
-            except BulkWriteError as ex:
-                LOGGER.warning("BulkWriteError: will now establish whether this was because of duplicate samples.")
+                for sample in samples_filtered_for_duplicates_in_mongo(samples_collection, self._mongo_sample_docs)
+            ]
 
-                duplication_errors = list(
-                    filter(lambda x: x["code"] == 11000, ex.details["writeErrors"])  # type: ignore
-                )
-
-                if len(duplication_errors) == 0:
-                    # There weren't any duplication errors so this is not a problem with the message contents!
-                    raise
-
-                create_plate_errors = []
-                for duplicate in [x["op"] for x in duplication_errors]:
-                    create_plate_errors.append(
-                        CreatePlateError(
-                            type=ErrorType.ExportingSampleAlreadyExists,
-                            origin=RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE,
-                            description=(
-                                f"Sample with UUID '{duplicate[FIELD_LH_SAMPLE_UUID]}' was unable to be inserted "
-                                "because another sample already exists with "
-                                f"Lab ID = '{duplicate[FIELD_MONGO_LAB_ID]}'; "
-                                f"Root Sample ID = '{duplicate[FIELD_MONGO_ROOT_SAMPLE_ID]}'; "
-                                f"RNA ID = '{duplicate[FIELD_MONGO_RNA_ID]}'; "
-                                f"Result = '{duplicate[FIELD_MONGO_RESULT]}'"
-                            ),
-                            sample_uuid=duplicate[FIELD_LH_SAMPLE_UUID],
-                        )
-                    )
-
+            if len(create_plate_errors) > 0:
                 return ExportResult(success=False, create_plate_errors=create_plate_errors)
+
+            result = samples_collection.insert_many(documents=self._mongo_sample_docs, ordered=False, session=session)
         except Exception as ex:
             LOGGER.critical(f"Error accessing MongoDB during export of samples for message UUID '{message_uuid}': {ex}")
             LOGGER.exception(ex)
