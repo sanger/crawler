@@ -23,3 +23,6 @@ LOGGING["loggers"]["crawler"]["level"] = "DEBUG"
 LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream_dev"]
 LOGGING["loggers"]["apscheduler"]["level"] = "DEBUG"
 LOGGING["loggers"]["apscheduler"]["handlers"] = ["colored_stream_dev"]
+
+# Add colored_stream_dev to this list to see message bodies during development.
+LOGGING["loggers"]["rabbit_messages"]["handlers"] = []

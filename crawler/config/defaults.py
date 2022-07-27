@@ -86,6 +86,9 @@ RABBITMQ_VHOST = "heron"
 RABBITMQ_CRUD_QUEUE = "heron.crud-operations"
 RABBITMQ_FEEDBACK_EXCHANGE = "psd.heron"
 
+RABBITMQ_PUBLISH_RETRY_DELAY = 5
+RABBITMQ_PUBLISH_RETRIES = 36  # 3 minutes of retries
+
 ###
 # RedPanda details
 ###

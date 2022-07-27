@@ -1,3 +1,4 @@
+import logging
 import re
 
 from crawler.config.centres import CENTRE_DATA_SOURCE_RABBITMQ, get_centres_config
@@ -10,6 +11,8 @@ from crawler.exceptions import TransientRabbitError
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
 from crawler.rabbit.messages.create_plate_message import CreatePlateError, ErrorType
 
+LOGGER = logging.getLogger(__name__)
+
 
 class CreatePlateValidator:
     def __init__(self, message, config):
@@ -19,9 +22,14 @@ class CreatePlateValidator:
         self._centres = None
 
     def validate(self):
+        LOGGER.debug("Starting validation of create message.")
+
         self._set_centre_conf()
         self._validate_plate()
         self._validate_samples()
+
+        LOGGER.debug("Validation finished.")
+        self._message.log_error_count()
 
     @property
     def centres(self):
