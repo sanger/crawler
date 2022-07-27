@@ -332,8 +332,8 @@ def test_export_to_dart_creates_no_message_errors(subject, pyodbc_conn, logger):
 
     assert subject._message.has_errors is False
 
-    logger.debug.assert_called_once()
-    assert "DART database inserts completed successfully" in logger.debug.call_args.args[0]
+    assert logger.debug.call_count == 3
+    assert "DART database inserts completed successfully" in logger.debug.call_args_list[1].args[0]
 
 
 @pytest.mark.parametrize("plate_state", [DART_STATE_NO_PLATE, DART_STATE_NO_PROP, DART_STATE_PICKABLE])

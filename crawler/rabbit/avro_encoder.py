@@ -1,10 +1,13 @@
 import json
+import logging
 from io import StringIO
 from typing import Any, List, NamedTuple
 
 import fastavro
 
 from crawler.rabbit.schema_registry import RESPONSE_KEY_SCHEMA, RESPONSE_KEY_VERSION
+
+LOGGER = logging.getLogger(__name__)
 
 
 class EncodedMessage(NamedTuple):
@@ -31,6 +34,8 @@ class AvroEncoder:
         return schema_response[RESPONSE_KEY_VERSION]
 
     def encode(self, records: List, version: str = None) -> EncodedMessage:
+        LOGGER.debug("Encoding AVRO message.")
+
         schema_response = self._schema_response(version)
         string_writer = StringIO()
         fastavro.json_writer(string_writer, self._schema(schema_response), records)
@@ -40,6 +45,8 @@ class AvroEncoder:
         )
 
     def decode(self, message: bytes, version: str) -> Any:
+        LOGGER.debug("Decoding AVRO message.")
+
         schema_response = self._schema_response(version)
         string_reader = StringIO(message.decode("utf-8"))
 

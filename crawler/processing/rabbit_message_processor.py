@@ -38,7 +38,7 @@ class RabbitMessageProcessor:
             message.decode(AvroEncoder(self._schema_registry, message.subject))
         except TransientRabbitError as ex:
             LOGGER.error(f"Transient error while processing message: {ex.message}")
-            raise  # Cause the consumer to restart and try this message again.  Ideally we will delay the consumer.
+            raise  # Cause the consumer to restart and try this message again.
         except Exception as ex:
             LOGGER.error(f"Unrecoverable error while decoding RabbitMQ message: {type(ex)} {str(ex)}")
             return False  # Send the message to dead letters.
