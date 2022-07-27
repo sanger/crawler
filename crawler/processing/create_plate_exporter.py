@@ -119,20 +119,6 @@ class CreatePlateExporter:
     def _mongo_sample_docs(self):
         return [self._map_sample_to_mongo(sample, index) for index, sample in enumerate(self._message.samples.value)]
 
-    @property
-    def _sample_signatures_query(self):
-        sample_queries = [
-            {
-                FIELD_MONGO_LAB_ID: sample[FIELD_MONGO_LAB_ID],
-                FIELD_MONGO_ROOT_SAMPLE_ID: sample[FIELD_MONGO_ROOT_SAMPLE_ID],
-                FIELD_MONGO_RNA_ID: sample[FIELD_MONGO_RNA_ID],
-                FIELD_MONGO_RESULT: sample[FIELD_MONGO_RESULT],
-            }
-            for sample in self._mongo_sample_docs
-        ]
-
-        return {"$or": sample_queries}
-
     def _abort_transaction_with_errors(self, session, errors):
         for error in errors:
             self._message.add_error(error)
