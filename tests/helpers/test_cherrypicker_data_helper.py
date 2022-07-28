@@ -1,5 +1,4 @@
 import json
-from collections import namedtuple
 from functools import partial
 from http import HTTPStatus
 from unittest.mock import patch
@@ -19,19 +18,11 @@ from crawler.helpers.cherrypicker_test_data import (
     generate_baracoda_barcodes,
 )
 
-LoggerMessages = namedtuple("LoggerMessages", ["info", "error"])
-
 
 @pytest.fixture
-def logger_messages():
-    with patch("crawler.helpers.cherrypicker_test_data.logger") as logger:
-        infos = []
-        logger.info.side_effect = lambda msg: infos.append(msg)
-
-        errors = []
-        logger.error.side_effect = lambda msg: errors.append(msg)
-
-        yield LoggerMessages(info=infos, error=errors)
+def logger():
+    with patch("crawler.helpers.cherrypicker_test_data.LOGGER") as logger:
+        yield logger
 
 
 @pytest.fixture

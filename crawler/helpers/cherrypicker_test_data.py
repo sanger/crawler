@@ -23,7 +23,7 @@ from crawler.exceptions import CherrypickerDataError
 from crawler.rabbit.messages.create_plate_message import CreatePlateMessage, Plate, Sample
 from crawler.types import Config
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def make_coords_list():
@@ -67,16 +67,16 @@ def generate_baracoda_barcodes(config: Config, num_required: int) -> list:
                 return barcodes
             else:
                 retries = retries - 1
-                logger.error(TEST_DATA_ERROR_BARACODA_COG_BARCODES)
-                logger.error(response.json())
+                LOGGER.error(TEST_DATA_ERROR_BARACODA_COG_BARCODES)
+                LOGGER.error(response.json())
                 except_obj = CherrypickerDataError(TEST_DATA_ERROR_BARACODA_COG_BARCODES)
         except requests.ConnectionError as e:
             retries = retries - 1
-            logger.error(TEST_DATA_ERROR_BARACODA_CONNECTION)
+            LOGGER.error(TEST_DATA_ERROR_BARACODA_CONNECTION)
             except_obj = CherrypickerDataError(f"{TEST_DATA_ERROR_BARACODA_CONNECTION} -- {str(e)}")
         except Exception:
             retries = retries - 1
-            logger.error(TEST_DATA_ERROR_BARACODA_UNKNOWN)
+            LOGGER.error(TEST_DATA_ERROR_BARACODA_UNKNOWN)
 
     if except_obj is not None:
         raise except_obj
@@ -85,7 +85,7 @@ def generate_baracoda_barcodes(config: Config, num_required: int) -> list:
 
 def create_barcodes(config: Config, num_required: int) -> list:
     # call Baracoda here and fetch a set of barcodes with the prefix we want
-    logger.info(f"Num barcodes required from Baracoda = {num_required}")
+    LOGGER.info(f"Num barcodes required from Baracoda = {num_required}")
     list_barcodes = generate_baracoda_barcodes(config, num_required)
     return list_barcodes
 
@@ -149,7 +149,7 @@ def create_plate_messages(plate_specs: list, dt: datetime, list_barcodes: list) 
 
 
 def create_barcode_meta(plate_specs: list, list_barcodes: list) -> list:
-    logger.info("Creating metadata for barcodes")
+    LOGGER.info("Creating metadata for barcodes")
 
     pos_per_plate = flat_list_of_positives_per_plate(plate_specs)
     return [[list_barcodes[i], f"number of positives: {pos_per_plate[i]}"] for i in range(len(pos_per_plate))]
