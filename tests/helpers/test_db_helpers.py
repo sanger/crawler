@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List, Mapping
 
 import pytest
 
@@ -116,7 +117,7 @@ def test_populate_mongo_collection_upserts_documents(mongo_database):
     assert centres_collection.count_documents(doc3) == 1
 
 
-MONGO_SAMPLES = [
+MONGO_SAMPLES: List[Mapping[str, str]] = [
     {
         FIELD_MONGO_LAB_ID: f"LAB{i}",
         FIELD_MONGO_ROOT_SAMPLE_ID: f"RSID{i}",
