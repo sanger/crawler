@@ -39,6 +39,16 @@ from crawler.rabbit.messages.create_plate_message import (
 )
 from tests.testing_objects import CREATE_PLATE_MESSAGE
 
+MONGO_SAMPLES = [
+    {
+        FIELD_MONGO_LAB_ID: "CPTD",
+        FIELD_MONGO_ROOT_SAMPLE_ID: sample[FIELD_ROOT_SAMPLE_ID],
+        FIELD_MONGO_RNA_ID: sample[FIELD_RNA_ID],
+        FIELD_MONGO_RESULT: sample[FIELD_RESULT].capitalize(),
+    }
+    for sample in CREATE_PLATE_MESSAGE[FIELD_PLATE][FIELD_SAMPLES]
+]
+
 
 @pytest.fixture
 def logger():
@@ -46,7 +56,7 @@ def logger():
         yield logger
 
 
-@pytest.fixture
+@pytest.fixture()
 def create_plate_message(centre):
     plate_message = CreatePlateMessage(copy.deepcopy(CREATE_PLATE_MESSAGE))
     plate_message.centre_config = centre.centre_config  # Simulate running validation on the message.
@@ -57,27 +67,6 @@ def create_plate_message(centre):
 @pytest.fixture
 def subject(create_plate_message, config):
     return CreatePlateExporter(create_plate_message, config)
-
-
-###
-# Helper Methods
-###
-
-
-def insert_sample(samples_collection, sample):
-    samples_collection.insert_one(
-        {
-            FIELD_MONGO_LAB_ID: "CPTD",
-            FIELD_MONGO_ROOT_SAMPLE_ID: sample[FIELD_ROOT_SAMPLE_ID],
-            FIELD_MONGO_RNA_ID: sample[FIELD_RNA_ID],
-            FIELD_MONGO_RESULT: sample[FIELD_RESULT].capitalize(),
-        }
-    )
-
-
-###
-# Tests
-###
 
 
 def test_constructor_stores_arguments_as_instance_variables():
@@ -237,29 +226,26 @@ def test_export_to_mongo_logs_error_correctly_on_samples_exception(
     logger.exception.assert_called_once_with(timeout_error)
 
 
+@pytest.mark.parametrize("samples_collection_accessor", [[MONGO_SAMPLES[1]]], indirect=True)
 def test_export_to_mongo_reverts_the_transaction_when_duplicate_samples_inserted(
     subject, samples_collection_accessor, source_plates_collection_accessor
 ):
     # Insert sample 2 into the collection already
-    samples = subject._message._body[FIELD_PLATE][FIELD_SAMPLES]
-    insert_sample(samples_collection_accessor, samples[1])
+    subject._message._body[FIELD_PLATE][FIELD_SAMPLES]
 
     # Run the export
     subject.export_to_mongo()
 
+    print(samples_collection_accessor)
     # No documents were inserted in either collection
-    assert samples_collection_accessor.count_documents({}) == 1  # Just the one we added above
+    assert samples_collection_accessor.count_documents({}) == 1  # Just the one we added to the fixture
     assert source_plates_collection_accessor.count_documents({}) == 0
 
 
+@pytest.mark.parametrize("samples_collection_accessor", [[MONGO_SAMPLES[0], MONGO_SAMPLES[2]]], indirect=True)
 def test_export_to_mongo_creates_appropriate_error_when_duplicate_samples_inserted(
     subject, samples_collection_accessor
 ):
-    # Insert samples 1 and 3 into the collection already
-    samples = subject._message._body[FIELD_PLATE][FIELD_SAMPLES]
-    insert_sample(samples_collection_accessor, samples[0])
-    insert_sample(samples_collection_accessor, samples[2])
-
     # Run the export
     subject.export_to_mongo()
 

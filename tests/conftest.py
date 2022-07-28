@@ -158,9 +158,19 @@ def testing_files_for_process(cleanup_backups):
         shutil.rmtree("tmp/files")
 
 
+def samples_collection_with_samples(mongo_database, samples=None):
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    samples_collection.delete_many({})
+
+    if samples and len(samples) > 0:
+        samples_collection.insert_many(samples)
+
+    return samples_collection
+
+
 @pytest.fixture(params=[[]])
 def samples_collection_accessor(mongo_database, request):
-    return get_mongo_collection(mongo_database[1], COLLECTION_SAMPLES)
+    return samples_collection_with_samples(mongo_database[1], request.param)
 
 
 @pytest.fixture
@@ -184,13 +194,9 @@ def centres_collection_accessor(mongo_database):
 
 
 @pytest.fixture
-def testing_samples(samples_collection_accessor):
-    result = samples_collection_accessor.insert_many(TESTING_SAMPLES)
-    samples = list(samples_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
-    try:
-        yield samples
-    finally:
-        samples_collection_accessor.delete_many({})
+def testing_samples(mongo_database):
+    samples_collection = samples_collection_with_samples(mongo_database[1], TESTING_SAMPLES)
+    return list(samples_collection.find({}))
 
 
 @pytest.fixture
