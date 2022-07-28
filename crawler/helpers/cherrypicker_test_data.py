@@ -68,10 +68,6 @@ def create_barcode_meta(plate_specs: list, list_barcodes: list) -> list:
     return [[list_barcodes[i], f"number of positives: {pos_per_plate[i]}"] for i in range(len(pos_per_plate))]
 
 
-def _flatten(nested_list: list) -> list:
-    return [item for sublist in nested_list for item in sublist]
-
-
 def _generate_baracoda_barcodes(config: Config, num_required: int) -> list:
     baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{BARACODA_PREFIX}/new?count={num_required}"
 
@@ -103,6 +99,15 @@ def _generate_baracoda_barcodes(config: Config, num_required: int) -> list:
     raise CherrypickerDataError(TEST_DATA_ERROR_BARACODA_UNKNOWN)
 
 
+def _flatten(nested_list: list) -> list:
+    return [item for sublist in nested_list for item in sublist]
+
+
+def _flat_list_of_positives_per_plate(plate_specs: list) -> list:
+    # Turn [[2, 5], [3, 10]] into [5, 5, 10, 10, 10]
+    return _flatten([[specs[1]] * specs[0] for specs in plate_specs])
+
+
 def _create_root_sample_id(barcode: str, well_num: int) -> str:
     return "RSID-%s%s" % (barcode, str(well_num).zfill(2))
 
@@ -114,11 +119,6 @@ def _create_rna_id(barcode: str, well_coordinate: str) -> str:
 def _create_cog_uk_id(barcode: str, well_num: int) -> str:
     padded_hex_well_num = hex(well_num)[2:].zfill(2)
     return "%s%s" % (barcode, padded_hex_well_num)
-
-
-def _flat_list_of_positives_per_plate(plate_specs: list) -> list:
-    # Turn [[2, 5], [3, 10]] into [5, 5, 10, 10, 10]
-    return _flatten([[specs[1]] * specs[0] for specs in plate_specs])
 
 
 def _create_sample(dt: datetime, index: int, result: str, plate_barcode: str) -> Sample:
