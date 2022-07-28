@@ -31,6 +31,14 @@ def request_post_mock():
         yield mock
 
 
+@pytest.fixture
+def mocked_responses():
+    """Easily mock responses from HTTP calls.
+    https://github.com/getsentry/responses#responses-as-a-pytest-fixture"""
+    with responses.RequestsMock() as rsps:
+        yield rsps
+
+
 def test_flatten_reduces_lists():
     actual = flatten([[1, 2], [3, 4], [5, 6]])
     expected = [1, 2, 3, 4, 5, 6]
@@ -56,14 +64,6 @@ def test_create_barcodes(config, count):
 
     assert generate_barcodes.called_with(count)
     assert actual == expected
-
-
-@pytest.fixture
-def mocked_responses():
-    """Easily mock responses from HTTP calls.
-    https://github.com/getsentry/responses#responses-as-a-pytest-fixture"""
-    with responses.RequestsMock() as rsps:
-        yield rsps
 
 
 @pytest.mark.parametrize("count", [2, 3])
@@ -181,14 +181,6 @@ def test_flat_list_of_positives_per_plate():
     expected = [5, 5, 10, 10, 10]
 
     assert actual == expected
-
-
-@pytest.fixture
-def test_rows_data():
-    return [
-        ["RSID-01", "VPID-01", "RNAID-01", "RNAPCRID-01", "Positive", "Timestamp", "CPTD"],
-        ["RSID-02", "VPID-02", "RNAID-02", "RNAPCRID-02", "Negative", "Timestamp", "CPTD"],
-    ]
 
 
 def test_create_barcode_meta():
