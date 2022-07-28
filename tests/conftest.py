@@ -158,14 +158,19 @@ def testing_files_for_process(cleanup_backups):
         shutil.rmtree("tmp/files")
 
 
-@pytest.fixture
-def samples_collection_accessor(mongo_database):
+@pytest.fixture(params=[[]])
+def samples_collection_accessor(mongo_database, request):
     return get_mongo_collection(mongo_database[1], COLLECTION_SAMPLES)
 
 
 @pytest.fixture
 def source_plates_collection_accessor(mongo_database):
     return get_mongo_collection(mongo_database[1], COLLECTION_SOURCE_PLATES)
+
+
+@pytest.fixture
+def imports_collection_accessor(mongo_database):
+    return get_mongo_collection(mongo_database[1], COLLECTION_IMPORTS)
 
 
 @pytest.fixture
