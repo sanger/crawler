@@ -48,11 +48,31 @@ SAMPLES_FILE_HEADERS = [
 BARACODA_PREFIX = "TEST"
 
 
-def flatten(nested_list: list) -> list:
+def create_barcodes(config: Config, num_required: int) -> list:
+    # call Baracoda here and fetch a set of barcodes with the prefix we want
+    LOGGER.info(f"Num barcodes required from Baracoda = {num_required}")
+    list_barcodes = _generate_baracoda_barcodes(config, num_required)
+    return list_barcodes
+
+
+def create_plate_messages(plate_specs: list, dt: datetime, list_barcodes: list) -> list:
+    pos_per_plate = _flat_list_of_positives_per_plate(plate_specs)
+
+    return [_create_plate_message(dt, list_barcodes[i], positives) for i, positives in enumerate(pos_per_plate)]
+
+
+def create_barcode_meta(plate_specs: list, list_barcodes: list) -> list:
+    LOGGER.info("Creating metadata for barcodes")
+
+    pos_per_plate = _flat_list_of_positives_per_plate(plate_specs)
+    return [[list_barcodes[i], f"number of positives: {pos_per_plate[i]}"] for i in range(len(pos_per_plate))]
+
+
+def _flatten(nested_list: list) -> list:
     return [item for sublist in nested_list for item in sublist]
 
 
-def generate_baracoda_barcodes(config: Config, num_required: int) -> list:
+def _generate_baracoda_barcodes(config: Config, num_required: int) -> list:
     baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{BARACODA_PREFIX}/new?count={num_required}"
 
     retries = config.BARACODA_RETRY_ATTEMPTS
@@ -83,39 +103,32 @@ def generate_baracoda_barcodes(config: Config, num_required: int) -> list:
     raise CherrypickerDataError(TEST_DATA_ERROR_BARACODA_UNKNOWN)
 
 
-def create_barcodes(config: Config, num_required: int) -> list:
-    # call Baracoda here and fetch a set of barcodes with the prefix we want
-    LOGGER.info(f"Num barcodes required from Baracoda = {num_required}")
-    list_barcodes = generate_baracoda_barcodes(config, num_required)
-    return list_barcodes
-
-
-def create_root_sample_id(barcode: str, well_num: int) -> str:
+def _create_root_sample_id(barcode: str, well_num: int) -> str:
     return "RSID-%s%s" % (barcode, str(well_num).zfill(2))
 
 
-def create_rna_id(barcode: str, well_coordinate: str) -> str:
+def _create_rna_id(barcode: str, well_coordinate: str) -> str:
     return "%s_%s" % (barcode, well_coordinate)
 
 
-def create_cog_uk_id(barcode: str, well_num: int) -> str:
+def _create_cog_uk_id(barcode: str, well_num: int) -> str:
     padded_hex_well_num = hex(well_num)[2:].zfill(2)
     return "%s%s" % (barcode, padded_hex_well_num)
 
 
-def flat_list_of_positives_per_plate(plate_specs: list) -> list:
+def _flat_list_of_positives_per_plate(plate_specs: list) -> list:
     # Turn [[2, 5], [3, 10]] into [5, 5, 10, 10, 10]
-    return flatten([[specs[1]] * specs[0] for specs in plate_specs])
+    return _flatten([[specs[1]] * specs[0] for specs in plate_specs])
 
 
-def create_sample(dt: datetime, index: int, result: str, plate_barcode: str) -> Sample:
+def _create_sample(dt: datetime, index: int, result: str, plate_barcode: str) -> Sample:
     well_coordinate = WELL_COORDS[index]
     well_num = index + 1
     return Sample(
         sampleUuid=str(uuid.uuid4()).encode(),
-        rootSampleId=create_root_sample_id(plate_barcode, well_num),
-        rnaId=create_rna_id(plate_barcode, well_coordinate),
-        cogUkId=create_cog_uk_id(plate_barcode, well_num),
+        rootSampleId=_create_root_sample_id(plate_barcode, well_num),
+        rnaId=_create_rna_id(plate_barcode, well_coordinate),
+        cogUkId=_create_cog_uk_id(plate_barcode, well_num),
         plateCoordinate=well_coordinate,
         preferentiallySequence=False,
         mustSequence=False,
@@ -125,31 +138,18 @@ def create_sample(dt: datetime, index: int, result: str, plate_barcode: str) -> 
     )
 
 
-def create_samples(dt: datetime, plate_barcode: str, num_positives: int) -> list:
+def _create_samples(dt: datetime, plate_barcode: str, num_positives: int) -> list:
     num_negatives = PLATE_SIZE - num_positives
     results = ["Positive"] * num_positives + ["Negative"] * num_negatives
     random.shuffle(results)
 
-    return [create_sample(dt, index, result, plate_barcode) for index, result in enumerate(results)]
+    return [_create_sample(dt, index, result, plate_barcode) for index, result in enumerate(results)]
 
 
 # TODO: At the moment, dt is used as a static timestamp across all samples and all plates It could be desirable to add
 #       some random noise to this timestamp between either all samples or between plates.
-def create_plate_message(dt: datetime, plate_barcode: str, num_positives: int) -> CreatePlateMessage:
-    samples = create_samples(dt, plate_barcode, num_positives)
+def _create_plate_message(dt: datetime, plate_barcode: str, num_positives: int) -> CreatePlateMessage:
+    samples = _create_samples(dt, plate_barcode, num_positives)
     plate = Plate(labId=TEST_DATA_CENTRE_LAB_ID, plateBarcode=plate_barcode, samples=samples)
 
     return CreatePlateMessage(messageUuid=str(uuid.uuid4()).encode(), messageCreateDateUtc=dt, plate=plate)
-
-
-def create_plate_messages(plate_specs: list, dt: datetime, list_barcodes: list) -> list:
-    pos_per_plate = flat_list_of_positives_per_plate(plate_specs)
-
-    return [create_plate_message(dt, list_barcodes[i], positives) for i, positives in enumerate(pos_per_plate)]
-
-
-def create_barcode_meta(plate_specs: list, list_barcodes: list) -> list:
-    LOGGER.info("Creating metadata for barcodes")
-
-    pos_per_plate = flat_list_of_positives_per_plate(plate_specs)
-    return [[list_barcodes[i], f"number of positives: {pos_per_plate[i]}"] for i in range(len(pos_per_plate))]

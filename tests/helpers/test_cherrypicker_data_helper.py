@@ -9,13 +9,13 @@ from requests import ConnectionError
 
 from crawler.exceptions import CherrypickerDataError
 from crawler.helpers.cherrypicker_test_data import (
+    _create_rna_id,
+    _create_root_sample_id,
+    _flat_list_of_positives_per_plate,
+    _flatten,
+    _generate_baracoda_barcodes,
     create_barcode_meta,
     create_barcodes,
-    create_rna_id,
-    create_root_sample_id,
-    flat_list_of_positives_per_plate,
-    flatten,
-    generate_baracoda_barcodes,
 )
 
 
@@ -40,14 +40,14 @@ def mocked_responses():
 
 
 def test_flatten_reduces_lists():
-    actual = flatten([[1, 2], [3, 4], [5, 6]])
+    actual = _flatten([[1, 2], [3, 4], [5, 6]])
     expected = [1, 2, 3, 4, 5, 6]
 
     assert actual == expected
 
 
 def test_flatten_reduces_one_level_only():
-    actual = flatten([[1, [2, 3]], [[4, 5], 6]])
+    actual = _flatten([[1, [2, 3]], [[4, 5], 6]])
     expected = [1, [2, 3], [4, 5], 6]
 
     assert actual == expected
@@ -58,7 +58,7 @@ def test_create_barcodes(config, count):
     expected = ["TEST-012345", "TEST-012346", "TEST-012347"]
 
     with patch(
-        "crawler.helpers.cherrypicker_test_data.generate_baracoda_barcodes", return_value=expected
+        "crawler.helpers.cherrypicker_test_data._generate_baracoda_barcodes", return_value=expected
     ) as generate_barcodes:
         actual = create_barcodes(config, count)
 
@@ -78,7 +78,7 @@ def test_generate_baracoda_barcodes_working_fine(config, count, mocked_responses
         status=HTTPStatus.CREATED,
     )
 
-    out = generate_baracoda_barcodes(config, count)
+    out = _generate_baracoda_barcodes(config, count)
     assert out == expected
     assert len(mocked_responses.calls) == 1
 
@@ -95,7 +95,7 @@ def test_generate_baracoda_barcodes_will_retry_if_fail(config, count, mocked_res
     )
 
     with pytest.raises(Exception):
-        generate_baracoda_barcodes(config, count)
+        _generate_baracoda_barcodes(config, count)
 
     assert len(mocked_responses.calls) == config.BARACODA_RETRY_ATTEMPTS
 
@@ -113,7 +113,7 @@ def test_generate_baracoda_barcodes_will_retry_if_exception(config, count, excep
     )
 
     with pytest.raises(CherrypickerDataError):
-        generate_baracoda_barcodes(config, count)
+        _generate_baracoda_barcodes(config, count)
 
     assert len(mocked_responses.calls) == config.BARACODA_RETRY_ATTEMPTS
 
@@ -145,7 +145,7 @@ def test_generate_baracoda_barcodes_will_not_raise_error_if_success_after_retry(
         content_type="application/json",
     )
 
-    generate_baracoda_barcodes(config, count)
+    _generate_baracoda_barcodes(config, count)
 
     assert len(mocked_responses.calls) == config.BARACODA_RETRY_ATTEMPTS
 
@@ -159,7 +159,7 @@ def test_generate_baracoda_barcodes_will_not_raise_error_if_success_after_retry(
     ],
 )
 def test_create_root_sample_id(barcode, well_num, expected):
-    actual = create_root_sample_id(barcode, well_num)
+    actual = _create_root_sample_id(barcode, well_num)
     assert actual == expected
 
 
@@ -172,15 +172,19 @@ def test_create_root_sample_id(barcode, well_num, expected):
     ],
 )
 def test_create_rna_id(barcode, well_coordinate, expected):
-    actual = create_rna_id(barcode, well_coordinate)
+    actual = _create_rna_id(barcode, well_coordinate)
     assert actual == expected
 
 
 def test_flat_list_of_positives_per_plate():
-    actual = flat_list_of_positives_per_plate([[2, 5], [3, 10]])
+    actual = _flat_list_of_positives_per_plate([[2, 5], [3, 10]])
     expected = [5, 5, 10, 10, 10]
 
     assert actual == expected
+
+
+def test_create_plate_messages():
+    pass
 
 
 def test_create_barcode_meta():
