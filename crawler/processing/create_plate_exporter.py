@@ -212,7 +212,9 @@ class CreatePlateExporter:
                     ),
                     sample_uuid=sample[FIELD_LH_SAMPLE_UUID],
                 )
-                for sample in samples_filtered_for_duplicates_in_mongo(samples_collection, self._mongo_sample_docs)
+                for sample in samples_filtered_for_duplicates_in_mongo(
+                    samples_collection, self._mongo_sample_docs, session
+                )
             ]
 
             if len(create_plate_errors) > 0:

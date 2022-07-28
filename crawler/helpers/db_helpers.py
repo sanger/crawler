@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Any, List, Mapping
 
 import pymongo
+from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.results import InsertOneResult
@@ -126,7 +127,7 @@ def populate_mongo_collection(collection: Collection, documents: List[Mapping[st
 
 
 def samples_filtered_for_duplicates_in_mongo(
-    samples_collection: Collection, samples: List[Mapping[str, Any]]
+    samples_collection: Collection, samples: List[Mapping[str, Any]], session: ClientSession = None
 ) -> List[Mapping[str, Any]]:
     dup_query = {
         "$or": [
@@ -140,7 +141,7 @@ def samples_filtered_for_duplicates_in_mongo(
         ]
     }
 
-    result = samples_collection.find(dup_query)
+    result = samples_collection.find(dup_query, session=session)
 
     return [
         sample
