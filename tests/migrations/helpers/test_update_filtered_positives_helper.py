@@ -174,7 +174,7 @@ def test_update_mongo_filtered_positive_fields_raises_with_error_updating_mongo(
 
 
 def test_update_mongo_filtered_positive_fields_updates_expected_samples(
-    config, testing_samples, samples_collection_accessor
+    config, samples_collection_accessor, testing_samples
 ):
     version = "v2.3"
     timestamp = datetime.now()
