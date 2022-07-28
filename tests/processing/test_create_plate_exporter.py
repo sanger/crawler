@@ -46,7 +46,7 @@ MONGO_SAMPLES = [
         FIELD_MONGO_RNA_ID: sample[FIELD_RNA_ID],
         FIELD_MONGO_RESULT: sample[FIELD_RESULT].capitalize(),
     }
-    for sample in CREATE_PLATE_MESSAGE[FIELD_PLATE][FIELD_SAMPLES]
+    for sample in CREATE_PLATE_MESSAGE[FIELD_PLATE][FIELD_SAMPLES]  # type: ignore
 ]
 
 
