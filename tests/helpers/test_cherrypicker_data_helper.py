@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from functools import partial
 from http import HTTPStatus
 from unittest.mock import patch
@@ -16,6 +17,7 @@ from crawler.helpers.cherrypicker_test_data import (
     _generate_baracoda_barcodes,
     create_barcode_meta,
     create_barcodes,
+    create_plate_messages,
 )
 
 
@@ -183,8 +185,22 @@ def test_flat_list_of_positives_per_plate():
     assert actual == expected
 
 
-def test_create_plate_messages():
-    pass
+def test_create_plate_messages(freezer):
+    plate_specs = [[1, 0], [2, 40], [1, 96], [2, 40]]
+    dt = datetime(2012, 3, 4, 5, 6, 7)
+    barcodes = {
+        "TEST-00POS01": 0,
+        "TEST-40POS01": 40,
+        "TEST-40POS02": 40,
+        "TEST-96POS01": 96,
+        "TEST-40POS03": 40,
+        "TEST-40POS04": 40,
+    }
+
+    actual = create_plate_messages(plate_specs, dt, list(barcodes.keys()))
+    print(actual)
+
+    assert False
 
 
 def test_create_barcode_meta():
