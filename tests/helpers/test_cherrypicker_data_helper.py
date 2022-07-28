@@ -10,6 +10,7 @@ from requests import ConnectionError
 
 from crawler.exceptions import CherrypickerDataError
 from crawler.helpers.cherrypicker_test_data import (
+    WELL_COORDS,
     _create_rna_id,
     _create_root_sample_id,
     _flat_list_of_positives_per_plate,
@@ -185,7 +186,7 @@ def test_flat_list_of_positives_per_plate():
     assert actual == expected
 
 
-def test_create_plate_messages(freezer):
+def test_create_plate_messages():
     plate_specs = [[1, 0], [2, 40], [1, 96], [2, 40]]
     dt = datetime(2012, 3, 4, 5, 6, 7)
     barcodes = {
@@ -198,9 +199,40 @@ def test_create_plate_messages(freezer):
     }
 
     actual = create_plate_messages(plate_specs, dt, list(barcodes.keys()))
-    print(actual)
 
-    assert False
+    assert len(actual) == 6
+
+    for message_i in range(6):
+        expected_barcode = list(barcodes.keys())[message_i]
+
+        message = actual[message_i]
+        assert type(message["messageUuid"]) == bytes
+        assert len(message["messageUuid"]) == 36
+        assert message["messageCreateDateUtc"] == dt
+
+        plate = message["plate"]
+        assert plate["labId"] == "CPTD"
+        assert plate["plateBarcode"] == expected_barcode
+        assert len(plate["samples"]) == 96
+
+        for sample_i in range(96):
+            sample = plate["samples"][sample_i]
+            assert type(sample["sampleUuid"]) == bytes
+            assert len(sample["sampleUuid"]) == 36
+            assert sample["rootSampleId"] == f"RSID-{expected_barcode}{str(sample_i + 1).zfill(2)}"
+            assert sample["rnaId"] == f"{expected_barcode}_{WELL_COORDS[sample_i]}"
+            assert sample["cogUkId"] == f"{expected_barcode}{hex(sample_i + 1)[2:].zfill(2)}"
+            assert sample["plateCoordinate"] == WELL_COORDS[sample_i]
+            assert sample["preferentiallySequence"] is False
+            assert sample["mustSequence"] is False
+            assert sample["fitToPick"] is True
+            assert sample["testedDateUtc"] == dt
+
+        # Check the correct number of positives exist among all the samples
+        assert (
+            len(list(filter(lambda sample: sample["result"] == "Positive", plate["samples"])))
+            == barcodes[expected_barcode]
+        )
 
 
 def test_create_barcode_meta():
