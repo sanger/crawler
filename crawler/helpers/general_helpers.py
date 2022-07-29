@@ -84,6 +84,8 @@ from crawler.constants import (
     MLWH_UPDATED_AT,
     RESULT_VALUE_POSITIVE,
 )
+from crawler.rabbit.basic_publisher import BasicPublisher
+from crawler.rabbit.schema_registry import SchemaRegistry
 from crawler.types import Config, DartWellProp, ModifiedRowValue, RabbitServerDetails, SampleDoc, SourcePlateDoc
 
 logger = logging.getLogger(__name__)
@@ -130,6 +132,12 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
     )
 
 
+def get_redpanda_schema_registry(config: Config):
+    redpanda_url = config.REDPANDA_BASE_URI
+    redpanda_api_key = config.REDPANDA_API_KEY
+    return SchemaRegistry(redpanda_url, redpanda_api_key)
+
+
 def get_rabbit_server_details(config: Config) -> RabbitServerDetails:
     return RabbitServerDetails(
         uses_ssl=config.RABBITMQ_SSL,
@@ -138,6 +146,14 @@ def get_rabbit_server_details(config: Config) -> RabbitServerDetails:
         username=config.RABBITMQ_USERNAME,
         password=config.RABBITMQ_PASSWORD,
         vhost=config.RABBITMQ_VHOST,
+    )
+
+
+def get_basic_publisher(config: Config) -> BasicPublisher:
+    return BasicPublisher(
+        get_rabbit_server_details(config),
+        config.RABBITMQ_PUBLISH_RETRY_DELAY,
+        config.RABBITMQ_PUBLISH_RETRIES,
     )
 
 

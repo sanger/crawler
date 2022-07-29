@@ -27,14 +27,14 @@ def logger():
         yield logger
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def rabbit_message():
     with patch("crawler.processing.rabbit_message_processor.RabbitMessage") as rabbit_message:
         rabbit_message.return_value.subject = HEADERS[RABBITMQ_HEADER_KEY_SUBJECT]
         yield rabbit_message
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def avro_encoder():
     with patch("crawler.processing.rabbit_message_processor.AvroEncoder") as avro_encoder:
         yield avro_encoder
@@ -47,10 +47,12 @@ def create_plate_processor():
 
 
 @pytest.fixture
-def subject(config, create_plate_processor, rabbit_message, avro_encoder):
-    subject = RabbitMessageProcessor(SCHEMA_REGISTRY, BASIC_PUBLISHER, config)
-    subject._processors[RABBITMQ_SUBJECT_CREATE_PLATE] = create_plate_processor.return_value
-    yield subject
+def subject(config, create_plate_processor):
+    with patch("crawler.helpers.general_helpers.get_redpanda_schema_registry", return_value=SCHEMA_REGISTRY):
+        with patch("crawler.helpers.general_helpers.get_basic_publisher", return_value=BASIC_PUBLISHER):
+            subject = RabbitMessageProcessor(config)
+            subject._processors[RABBITMQ_SUBJECT_CREATE_PLATE] = create_plate_processor.return_value
+            yield subject
 
 
 def test_constructor_stored_passed_values(subject, config):

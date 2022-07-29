@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Dict, Optional, cast
 
+import crawler.helpers.general_helpers as general_helpers
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.base_processor import BaseProcessor
 from crawler.processing.rabbit_message import RabbitMessage
@@ -10,9 +11,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 class RabbitMessageProcessor:
-    def __init__(self, schema_registry, basic_publisher, config):
-        self._schema_registry = schema_registry
-        self._basic_publisher = basic_publisher
+    def __init__(self, config):
+        self._schema_registry = general_helpers.get_redpanda_schema_registry(config)
+        self._basic_publisher = general_helpers.get_basic_publisher(config)
         self._config = config
 
         self.__processors: Optional[Dict[str, Any]] = None
