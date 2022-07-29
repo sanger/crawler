@@ -84,7 +84,7 @@ from crawler.constants import (
     MLWH_UPDATED_AT,
     RESULT_VALUE_POSITIVE,
 )
-from crawler.types import Config, DartWellProp, ModifiedRowValue, SampleDoc, SourcePlateDoc
+from crawler.types import Config, DartWellProp, ModifiedRowValue, RabbitServerDetails, SampleDoc, SourcePlateDoc
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +127,17 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
         username=sftp_username,
         password=sftp_password,
         cnopts=cnopts,
+    )
+
+
+def get_rabbit_server_details(config: Config) -> RabbitServerDetails:
+    return RabbitServerDetails(
+        uses_ssl=config.RABBITMQ_SSL,
+        host=config.RABBITMQ_HOST,
+        port=config.RABBITMQ_PORT,
+        username=config.RABBITMQ_USERNAME,
+        password=config.RABBITMQ_PASSWORD,
+        vhost=config.RABBITMQ_VHOST,
     )
 
 
