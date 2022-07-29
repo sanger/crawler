@@ -1,6 +1,10 @@
+import logging
+
 from crawler.constants import RABBITMQ_UPDATE_FEEDBACK_ORIGIN_FIELD
 from crawler.helpers.general_helpers import extract_duplicated_values
 from crawler.rabbit.messages.parsers.update_sample_message import ErrorType, UpdateSampleError
+
+LOGGER = logging.getLogger(__name__)
 
 
 class UpdateSampleValidator:
@@ -8,7 +12,12 @@ class UpdateSampleValidator:
         self._message = message
 
     def validate(self):
+        LOGGER.debug("Starting validation of update message.")
+
         self._validate_updated_fields()
+
+        LOGGER.debug("Validation finished.")
+        self._message.log_error_count()
 
     def _validate_updated_fields(self):
         """Perform validation that updated fields are populated and only contain each possible field once at most."""

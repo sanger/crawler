@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Any, List, Mapping
 
 import pymongo
+from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.results import InsertOneResult
@@ -123,3 +124,31 @@ def populate_mongo_collection(collection: Collection, documents: List[Mapping[st
         _ = collection.find_one_and_update(
             filter={filter_field: document[filter_field]}, update={"$set": document}, upsert=True
         )
+
+
+def samples_filtered_for_duplicates_in_mongo(
+    samples_collection: Collection, samples: List[Mapping[str, Any]], session: ClientSession = None
+) -> List[Mapping[str, Any]]:
+    dup_query = {
+        "$or": [
+            {
+                FIELD_MONGO_LAB_ID: sample[FIELD_MONGO_LAB_ID],
+                FIELD_MONGO_ROOT_SAMPLE_ID: sample[FIELD_MONGO_ROOT_SAMPLE_ID],
+                FIELD_MONGO_RNA_ID: sample[FIELD_MONGO_RNA_ID],
+                FIELD_MONGO_RESULT: sample[FIELD_MONGO_RESULT],
+            }
+            for sample in samples
+        ]
+    }
+
+    result = samples_collection.find(dup_query, session=session)
+
+    return [
+        sample
+        for dup_sample in result
+        for sample in samples
+        if sample[FIELD_MONGO_LAB_ID] == dup_sample[FIELD_MONGO_LAB_ID]
+        and sample[FIELD_MONGO_ROOT_SAMPLE_ID] == dup_sample[FIELD_MONGO_ROOT_SAMPLE_ID]
+        and sample[FIELD_MONGO_RNA_ID] == dup_sample[FIELD_MONGO_RNA_ID]
+        and sample[FIELD_MONGO_RESULT] == dup_sample[FIELD_MONGO_RESULT]
+    ]

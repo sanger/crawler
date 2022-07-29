@@ -24,7 +24,11 @@ class RabbitStack:
         return SchemaRegistry(redpanda_url, redpanda_api_key)
 
     def _rabbit_message_processor(self):
-        basic_publisher = BasicPublisher(get_rabbit_server_details(self._config))
+        basic_publisher = BasicPublisher(
+            get_rabbit_server_details(self._config),
+            self._config.RABBITMQ_PUBLISH_RETRY_DELAY,
+            self._config.RABBITMQ_PUBLISH_RETRIES,
+        )
         return RabbitMessageProcessor(self._schema_registry(), basic_publisher, self._config)
 
     def bring_stack_up(self):

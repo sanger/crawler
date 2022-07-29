@@ -60,6 +60,11 @@ LOGGING: Dict[str, Any] = {
             "level": "INFO",
             "propagate": True,
         },
+        "rabbit_messages": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": True,
+        },
         "migrations": {
             "handlers": ["colored_stream"],
             "level": "DEBUG",

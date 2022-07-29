@@ -29,6 +29,8 @@ class CreatePlateProcessor(BaseProcessor):
         validator = CreatePlateValidator(create_message, self._config)
         exporter = CreatePlateExporter(create_message, self._config)
 
+        LOGGER.info(f"Starting processing of create message with UUID '{create_message.message_uuid}'")
+
         # First validate the message and then export the source plate and samples to MongoDB.
         try:
             validator.validate()
@@ -59,6 +61,9 @@ class CreatePlateProcessor(BaseProcessor):
         # message as processed since PAM cannot fix issues we had with DART export or recording the import.
         exporter.export_to_dart()
         exporter.record_import()
+
+        LOGGER.info(f"Finished processing of create message with UUID '{create_message.message_uuid}'")
+
         return True  # Acknowledge the message has been processed
 
     def _feedback_routing_key(self, centre_config):

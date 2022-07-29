@@ -1,4 +1,7 @@
 from datetime import datetime
+from typing import List, Mapping
+
+import pytest
 
 from crawler.constants import (
     CENTRE_KEY_NAME,
@@ -19,6 +22,7 @@ from crawler.helpers.db_helpers import (
     create_mongo_import_record,
     ensure_mongo_collections_indexed,
     populate_mongo_collection,
+    samples_filtered_for_duplicates_in_mongo,
 )
 from crawler.helpers.logging_helpers import LoggingCollection
 
@@ -111,3 +115,21 @@ def test_populate_mongo_collection_upserts_documents(mongo_database):
     assert centres_collection.count_documents(doc2) == 1
     assert centres_collection.count_documents(replacement_doc1) == 1
     assert centres_collection.count_documents(doc3) == 1
+
+
+MONGO_SAMPLES: List[Mapping[str, str]] = [
+    {
+        FIELD_MONGO_LAB_ID: f"LAB{i}",
+        FIELD_MONGO_ROOT_SAMPLE_ID: f"RSID{i}",
+        FIELD_MONGO_RNA_ID: f"RNA{i}",
+        FIELD_MONGO_RESULT: f"RESULT{i}",
+    }
+    for i in range(10)
+]
+
+
+@pytest.mark.parametrize("samples_collection_accessor", [MONGO_SAMPLES[0:4]], indirect=True)
+def test_samples_filtered_for_duplicates_in_mongo(samples_collection_accessor):
+    duplicates = samples_filtered_for_duplicates_in_mongo(samples_collection_accessor, MONGO_SAMPLES)
+
+    assert duplicates == MONGO_SAMPLES[0:4]

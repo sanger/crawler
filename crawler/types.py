@@ -92,6 +92,9 @@ class Config(ModuleType):
     RABBITMQ_CRUD_QUEUE: str
     RABBITMQ_FEEDBACK_EXCHANGE: str
 
+    RABBITMQ_PUBLISH_RETRY_DELAY: int
+    RABBITMQ_PUBLISH_RETRIES: int
+
     # RedPanda
     REDPANDA_BASE_URI: str
     REDPANDA_API_KEY: str

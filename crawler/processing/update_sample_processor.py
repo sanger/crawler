@@ -28,6 +28,8 @@ class UpdateSampleProcessor(BaseProcessor):
         validator = UpdateSampleValidator(update_message)
         exporter = UpdateSampleExporter(update_message, self._config)
 
+        LOGGER.info(f"Starting processing of update message with UUID '{update_message.message_uuid}'")
+
         # First validate the message and then export the updates to MongoDB.
         try:
             validator.validate()
@@ -57,6 +59,8 @@ class UpdateSampleProcessor(BaseProcessor):
             return False  # Errors up to this point mean we should send the message to dead-letters.
 
         exporter.update_dart()
+
+        LOGGER.info(f"Finished processing of update message with UUID '{update_message.message_uuid}'")
 
         return True  # The message has been processed whether DART worked or not.
 

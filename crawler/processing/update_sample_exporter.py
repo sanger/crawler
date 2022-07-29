@@ -48,8 +48,13 @@ class UpdateSampleExporter:
 
         Raises a TransientRabbitError if Mongo is unreachable or cannot be queried.
         """
+        LOGGER.debug("Starting verification of sample state in MongoDB.")
+
         with self._mongo_db.client.start_session() as session:
             self._validate_mongo_properties(session)
+
+        LOGGER.debug("Finished verification of sample state in MongoDB.")
+        self._message.log_error_count()
 
     def verify_plate_state(self):
         """Verify that the plate has not already been picked by either Biosero or Beckman machines. If it has, a
@@ -59,7 +64,12 @@ class UpdateSampleExporter:
 
         Note:  This method will raise an exception if called before verify_sample_in_mongo().
         """
+        LOGGER.debug("Starting verification of plate state in Cherrytrack and DART.")
+
         self._verify_plate_not_in_cherrytrack() and self._verify_plate_state_in_dart()
+
+        LOGGER.debug("Finished verification of plate state in Cherrytrack and DART.")
+        self._message.log_error_count()
 
     def update_mongo(self):
         """Updates Mongo by replacing the document for the sample with a new one where the requested fields have been
@@ -69,8 +79,13 @@ class UpdateSampleExporter:
 
         Note:  This method will raise an exception if called before verify_sample_in_mongo().
         """
+        LOGGER.debug("Starting update of MongoDB with sample in update message.")
+
         with self._mongo_db.client.start_session() as session:
             self._update_sample_in_mongo(session)
+
+        LOGGER.debug("Finished updating MongoDB with sample in update message.")
+        self._message.log_error_count()
 
     def update_dart(self):
         """Update the DART database with the newly updated Mongo document. If any step of the update fails, a relevant
@@ -79,7 +94,12 @@ class UpdateSampleExporter:
         Note:  This method will raise an exception if called before verify_sample_in_mongo().
         """
         if not self._plate_missing_in_dart:
+            LOGGER.debug("Starting update of DART records for sample in update message.")
+
             self._update_sample_in_dart()
+
+            LOGGER.debug("Finished update of DART records for sample in update message.")
+            self._message.log_error_count()
 
     @property
     def _mongo_db(self):
