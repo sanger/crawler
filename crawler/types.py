@@ -7,7 +7,7 @@ from bson.objectid import ObjectId
 from typing_extensions import NotRequired
 
 # Type aliases
-CentreDoc = Dict[str, Any]  #  mongo document that represents a centre
+CentreDoc = Dict[str, Any]  # mongo document that represents a centre
 CSVRow = Dict[str, str]  # row of data from the CSV DictReader
 ModifiedRowValue = Optional[Union[str, datetime, bool, int, Decimal128, ObjectId]]
 ModifiedRow = Dict[str, ModifiedRowValue]
