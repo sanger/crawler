@@ -138,13 +138,13 @@ def get_redpanda_schema_registry(config: Config):
     return SchemaRegistry(redpanda_url, redpanda_api_key)
 
 
-def get_rabbit_server_details(config: Config) -> RabbitServerDetails:
+def get_rabbit_server_details(config: Config, username: str = "", password: str = "") -> RabbitServerDetails:
     return RabbitServerDetails(
         uses_ssl=config.RABBITMQ_SSL,
         host=config.RABBITMQ_HOST,
         port=config.RABBITMQ_PORT,
-        username=config.RABBITMQ_USERNAME,
-        password=config.RABBITMQ_PASSWORD,
+        username=config.RABBITMQ_USERNAME if not username else username,
+        password=config.RABBITMQ_PASSWORD if not password else password,
         vhost=config.RABBITMQ_VHOST,
     )
 
