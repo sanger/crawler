@@ -8,6 +8,7 @@ from crawler.config.centres import (
     CENTRES,
 )
 from crawler.config.defaults import *
+from crawler.config.processors import *
 from crawler.constants import (
     CENTRE_KEY_BACKUPS_FOLDER,
     CENTRE_KEY_BARCODE_FIELD,

@@ -1,3 +1,4 @@
+import logging
 from functools import lru_cache
 
 from requests import get
@@ -6,6 +7,8 @@ from crawler.exceptions import TransientRabbitError
 
 RESPONSE_KEY_VERSION = "version"
 RESPONSE_KEY_SCHEMA = "schema"
+
+LOGGER = logging.getLogger(__name__)
 
 
 @lru_cache
@@ -22,4 +25,7 @@ class SchemaRegistry:
         self._api_key = api_key
 
     def get_schema(self, subject: str, version: str = "latest") -> dict:
-        return get_json_from_url(f"{self._base_uri}/subjects/{subject}/versions/{version}", self._api_key)
+        schema_url = f"{self._base_uri}/subjects/{subject}/versions/{version}"
+        LOGGER.debug(f"Getting schema from registry at {schema_url}.")
+
+        return get_json_from_url(schema_url, self._api_key)

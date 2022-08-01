@@ -8,6 +8,11 @@ from typing import Final, Set, Tuple
 SCHEDULER_JOB_ID_RUN_CRAWLER: Final[str] = "run_crawler"
 
 ###
+# Logger names
+###
+LOGGER_NAME_RABBIT_MESSAGES: Final[str] = "rabbit_messages"
+
+###
 # CentreConf dictionary keys
 ###
 CENTRE_KEY_BACKUPS_FOLDER: Final = "backups_folder"

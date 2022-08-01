@@ -11,9 +11,11 @@ from pika.adapters.utils.connection_workflow import (
 )
 from pika.exceptions import AMQPConnectionError
 
+from crawler.constants import LOGGER_NAME_RABBIT_MESSAGES
 from crawler.exceptions import TransientRabbitError
 
 LOGGER = logging.getLogger(__name__)
+MESSAGE_LOGGER = logging.getLogger(LOGGER_NAME_RABBIT_MESSAGES)
 
 
 class AsyncConsumer(object):
@@ -265,7 +267,8 @@ class AsyncConsumer(object):
         :param pika.Spec.BasicProperties: properties
         :param bytes body: The message body
         """
-        LOGGER.info("Received message # %s from %s", basic_deliver.delivery_tag, properties.app_id)
+        LOGGER.info(f"Received message # {basic_deliver.delivery_tag}")
+        MESSAGE_LOGGER.info(f"Received message # {basic_deliver.delivery_tag} with body:  {body.decode()}")
         delivery_tag = basic_deliver.delivery_tag
 
         try:
@@ -275,10 +278,10 @@ class AsyncConsumer(object):
             raise
 
         if should_ack_message:
-            LOGGER.info("Acknowledging message %s", delivery_tag)
+            LOGGER.info("Acknowledging message # %s", delivery_tag)
             channel.basic_ack(delivery_tag)
         else:
-            LOGGER.info("Rejecting message %s", delivery_tag)
+            LOGGER.info("Rejecting message # %s", delivery_tag)
             channel.basic_nack(delivery_tag, requeue=False)
 
     def stop_consuming(self):
