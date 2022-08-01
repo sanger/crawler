@@ -132,7 +132,7 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
     )
 
 
-def get_redpanda_schema_registry(config: Config):
+def get_redpanda_schema_registry(config: Config) -> SchemaRegistry:
     redpanda_url = config.REDPANDA_BASE_URI
     redpanda_api_key = config.REDPANDA_API_KEY
     return SchemaRegistry(redpanda_url, redpanda_api_key)

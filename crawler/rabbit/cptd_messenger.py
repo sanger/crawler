@@ -1,3 +1,5 @@
+from typing import Optional
+
 import crawler.helpers.general_helpers as general_helpers
 from crawler.constants import (
     RABBITMQ_ROUTING_KEY_CREATE_PLATE,
@@ -15,10 +17,10 @@ class CPTDMessenger:
     def __init__(self, config: Config):
         self._config = config
 
-        self.__schema_registry = None
-        self.__basic_publisher = None
-        self.__encoder = None
-        self.__decoder = None
+        self.__schema_registry: Optional[SchemaRegistry] = None
+        self.__basic_publisher: Optional[BasicPublisher] = None
+        self.__encoder: Optional[AvroEncoder] = None
+        self.__decoder: Optional[AvroEncoder] = None
 
     @property
     def _schema_registry(self) -> SchemaRegistry:
@@ -50,7 +52,7 @@ class CPTDMessenger:
 
         return self.__decoder
 
-    def generate_test_data(self, create_plate_messages: list):
+    def generate_test_data(self, create_plate_messages: list) -> None:
         """Send the plate messages to RabbitMQ then poll for the feedback messages indicating they were all processed
         correctly.  If there are any issues doing this, raises a CherrypickerDataError to populate the API response
         with.
@@ -62,7 +64,7 @@ class CPTDMessenger:
 
         _ = [message[FIELD_MESSAGE_UUID] for message in create_plate_messages]
 
-    def _publish_messages(self, create_plate_messages: list):
+    def _publish_messages(self, create_plate_messages: list) -> None:
         for message in create_plate_messages:
             encoded_message = self._encoder.encode([message])
             self._basic_publisher.publish_message(
