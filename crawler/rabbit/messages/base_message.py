@@ -1,3 +1,8 @@
+import logging
+
+LOGGER = logging.getLogger(__name__)
+
+
 class BaseMessage:
     def __init__(self):
         self._textual_errors = []
@@ -21,3 +26,6 @@ class BaseMessage:
 
     def add_textual_error(self, description):
         self._textual_errors.append(description)
+
+    def log_error_count(self):
+        LOGGER.debug(f"Number of errors recorded on message: {len(self._textual_errors)}.")

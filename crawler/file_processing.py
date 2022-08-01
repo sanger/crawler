@@ -373,7 +373,8 @@ class CentreFile:
         return False
 
     def is_unconsolidated_surveillance_file(self) -> bool:
-        """Identifies whether this file is from the batch of unconsolidated surveillance files for the centre that uploaded it.
+        """Identifies whether this file is from the batch of unconsolidated surveillance files for the centre that
+        uploaded it.
 
         Returns:
             bool: True if the filename matches the unconsolidated surveillance regex specified
