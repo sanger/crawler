@@ -1,6 +1,5 @@
 import logging
 
-from crawler.config.defaults import RABBITMQ_FEEDBACK_EXCHANGE
 from crawler.constants import (
     RABBITMQ_ROUTING_KEY_UPDATE_SAMPLE_FEEDBACK,
     RABBITMQ_SUBJECT_UPDATE_SAMPLE_FEEDBACK,
@@ -11,8 +10,8 @@ from crawler.processing.base_processor import BaseProcessor
 from crawler.processing.update_sample_exporter import UpdateSampleExporter
 from crawler.processing.update_sample_validator import UpdateSampleValidator
 from crawler.rabbit.avro_encoder import AvroEncoder
-from crawler.rabbit.messages.update_feedback_message import UpdateFeedbackMessage
 from crawler.rabbit.messages.parsers.update_sample_message import ErrorType, UpdateSampleError, UpdateSampleMessage
+from crawler.rabbit.messages.update_feedback_message import UpdateFeedbackMessage
 
 LOGGER = logging.getLogger(__name__)
 
@@ -73,7 +72,7 @@ class UpdateSampleProcessor(BaseProcessor):
 
         encoded_message = self._encoder.encode([feedback_message])
         self._basic_publisher.publish_message(
-            RABBITMQ_FEEDBACK_EXCHANGE,
+            self._config.RABBITMQ_FEEDBACK_EXCHANGE,
             RABBITMQ_ROUTING_KEY_UPDATE_SAMPLE_FEEDBACK,
             encoded_message.body,
             RABBITMQ_SUBJECT_UPDATE_SAMPLE_FEEDBACK,

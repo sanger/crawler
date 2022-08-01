@@ -1,6 +1,5 @@
 import logging
 
-from crawler.config.defaults import RABBITMQ_FEEDBACK_EXCHANGE
 from crawler.constants import (
     CENTRE_KEY_FEEDBACK_ROUTING_KEY_PREFIX,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING,
@@ -81,7 +80,7 @@ class CreatePlateProcessor(BaseProcessor):
 
         encoded_message = self._encoder.encode([feedback_message])
         self._basic_publisher.publish_message(
-            RABBITMQ_FEEDBACK_EXCHANGE,
+            self._config.RABBITMQ_FEEDBACK_EXCHANGE,
             self._feedback_routing_key(create_message.centre_config),
             encoded_message.body,
             RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
