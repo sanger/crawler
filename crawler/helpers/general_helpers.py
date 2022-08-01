@@ -149,9 +149,9 @@ def get_rabbit_server_details(config: Config, username: str = "", password: str 
     )
 
 
-def get_basic_publisher(config: Config) -> BasicPublisher:
+def get_basic_publisher(config: Config, username: str = "", password: str = "") -> BasicPublisher:
     return BasicPublisher(
-        get_rabbit_server_details(config),
+        get_rabbit_server_details(config, username, password),
         config.RABBITMQ_PUBLISH_RETRY_DELAY,
         config.RABBITMQ_PUBLISH_RETRIES,
     )

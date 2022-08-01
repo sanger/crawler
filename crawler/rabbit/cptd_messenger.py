@@ -34,6 +34,8 @@ class CPTDMessenger:
                 self._config, self._config.RABBITMQ_CPTD_USERNAME, self._config.RABBITMQ_CPTD_PASSWORD
             )
 
+        return self.__basic_publisher
+
     @property
     def _encoder(self) -> AvroEncoder:
         if self.__encoder is None:
