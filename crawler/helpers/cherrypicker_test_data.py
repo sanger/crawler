@@ -140,7 +140,7 @@ def _create_sample(dt: datetime, index: int, result: str, plate_barcode: str) ->
 
 def _create_samples(dt: datetime, plate_barcode: str, num_positives: int) -> list:
     num_negatives = PLATE_SIZE - num_positives
-    results = ["Positive"] * num_positives + ["Negative"] * num_negatives
+    results = ["positive"] * num_positives + ["negative"] * num_negatives
     random.shuffle(results)
 
     return [_create_sample(dt, index, result, plate_barcode) for index, result in enumerate(results)]

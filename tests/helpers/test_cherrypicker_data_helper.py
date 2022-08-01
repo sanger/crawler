@@ -230,7 +230,7 @@ def test_create_plate_messages():
 
         # Check the correct number of positives exist among all the samples
         assert (
-            len(list(filter(lambda sample: sample["result"] == "Positive", plate["samples"])))
+            len(list(filter(lambda sample: sample["result"] == "positive", plate["samples"])))
             == barcodes[expected_barcode]
         )
 
