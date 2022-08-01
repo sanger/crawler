@@ -56,7 +56,7 @@ def logger():
         yield logger
 
 
-@pytest.fixture()
+@pytest.fixture
 def create_plate_message(centre):
     plate_message = CreatePlateMessage(copy.deepcopy(CREATE_PLATE_MESSAGE))
     plate_message.centre_config = centre.centre_config  # Simulate running validation on the message.
