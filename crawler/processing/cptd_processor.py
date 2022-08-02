@@ -98,8 +98,8 @@ class CPTDProcessor:
            message_uuids {list} -- a list of message UUIDs to look for feedback on.
         """
         LOGGER.info(
-            "Beginning loop of feedback parsing for cherrypicker test data. Loop will run, at most, for "
-            f"{self._config.CPTD_FEEDBACK_WAIT_TIME} seconds."
+            "Beginning loop of feedback parsing for cherrypicker test data. Loop will run continuously until no "
+            f"message is seen for {self._config.CPTD_FEEDBACK_WAIT_TIME} seconds."
         )
         unconfirmed_uuids = message_uuids.copy()
         t_end = time() + self._config.CPTD_FEEDBACK_WAIT_TIME
@@ -114,6 +114,8 @@ class CPTDProcessor:
                 if fetched_message is None:
                     sleep(1)
                     continue  # There was no message on the queue
+
+                t_end = time() + self._config.CPTD_FEEDBACK_WAIT_TIME  # Extend our loop time
 
                 rabbit_message = RabbitMessage(fetched_message.headers, fetched_message.body)
                 if rabbit_message.subject != RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK:

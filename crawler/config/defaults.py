@@ -19,7 +19,7 @@ ADD_LAB_ID = False
 ENABLE_CHERRYPICKER_ENDPOINTS = False  # Safeguards it being on by accident in production
 MAX_PLATES_PER_TEST_DATA_RUN = 200
 
-CPTD_FEEDBACK_WAIT_TIME = 60
+CPTD_FEEDBACK_WAIT_TIME = 30
 
 ###
 # ingest behaviour for scheduled runs
