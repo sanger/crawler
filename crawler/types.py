@@ -51,6 +51,8 @@ class Config(ModuleType):
     ENABLE_CHERRYPICKER_ENDPOINTS: bool
     MAX_PLATES_PER_TEST_DATA_RUN: int
 
+    CPTD_FEEDBACK_WAIT_TIME: int
+
     # Ingest Behaviour
     USE_SFTP: bool
     KEEP_FILES: bool
