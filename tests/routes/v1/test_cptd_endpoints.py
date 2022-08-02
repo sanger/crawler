@@ -19,7 +19,7 @@ LoggerMessages = namedtuple("LoggerMessages", ["info", "error"])
 
 @pytest.fixture
 def logger_messages():
-    with patch("crawler.routes.common.cherrypicker_test_data.logger") as logger:
+    with patch("crawler.routes.common.cherrypicker_test_data.LOGGER") as logger:
         infos = []
         logger.info.side_effect = lambda msg: infos.append(msg)
 
