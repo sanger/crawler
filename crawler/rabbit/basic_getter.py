@@ -34,14 +34,29 @@ class BasicGetter:
             ssl_context = ssl.create_default_context(cafile=cafile)
             self._connection_params.ssl_options = SSLOptions(ssl_context)
 
-    def __enter__(self):
-        self._connection = BlockingConnection(self._connection_params)
-        self._channel = self._connection.channel()
+        self.__connection = None
+        self.__channel = None
 
+    @property
+    def _connection(self):
+        if self.__connection is None:
+            self.__connection = BlockingConnection(self._connection_params)
+
+        return self.__connection
+
+    @property
+    def _channel(self):
+        if self.__channel is None:
+            self.__channel = self._connection.channel()
+
+        return self.__channel
+
+    def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self._connection.close()
+        if self.__connection is not None:
+            self.__connection.close()
 
     def get_message(self, queue) -> Optional[FetchedMessage]:
         LOGGER.info(f"Fetching message from queue '{queue}'.")
