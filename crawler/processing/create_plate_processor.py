@@ -28,7 +28,7 @@ class CreatePlateProcessor(BaseProcessor):
         validator = CreatePlateValidator(create_message, self._config)
         exporter = CreatePlateExporter(create_message, self._config)
 
-        LOGGER.info(f"Starting processing of create message with UUID '{create_message.message_uuid}'")
+        LOGGER.info(f"Starting processing of create message with UUID '{create_message.message_uuid.value}'")
 
         # First validate the message and then export the source plate and samples to MongoDB.
         try:
@@ -61,7 +61,7 @@ class CreatePlateProcessor(BaseProcessor):
         exporter.export_to_dart()
         exporter.record_import()
 
-        LOGGER.info(f"Finished processing of create message with UUID '{create_message.message_uuid}'")
+        LOGGER.info(f"Finished processing of create message with UUID '{create_message.message_uuid.value}'")
 
         return True  # Acknowledge the message has been processed
 
