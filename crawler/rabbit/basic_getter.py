@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from pika import BlockingConnection, ConnectionParameters, PlainCredentials, SSLOptions
+from pika.adapters.blocking_connection import BlockingChannel
 
 from crawler.constants import LOGGER_NAME_RABBIT_MESSAGES
 from crawler.types import RabbitServerDetails
@@ -34,8 +35,8 @@ class BasicGetter:
             ssl_context = ssl.create_default_context(cafile=cafile)
             self._connection_params.ssl_options = SSLOptions(ssl_context)
 
-        self.__connection = None
-        self.__channel = None
+        self.__connection: Optional[BlockingConnection] = None
+        self.__channel: Optional[BlockingChannel] = None
 
     @property
     def _connection(self):
@@ -58,7 +59,7 @@ class BasicGetter:
         if self.__connection is not None:
             self.__connection.close()
 
-    def get_message(self, queue) -> Optional[FetchedMessage]:
+    def get_message(self, queue: str) -> Optional[FetchedMessage]:
         LOGGER.info(f"Fetching message from queue '{queue}'.")
 
         frame, properties, body = self._channel.basic_get(queue, auto_ack=True)

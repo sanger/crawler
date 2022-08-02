@@ -136,7 +136,8 @@ class CPTDProcessor:
                 error_free = feedback_message.operation_was_error_free.value
                 if not error_free:
                     LOGGER.info(
-                        f"Cherrypicker test data create message with UUID '{source_uuid}' was not processed without errors."
+                        f"Cherrypicker test data create message with UUID '{source_uuid}' was not processed without "
+                        "errors."
                     )
                     break
 
