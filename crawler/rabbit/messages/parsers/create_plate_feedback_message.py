@@ -1,5 +1,4 @@
 import logging
-from email.message import Message
 from typing import Any, NamedTuple
 
 LOGGER = logging.getLogger(__name__)
