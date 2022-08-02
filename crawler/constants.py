@@ -136,6 +136,9 @@ TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES: Final[
 TEST_DATA_ERROR_BARACODA_COG_BARCODES: Final[str] = "Unable to create COG barcodes"
 TEST_DATA_ERROR_BARACODA_CONNECTION: Final[str] = "Unable to access baracoda"
 TEST_DATA_ERROR_BARACODA_UNKNOWN: Final[str] = "Unknown error accessing baracoda"
+TEST_DATA_ERROR_PLATE_CREATION_FAILED: Final[
+    str
+] = "One or more plates failed to generate data correctly. Please try again."
 
 
 ##

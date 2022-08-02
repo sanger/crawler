@@ -31,7 +31,7 @@ from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mong
 from crawler.exceptions import CherrypickerDataError
 from crawler.helpers.cherrypicker_test_data import create_barcode_meta, create_barcodes, create_plate_messages
 from crawler.helpers.general_helpers import get_config
-from crawler.rabbit.cptd_messenger import CPTDMessenger
+from crawler.processing.cptd_processor import CPTDProcessor
 from crawler.types import Config
 
 logger = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ def process(run_id: str, config: Config = None) -> List[List[str]]:
 
 def process_run(config: Config, collection: Collection, run_id: str) -> List[List[str]]:
     dt = datetime.utcnow()
-    messenger = CPTDMessenger(config)
+    messenger = CPTDProcessor(config)
     run_doc = get_run_doc(collection, run_id)
 
     if run_doc[FIELD_STATUS] != FIELD_STATUS_PENDING:
