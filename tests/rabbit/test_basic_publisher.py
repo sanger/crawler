@@ -29,7 +29,7 @@ def message_logger():
 
 @pytest.fixture
 def channel():
-    yield MagicMock()
+    return MagicMock()
 
 
 @pytest.fixture(autouse=True)

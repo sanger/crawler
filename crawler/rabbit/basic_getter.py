@@ -56,8 +56,12 @@ class BasicGetter:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
+    def close(self):
         if self.__connection is not None:
             self.__connection.close()
+            self.__connection = None
 
     def get_message(self, queue: str) -> Optional[FetchedMessage]:
         LOGGER.info(f"Fetching message from queue '{queue}'.")
