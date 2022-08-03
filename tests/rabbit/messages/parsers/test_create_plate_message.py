@@ -28,7 +28,7 @@ from crawler.rabbit.messages.parsers.create_plate_message import (
 from tests.testing_objects import CREATE_PLATE_MESSAGE
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def logger():
     with patch("crawler.rabbit.messages.parsers.create_plate_message.LOGGER") as logger:
         yield logger
