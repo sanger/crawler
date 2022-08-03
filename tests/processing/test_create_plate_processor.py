@@ -1,3 +1,4 @@
+import copy
 from typing import NamedTuple
 from unittest.mock import ANY, MagicMock, patch
 
@@ -5,6 +6,7 @@ import pytest
 
 from crawler.config.defaults import RABBITMQ_FEEDBACK_EXCHANGE
 from crawler.constants import (
+    CENTRE_KEY_FEEDBACK_ROUTING_KEY_PREFIX,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING,
     RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
     RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
@@ -51,7 +53,7 @@ def mock_avro_encoder():
 @pytest.fixture(autouse=True)
 def message_wrapper_class(centre):
     with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as message_wrapper_class:
-        message_wrapper_class.return_value.centre_config = centre.centre_config
+        message_wrapper_class.return_value.centre_config = copy.deepcopy(centre.centre_config)
         message_wrapper_class.return_value.message_uuid = MessageField("UUID_FIELD", "UUID")
         message_wrapper_class.return_value.has_errors = False
 
@@ -68,7 +70,7 @@ def subject(config):
     return CreatePlateProcessor(MagicMock(), MagicMock(), config)
 
 
-def assert_feedback_was_published(subject, message, avro_encoder):
+def assert_feedback_was_published(subject, message, avro_encoder, routing_key_prefix=""):
     feedback_message = CreateFeedbackMessage(
         sourceMessageUuid=message.message_uuid.value,
         countOfTotalSamples=message.total_samples,
@@ -82,28 +84,7 @@ def assert_feedback_was_published(subject, message, avro_encoder):
 
     subject._basic_publisher.publish_message.assert_called_once_with(
         RABBITMQ_FEEDBACK_EXCHANGE,
-        RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
-        ENCODED_MESSAGE.body,
-        RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
-        ENCODED_MESSAGE.version,
-    )
-
-
-def assert_feedback_uses_centre_prefix_for_routing_key(subject, message, avro_encoder):
-    feedback_message = CreateFeedbackMessage(
-        sourceMessageUuid=message.message_uuid.value,
-        countOfTotalSamples=message.total_samples,
-        countOfValidSamples=message.validated_samples,
-        operationWasErrorFree=not message.has_errors,
-        errors=message.feedback_errors,
-    )
-
-    avro_encoder.encode.assert_called_once()
-    assert avro_encoder.encode.call_args.args[0][0] == feedback_message
-
-    subject._basic_publisher.publish_message.assert_called_once_with(
-        RABBITMQ_FEEDBACK_EXCHANGE,
-        RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
+        routing_key_prefix + RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
         ENCODED_MESSAGE.body,
         RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
         ENCODED_MESSAGE.version,
@@ -137,10 +118,17 @@ def test_process_uses_exporter(subject, mock_exporter, message_wrapper_class):
     mock_exporter.return_value.export_to_mongo.assert_called_once()
 
 
-def test_process_publishes_feedback_when_no_issues_found(subject, mock_avro_encoder, message_wrapper_class):
+@pytest.mark.parametrize("routing_key_prefix", [None, "", "cptd.", "my-prefix."])
+def test_process_publishes_feedback_when_no_issues_found(
+    subject, routing_key_prefix, mock_avro_encoder, message_wrapper_class
+):
+    if routing_key_prefix is not None:
+        message_wrapper_class.return_value.centre_config[CENTRE_KEY_FEEDBACK_ROUTING_KEY_PREFIX] = routing_key_prefix
+
     subject.process(MagicMock())
 
-    assert_feedback_was_published(subject, message_wrapper_class.return_value, mock_avro_encoder.return_value)
+    prefix = "" if routing_key_prefix is None else routing_key_prefix
+    assert_feedback_was_published(subject, message_wrapper_class.return_value, mock_avro_encoder.return_value, prefix)
 
 
 def test_process_records_import_when_no_issues_found(subject, mock_exporter):
