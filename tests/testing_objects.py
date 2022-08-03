@@ -65,6 +65,36 @@ from crawler.constants import (
     V0_V1_CUTOFF_TIMESTAMP,
     V1_V2_CUTOFF_TIMESTAMP,
 )
+from crawler.rabbit.messages.parsers.create_plate_feedback_message import (
+    FIELD_COUNT_OF_TOTAL_SAMPLES as CREATE_PLATE_FEEDBACK_COUNT_OF_TOTAL_SAMPLES,
+)
+from crawler.rabbit.messages.parsers.create_plate_feedback_message import (
+    FIELD_COUNT_OF_VALID_SAMPLES as CREATE_PLATE_FEEDBACK_COUNT_OF_VALID_SAMPLES,
+)
+from crawler.rabbit.messages.parsers.create_plate_feedback_message import (
+    FIELD_ERROR_DESCRIPTION as CREATE_PLATE_FEEDBACK_ERROR_DESCRIPTION,
+)
+from crawler.rabbit.messages.parsers.create_plate_feedback_message import (
+    FIELD_ERROR_FIELD_NAME as CREATE_PLATE_FEEDBACK_ERROR_FIELD_NAME,
+)
+from crawler.rabbit.messages.parsers.create_plate_feedback_message import (
+    FIELD_ERROR_ORIGIN as CREATE_PLATE_FEEDBACK_ERROR_ORIGIN,
+)
+from crawler.rabbit.messages.parsers.create_plate_feedback_message import (
+    FIELD_ERROR_SAMPLE_UUID as CREATE_PLATE_FEEDBACK_ERROR_SAMPLE_UUID,
+)
+from crawler.rabbit.messages.parsers.create_plate_feedback_message import (
+    FIELD_ERROR_TYPE_ID as CREATE_PLATE_FEEDBACK_ERROR_TYPE_ID,
+)
+from crawler.rabbit.messages.parsers.create_plate_feedback_message import (
+    FIELD_ERRORS_LIST as CREATE_PLATE_FEEDBACK_ERRORS_LIST,
+)
+from crawler.rabbit.messages.parsers.create_plate_feedback_message import (
+    FIELD_OPERATION_WAS_ERROR_FREE as CREATE_PLATE_FEEDBACK_ERROR_FREE,
+)
+from crawler.rabbit.messages.parsers.create_plate_feedback_message import (
+    FIELD_SOURCE_MESSAGE_UUID as CREATE_PLATE_FEEDBACK_SOURCE_MESSAGE_UUID,
+)
 from crawler.rabbit.messages.parsers.create_plate_message import FIELD_COG_UK_ID as CREATE_PLATE_COG_UK_ID
 from crawler.rabbit.messages.parsers.create_plate_message import FIELD_FIT_TO_PICK as CREATE_PLATE_FIT_TO_PICK
 from crawler.rabbit.messages.parsers.create_plate_message import FIELD_LAB_ID as CREATE_PLATE_LAB_ID
@@ -1031,6 +1061,27 @@ CREATE_PLATE_MESSAGE = {
     },
 }
 
+
+CREATE_PLATE_FEEDBACK_MESSAGE = {
+    CREATE_PLATE_FEEDBACK_SOURCE_MESSAGE_UUID: "SOURCE_MESSAGE_UUID",
+    CREATE_PLATE_FEEDBACK_COUNT_OF_TOTAL_SAMPLES: 96,
+    CREATE_PLATE_FEEDBACK_COUNT_OF_VALID_SAMPLES: 94,
+    CREATE_PLATE_FEEDBACK_ERROR_FREE: False,
+    CREATE_PLATE_FEEDBACK_ERRORS_LIST: [
+        {
+            CREATE_PLATE_FEEDBACK_ERROR_TYPE_ID: 1,
+            CREATE_PLATE_FEEDBACK_ERROR_ORIGIN: "Origin 1",
+            CREATE_PLATE_FEEDBACK_ERROR_SAMPLE_UUID: "SAMPLE_1_UUID",
+            CREATE_PLATE_FEEDBACK_ERROR_FIELD_NAME: "Field 1",
+            CREATE_PLATE_FEEDBACK_ERROR_DESCRIPTION: "Description 1",
+        },
+        {
+            CREATE_PLATE_FEEDBACK_ERROR_TYPE_ID: 2,
+            CREATE_PLATE_FEEDBACK_ERROR_ORIGIN: "Origin 2",
+            CREATE_PLATE_FEEDBACK_ERROR_DESCRIPTION: "Description 2",
+        },
+    ],
+}
 
 UPDATE_SAMPLE_MESSAGE = {
     UPDATE_SAMPLE_MESSAGE_UUID: b"UPDATE_SAMPLE_MESSAGE_UUID",

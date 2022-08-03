@@ -57,7 +57,7 @@ class CreatePlateFeedbackMessage:
         super().__init__()
         self._body = body
 
-        self._errors = None
+        self._errors_list = None
 
     @property
     def source_message_uuid(self):
@@ -76,8 +76,8 @@ class CreatePlateFeedbackMessage:
         return MessageField(FIELD_OPERATION_WAS_ERROR_FREE, self._body[FIELD_OPERATION_WAS_ERROR_FREE])
 
     @property
-    def errors(self):
-        if self._errors is None:
-            self._errors = [CreatePlateFeedbackError(body) for body in self._body[FIELD_ERRORS_LIST]]
+    def errors_list(self):
+        if self._errors_list is None:
+            self._errors_list = [CreatePlateFeedbackError(body) for body in self._body[FIELD_ERRORS_LIST]]
 
-        return MessageField(FIELD_ERRORS_LIST, self._errors)
+        return MessageField(FIELD_ERRORS_LIST, self._errors_list)
