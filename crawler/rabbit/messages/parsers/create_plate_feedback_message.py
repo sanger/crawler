@@ -4,16 +4,16 @@ from typing import Any, NamedTuple
 LOGGER = logging.getLogger(__name__)
 
 
-FIELD_SOURCE_MESSAGE_UUID = "sourceMessageUuid"
 FIELD_COUNT_OF_TOTAL_SAMPLES = "countOfTotalSamples"
 FIELD_COUNT_OF_VALID_SAMPLES = "countOfValidSamples"
-FIELD_OPERATION_WAS_ERROR_FREE = "operationWasErrorFree"
-FIELD_ERRORS_LIST = "errors"
-FIELD_ERROR_TYPE_ID = "typeId"
+FIELD_ERROR_DESCRIPTION = "description"
+FIELD_ERROR_FIELD_NAME = "field"
 FIELD_ERROR_ORIGIN = "origin"
 FIELD_ERROR_SAMPLE_UUID = "sampleUuid"
-FIELD_ERROR_FIELD_NAME = "field"
-FIELD_ERROR_DESCRIPTION = "description"
+FIELD_ERROR_TYPE_ID = "typeId"
+FIELD_ERRORS_LIST = "errors"
+FIELD_OPERATION_WAS_ERROR_FREE = "operationWasErrorFree"
+FIELD_SOURCE_MESSAGE_UUID = "sourceMessageUuid"
 
 
 class MessageField(NamedTuple):
