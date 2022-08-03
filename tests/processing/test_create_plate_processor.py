@@ -23,32 +23,32 @@ class EncodedMessage(NamedTuple):
 ENCODED_MESSAGE = EncodedMessage(body=b'{"key": "value"}', version="1")
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_logger():
     with patch("crawler.processing.create_plate_processor.LOGGER") as logger:
         yield logger
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_validator():
     with patch("crawler.processing.create_plate_processor.CreatePlateValidator") as validator:
         yield validator
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_exporter():
     with patch("crawler.processing.create_plate_processor.CreatePlateExporter") as exporter:
         yield exporter
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_avro_encoder():
     with patch("crawler.processing.create_plate_processor.AvroEncoder") as avro_encoder:
         avro_encoder.return_value.encode.return_value = ENCODED_MESSAGE
         yield avro_encoder
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def message_wrapper_class(centre):
     with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as message_wrapper_class:
         message_wrapper_class.return_value.centre_config = centre.centre_config
@@ -64,11 +64,32 @@ def message_wrapper_class(centre):
 
 
 @pytest.fixture
-def subject(config, mock_avro_encoder, mock_validator, mock_exporter, message_wrapper_class):
+def subject(config):
     return CreatePlateProcessor(MagicMock(), MagicMock(), config)
 
 
 def assert_feedback_was_published(subject, message, avro_encoder):
+    feedback_message = CreateFeedbackMessage(
+        sourceMessageUuid=message.message_uuid.value,
+        countOfTotalSamples=message.total_samples,
+        countOfValidSamples=message.validated_samples,
+        operationWasErrorFree=not message.has_errors,
+        errors=message.feedback_errors,
+    )
+
+    avro_encoder.encode.assert_called_once()
+    assert avro_encoder.encode.call_args.args[0][0] == feedback_message
+
+    subject._basic_publisher.publish_message.assert_called_once_with(
+        RABBITMQ_FEEDBACK_EXCHANGE,
+        RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
+        ENCODED_MESSAGE.body,
+        RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
+        ENCODED_MESSAGE.version,
+    )
+
+
+def assert_feedback_uses_centre_prefix_for_routing_key(subject, message, avro_encoder):
     feedback_message = CreateFeedbackMessage(
         sourceMessageUuid=message.message_uuid.value,
         countOfTotalSamples=message.total_samples,
