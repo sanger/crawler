@@ -16,7 +16,7 @@ from crawler.main import run
 NUMBER_CENTRES = 12
 NUMBER_VALID_SAMPLES = 7
 NUMBER_SAMPLES_ON_PARTIAL_IMPORT = 10
-NUMBER_OF_FILES_PROCESSED = 12
+NUMBER_OF_FILES_PROCESSED = 10
 NUMBER_ACCEPTED_SOURCE_PLATES = 4
 
 
@@ -222,12 +222,6 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     assert 0 == len(files)
 
     (_, _, files) = next(os.walk("tmp/backups/MILK/errors"))
-    assert 2 == len(files)
-
-    (_, _, files) = next(os.walk("tmp/backups/QEUH/successes"))
-    assert 0 == len(files)
-
-    (_, _, files) = next(os.walk("tmp/backups/QEUH/errors"))
     assert 2 == len(files)
 
     (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
