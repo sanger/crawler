@@ -79,7 +79,7 @@ def mongo_collection(mongo_database):
     yield config, get_mongo_collection(mongo_database, COLLECTION_CHERRYPICK_TEST_DATA)
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_stack():
     with ExitStack() as stack:
         datetime_mock = stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.datetime"))
@@ -145,7 +145,7 @@ def test_process_success(logger_messages, config):
     assert barcode_meta == created_barcode_metadata
 
 
-def test_process_run_success(mongo_collection, mock_stack):
+def test_process_run_success(mongo_collection):
     config, collection = mongo_collection
     pending_id = insert_run(collection)
 
@@ -159,7 +159,7 @@ def test_process_run_success(mongo_collection, mock_stack):
     assert FIELD_FAILURE_REASON not in run_doc
 
 
-def test_process_run_updates_through_statuses(mongo_collection, mock_stack):
+def test_process_run_updates_through_statuses(mongo_collection):
     config, collection = mongo_collection
     pending_id = insert_run(collection)
 
@@ -190,7 +190,7 @@ def test_process_run_updates_through_statuses(mongo_collection, mock_stack):
         FIELD_STATUS_FAILED,
     ],
 )
-def test_process_run_raises_error_when_run_not_pending(mongo_collection, mock_stack, wrong_status):
+def test_process_run_raises_error_when_run_not_pending(mongo_collection, wrong_status):
     config, collection = mongo_collection
     pending_id = insert_run(collection, status=wrong_status)
 
@@ -201,7 +201,7 @@ def test_process_run_raises_error_when_run_not_pending(mongo_collection, mock_st
     assert FIELD_STATUS_PENDING in str(e_info.value)
 
 
-def test_process_run_calls_helper_methods(mongo_collection, mock_stack):
+def test_process_run_calls_helper_methods(mongo_collection):
     config, collection = mongo_collection
     plate_specs = [[1, 40], [5, 60], [5, 40]]
     pending_id = insert_run(collection, plate_specs=plate_specs)
@@ -221,7 +221,7 @@ def test_process_run_calls_helper_methods(mongo_collection, mock_stack):
     validate_plate_specs.assert_called_once_with(plate_specs, config.MAX_PLATES_PER_TEST_DATA_RUN)
 
 
-def test_process_run_calls_create_plate_messages(mongo_collection, mock_stack):
+def test_process_run_calls_create_plate_messages(mongo_collection):
     config, collection = mongo_collection
     plate_specs = [[5, 10], [15, 20], [19, 30]]
     pending_id = insert_run(collection, plate_specs=plate_specs)
@@ -232,7 +232,7 @@ def test_process_run_calls_create_plate_messages(mongo_collection, mock_stack):
     create_plate_messages.assert_called_with(plate_specs, mocked_utc_now, created_barcodes)
 
 
-def test_process_run_run_asks_for_correct_number_of_barcodes(mongo_collection, mock_stack):
+def test_process_run_run_asks_for_correct_number_of_barcodes(mongo_collection):
     config, collection = mongo_collection
     pending_id = insert_run(collection, plate_specs=[[5, 10], [15, 20], [19, 30]])
 
