@@ -41,19 +41,21 @@ from crawler.jobs.cherrypicker_test_data import (
     validate_plate_specs,
 )
 
-partial_run_doc = {
+PARTIAL_RUN_DOC = {
     FIELD_EVE_CREATED: datetime(2012, 3, 4, 5, 6, 7, 890),
     FIELD_EVE_UPDATED: datetime(2012, 3, 4, 5, 6, 7, 890),
 }
 
-created_barcodes = ["Plate-1", "Plate-2", "Plate-3", "Plate-4"]
+CREATED_BARCODES = ["Plate-1", "Plate-2", "Plate-3", "Plate-4"]
 
-created_barcode_metadata = [
+CREATED_BARCODE_METADATA = [
     ["Plate-1", "positive samples: 48"],
     ["Plate-2", "positive samples: 48"],
     ["Plate-3", "positive samples: 0"],
     ["Plate-4", "positive samples: 96"],
 ]
+
+CREATE_TEST_DATA_MESSAGES = [{"message": "one"}, {"message": "two"}]
 
 LoggerMessages = namedtuple("LoggerMessages", ["info", "debug"])
 
@@ -78,19 +80,34 @@ def mongo_collection(mongo_database):
 
 
 @pytest.fixture(autouse=True)
-def mock_stack():
-    with ExitStack() as stack:
-        stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.create_barcodes", return_value=created_barcodes))
-        stack.enter_context(
-            patch("crawler.jobs.cherrypicker_test_data.create_barcode_meta", return_value=created_barcode_metadata)
-        )
-        stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.create_plate_messages"))
+def ctpd_processor_class():
+    with patch("crawler.jobs.cherrypicker_test_data.CPTDProcessor") as cptd_processor_class:
+        yield cptd_processor_class
 
-        yield stack
+
+@pytest.fixture(autouse=True)
+def create_barcode_meta_method():
+    with patch("crawler.jobs.cherrypicker_test_data.create_barcode_meta") as method:
+        method.return_value = CREATED_BARCODE_METADATA
+        yield method
+
+
+@pytest.fixture(autouse=True)
+def create_barcodes_method():
+    with patch("crawler.jobs.cherrypicker_test_data.create_barcodes") as method:
+        method.return_value = CREATED_BARCODES
+        yield method
+
+
+@pytest.fixture(autouse=True)
+def create_plate_messages_method():
+    with patch("crawler.jobs.cherrypicker_test_data.create_plate_messages") as method:
+        method.return_value = CREATE_TEST_DATA_MESSAGES
+        yield method
 
 
 def insert_run(collection, status=FIELD_STATUS_PENDING, plate_specs=((75, 48), (50, 0), (50, 96)), add_to_dart=False):
-    run_doc = {**partial_run_doc, FIELD_STATUS: status}
+    run_doc = {**PARTIAL_RUN_DOC, FIELD_STATUS: status}
 
     if plate_specs is not None:
         run_doc[FIELD_PLATE_SPECS] = plate_specs
@@ -128,7 +145,7 @@ def test_process_success(logger_messages, config):
             patch("crawler.jobs.cherrypicker_test_data.get_mongo_collection", return_value=mongo_collection)
         )
         process_run = stack.enter_context(
-            patch("crawler.jobs.cherrypicker_test_data.process_run", return_value=created_barcode_metadata)
+            patch("crawler.jobs.cherrypicker_test_data.process_run", return_value=CREATED_BARCODE_METADATA)
         )
 
         barcode_meta = process(pending_id, config)
@@ -138,7 +155,7 @@ def test_process_success(logger_messages, config):
     get_mongo_db.assert_called_once_with(config, mongo_client)
     get_mongo_collection.assert_called_once_with(mongo_db, COLLECTION_CHERRYPICK_TEST_DATA)
     process_run.assert_called_once_with(config, mongo_collection, pending_id)
-    assert barcode_meta == created_barcode_metadata
+    assert barcode_meta == CREATED_BARCODE_METADATA
 
 
 def test_process_run_success(mongo_collection):
@@ -148,10 +165,10 @@ def test_process_run_success(mongo_collection):
     barcode_meta = process_run(config, collection, pending_id)
     run_doc = get_doc(collection, pending_id)
 
-    assert barcode_meta == created_barcode_metadata
-    assert run_doc[FIELD_EVE_UPDATED] != partial_run_doc[FIELD_EVE_UPDATED]
+    assert barcode_meta == CREATED_BARCODE_METADATA
+    assert run_doc[FIELD_EVE_UPDATED] != PARTIAL_RUN_DOC[FIELD_EVE_UPDATED]
     assert run_doc[FIELD_STATUS] == FIELD_STATUS_COMPLETED
-    assert run_doc[FIELD_BARCODES] == json.dumps(created_barcode_metadata)
+    assert run_doc[FIELD_BARCODES] == json.dumps(CREATED_BARCODE_METADATA)
     assert FIELD_FAILURE_REASON not in run_doc
 
 
@@ -171,7 +188,7 @@ def test_process_run_updates_through_statuses(mongo_collection):
         pending_id,
         {
             FIELD_STATUS: FIELD_STATUS_COMPLETED,
-            FIELD_BARCODES: json.dumps(created_barcode_metadata),
+            FIELD_BARCODES: json.dumps(CREATED_BARCODE_METADATA),
         },
     )
 
@@ -225,7 +242,7 @@ def test_process_run_calls_create_plate_messages(mongo_collection, freezer):
     with patch("crawler.jobs.cherrypicker_test_data.create_plate_messages") as create_plate_messages:
         process_run(config, collection, pending_id)
 
-    create_plate_messages.assert_called_with(plate_specs, datetime.utcnow(), created_barcodes)
+    create_plate_messages.assert_called_with(plate_specs, datetime.utcnow(), CREATED_BARCODES)
 
 
 def test_process_run_run_asks_for_correct_number_of_barcodes(mongo_collection):
