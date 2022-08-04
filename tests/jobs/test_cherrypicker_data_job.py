@@ -46,8 +46,6 @@ partial_run_doc = {
     FIELD_EVE_UPDATED: datetime(2012, 3, 4, 5, 6, 7, 890),
 }
 
-mocked_utc_now = datetime(2021, 3, 12, 9, 41, 0)
-
 created_barcodes = ["Plate-1", "Plate-2", "Plate-3", "Plate-4"]
 
 created_barcode_metadata = [
@@ -82,8 +80,6 @@ def mongo_collection(mongo_database):
 @pytest.fixture(autouse=True)
 def mock_stack():
     with ExitStack() as stack:
-        datetime_mock = stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.datetime"))
-        datetime_mock.utcnow.return_value = mocked_utc_now
         stack.enter_context(patch("crawler.jobs.cherrypicker_test_data.create_barcodes", return_value=created_barcodes))
         stack.enter_context(
             patch("crawler.jobs.cherrypicker_test_data.create_barcode_meta", return_value=created_barcode_metadata)
@@ -221,7 +217,7 @@ def test_process_run_calls_helper_methods(mongo_collection):
     validate_plate_specs.assert_called_once_with(plate_specs, config.MAX_PLATES_PER_TEST_DATA_RUN)
 
 
-def test_process_run_calls_create_plate_messages(mongo_collection):
+def test_process_run_calls_create_plate_messages(mongo_collection, freezer):
     config, collection = mongo_collection
     plate_specs = [[5, 10], [15, 20], [19, 30]]
     pending_id = insert_run(collection, plate_specs=plate_specs)
@@ -229,7 +225,7 @@ def test_process_run_calls_create_plate_messages(mongo_collection):
     with patch("crawler.jobs.cherrypicker_test_data.create_plate_messages") as create_plate_messages:
         process_run(config, collection, pending_id)
 
-    create_plate_messages.assert_called_with(plate_specs, mocked_utc_now, created_barcodes)
+    create_plate_messages.assert_called_with(plate_specs, datetime.utcnow(), created_barcodes)
 
 
 def test_process_run_run_asks_for_correct_number_of_barcodes(mongo_collection):
