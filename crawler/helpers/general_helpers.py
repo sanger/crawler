@@ -121,7 +121,7 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
     sftp_host = config.SFTP_HOST
     sftp_port = config.SFTP_PORT
     sftp_username = config.SFTP_READ_USERNAME if not username else username
-    sftp_password = config.SFTP_READ_PASSWORD if not username else password
+    sftp_password = config.SFTP_READ_PASSWORD if not password else password
 
     return pysftp.Connection(
         host=sftp_host,
