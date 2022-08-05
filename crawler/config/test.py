@@ -40,7 +40,7 @@ DIR_DOWNLOADED_DATA = "tests/test_files/good/"
 ###
 ENABLE_CHERRYPICKER_ENDPOINTS = True
 
-CPTD_FEEDBACK_WAIT_TIME = 1.2
+CPTD_FEEDBACK_WAIT_TIME = 2
 
 ###
 # centres config

@@ -1,4 +1,5 @@
-from unittest.mock import MagicMock, call, patch
+import json
+from unittest.mock import call, patch
 
 import pytest
 
@@ -6,41 +7,39 @@ from crawler.exceptions import CherrypickerDataError
 from crawler.processing.cptd_processor import CPTDProcessor
 from crawler.rabbit.basic_getter import FetchedMessage
 
+####
+# Create plate messages
 CREATE_PLATE_MESSAGES = [{"messageUuid": b"UUID_ONE"}, {"messageUuid": b"UUID_TWO"}]
 
+####
+# Feedback Bodies
 ERROR_FREE_FEEDBACK_BODIES = [
     [{"sourceMessageUuid": message["messageUuid"].decode(), "operationWasErrorFree": True}]
     for message in CREATE_PLATE_MESSAGES
 ]
-ERROR_FREE_FEEDBACK = [
-    FetchedMessage(headers={"subject": "create-plate-map-feedback", "version": 4}, body=body)
-    for body in ERROR_FREE_FEEDBACK_BODIES
-]
-
-WRONG_SUBJECT_BODY = ERROR_FREE_FEEDBACK_BODIES[0]
-WRONG_SUBJECT_FEEDBACK = [FetchedMessage(headers={"subject": "wrong-subject", "version": 4}, body=WRONG_SUBJECT_BODY)]
-
 MULTIPLE_MESSAGE_BODY = [
     {"sourceMessageUuid": message["messageUuid"].decode(), "operationWasErrorFree": True}
     for message in CREATE_PLATE_MESSAGES
 ]
-MULTIPLE_MESSAGE_FEEDBACK = [
-    FetchedMessage(headers={"subject": "create-plate-map-feedback", "version": 4}, body=MULTIPLE_MESSAGE_BODY)
-]
-
 UNRECOGNISED_UUID_BODY = [{"sourceMessageUuid": "UUID_THREE", "operationWasErrorFree": True}]
-UNRECOGNISED_UUID_FEEDBACK = [
-    FetchedMessage(headers={"subject": "create-plate-map-feedback", "version": 4}, body=UNRECOGNISED_UUID_BODY)
-]
-
 ERRORED_FEEDBACK_BODIES = [
     [{"sourceMessageUuid": message["messageUuid"].decode(), "operationWasErrorFree": False}]
     for message in CREATE_PLATE_MESSAGES
 ]
-ERRORED_FEEDBACK = [
-    FetchedMessage(headers={"subject": "create-plate-map-feedback", "version": 4}, body=body)
-    for body in ERRORED_FEEDBACK_BODIES
-]
+
+
+####
+# Helper methods for regular fetched messages
+def generate_fetched_messages(bodies):
+    return [
+        FetchedMessage(headers={"subject": "create-plate-map-feedback", "version": 4}, body=json.dumps(body).encode())
+        for body in bodies
+    ]
+
+
+####
+# Irregular fetched messages
+WRONG_SUBJECT_FEEDBACK = [FetchedMessage(headers={"subject": "wrong-subject", "version": 4}, body=b"")]
 
 
 @pytest.fixture
@@ -95,8 +94,10 @@ def test_generate_test_data_logs_stages_of_process(subject, logger):
 def test_generate_test_data_when_error_free_feedback(
     subject, config, logger, get_basic_publisher, get_rabbit_server_details, avro_encoder, basic_getter
 ):
-    avro_encoder.decode.side_effect = ERROR_FREE_FEEDBACK_BODIES
-    basic_getter.get_message.side_effect = ERROR_FREE_FEEDBACK
+    message_bodies = ERROR_FREE_FEEDBACK_BODIES
+    avro_encoder.decode.side_effect = message_bodies
+    fetched_messages = generate_fetched_messages(message_bodies)
+    basic_getter.get_message.side_effect = fetched_messages
 
     subject.generate_test_data(CREATE_PLATE_MESSAGES)
 
@@ -112,14 +113,13 @@ def test_generate_test_data_when_error_free_feedback(
     basic_getter.get_message.assert_has_calls(
         [call(config.RABBITMQ_CPTD_FEEDBACK_QUEUE), call(config.RABBITMQ_CPTD_FEEDBACK_QUEUE)]
     )
-    avro_encoder.decode.assert_has_calls(
-        [call(ERROR_FREE_FEEDBACK_BODIES[0], 4), call(ERROR_FREE_FEEDBACK_BODIES[1], 4)]
-    )
+    avro_encoder.decode.assert_has_calls([call(fetched_messages[0].body, 4), call(fetched_messages[1].body, 4)])
 
 
 def test_generate_test_data_when_feedback_in_wrong_order(subject, logger, avro_encoder, basic_getter):
-    avro_encoder.decode.side_effect = ERROR_FREE_FEEDBACK_BODIES[::-1]  # reverse the messages
-    basic_getter.get_message.side_effect = ERROR_FREE_FEEDBACK[::-1]  # reverse the messages
+    message_bodies = ERROR_FREE_FEEDBACK_BODIES[::-1]  # reverse the messages
+    avro_encoder.decode.side_effect = message_bodies
+    basic_getter.get_message.side_effect = generate_fetched_messages(message_bodies)
 
     subject.generate_test_data(CREATE_PLATE_MESSAGES)
 
@@ -140,8 +140,9 @@ def test_generate_test_data_when_no_feedback(subject, logger, basic_getter):
 
 
 def test_generate_test_data_when_partial_feedback(subject, logger, avro_encoder, basic_getter):
-    avro_encoder.decode.side_effect = ERROR_FREE_FEEDBACK_BODIES
-    basic_getter.get_message.side_effect = [ERROR_FREE_FEEDBACK[1]] + [None] * 10
+    message_bodies = [ERROR_FREE_FEEDBACK_BODIES[1]]
+    avro_encoder.decode.side_effect = message_bodies
+    basic_getter.get_message.side_effect = generate_fetched_messages(message_bodies) + [None] * 10
 
     with pytest.raises(CherrypickerDataError) as ex_info:
         subject.generate_test_data(CREATE_PLATE_MESSAGES)
@@ -152,8 +153,9 @@ def test_generate_test_data_when_partial_feedback(subject, logger, avro_encoder,
 
 
 def test_generate_test_data_when_queue_is_empty_to_start_with(subject, logger, avro_encoder, basic_getter):
-    avro_encoder.decode.side_effect = ERROR_FREE_FEEDBACK_BODIES  # We don't decode the missing message
-    basic_getter.get_message.side_effect = [None] + ERROR_FREE_FEEDBACK
+    message_bodies = ERROR_FREE_FEEDBACK_BODIES
+    avro_encoder.decode.side_effect = message_bodies  # We don't decode the missing message
+    basic_getter.get_message.side_effect = [None] + generate_fetched_messages(message_bodies)
 
     subject.generate_test_data(CREATE_PLATE_MESSAGES)
 
@@ -163,8 +165,9 @@ def test_generate_test_data_when_queue_is_empty_to_start_with(subject, logger, a
 
 
 def test_generate_test_data_when_message_with_wrong_subject_starts_queue(subject, logger, avro_encoder, basic_getter):
-    avro_encoder.decode.side_effect = ERROR_FREE_FEEDBACK_BODIES  # We don't decode the wrong subject message
-    basic_getter.get_message.side_effect = WRONG_SUBJECT_FEEDBACK + ERROR_FREE_FEEDBACK
+    message_bodies = ERROR_FREE_FEEDBACK_BODIES
+    avro_encoder.decode.side_effect = message_bodies  # We don't decode the wrong subject message
+    basic_getter.get_message.side_effect = WRONG_SUBJECT_FEEDBACK + generate_fetched_messages(message_bodies)
 
     subject.generate_test_data(CREATE_PLATE_MESSAGES)
 
@@ -177,8 +180,9 @@ def test_generate_test_data_when_message_with_wrong_subject_starts_queue(subject
 def test_generate_test_data_when_message_with_multiple_messages_starts_queue(
     subject, logger, avro_encoder, basic_getter
 ):
-    avro_encoder.decode.side_effect = [MULTIPLE_MESSAGE_BODY] + ERROR_FREE_FEEDBACK_BODIES
-    basic_getter.get_message.side_effect = MULTIPLE_MESSAGE_FEEDBACK + ERROR_FREE_FEEDBACK
+    message_bodies = [MULTIPLE_MESSAGE_BODY] + ERROR_FREE_FEEDBACK_BODIES
+    avro_encoder.decode.side_effect = message_bodies
+    basic_getter.get_message.side_effect = generate_fetched_messages(message_bodies)
 
     subject.generate_test_data(CREATE_PLATE_MESSAGES)
 
@@ -191,8 +195,9 @@ def test_generate_test_data_when_message_with_multiple_messages_starts_queue(
 def test_generate_test_data_when_message_with_unrecognised_uuid_starts_queue(
     subject, logger, avro_encoder, basic_getter
 ):
-    avro_encoder.decode.side_effect = [UNRECOGNISED_UUID_BODY] + ERROR_FREE_FEEDBACK_BODIES
-    basic_getter.get_message.side_effect = UNRECOGNISED_UUID_FEEDBACK + ERROR_FREE_FEEDBACK
+    message_bodies = [UNRECOGNISED_UUID_BODY] + ERROR_FREE_FEEDBACK_BODIES
+    avro_encoder.decode.side_effect = message_bodies
+    basic_getter.get_message.side_effect = generate_fetched_messages(message_bodies)
 
     subject.generate_test_data(CREATE_PLATE_MESSAGES)
 
@@ -203,8 +208,9 @@ def test_generate_test_data_when_message_with_unrecognised_uuid_starts_queue(
 
 
 def test_generate_test_data_when_processing_generated_errors(subject, logger, avro_encoder, basic_getter):
-    avro_encoder.decode.side_effect = ERRORED_FEEDBACK_BODIES
-    basic_getter.get_message.side_effect = ERRORED_FEEDBACK
+    message_bodies = ERRORED_FEEDBACK_BODIES
+    avro_encoder.decode.side_effect = message_bodies
+    basic_getter.get_message.side_effect = generate_fetched_messages(message_bodies)
 
     with pytest.raises(CherrypickerDataError) as ex_info:
         subject.generate_test_data(CREATE_PLATE_MESSAGES)
