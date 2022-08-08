@@ -35,6 +35,10 @@ PSD_EXCHANGE = "psd.heron"
 FEEDBACK_QUEUE = "heron.feedback"
 FEEDBACK_ROUTING_KEY = "feedback.#"
 
+CPTD_EXCHANGE = "cptd.heron"
+CPTD_FEEDBACK_QUEUE = "cptd.heron.feedback"
+CPTD_FEEDBACK_ROUTING_KEY = "cptd.feedback.#"
+
 
 def print_command_output(specific_command):
     command_parts = [
@@ -166,12 +170,33 @@ print_command_output(
     ]
 )
 
-print("Declaring CRUD binding")
+print("Declaring CRUD binding with PAM exchange")
 print_command_output(
     [
         "declare",
         "binding",
         f"source={PAM_EXCHANGE}",
+        f"destination={CRUD_QUEUE}",
+        f"routing_key={CRUD_ROUTING_KEY}",
+    ]
+)
+
+print(f"Declaring CPTD exchange '{CPTD_EXCHANGE}'")
+print_command_output(
+    [
+        "declare",
+        "exchange",
+        f"name={CPTD_EXCHANGE}",
+        f"type={EXCHANGE_TYPE}",
+    ]
+)
+
+print("Declaring CRUD binding with CPTD exchange")
+print_command_output(
+    [
+        "declare",
+        "binding",
+        f"source={CPTD_EXCHANGE}",
         f"destination={CRUD_QUEUE}",
         f"routing_key={CRUD_ROUTING_KEY}",
     ]
@@ -230,7 +255,7 @@ print_command_output(
     ]
 )
 
-print("Declaring feedback binding")
+print("Declaring feedback binding with PSD exchange")
 print_command_output(
     [
         "declare",
@@ -238,5 +263,27 @@ print_command_output(
         f"source={PSD_EXCHANGE}",
         f"destination={FEEDBACK_QUEUE}",
         f"routing_key={FEEDBACK_ROUTING_KEY}",
+    ]
+)
+
+print(f"Declaring test data feedback queue '{CPTD_FEEDBACK_QUEUE}'")
+print_command_output(
+    [
+        "declare",
+        "queue",
+        f"name={CPTD_FEEDBACK_QUEUE}",
+        f"queue_type={QUEUE_TYPE}",
+        f'arguments={json.dumps({"x-queue-type": QUEUE_TYPE, "x-dead-letter-exchange": DL_EXCHANGE})}',
+    ]
+)
+
+print("Declaring test data feedback binding with PSD exchange")
+print_command_output(
+    [
+        "declare",
+        "binding",
+        f"source={PSD_EXCHANGE}",
+        f"destination={CPTD_FEEDBACK_QUEUE}",
+        f"routing_key={CPTD_FEEDBACK_ROUTING_KEY}",
     ]
 )

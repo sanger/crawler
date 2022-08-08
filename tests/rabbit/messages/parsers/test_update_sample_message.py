@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from crawler.rabbit.messages.create_plate_message import FIELD_SAMPLE_UUID
-from crawler.rabbit.messages.update_sample_message import (
+from crawler.rabbit.messages.parsers.create_plate_message import FIELD_SAMPLE_UUID
+from crawler.rabbit.messages.parsers.update_sample_message import (
     FIELD_MESSAGE_CREATE_DATE,
     FIELD_MESSAGE_UUID,
     ErrorType,
@@ -16,7 +16,7 @@ from tests.testing_objects import UPDATE_SAMPLE_MESSAGE
 
 @pytest.fixture
 def logger():
-    with patch("crawler.rabbit.messages.update_sample_message.LOGGER") as logger:
+    with patch("crawler.rabbit.messages.parsers.update_sample_message.LOGGER") as logger:
         yield logger
 
 

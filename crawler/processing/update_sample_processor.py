@@ -1,6 +1,5 @@
 import logging
 
-from crawler.config.defaults import RABBITMQ_FEEDBACK_EXCHANGE
 from crawler.constants import (
     RABBITMQ_ROUTING_KEY_UPDATE_SAMPLE_FEEDBACK,
     RABBITMQ_SUBJECT_UPDATE_SAMPLE_FEEDBACK,
@@ -11,8 +10,8 @@ from crawler.processing.base_processor import BaseProcessor
 from crawler.processing.update_sample_exporter import UpdateSampleExporter
 from crawler.processing.update_sample_validator import UpdateSampleValidator
 from crawler.rabbit.avro_encoder import AvroEncoder
+from crawler.rabbit.messages.parsers.update_sample_message import ErrorType, UpdateSampleError, UpdateSampleMessage
 from crawler.rabbit.messages.update_feedback_message import UpdateFeedbackMessage
-from crawler.rabbit.messages.update_sample_message import ErrorType, UpdateSampleError, UpdateSampleMessage
 
 LOGGER = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ class UpdateSampleProcessor(BaseProcessor):
         validator = UpdateSampleValidator(update_message)
         exporter = UpdateSampleExporter(update_message, self._config)
 
-        LOGGER.info(f"Starting processing of update message with UUID '{update_message.message_uuid}'")
+        LOGGER.info(f"Starting processing of update message with UUID '{update_message.message_uuid.value}'")
 
         # First validate the message and then export the updates to MongoDB.
         try:
@@ -60,7 +59,7 @@ class UpdateSampleProcessor(BaseProcessor):
 
         exporter.update_dart()
 
-        LOGGER.info(f"Finished processing of update message with UUID '{update_message.message_uuid}'")
+        LOGGER.info(f"Finished processing of update message with UUID '{update_message.message_uuid.value}'")
 
         return True  # The message has been processed whether DART worked or not.
 
@@ -73,7 +72,7 @@ class UpdateSampleProcessor(BaseProcessor):
 
         encoded_message = self._encoder.encode([feedback_message])
         self._basic_publisher.publish_message(
-            RABBITMQ_FEEDBACK_EXCHANGE,
+            self._config.RABBITMQ_FEEDBACK_EXCHANGE,
             RABBITMQ_ROUTING_KEY_UPDATE_SAMPLE_FEEDBACK,
             encoded_message.body,
             RABBITMQ_SUBJECT_UPDATE_SAMPLE_FEEDBACK,

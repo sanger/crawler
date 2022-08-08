@@ -20,6 +20,7 @@ CENTRE_KEY_BARCODE_FIELD: Final = "barcode_field"
 CENTRE_KEY_BARCODE_REGEX: Final = "barcode_regex"
 CENTRE_KEY_BIOMEK_LABWARE_CLASS: Final = "biomek_labware_class"
 CENTRE_KEY_DATA_SOURCE: Final = "data_source"
+CENTRE_KEY_FEEDBACK_ROUTING_KEY_PREFIX: Final = "feedback_routing_key_prefix"
 CENTRE_KEY_FILE_NAMES_TO_IGNORE: Final = "file_names_to_ignore"
 CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: Final = "sftp_file_regex_consolidated_eagle"
 CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: Final = "sftp_file_regex_consolidated_surveillance"
@@ -120,7 +121,8 @@ FIELD_STATUS_FAILED: Final[str] = "failed"
 ###
 # cherrypicker test data
 ###
-# the prefix for the centre which processes generated data
+# the lab ID and prefix for the centre which processes generated data
+TEST_DATA_CENTRE_LAB_ID: Final[str] = "CPTD"
 TEST_DATA_CENTRE_PREFIX: Final[str] = "CPTD"
 
 # processing errors for the API endpoint for generating data
@@ -134,6 +136,9 @@ TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES: Final[
 TEST_DATA_ERROR_BARACODA_COG_BARCODES: Final[str] = "Unable to create COG barcodes"
 TEST_DATA_ERROR_BARACODA_CONNECTION: Final[str] = "Unable to access baracoda"
 TEST_DATA_ERROR_BARACODA_UNKNOWN: Final[str] = "Unknown error accessing baracoda"
+TEST_DATA_ERROR_PLATE_CREATION_FAILED: Final[
+    str
+] = "One or more plates failed to generate data correctly. Please try again."
 
 
 ##
@@ -283,6 +288,7 @@ RABBITMQ_UPDATE_FEEDBACK_ORIGIN_FIELD = "field"
 RABBITMQ_HEADER_KEY_SUBJECT = "subject"
 RABBITMQ_HEADER_KEY_VERSION = "version"
 
+RABBITMQ_ROUTING_KEY_CREATE_PLATE = "crud.create.plate"
 RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK = "feedback.created.plate"
 RABBITMQ_ROUTING_KEY_UPDATE_SAMPLE_FEEDBACK = "feedback.updated.sample"
 

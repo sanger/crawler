@@ -12,7 +12,7 @@ from crawler.constants import (
 )
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_validator import CreatePlateValidator
-from crawler.rabbit.messages.create_plate_message import (
+from crawler.rabbit.messages.parsers.create_plate_message import (
     FIELD_COG_UK_ID,
     FIELD_LAB_ID,
     FIELD_MESSAGE_CREATE_DATE,

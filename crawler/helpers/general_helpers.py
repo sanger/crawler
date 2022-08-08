@@ -84,7 +84,9 @@ from crawler.constants import (
     MLWH_UPDATED_AT,
     RESULT_VALUE_POSITIVE,
 )
-from crawler.types import Config, DartWellProp, ModifiedRowValue, SampleDoc, SourcePlateDoc
+from crawler.rabbit.basic_publisher import BasicPublisher
+from crawler.rabbit.schema_registry import SchemaRegistry
+from crawler.types import Config, DartWellProp, ModifiedRowValue, RabbitServerDetails, SampleDoc, SourcePlateDoc
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +121,7 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
     sftp_host = config.SFTP_HOST
     sftp_port = config.SFTP_PORT
     sftp_username = config.SFTP_READ_USERNAME if not username else username
-    sftp_password = config.SFTP_READ_PASSWORD if not username else password
+    sftp_password = config.SFTP_READ_PASSWORD if not password else password
 
     return pysftp.Connection(
         host=sftp_host,
@@ -127,6 +129,31 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
         username=sftp_username,
         password=sftp_password,
         cnopts=cnopts,
+    )
+
+
+def get_redpanda_schema_registry(config: Config) -> SchemaRegistry:
+    redpanda_url = config.REDPANDA_BASE_URI
+    redpanda_api_key = config.REDPANDA_API_KEY
+    return SchemaRegistry(redpanda_url, redpanda_api_key)
+
+
+def get_rabbit_server_details(config: Config, username: str = "", password: str = "") -> RabbitServerDetails:
+    return RabbitServerDetails(
+        uses_ssl=config.RABBITMQ_SSL,
+        host=config.RABBITMQ_HOST,
+        port=config.RABBITMQ_PORT,
+        username=config.RABBITMQ_USERNAME if not username else username,
+        password=config.RABBITMQ_PASSWORD if not password else password,
+        vhost=config.RABBITMQ_VHOST,
+    )
+
+
+def get_basic_publisher(config: Config, username: str = "", password: str = "") -> BasicPublisher:
+    return BasicPublisher(
+        get_rabbit_server_details(config, username, password),
+        config.RABBITMQ_PUBLISH_RETRY_DELAY,
+        config.RABBITMQ_PUBLISH_RETRIES,
     )
 
 

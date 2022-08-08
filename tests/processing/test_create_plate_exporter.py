@@ -25,7 +25,7 @@ from crawler.constants import (
 )
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_exporter import CreatePlateExporter
-from crawler.rabbit.messages.create_plate_message import (
+from crawler.rabbit.messages.parsers.create_plate_message import (
     FIELD_LAB_ID,
     FIELD_PLATE,
     FIELD_PLATE_BARCODE,
