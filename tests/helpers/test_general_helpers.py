@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 import pytest
 from bson.decimal128 import Decimal128
@@ -58,8 +58,12 @@ from crawler.constants import (
 from crawler.helpers.general_helpers import (
     create_source_plate_doc,
     extract_duplicated_values,
+    get_basic_publisher,
     get_config,
     get_dart_well_index,
+    get_rabbit_server_details,
+    get_redpanda_schema_registry,
+    get_sftp_connection,
     is_found_in_list,
     is_sample_pickable,
     is_sample_positive,
@@ -72,6 +76,107 @@ from crawler.helpers.general_helpers import (
 )
 from crawler.types import SampleDoc
 from tests.conftest import generate_new_object_for_string
+
+
+@pytest.fixture
+def sftp_connection_class():
+    with patch("pysftp.Connection") as connection:
+        yield connection
+
+
+@pytest.fixture
+def schema_registry_class():
+    with patch("crawler.helpers.general_helpers.SchemaRegistry") as schema_registry:
+        yield schema_registry
+
+
+@pytest.fixture
+def rabbit_server_details_class():
+    with patch("crawler.helpers.general_helpers.RabbitServerDetails") as rsd:
+        yield rsd
+
+
+@pytest.fixture
+def basic_publisher_class():
+    with patch("crawler.helpers.general_helpers.BasicPublisher") as basic_publisher:
+        yield basic_publisher
+
+
+@pytest.mark.parametrize("given_username, expected_username", [[None, "foo"], ["", "foo"], ["username", "username"]])
+@pytest.mark.parametrize("given_password, expected_password", [[None, "pass"], ["", "pass"], ["password", "password"]])
+def test_get_sftp_connection(
+    config, given_username, expected_username, given_password, expected_password, sftp_connection_class
+):
+    actual = get_sftp_connection(config, username=given_username, password=given_password)
+
+    assert actual == sftp_connection_class.return_value
+
+    sftp_connection_class.assert_called_once_with(
+        host=config.SFTP_HOST, port=config.SFTP_PORT, username=expected_username, password=expected_password, cnopts=ANY
+    )
+
+
+def test_get_redpanda_schema_registry(config, schema_registry_class):
+    actual = get_redpanda_schema_registry(config)
+
+    assert actual == schema_registry_class.return_value
+    schema_registry_class.assert_called_once_with(config.REDPANDA_BASE_URI, config.REDPANDA_API_KEY)
+
+
+@pytest.mark.parametrize(
+    "given_username, expected_username", [[None, "admin"], ["", "admin"], ["username", "username"]]
+)
+@pytest.mark.parametrize(
+    "given_password, expected_password", [[None, "development"], ["", "development"], ["password", "password"]]
+)
+def test_get_rabbit_server_details(
+    config, given_username, expected_username, given_password, expected_password, rabbit_server_details_class
+):
+    actual = get_rabbit_server_details(config, username=given_username, password=given_password)
+
+    assert actual == rabbit_server_details_class.return_value
+
+    rabbit_server_details_class.assert_called_once_with(
+        uses_ssl=config.RABBITMQ_SSL,
+        host=config.RABBITMQ_HOST,
+        port=config.RABBITMQ_PORT,
+        username=expected_username,
+        password=expected_password,
+        vhost=config.RABBITMQ_VHOST,
+    )
+
+
+@pytest.mark.parametrize(
+    "given_username, expected_username", [[None, "admin"], ["", "admin"], ["username", "username"]]
+)
+@pytest.mark.parametrize(
+    "given_password, expected_password", [[None, "development"], ["", "development"], ["password", "password"]]
+)
+def test_get_basic_publisher(
+    config,
+    given_username,
+    expected_username,
+    given_password,
+    expected_password,
+    rabbit_server_details_class,
+    basic_publisher_class,
+):
+    actual = get_basic_publisher(config, username=given_username, password=given_password)
+
+    assert actual == basic_publisher_class.return_value
+
+    rabbit_server_details_class.assert_called_once_with(
+        uses_ssl=config.RABBITMQ_SSL,
+        host=config.RABBITMQ_HOST,
+        port=config.RABBITMQ_PORT,
+        username=expected_username,
+        password=expected_password,
+        vhost=config.RABBITMQ_VHOST,
+    )
+
+    basic_publisher_class.assert_called_once_with(
+        rabbit_server_details_class.return_value, config.RABBITMQ_PUBLISH_RETRY_DELAY, config.RABBITMQ_PUBLISH_RETRIES
+    )
 
 
 def test_get_config():

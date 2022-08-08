@@ -2,12 +2,12 @@ from unittest.mock import patch
 
 import pytest
 
-from crawler.rabbit.messages.base_message import BaseMessage
+from crawler.rabbit.messages.parsers.base_message import BaseMessage
 
 
 @pytest.fixture
 def logger():
-    with patch("crawler.rabbit.messages.base_message.LOGGER") as logger:
+    with patch("crawler.rabbit.messages.parsers.base_message.LOGGER") as logger:
         yield logger
 
 

@@ -1,7 +1,7 @@
 import logging
 
-from crawler.config.defaults import RABBITMQ_FEEDBACK_EXCHANGE
 from crawler.constants import (
+    CENTRE_KEY_FEEDBACK_ROUTING_KEY_PREFIX,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING,
     RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
     RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
@@ -12,7 +12,7 @@ from crawler.processing.create_plate_exporter import CreatePlateExporter
 from crawler.processing.create_plate_validator import CreatePlateValidator
 from crawler.rabbit.avro_encoder import AvroEncoder
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackMessage
-from crawler.rabbit.messages.create_plate_message import CreatePlateError, CreatePlateMessage, ErrorType
+from crawler.rabbit.messages.parsers.create_plate_message import CreatePlateError, CreatePlateMessage, ErrorType
 
 LOGGER = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class CreatePlateProcessor(BaseProcessor):
         validator = CreatePlateValidator(create_message, self._config)
         exporter = CreatePlateExporter(create_message, self._config)
 
-        LOGGER.info(f"Starting processing of create message with UUID '{create_message.message_uuid}'")
+        LOGGER.info(f"Starting processing of create message with UUID '{create_message.message_uuid.value}'")
 
         # First validate the message and then export the source plate and samples to MongoDB.
         try:
@@ -61,9 +61,13 @@ class CreatePlateProcessor(BaseProcessor):
         exporter.export_to_dart()
         exporter.record_import()
 
-        LOGGER.info(f"Finished processing of create message with UUID '{create_message.message_uuid}'")
+        LOGGER.info(f"Finished processing of create message with UUID '{create_message.message_uuid.value}'")
 
         return True  # Acknowledge the message has been processed
+
+    def _feedback_routing_key(self, centre_config):
+        prefix = centre_config.get(CENTRE_KEY_FEEDBACK_ROUTING_KEY_PREFIX, "")
+        return prefix + RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK
 
     def _publish_feedback(self, create_message):
         feedback_message = CreateFeedbackMessage(
@@ -76,8 +80,8 @@ class CreatePlateProcessor(BaseProcessor):
 
         encoded_message = self._encoder.encode([feedback_message])
         self._basic_publisher.publish_message(
-            RABBITMQ_FEEDBACK_EXCHANGE,
-            RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
+            self._config.RABBITMQ_FEEDBACK_EXCHANGE,
+            self._feedback_routing_key(create_message.centre_config),
             encoded_message.body,
             RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
             encoded_message.version,
