@@ -80,7 +80,7 @@ def mongo_collection(mongo_database):
 
 
 @pytest.fixture(autouse=True)
-def ctpd_processor_class():
+def cptd_processor_class():
     with patch("crawler.jobs.cherrypicker_test_data.CPTDProcessor") as cptd_processor_class:
         yield cptd_processor_class
 
@@ -158,7 +158,7 @@ def test_process_success(logger_messages, config):
     assert barcode_meta == CREATED_BARCODE_METADATA
 
 
-def test_process_run_success(mongo_collection, ctpd_processor_class):
+def test_process_run_success(mongo_collection, cptd_processor_class):
     config, collection = mongo_collection
     pending_id = insert_run(collection)
 
@@ -171,7 +171,7 @@ def test_process_run_success(mongo_collection, ctpd_processor_class):
     assert run_doc[FIELD_BARCODES] == json.dumps(CREATED_BARCODE_METADATA)
     assert FIELD_FAILURE_REASON not in run_doc
 
-    ctpd_processor_class.return_value.process.assert_called_once_with(CREATE_TEST_DATA_MESSAGES)
+    cptd_processor_class.return_value.process.assert_called_once_with(CREATE_TEST_DATA_MESSAGES)
 
 
 def test_process_run_updates_through_statuses(mongo_collection):
