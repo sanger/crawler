@@ -171,7 +171,7 @@ def test_process_run_success(mongo_collection, ctpd_processor_class):
     assert run_doc[FIELD_BARCODES] == json.dumps(CREATED_BARCODE_METADATA)
     assert FIELD_FAILURE_REASON not in run_doc
 
-    ctpd_processor_class.return_value.generate_test_data.assert_called_once_with(CREATE_TEST_DATA_MESSAGES)
+    ctpd_processor_class.return_value.process.assert_called_once_with(CREATE_TEST_DATA_MESSAGES)
 
 
 def test_process_run_updates_through_statuses(mongo_collection):
