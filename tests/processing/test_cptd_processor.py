@@ -81,8 +81,8 @@ def test_constructor_stores_config(subject, config):
     assert subject._config == config
 
 
-def test_generate_test_data_logs_stages_of_process(subject, logger):
-    subject.generate_test_data([])
+def test_process_logs_stages_of_process(subject, logger):
+    subject.process([])
 
     assert logger.info.call_count == 4
     assert "Starting" in logger.info.call_args_list[0].args[0]
@@ -91,7 +91,7 @@ def test_generate_test_data_logs_stages_of_process(subject, logger):
     assert "completed successfully" in logger.info.call_args_list[3].args[0]
 
 
-def test_generate_test_data_when_error_free_feedback(
+def test_process_when_error_free_feedback(
     subject, config, logger, get_basic_publisher, get_rabbit_server_details, avro_encoder, basic_getter
 ):
     message_bodies = ERROR_FREE_FEEDBACK_BODIES
@@ -99,7 +99,7 @@ def test_generate_test_data_when_error_free_feedback(
     fetched_messages = generate_fetched_messages(message_bodies)
     basic_getter.get_message.side_effect = fetched_messages
 
-    subject.generate_test_data(CREATE_PLATE_MESSAGES)
+    subject.process(CREATE_PLATE_MESSAGES)
 
     logger.error.assert_not_called()
     logger.debug.assert_not_called()
@@ -116,60 +116,60 @@ def test_generate_test_data_when_error_free_feedback(
     avro_encoder.decode.assert_has_calls([call(fetched_messages[0].body, 4), call(fetched_messages[1].body, 4)])
 
 
-def test_generate_test_data_when_feedback_in_wrong_order(subject, logger, avro_encoder, basic_getter):
+def test_process_when_feedback_in_wrong_order(subject, logger, avro_encoder, basic_getter):
     message_bodies = ERROR_FREE_FEEDBACK_BODIES[::-1]  # reverse the messages
     avro_encoder.decode.side_effect = message_bodies
     basic_getter.get_message.side_effect = generate_fetched_messages(message_bodies)
 
-    subject.generate_test_data(CREATE_PLATE_MESSAGES)
+    subject.process(CREATE_PLATE_MESSAGES)
 
     logger.error.assert_not_called()
     logger.debug.assert_not_called()
     assert "completed successfully" in logger.info.call_args.args[0]
 
 
-def test_generate_test_data_when_no_feedback(subject, logger, basic_getter):
+def test_process_when_no_feedback(subject, logger, basic_getter):
     basic_getter.get_message.side_effect = [None] * 10
 
     with pytest.raises(CherrypickerDataError) as ex_info:
-        subject.generate_test_data(CREATE_PLATE_MESSAGES)
+        subject.process(CREATE_PLATE_MESSAGES)
 
     assert "failed" in str(ex_info.value)
     logger.error.assert_called_once()
     assert "completed successfully" not in logger.info.call_args.args[0]
 
 
-def test_generate_test_data_when_partial_feedback(subject, logger, avro_encoder, basic_getter):
+def test_process_when_partial_feedback(subject, logger, avro_encoder, basic_getter):
     message_bodies = [ERROR_FREE_FEEDBACK_BODIES[1]]
     avro_encoder.decode.side_effect = message_bodies
     basic_getter.get_message.side_effect = generate_fetched_messages(message_bodies) + [None] * 10
 
     with pytest.raises(CherrypickerDataError) as ex_info:
-        subject.generate_test_data(CREATE_PLATE_MESSAGES)
+        subject.process(CREATE_PLATE_MESSAGES)
 
     assert "failed" in str(ex_info.value)
     logger.error.assert_called_once()
     assert "completed successfully" not in logger.info.call_args.args[0]
 
 
-def test_generate_test_data_when_queue_is_empty_to_start_with(subject, logger, avro_encoder, basic_getter):
+def test_process_when_queue_is_empty_to_start_with(subject, logger, avro_encoder, basic_getter):
     message_bodies = ERROR_FREE_FEEDBACK_BODIES
     avro_encoder.decode.side_effect = message_bodies  # We don't decode the missing message
     basic_getter.get_message.side_effect = [None] + generate_fetched_messages(message_bodies)
 
-    subject.generate_test_data(CREATE_PLATE_MESSAGES)
+    subject.process(CREATE_PLATE_MESSAGES)
 
     logger.error.assert_not_called()
     logger.debug.assert_not_called()
     assert "completed successfully" in logger.info.call_args.args[0]
 
 
-def test_generate_test_data_when_message_with_wrong_subject_starts_queue(subject, logger, avro_encoder, basic_getter):
+def test_process_when_message_with_wrong_subject_starts_queue(subject, logger, avro_encoder, basic_getter):
     message_bodies = ERROR_FREE_FEEDBACK_BODIES
     avro_encoder.decode.side_effect = message_bodies  # We don't decode the wrong subject message
     basic_getter.get_message.side_effect = WRONG_SUBJECT_FEEDBACK + generate_fetched_messages(message_bodies)
 
-    subject.generate_test_data(CREATE_PLATE_MESSAGES)
+    subject.process(CREATE_PLATE_MESSAGES)
 
     logger.error.assert_not_called()
     logger.debug.assert_called_once()
@@ -177,14 +177,12 @@ def test_generate_test_data_when_message_with_wrong_subject_starts_queue(subject
     assert "completed successfully" in logger.info.call_args.args[0]
 
 
-def test_generate_test_data_when_message_with_multiple_messages_starts_queue(
-    subject, logger, avro_encoder, basic_getter
-):
+def test_process_when_message_with_multiple_messages_starts_queue(subject, logger, avro_encoder, basic_getter):
     message_bodies = [MULTIPLE_MESSAGE_BODY] + ERROR_FREE_FEEDBACK_BODIES
     avro_encoder.decode.side_effect = message_bodies
     basic_getter.get_message.side_effect = generate_fetched_messages(message_bodies)
 
-    subject.generate_test_data(CREATE_PLATE_MESSAGES)
+    subject.process(CREATE_PLATE_MESSAGES)
 
     logger.error.assert_not_called()
     logger.debug.assert_called_once()
@@ -192,14 +190,12 @@ def test_generate_test_data_when_message_with_multiple_messages_starts_queue(
     assert "completed successfully" in logger.info.call_args.args[0]
 
 
-def test_generate_test_data_when_message_with_unrecognised_uuid_starts_queue(
-    subject, logger, avro_encoder, basic_getter
-):
+def test_process_when_message_with_unrecognised_uuid_starts_queue(subject, logger, avro_encoder, basic_getter):
     message_bodies = [UNRECOGNISED_UUID_BODY] + ERROR_FREE_FEEDBACK_BODIES
     avro_encoder.decode.side_effect = message_bodies
     basic_getter.get_message.side_effect = generate_fetched_messages(message_bodies)
 
-    subject.generate_test_data(CREATE_PLATE_MESSAGES)
+    subject.process(CREATE_PLATE_MESSAGES)
 
     logger.error.assert_not_called()
     logger.debug.assert_called_once()
@@ -207,13 +203,13 @@ def test_generate_test_data_when_message_with_unrecognised_uuid_starts_queue(
     assert "completed successfully" in logger.info.call_args.args[0]
 
 
-def test_generate_test_data_when_processing_generated_errors(subject, logger, avro_encoder, basic_getter):
+def test_process_when_processing_generated_errors(subject, logger, avro_encoder, basic_getter):
     message_bodies = ERRORED_FEEDBACK_BODIES
     avro_encoder.decode.side_effect = message_bodies
     basic_getter.get_message.side_effect = generate_fetched_messages(message_bodies)
 
     with pytest.raises(CherrypickerDataError) as ex_info:
-        subject.generate_test_data(CREATE_PLATE_MESSAGES)
+        subject.process(CREATE_PLATE_MESSAGES)
 
     assert "failed" in str(ex_info.value)
 

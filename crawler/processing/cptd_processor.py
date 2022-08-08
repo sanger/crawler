@@ -31,7 +31,7 @@ class CPTDProcessor:
         self.__encoder: Optional[AvroEncoder] = None
         self.__decoder: Optional[AvroEncoder] = None
 
-    def generate_test_data(self, create_plate_messages: list) -> None:
+    def process(self, create_plate_messages: list) -> None:
         """Send the plate messages to RabbitMQ then poll for the feedback messages indicating they were all processed
         correctly.  If there are any issues doing this, raises a CherrypickerDataError to populate the API response
         with.
