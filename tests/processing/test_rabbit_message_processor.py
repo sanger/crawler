@@ -48,8 +48,10 @@ def create_plate_processor():
 
 @pytest.fixture
 def subject(config, create_plate_processor):
-    with patch("crawler.helpers.general_helpers.get_redpanda_schema_registry", return_value=SCHEMA_REGISTRY):
-        with patch("crawler.helpers.general_helpers.get_basic_publisher", return_value=BASIC_PUBLISHER):
+    with patch(
+        "crawler.processing.rabbit_message_processor.get_redpanda_schema_registry", return_value=SCHEMA_REGISTRY
+    ):
+        with patch("crawler.processing.rabbit_message_processor.get_basic_publisher", return_value=BASIC_PUBLISHER):
             subject = RabbitMessageProcessor(config)
             subject._processors[RABBITMQ_SUBJECT_CREATE_PLATE] = create_plate_processor.return_value
             yield subject

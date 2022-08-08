@@ -2,7 +2,6 @@ import logging
 from time import sleep, time
 from typing import Optional
 
-import crawler.helpers.general_helpers as general_helpers
 from crawler.constants import (
     RABBITMQ_ROUTING_KEY_CREATE_PLATE,
     RABBITMQ_SUBJECT_CREATE_PLATE,
@@ -10,6 +9,7 @@ from crawler.constants import (
     TEST_DATA_ERROR_PLATE_CREATION_FAILED,
 )
 from crawler.exceptions import CherrypickerDataError
+from crawler.helpers.general_helpers import get_basic_publisher, get_rabbit_server_details, get_redpanda_schema_registry
 from crawler.processing.rabbit_message import RabbitMessage
 from crawler.rabbit.avro_encoder import AvroEncoder
 from crawler.rabbit.basic_getter import BasicGetter
@@ -47,14 +47,14 @@ class CPTDProcessor:
     @property
     def _schema_registry(self) -> SchemaRegistry:
         if self.__schema_registry is None:
-            self.__schema_registry = general_helpers.get_redpanda_schema_registry(self._config)
+            self.__schema_registry = get_redpanda_schema_registry(self._config)
 
         return self.__schema_registry
 
     @property
     def _basic_publisher(self) -> BasicPublisher:
         if self.__basic_publisher is None:
-            self.__basic_publisher = general_helpers.get_basic_publisher(
+            self.__basic_publisher = get_basic_publisher(
                 self._config, self._config.RABBITMQ_CPTD_USERNAME, self._config.RABBITMQ_CPTD_PASSWORD
             )
 
@@ -105,7 +105,7 @@ class CPTDProcessor:
         t_end = time() + self._config.CPTD_FEEDBACK_WAIT_TIME
 
         with BasicGetter(
-            general_helpers.get_rabbit_server_details(
+            get_rabbit_server_details(
                 self._config, self._config.RABBITMQ_CPTD_USERNAME, self._config.RABBITMQ_CPTD_PASSWORD
             )
         ) as basic_getter:

@@ -56,13 +56,13 @@ def avro_encoder():
 
 @pytest.fixture(autouse=True)
 def get_rabbit_server_details():
-    with patch("crawler.helpers.general_helpers.get_rabbit_server_details") as mock:
+    with patch("crawler.processing.cptd_processor.get_rabbit_server_details") as mock:
         yield mock
 
 
 @pytest.fixture(autouse=True)
 def get_basic_publisher():
-    with patch("crawler.helpers.general_helpers.get_basic_publisher") as mock:
+    with patch("crawler.processing.cptd_processor.get_basic_publisher") as mock:
         yield mock
 
 
