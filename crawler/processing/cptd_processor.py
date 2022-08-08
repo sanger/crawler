@@ -1,4 +1,6 @@
 import logging
+from dataclasses import dataclass
+from enum import Enum, auto
 from time import sleep, time
 from typing import Optional
 
@@ -12,7 +14,7 @@ from crawler.exceptions import CherrypickerDataError
 from crawler.helpers.general_helpers import get_basic_publisher, get_rabbit_server_details, get_redpanda_schema_registry
 from crawler.processing.rabbit_message import RabbitMessage
 from crawler.rabbit.avro_encoder import AvroEncoder
-from crawler.rabbit.basic_getter import BasicGetter
+from crawler.rabbit.basic_getter import BasicGetter, FetchedMessage
 from crawler.rabbit.basic_publisher import BasicPublisher
 from crawler.rabbit.messages.parsers.create_plate_feedback_message import CreatePlateFeedbackMessage
 from crawler.rabbit.messages.parsers.create_plate_message import FIELD_MESSAGE_UUID
@@ -20,6 +22,18 @@ from crawler.rabbit.schema_registry import SchemaRegistry
 from crawler.types import Config
 
 LOGGER = logging.getLogger(__name__)
+
+
+class MessageStatus(Enum):
+    DISCARD = auto()
+    HAS_ERRORS = auto()
+    VALID = auto()
+
+
+@dataclass
+class ParseResult:
+    message_status: MessageStatus
+    source_uuid: Optional[str] = None
 
 
 class CPTDProcessor:
@@ -117,36 +131,41 @@ class CPTDProcessor:
 
                 t_end = time() + self._config.CPTD_FEEDBACK_WAIT_TIME  # Extend our loop time
 
-                rabbit_message = RabbitMessage(fetched_message.headers, fetched_message.body)
-                if rabbit_message.subject != RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK:
-                    LOGGER.debug(
-                        f"Fetched message has incorrect subject '{rabbit_message.subject}'. Discarding message."
-                    )
-                    continue  # We can only process create plate feedback messages
+                parse_result = self._parse_feedback_message(fetched_message, unconfirmed_uuids)
 
-                rabbit_message.decode(self._decoder)
-                if not rabbit_message.contains_single_message:
-                    LOGGER.debug("Fetched message contains more than one feedback message. Discarding message.")
-                    continue  # We can only process single messages
-
-                feedback_message = CreatePlateFeedbackMessage(rabbit_message.message)
-                source_uuid = feedback_message.source_message_uuid.value
-                if source_uuid not in unconfirmed_uuids:
-                    LOGGER.debug("Fetched message is for an unrecognised UUID. Discarding message.")
-                    continue  # We aren't interested in any messages for other UUIDs
-
-                error_free = feedback_message.operation_was_error_free.value
-                if not error_free:
-                    LOGGER.info(
-                        f"Cherrypicker test data create message with UUID '{source_uuid}' was not processed without "
-                        "errors."
-                    )
+                if parse_result.message_status == MessageStatus.VALID:
+                    unconfirmed_uuids.remove(parse_result.source_uuid)
+                elif parse_result.message_status == MessageStatus.HAS_ERRORS:
                     break
-
-                unconfirmed_uuids.remove(source_uuid)
 
         if len(unconfirmed_uuids) > 0:
             LOGGER.error(
                 "There were UUIDs that were submitted to the CRUD queue but were not resolved in the feedback queue."
             )
             raise CherrypickerDataError(TEST_DATA_ERROR_PLATE_CREATION_FAILED)
+
+    def _parse_feedback_message(self, fetched_message: FetchedMessage, expected_uuids: list) -> ParseResult:
+        rabbit_message = RabbitMessage(fetched_message.headers, fetched_message.body)
+        if rabbit_message.subject != RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK:
+            LOGGER.debug(f"Fetched message has incorrect subject '{rabbit_message.subject}'. Discarding message.")
+            return ParseResult(MessageStatus.DISCARD)  # We can only process create plate feedback messages
+
+        rabbit_message.decode(self._decoder)
+        if not rabbit_message.contains_single_message:
+            LOGGER.debug("Fetched message contains more than one feedback message. Discarding message.")
+            return ParseResult(MessageStatus.DISCARD)  # We can only process single messages
+
+        feedback_message = CreatePlateFeedbackMessage(rabbit_message.message)
+        source_uuid = feedback_message.source_message_uuid.value
+        if source_uuid not in expected_uuids:
+            LOGGER.debug("Fetched message is for an unrecognised UUID. Discarding message.")
+            return ParseResult(MessageStatus.DISCARD)  # We aren't interested in any messages for other UUIDs
+
+        error_free = feedback_message.operation_was_error_free.value
+        if not error_free:
+            LOGGER.info(
+                f"Cherrypicker test data create message with UUID '{source_uuid}' was not processed without " "errors."
+            )
+            return ParseResult(MessageStatus.HAS_ERRORS)
+
+        return ParseResult(MessageStatus.VALID, source_uuid)
