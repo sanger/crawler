@@ -6,15 +6,14 @@ from http import HTTPStatus
 import flask
 import werkzeug
 from flask_apscheduler import APScheduler
+from lab_share_lib.config_readers import get_config
 from lab_share_lib.rabbit.rabbit_stack import RabbitStack
 
 from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
 from crawler.db.mongo import create_mongo_client, get_mongo_db
 from crawler.helpers.db_helpers import ensure_mongo_collections_indexed
-from crawler.helpers.general_helpers import get_config
 
 scheduler = APScheduler()
-
 
 
 def create_app(config_object: str = None) -> flask.Flask:
@@ -34,7 +33,7 @@ def create_app(config_object: str = None) -> flask.Flask:
 
     config, _ = get_config(config_object or "")
 
-    rabbit_stack = RabbitStack(config)
+    rabbit_stack = RabbitStack(config_object)
 
     setup_mongo_indexes(config)
     start_rabbit_consumer(rabbit_stack, config)

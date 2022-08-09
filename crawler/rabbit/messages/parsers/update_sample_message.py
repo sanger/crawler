@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, NamedTuple, Optional
 
-from crawler.rabbit.messages.base_message import BaseMessage
+from crawler.rabbit.messages.parsers.base_message import BaseMessage
 from crawler.rabbit.messages.update_feedback_message import UpdateFeedbackError
 
 LOGGER = logging.getLogger(__name__)

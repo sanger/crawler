@@ -1,10 +1,10 @@
-from flask import current_app as app
 import logging
 
-from crawler import scheduler
-from crawler.helpers.general_helpers import get_config
-from crawler.main import run
+from flask import current_app as app
+from lab_share_lib.config_readers import get_config
 
+from crawler import scheduler
+from crawler.main import run
 
 logger = logging.getLogger(__name__)
 

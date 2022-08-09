@@ -2,9 +2,10 @@ import logging
 import logging.config
 from datetime import datetime
 
+from lab_share_lib.config_readers import get_config
+
 from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.cherrypicked_samples import filter_out_cherrypicked_samples
-from crawler.helpers.general_helpers import get_config
 from migrations.helpers.update_filtered_positives_helper import (
     pending_plate_barcodes_from_dart,
     positive_result_samples_from_mongo,

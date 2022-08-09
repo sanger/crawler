@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 import pytest
 from bson.decimal128 import Decimal128
@@ -58,8 +58,8 @@ from crawler.constants import (
 from crawler.helpers.general_helpers import (
     create_source_plate_doc,
     extract_duplicated_values,
-    get_config,
     get_dart_well_index,
+    get_sftp_connection,
     is_found_in_list,
     is_sample_pickable,
     is_sample_positive,
@@ -74,9 +74,24 @@ from crawler.types import SampleDoc
 from tests.conftest import generate_new_object_for_string
 
 
-def test_get_config():
-    with pytest.raises(ModuleNotFoundError):
-        get_config("x.y.z")
+@pytest.fixture
+def sftp_connection_class():
+    with patch("pysftp.Connection") as connection:
+        yield connection
+
+
+@pytest.mark.parametrize("given_username, expected_username", [[None, "foo"], ["", "foo"], ["username", "username"]])
+@pytest.mark.parametrize("given_password, expected_password", [[None, "pass"], ["", "pass"], ["password", "password"]])
+def test_get_sftp_connection(
+    config, given_username, expected_username, given_password, expected_password, sftp_connection_class
+):
+    actual = get_sftp_connection(config, username=given_username, password=given_password)
+
+    assert actual == sftp_connection_class.return_value
+
+    sftp_connection_class.assert_called_once_with(
+        host=config.SFTP_HOST, port=config.SFTP_PORT, username=expected_username, password=expected_password, cnopts=ANY
+    )
 
 
 # tests for parsing Decimal128

@@ -19,6 +19,8 @@ ADD_LAB_ID = False
 ENABLE_CHERRYPICKER_ENDPOINTS = False  # Safeguards it being on by accident in production
 MAX_PLATES_PER_TEST_DATA_RUN = 200
 
+CPTD_FEEDBACK_WAIT_TIME = 30
+
 ###
 # ingest behaviour for scheduled runs
 ###
@@ -85,6 +87,11 @@ RABBITMQ_PASSWORD = "development"
 RABBITMQ_VHOST = "heron"
 RABBITMQ_CRUD_QUEUE = "heron.crud-operations"
 RABBITMQ_FEEDBACK_EXCHANGE = "psd.heron"
+
+RABBITMQ_CPTD_USERNAME = "admin"
+RABBITMQ_CPTD_PASSWORD = "development"
+RABBITMQ_CPTD_CRUD_EXCHANGE = "cptd.heron"
+RABBITMQ_CPTD_FEEDBACK_QUEUE = "cptd.heron.feedback"
 
 RABBITMQ_PUBLISH_RETRY_DELAY = 5
 RABBITMQ_PUBLISH_RETRIES = 36  # 3 minutes of retries

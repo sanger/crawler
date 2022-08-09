@@ -1,13 +1,10 @@
 import logging
-import os
 import re
 import string
-import sys
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from importlib import import_module
-from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
+from typing import Any, Dict, Iterable, List, Optional
 
 import pysftp
 from bson.decimal128 import Decimal128
@@ -119,7 +116,7 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
     sftp_host = config.SFTP_HOST
     sftp_port = config.SFTP_PORT
     sftp_username = config.SFTP_READ_USERNAME if not username else username
-    sftp_password = config.SFTP_READ_PASSWORD if not username else password
+    sftp_password = config.SFTP_READ_PASSWORD if not password else password
 
     return pysftp.Connection(
         host=sftp_host,
@@ -128,28 +125,6 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
         password=sftp_password,
         cnopts=cnopts,
     )
-
-
-def get_config(settings_module: str = "") -> Tuple[Config, str]:
-    """Get the config for the app by importing a module named by an environment variable. This allows easy switching
-    between environments and inheriting default config values.
-
-    Arguments:
-        settings_module (str, optional): the settings module to load. Defaults to "".
-
-    Returns:
-        Tuple[Config, str]: tuple with the config module loaded and available to use via `config.<param>` and the
-        settings module used
-    """
-    try:
-        if not settings_module:
-            settings_module = os.environ["SETTINGS_MODULE"]
-
-        config_module = cast(Config, import_module(settings_module))
-
-        return config_module, settings_module
-    except KeyError as e:
-        sys.exit(f"{e} required in environment variables for config.")
 
 
 def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:

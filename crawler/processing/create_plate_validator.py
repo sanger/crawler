@@ -9,7 +9,7 @@ from crawler.constants import (
 )
 from crawler.exceptions import TransientRabbitError
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
-from crawler.rabbit.messages.create_plate_message import CreatePlateError, ErrorType
+from crawler.rabbit.messages.parsers.create_plate_message import CreatePlateError, ErrorType
 
 LOGGER = logging.getLogger(__name__)
 

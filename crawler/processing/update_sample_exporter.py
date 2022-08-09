@@ -20,7 +20,7 @@ from crawler.constants import (
 from crawler.db.dart import add_dart_well_properties_if_positive, create_dart_sql_server_conn, get_dart_plate_state
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.exceptions import TransientRabbitError
-from crawler.rabbit.messages.update_sample_message import ErrorType, UpdateSampleError
+from crawler.rabbit.messages.parsers.update_sample_message import ErrorType, UpdateSampleError
 
 LOGGER = logging.getLogger(__name__)
 

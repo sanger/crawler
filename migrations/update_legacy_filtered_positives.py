@@ -3,6 +3,8 @@ import logging.config
 import time
 from datetime import datetime
 
+from lab_share_lib.config_readers import get_config
+
 from crawler.constants import (
     FILTERED_POSITIVE_FIELDS_SET_DATE,
     MONGO_DATETIME_FORMAT,
@@ -16,7 +18,6 @@ from crawler.filtered_positive_identifier import (
     filtered_positive_identifier_by_version,
 )
 from crawler.helpers.cherrypicked_samples import extract_required_cp_info, get_cherrypicked_samples_by_date
-from crawler.helpers.general_helpers import get_config
 from migrations.helpers.shared_helper import valid_datetime_string
 from migrations.helpers.update_filtered_positives_helper import (
     update_filtered_positive_fields,

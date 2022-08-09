@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pytest
 import sqlalchemy
+from lab_share_lib.config_readers import get_config
 from sqlalchemy import MetaData
 
 from crawler import create_app
@@ -27,7 +28,7 @@ from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mong
 from crawler.db.mysql import create_mysql_connection
 from crawler.file_processing import Centre, CentreFile
 from crawler.helpers.db_helpers import ensure_mongo_collections_indexed
-from crawler.helpers.general_helpers import get_config, get_sftp_connection
+from crawler.helpers.general_helpers import get_sftp_connection
 from tests.testing_objects import (
     EVENT_WH_DATA,
     FILTERED_POSITIVE_TESTING_SAMPLES,

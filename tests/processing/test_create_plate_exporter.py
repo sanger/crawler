@@ -6,26 +6,37 @@ import pytest
 from pymongo.collection import Collection
 from pymongo.errors import BulkWriteError
 
-from crawler.constants import (DART_STATE_NO_PLATE, DART_STATE_NO_PROP,
-                               DART_STATE_PENDING, DART_STATE_PICKABLE,
-                               FIELD_COORDINATE, FIELD_LH_SAMPLE_UUID,
-                               FIELD_LH_SOURCE_PLATE_UUID, FIELD_MONGO_LAB_ID,
-                               FIELD_MONGO_MESSAGE_UUID, FIELD_MONGO_RESULT,
-                               FIELD_MONGO_RNA_ID, FIELD_MONGO_ROOT_SAMPLE_ID,
-                               FIELD_MONGO_SAMPLE_INDEX, FIELD_SOURCE,
-                               RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE)
+from crawler.constants import (
+    DART_STATE_NO_PLATE,
+    DART_STATE_NO_PROP,
+    DART_STATE_PENDING,
+    DART_STATE_PICKABLE,
+    FIELD_COORDINATE,
+    FIELD_LH_SAMPLE_UUID,
+    FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_MONGO_LAB_ID,
+    FIELD_MONGO_MESSAGE_UUID,
+    FIELD_MONGO_RESULT,
+    FIELD_MONGO_RNA_ID,
+    FIELD_MONGO_ROOT_SAMPLE_ID,
+    FIELD_MONGO_SAMPLE_INDEX,
+    FIELD_SOURCE,
+    RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE,
+)
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_exporter import CreatePlateExporter
-from crawler.rabbit.messages.create_plate_message import (FIELD_LAB_ID,
-                                                          FIELD_PLATE,
-                                                          FIELD_PLATE_BARCODE,
-                                                          FIELD_RESULT,
-                                                          FIELD_RNA_ID,
-                                                          FIELD_ROOT_SAMPLE_ID,
-                                                          FIELD_SAMPLES,
-                                                          CreatePlateError,
-                                                          CreatePlateMessage,
-                                                          ErrorType)
+from crawler.rabbit.messages.parsers.create_plate_message import (
+    FIELD_LAB_ID,
+    FIELD_PLATE,
+    FIELD_PLATE_BARCODE,
+    FIELD_RESULT,
+    FIELD_RNA_ID,
+    FIELD_ROOT_SAMPLE_ID,
+    FIELD_SAMPLES,
+    CreatePlateError,
+    CreatePlateMessage,
+    ErrorType,
+)
 from tests.testing_objects import CREATE_PLATE_MESSAGE
 
 MONGO_SAMPLES = [
