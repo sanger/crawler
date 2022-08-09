@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
 
 from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
+from typing_extensions import NotRequired
 
 # Type aliases
 CentreDoc = Dict[str, Any]  # mongo document that represents a centre
@@ -18,21 +19,22 @@ FlaskResponse = Tuple[Dict[str, Any], int]  # a response from a Flask endpoint, 
 
 
 class CentreConf(TypedDict):
+    backups_folder: str
     barcode_field: str
     barcode_regex: str
+    biomek_labware_class: str
+    data_source: str
+    feedback_routing_key_prefix: NotRequired[str]
+    file_names_to_ignore: List[str]
+    include_in_scheduled_runs: bool
+    lab_id_default: str
     name: str
     prefix: str
-    lab_id_default: str
-    backups_folder: str
-    sftp_file_regex_unconsolidated_surveillance: str
-    sftp_file_regex_consolidated_surveillance: str
     sftp_file_regex_consolidated_eagle: str
+    sftp_file_regex_consolidated_surveillance: str
+    sftp_file_regex_unconsolidated_surveillance: str
     sftp_root_read: str
-    file_names_to_ignore: List[str]
-    biomek_labware_class: str
     skip_unconsolidated_surveillance_files: bool
-    include_in_scheduled_runs: bool
-    data_source: str
 
 
 class Config(ModuleType):
@@ -48,6 +50,8 @@ class Config(ModuleType):
     # Cherrypicker Test Data
     ENABLE_CHERRYPICKER_ENDPOINTS: bool
     MAX_PLATES_PER_TEST_DATA_RUN: int
+
+    CPTD_FEEDBACK_WAIT_TIME: int
 
     # Ingest Behaviour
     USE_SFTP: bool
@@ -89,6 +93,11 @@ class Config(ModuleType):
     RABBITMQ_VHOST: str
     RABBITMQ_CRUD_QUEUE: str
     RABBITMQ_FEEDBACK_EXCHANGE: str
+
+    RABBITMQ_CPTD_USERNAME: str
+    RABBITMQ_CPTD_PASSWORD: str
+    RABBITMQ_CPTD_CRUD_EXCHANGE: str
+    RABBITMQ_CPTD_FEEDBACK_QUEUE: str
 
     RABBITMQ_PUBLISH_RETRY_DELAY: int
     RABBITMQ_PUBLISH_RETRIES: int

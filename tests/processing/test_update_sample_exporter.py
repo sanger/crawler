@@ -22,7 +22,7 @@ from crawler.constants import (
 from crawler.db.mongo import get_mongo_collection
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.update_sample_exporter import UpdateSampleExporter
-from crawler.rabbit.messages.update_sample_message import (
+from crawler.rabbit.messages.parsers.update_sample_message import (
     FIELD_SAMPLE,
     FIELD_UPDATED_FIELDS,
     ErrorType,

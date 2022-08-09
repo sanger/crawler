@@ -44,7 +44,7 @@ from crawler.exceptions import TransientRabbitError
 from crawler.helpers.db_helpers import create_mongo_import_record, samples_filtered_for_duplicates_in_mongo
 from crawler.helpers.general_helpers import create_source_plate_doc
 from crawler.helpers.sample_data_helpers import normalise_plate_coordinate
-from crawler.rabbit.messages.create_plate_message import CreatePlateError, ErrorType
+from crawler.rabbit.messages.parsers.create_plate_message import CreatePlateError, ErrorType
 
 LOGGER = logging.getLogger(__name__)
 
@@ -296,7 +296,7 @@ class CreatePlateExporter:
 
             LOGGER.debug(
                 f"DART database inserts completed successfully for plate with barcode '{plate_barcode}' "
-                "in message with UUID '{message_uuid}'"
+                f"in message with UUID '{message_uuid}'"
             )
             return ExportResult(success=True, create_plate_errors=[])
         except Exception as ex:

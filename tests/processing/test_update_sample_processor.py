@@ -13,7 +13,7 @@ from crawler.constants import (
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.update_sample_processor import UpdateSampleProcessor
 from crawler.rabbit.messages.update_feedback_message import UpdateFeedbackMessage
-from crawler.rabbit.messages.update_sample_message import (
+from crawler.rabbit.messages.parsers.update_sample_message import (
     ErrorType,
     MessageField,
     UpdateSampleError,

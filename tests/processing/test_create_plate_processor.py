@@ -6,6 +6,7 @@ import pytest
 
 from crawler.config.defaults import RABBITMQ_FEEDBACK_EXCHANGE
 from crawler.constants import (
+    CENTRE_KEY_FEEDBACK_ROUTING_KEY_PREFIX,
     RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING,
     RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
     RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
@@ -13,8 +14,7 @@ from crawler.constants import (
 from crawler.exceptions import TransientRabbitError
 from crawler.processing.create_plate_processor import CreatePlateProcessor
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackMessage
-from crawler.rabbit.messages.create_plate_message import CreatePlateError, CreatePlateMessage, ErrorType, MessageField
-from tests.testing_objects import CREATE_PLATE_MESSAGE
+from crawler.rabbit.messages.parsers.create_plate_message import CreatePlateError, ErrorType, MessageField
 
 
 class EncodedMessage(NamedTuple):
@@ -25,39 +25,35 @@ class EncodedMessage(NamedTuple):
 ENCODED_MESSAGE = EncodedMessage(body=b'{"key": "value"}', version="1")
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_logger():
     with patch("crawler.processing.create_plate_processor.LOGGER") as logger:
         yield logger
 
 
-@pytest.fixture
-def create_plate_message():
-    return CreatePlateMessage(copy.deepcopy(CREATE_PLATE_MESSAGE))
-
-
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_validator():
     with patch("crawler.processing.create_plate_processor.CreatePlateValidator") as validator:
         yield validator
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_exporter():
     with patch("crawler.processing.create_plate_processor.CreatePlateExporter") as exporter:
         yield exporter
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_avro_encoder():
     with patch("crawler.processing.create_plate_processor.AvroEncoder") as avro_encoder:
         avro_encoder.return_value.encode.return_value = ENCODED_MESSAGE
         yield avro_encoder
 
 
-@pytest.fixture
-def message_wrapper_class():
+@pytest.fixture(autouse=True)
+def message_wrapper_class(centre):
     with patch("crawler.processing.create_plate_processor.CreatePlateMessage") as message_wrapper_class:
+        message_wrapper_class.return_value.centre_config = copy.deepcopy(centre.centre_config)
         message_wrapper_class.return_value.message_uuid = MessageField("UUID_FIELD", "UUID")
         message_wrapper_class.return_value.has_errors = False
 
@@ -70,11 +66,11 @@ def message_wrapper_class():
 
 
 @pytest.fixture
-def subject(config, mock_avro_encoder, mock_validator, mock_exporter):
+def subject(config):
     return CreatePlateProcessor(MagicMock(), MagicMock(), config)
 
 
-def assert_feedback_was_published(subject, message, avro_encoder):
+def assert_feedback_was_published(subject, message, avro_encoder, routing_key_prefix=""):
     feedback_message = CreateFeedbackMessage(
         sourceMessageUuid=message.message_uuid.value,
         countOfTotalSamples=message.total_samples,
@@ -88,7 +84,7 @@ def assert_feedback_was_published(subject, message, avro_encoder):
 
     subject._basic_publisher.publish_message.assert_called_once_with(
         RABBITMQ_FEEDBACK_EXCHANGE,
-        RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
+        routing_key_prefix + RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK,
         ENCODED_MESSAGE.body,
         RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
         ENCODED_MESSAGE.version,
@@ -122,10 +118,17 @@ def test_process_uses_exporter(subject, mock_exporter, message_wrapper_class):
     mock_exporter.return_value.export_to_mongo.assert_called_once()
 
 
-def test_process_publishes_feedback_when_no_issues_found(subject, mock_avro_encoder, message_wrapper_class):
+@pytest.mark.parametrize("routing_key_prefix", [None, "", "cptd.", "my-prefix."])
+def test_process_publishes_feedback_when_no_issues_found(
+    subject, routing_key_prefix, mock_avro_encoder, message_wrapper_class
+):
+    if routing_key_prefix is not None:
+        message_wrapper_class.return_value.centre_config[CENTRE_KEY_FEEDBACK_ROUTING_KEY_PREFIX] = routing_key_prefix
+
     subject.process(MagicMock())
 
-    assert_feedback_was_published(subject, message_wrapper_class.return_value, mock_avro_encoder.return_value)
+    prefix = "" if routing_key_prefix is None else routing_key_prefix
+    assert_feedback_was_published(subject, message_wrapper_class.return_value, mock_avro_encoder.return_value, prefix)
 
 
 def test_process_records_import_when_no_issues_found(subject, mock_exporter):
