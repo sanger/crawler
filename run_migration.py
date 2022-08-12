@@ -2,7 +2,8 @@ import logging
 import logging.config
 import sys
 
-from crawler.helpers.general_helpers import get_config
+from lab_share_lib.config_readers import get_config
+
 from migrations import (
     back_populate_source_plate_and_sample_uuids,
     back_populate_uuids,

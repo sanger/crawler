@@ -1,9 +1,10 @@
 import argparse
 
+from lab_share_lib.config_readers import get_config
+
 from crawler import main
 from crawler.config.centres import get_centres_config
 from crawler.constants import CENTRE_KEY_PREFIX
-from crawler.helpers.general_helpers import get_config
 
 
 def centre_prefix_choices():
