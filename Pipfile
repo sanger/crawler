@@ -16,7 +16,6 @@ pytest-cov = "*"
 pytest-freezegun = "*"
 types-python-dateutil = "*"
 responses = "*"
-lab-share-lib = { git = 'https://github.com/sanger/lab-share-lib.git', ref = 'develop', editable = true }
 
 [packages]
 colorlog = "~=6.6"

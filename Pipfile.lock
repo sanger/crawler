@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "07afd66bac88d15d2ae4cf71cf2877f5b09d2213897da64e61e8f90eb8a016c0"
+            "sha256": "2055417cb93c2962fad47f4ad7f46a8d9a7754bacd439d3e2ff64fc51ace801c"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -1258,11 +1258,6 @@
             ],
             "version": "==1.1.1"
         },
-        "lab-share-lib": {
-            "editable": false,
-            "git": "https://github.com/sanger/lab-share-lib.git",
-            "ref": "997991861a3a6cbeeb2fdf2e3c56bcb3038c8316"
-        },
         "mccabe": {
             "hashes": [
                 "sha256:348e0240c33b60bbdf4e523192ef919f28cb2c3d7d5c7794f74009290f236325",
@@ -1518,7 +1513,7 @@
                 "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc",
                 "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"
             ],
-            "markers": "python_version < '3.11'",
+            "markers": "python_full_version < '3.11.0a7'",
             "version": "==2.0.1"
         },
         "types-python-dateutil": {
@@ -1534,7 +1529,7 @@
                 "sha256:25642c956049920a5aa49edcdd6ab1e06d7e5d467fc00e0506c44ac86fbfca02",
                 "sha256:e6d2677a32f47fc7eb2795db1dd15c1f34eff616bcaf2cfb5e997f854fa1c4a6"
             ],
-            "markers": "python_version >= '3.7'",
+            "markers": "python_version < '3.10'",
             "version": "==4.3.0"
         },
         "urllib3": {
