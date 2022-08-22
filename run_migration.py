@@ -1,9 +1,11 @@
 import logging
 import logging.config
 import sys
+from typing import Tuple, cast
 
 from lab_share_lib.config_readers import get_config
 
+from crawler.types import Config
 from migrations import (
     back_populate_source_plate_and_sample_uuids,
     back_populate_uuids,
@@ -14,7 +16,7 @@ from migrations import (
     update_mlwh_with_legacy_samples,
 )
 
-config, settings_module = get_config("")
+config, settings_module = cast(Tuple[Config, str], get_config(""))
 
 logger = logging.getLogger(__name__)
 config.LOGGING["loggers"]["crawler"]["level"] = "DEBUG"

@@ -1,14 +1,16 @@
 import argparse
+from typing import Tuple, cast
 
 from lab_share_lib.config_readers import get_config
 
 from crawler import main
 from crawler.config.centres import get_centres_config
 from crawler.constants import CENTRE_KEY_PREFIX
+from crawler.types import Config
 
 
 def centre_prefix_choices():
-    config, _ = get_config("")
+    config, _ = cast(Tuple[Config, str], get_config(""))
     centres = get_centres_config(config, "SFTP")
 
     return [centre[CENTRE_KEY_PREFIX] for centre in centres]

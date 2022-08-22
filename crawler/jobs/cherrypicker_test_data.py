@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime
 from functools import reduce
-from typing import List
+from typing import List, Tuple, cast
 
 from bson.objectid import ObjectId
 from lab_share_lib.config_readers import get_config
@@ -56,7 +56,7 @@ def process(run_id: str, config: Config = None) -> List[List[str]]:
     logger.info("Begin generating data.")
 
     if config is None:
-        config, _ = get_config()
+        config, _ = cast(Tuple[Config, str], get_config())
 
     with create_mongo_client(config) as mongo_client:
         mongo_db = get_mongo_db(config, mongo_client)

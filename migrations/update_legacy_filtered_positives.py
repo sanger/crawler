@@ -2,6 +2,7 @@ import logging
 import logging.config
 import time
 from datetime import datetime
+from typing import Tuple, cast
 
 from lab_share_lib.config_readers import get_config
 
@@ -18,6 +19,7 @@ from crawler.filtered_positive_identifier import (
     filtered_positive_identifier_by_version,
 )
 from crawler.helpers.cherrypicked_samples import extract_required_cp_info, get_cherrypicked_samples_by_date
+from crawler.types import Config
 from migrations.helpers.shared_helper import valid_datetime_string
 from migrations.helpers.update_filtered_positives_helper import (
     update_filtered_positive_fields,
@@ -68,7 +70,7 @@ def run(settings_module: str = "", s_start_datetime: str = "", s_end_datetime: s
         logger.error("Aborting run: Date range must be prior to the 17th December")
         return
 
-    config, settings_module = get_config(settings_module)
+    config, settings_module = cast(Tuple[Config, str], get_config(settings_module))
 
     logging.config.dictConfig(config.LOGGING)
 
