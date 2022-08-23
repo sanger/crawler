@@ -2,10 +2,10 @@ from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest
+from lab_share_lib.types import RabbitServerDetails
 from pika import PlainCredentials
 
 from crawler.rabbit.basic_getter import BasicGetter
-from crawler.types import RabbitServerDetails
 
 DEFAULT_SERVER_DETAILS = RabbitServerDetails(
     uses_ssl=False, host="host", port=5672, username="username", password="password", vhost="vhost"

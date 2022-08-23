@@ -6,15 +6,14 @@ from http import HTTPStatus
 import flask
 import werkzeug
 from flask_apscheduler import APScheduler
+from lab_share_lib.config_readers import get_config
+from lab_share_lib.rabbit.rabbit_stack import RabbitStack
 
 from crawler.constants import SCHEDULER_JOB_ID_RUN_CRAWLER
 from crawler.db.mongo import create_mongo_client, get_mongo_db
 from crawler.helpers.db_helpers import ensure_mongo_collections_indexed
-from crawler.helpers.general_helpers import get_config
-from crawler.rabbit.rabbit_stack import RabbitStack
 
 scheduler = APScheduler()
-rabbit_stack = RabbitStack()
 
 
 def create_app(config_object: str = None) -> flask.Flask:
@@ -33,8 +32,11 @@ def create_app(config_object: str = None) -> flask.Flask:
         scheduler.start()
 
     config, _ = get_config(config_object or "")
+
+    rabbit_stack = RabbitStack(config_object)
+
     setup_mongo_indexes(config)
-    start_rabbit_consumer(config)
+    start_rabbit_consumer(rabbit_stack, config)
     setup_routes(app)
 
     @app.get("/health")
@@ -56,7 +58,7 @@ def setup_mongo_indexes(config):
         ensure_mongo_collections_indexed(db)
 
 
-def start_rabbit_consumer(config):
+def start_rabbit_consumer(rabbit_stack, config):
     # Flask in debug mode spawns a child process so that it can restart the process each time your code changes,
     # the new child process initializes and starts a new consumer causing more than one to exist.
     if (flask.helpers.get_debug_flag() and not werkzeug.serving.is_running_from_reloader()) or not config.RABBITMQ_HOST:

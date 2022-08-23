@@ -1,15 +1,16 @@
 import logging
 
+from lab_share_lib.processing.base_processor import BaseProcessor
+from lab_share_lib.rabbit.avro_encoder import AvroEncoder
+
 from crawler.constants import (
     RABBITMQ_ROUTING_KEY_UPDATE_SAMPLE_FEEDBACK,
     RABBITMQ_SUBJECT_UPDATE_SAMPLE_FEEDBACK,
     RABBITMQ_UPDATE_FEEDBACK_ORIGIN_PARSING,
 )
 from crawler.exceptions import TransientRabbitError
-from crawler.processing.base_processor import BaseProcessor
 from crawler.processing.update_sample_exporter import UpdateSampleExporter
 from crawler.processing.update_sample_validator import UpdateSampleValidator
-from crawler.rabbit.avro_encoder import AvroEncoder
 from crawler.rabbit.messages.parsers.update_sample_message import ErrorType, UpdateSampleError, UpdateSampleMessage
 from crawler.rabbit.messages.update_feedback_message import UpdateFeedbackMessage
 
