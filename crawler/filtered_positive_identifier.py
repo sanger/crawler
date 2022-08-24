@@ -1,6 +1,5 @@
 import decimal
 import re
-from abc import ABC
 from typing import Optional, Pattern, cast
 
 from bson.decimal128 import Decimal128, create_decimal128_context
@@ -22,7 +21,7 @@ FILTERED_POSITIVE_VERSION_2 = "v2"  # updated as per GPL-699 and GPL-740
 FILTERED_POSITIVE_VERSION_3 = "v3"  # updated as per DPL-018
 
 
-class FilteredPositiveIdentifier(ABC):
+class FilteredPositiveIdentifier:
     def __init__(self):
         self.version: str = ""
         self.ct_value_limit = decimal.Decimal(30)
@@ -108,13 +107,13 @@ def filtered_positive_identifier_by_version(version: str) -> FilteredPositiveIde
 
 class FilteredPositiveIdentifierV0(FilteredPositiveIdentifier):
     def __init__(self):
-        super(FilteredPositiveIdentifierV0, self).__init__()
+        super().__init__()
         self.version = FILTERED_POSITIVE_VERSION_0
 
 
 class FilteredPositiveIdentifierV1(FilteredPositiveIdentifier):
     def __init__(self):
-        super(FilteredPositiveIdentifierV1, self).__init__()
+        super().__init__()
         self.version = FILTERED_POSITIVE_VERSION_1
         self.root_sample_id_control_regex = re.compile("^CBIQA_")
         self.evaluate_ct_values = True
@@ -122,7 +121,7 @@ class FilteredPositiveIdentifierV1(FilteredPositiveIdentifier):
 
 class FilteredPositiveIdentifierV2(FilteredPositiveIdentifier):
     def __init__(self):
-        super(FilteredPositiveIdentifierV2, self).__init__()
+        super().__init__()
         self.version = FILTERED_POSITIVE_VERSION_2
         self.root_sample_id_control_regex = re.compile("^(?:CBIQA_|QC0|ZZA000)")
         self.evaluate_ct_values = True
@@ -130,7 +129,7 @@ class FilteredPositiveIdentifierV2(FilteredPositiveIdentifier):
 
 class FilteredPositiveIdentifierV3(FilteredPositiveIdentifier):
     def __init__(self):
-        super(FilteredPositiveIdentifierV3, self).__init__()
+        super().__init__()
         self.version = FILTERED_POSITIVE_VERSION_3
         self.root_sample_id_control_regex = re.compile("^(?:CBIQA_|QC0|ZZA)")
         self.evaluate_ct_values = True
