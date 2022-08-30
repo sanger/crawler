@@ -7,10 +7,10 @@ from crawler.constants import (
     RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK,
 )
 from crawler.exceptions import TransientRabbitError
-from crawler.processing.base_processor import BaseProcessor
+from lab_share_lib.processing.base_processor import BaseProcessor
 from crawler.processing.create_plate_exporter import CreatePlateExporter
 from crawler.processing.create_plate_validator import CreatePlateValidator
-from crawler.rabbit.avro_encoder import AvroEncoder
+from lab_share_lib.rabbit.avro_encoder import AvroEncoder
 from crawler.rabbit.messages.create_feedback_message import CreateFeedbackMessage
 from crawler.rabbit.messages.parsers.create_plate_message import CreatePlateError, CreatePlateMessage, ErrorType
 

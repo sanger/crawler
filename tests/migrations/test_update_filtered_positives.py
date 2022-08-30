@@ -2,8 +2,8 @@ from datetime import datetime
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
+from lab_share_lib.config_readers import get_config
 
-from crawler.helpers.general_helpers import get_config
 from migrations import update_filtered_positives
 
 # ----- test fixture helpers -----

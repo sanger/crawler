@@ -1,14 +1,17 @@
 import logging
 import logging.config
 import time
+from typing import Tuple, cast
+
+from lab_share_lib.config_readers import get_config
 
 from crawler.config.centres import CENTRE_DATA_SOURCE_SFTP, get_centres_config
 from crawler.constants import CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS, CENTRE_KEY_NAME, CENTRE_KEY_PREFIX
 from crawler.db.mongo import create_mongo_client, get_mongo_db
 from crawler.file_processing import Centre
 from crawler.helpers.db_helpers import ensure_mongo_collections_indexed
-from crawler.helpers.general_helpers import get_config
 from crawler.priority_samples_process import update_priority_samples
+from crawler.types import Config
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +19,7 @@ logger = logging.getLogger(__name__)
 def run(sftp: bool, keep_files: bool, add_to_dart: bool, settings_module: str = "", centre_prefix: str = "") -> None:
     try:
         start = time.time()
-        config, settings_module = get_config(settings_module)
+        config, settings_module = cast(Tuple[Config, str], get_config(settings_module))
 
         logging.config.dictConfig(config.LOGGING)
 

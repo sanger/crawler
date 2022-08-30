@@ -4,11 +4,11 @@ import ssl
 from dataclasses import dataclass
 from typing import Optional
 
+from lab_share_lib.types import RabbitServerDetails
 from pika import BlockingConnection, ConnectionParameters, PlainCredentials, SSLOptions
 from pika.adapters.blocking_connection import BlockingChannel
 
 from crawler.constants import LOGGER_NAME_RABBIT_MESSAGES
-from crawler.types import RabbitServerDetails
 
 LOGGER = logging.getLogger(__name__)
 MESSAGE_LOGGER = logging.getLogger(LOGGER_NAME_RABBIT_MESSAGES)

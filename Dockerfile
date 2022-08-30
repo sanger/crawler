@@ -12,6 +12,7 @@ RUN apt-get update && \
     apt-get install -y \
     build-essential \
     curl \
+    git \
     unixodbc-dev
 
 # Install the Microsoft ODBC driver for SQL Server
@@ -44,6 +45,8 @@ RUN pipenv sync --dev --system && \
 
 # Copy all the source to the image
 COPY . .
+
+RUN pipenv install --dev
 
 # "The best use for ENTRYPOINT is to set the image’s main command, allowing that image to be run as though it was that
 #   command (and then use CMD as the default flags)."

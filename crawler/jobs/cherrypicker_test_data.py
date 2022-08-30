@@ -2,9 +2,10 @@ import json
 import logging
 from datetime import datetime
 from functools import reduce
-from typing import List
+from typing import List, Tuple, cast
 
 from bson.objectid import ObjectId
+from lab_share_lib.config_readers import get_config
 from pymongo.collection import Collection
 
 from crawler.constants import (
@@ -30,7 +31,6 @@ from crawler.constants import (
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.exceptions import CherrypickerDataError
 from crawler.helpers.cherrypicker_test_data import create_barcode_meta, create_barcodes, create_plate_messages
-from crawler.helpers.general_helpers import get_config
 from crawler.processing.cptd_processor import CPTDProcessor
 from crawler.types import Config
 
@@ -56,7 +56,7 @@ def process(run_id: str, config: Config = None) -> List[List[str]]:
     logger.info("Begin generating data.")
 
     if config is None:
-        config, _ = get_config()
+        config, _ = cast(Tuple[Config, str], get_config())
 
     with create_mongo_client(config) as mongo_client:
         mongo_db = get_mongo_db(config, mongo_client)

@@ -4,6 +4,12 @@ from enum import Enum, auto
 from time import sleep, time
 from typing import Optional
 
+from lab_share_lib.config_readers import get_basic_publisher, get_rabbit_server_details, get_redpanda_schema_registry
+from lab_share_lib.processing.rabbit_message import RabbitMessage
+from lab_share_lib.rabbit.avro_encoder import AvroEncoder
+from lab_share_lib.rabbit.basic_publisher import BasicPublisher
+from lab_share_lib.rabbit.schema_registry import SchemaRegistry
+
 from crawler.constants import (
     RABBITMQ_ROUTING_KEY_CREATE_PLATE,
     RABBITMQ_SUBJECT_CREATE_PLATE,
@@ -11,14 +17,9 @@ from crawler.constants import (
     TEST_DATA_ERROR_PLATE_CREATION_FAILED,
 )
 from crawler.exceptions import CherrypickerDataError
-from crawler.helpers.general_helpers import get_basic_publisher, get_rabbit_server_details, get_redpanda_schema_registry
-from crawler.processing.rabbit_message import RabbitMessage
-from crawler.rabbit.avro_encoder import AvroEncoder
 from crawler.rabbit.basic_getter import BasicGetter, FetchedMessage
-from crawler.rabbit.basic_publisher import BasicPublisher
 from crawler.rabbit.messages.parsers.create_plate_feedback_message import CreatePlateFeedbackMessage
 from crawler.rabbit.messages.parsers.create_plate_message import FIELD_MESSAGE_UUID
-from crawler.rabbit.schema_registry import SchemaRegistry
 from crawler.types import Config
 
 LOGGER = logging.getLogger(__name__)

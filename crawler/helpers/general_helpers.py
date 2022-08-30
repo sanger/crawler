@@ -1,13 +1,10 @@
 import logging
-import os
 import re
 import string
-import sys
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from importlib import import_module
-from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
+from typing import Any, Dict, Iterable, List, Optional
 
 import pysftp
 from bson.decimal128 import Decimal128
@@ -84,9 +81,7 @@ from crawler.constants import (
     MLWH_UPDATED_AT,
     RESULT_VALUE_POSITIVE,
 )
-from crawler.rabbit.basic_publisher import BasicPublisher
-from crawler.rabbit.schema_registry import SchemaRegistry
-from crawler.types import Config, DartWellProp, ModifiedRowValue, RabbitServerDetails, SampleDoc, SourcePlateDoc
+from crawler.types import Config, DartWellProp, ModifiedRowValue, SampleDoc, SourcePlateDoc
 
 logger = logging.getLogger(__name__)
 
@@ -130,53 +125,6 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
         password=sftp_password,
         cnopts=cnopts,
     )
-
-
-def get_redpanda_schema_registry(config: Config) -> SchemaRegistry:
-    redpanda_url = config.REDPANDA_BASE_URI
-    redpanda_api_key = config.REDPANDA_API_KEY
-    return SchemaRegistry(redpanda_url, redpanda_api_key)
-
-
-def get_rabbit_server_details(config: Config, username: str = "", password: str = "") -> RabbitServerDetails:
-    return RabbitServerDetails(
-        uses_ssl=config.RABBITMQ_SSL,
-        host=config.RABBITMQ_HOST,
-        port=config.RABBITMQ_PORT,
-        username=config.RABBITMQ_USERNAME if not username else username,
-        password=config.RABBITMQ_PASSWORD if not password else password,
-        vhost=config.RABBITMQ_VHOST,
-    )
-
-
-def get_basic_publisher(config: Config, username: str = "", password: str = "") -> BasicPublisher:
-    return BasicPublisher(
-        get_rabbit_server_details(config, username, password),
-        config.RABBITMQ_PUBLISH_RETRY_DELAY,
-        config.RABBITMQ_PUBLISH_RETRIES,
-    )
-
-
-def get_config(settings_module: str = "") -> Tuple[Config, str]:
-    """Get the config for the app by importing a module named by an environment variable. This allows easy switching
-    between environments and inheriting default config values.
-
-    Arguments:
-        settings_module (str, optional): the settings module to load. Defaults to "".
-
-    Returns:
-        Tuple[Config, str]: tuple with the config module loaded and available to use via `config.<param>` and the
-        settings module used
-    """
-    try:
-        if not settings_module:
-            settings_module = os.environ["SETTINGS_MODULE"]
-
-        config_module = cast(Config, import_module(settings_module))
-
-        return config_module, settings_module
-    except KeyError as e:
-        sys.exit(f"{e} required in environment variables for config.")
 
 
 def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:
