@@ -132,7 +132,7 @@ def _create_sample(dt: datetime, index: int, result: str, plate_barcode: str) ->
         plateCoordinate=well_coordinate,
         preferentiallySequence=False,
         mustSequence=False,
-        fitToPick=True,
+        fitToPick=True if result == "positive" else False,
         result=result,
         testedDateUtc=dt,
     )

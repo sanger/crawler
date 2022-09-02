@@ -225,7 +225,7 @@ def test_create_plate_messages():
             assert sample["plateCoordinate"] == WELL_COORDS[sample_i]
             assert sample["preferentiallySequence"] is False
             assert sample["mustSequence"] is False
-            assert sample["fitToPick"] is True
+            assert sample["fitToPick"] is (True if sample["result"] == "positive" else False)
             assert sample["testedDateUtc"] == dt
 
         # Check the correct number of positives exist among all the samples
