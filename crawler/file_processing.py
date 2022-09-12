@@ -436,6 +436,7 @@ class CentreFile:
 
         # Internally traps TYPE 26 failed assigning source plate UUIDs error and returns []
         docs_to_insert = self.docs_to_insert_updated_with_source_plate_uuids(docs_to_insert)
+        docs_to_insert = self.docs_to_insert_updated_with_cog_uk_ids(docs_to_insert)
 
         if (num_docs_to_insert := len(docs_to_insert)) > 0:
             # Mongodb, MLWH and DART will all be updated from the same memory object after parsing the files
@@ -634,6 +635,32 @@ class CentreFile:
             )
             logger.critical("Error assigning source plate UUIDs to samples in file " f"{self.file_name}: {e}")
             logger.exception(e)
+            updated_docs = []
+
+        return updated_docs
+
+    def docs_to_insert_updated_with_cog_uk_ids(self, docs_to_insert: List[ModifiedRow]) -> List[ModifiedRow]:
+        """Updates sample records with COG UK IDs.
+
+        Arguments:
+            docs_to_insert {List[ModifiedRow]} -- the sample records to update.
+
+        Returns:
+            List[ModifiedRow] -- the updated samples.
+        """
+        logger.debug("Attempting to update docs with COG UK IDs")
+
+        updated_docs: List[ModifiedRow] = []
+
+        try:
+            pass
+        except Exception as ex:
+            self.logging_collection.add_error(
+                "TYPE 35",
+                f"Failed assigning COG UK IDs to samples in file {self.file_name}",
+            )
+            logger.critical("Error assigning COG UK IDs to samples in file " f"{self.file_name}: {ex}")
+            logger.exception(ex)
             updated_docs = []
 
         return updated_docs

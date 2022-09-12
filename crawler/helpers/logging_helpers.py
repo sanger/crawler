@@ -408,6 +408,17 @@ class AggregateType34(AggregateTypeBase):
         self.short_display_description = "Ignorable file provided"
 
 
+class AggregateType35(AggregateTypeBase):
+    def __init__(self):
+        super().__init__()
+        self.type_str = "TYPE 35"
+        self.error_level = ErrorLevel.CRITICAL
+        self.message = (
+            f"{self.error_level.name}: Files where COG UK IDs could not be assigned to any sample " f"({self.type_str})"
+        )
+        self.short_display_description = "Failed assigning COG UK IDs"
+
+
 # Class to handle logging of errors of the various types per file
 class LoggingCollection:
     def __init__(self):
@@ -447,6 +458,7 @@ class LoggingCollection:
             "TYPE 32": AggregateType32(),
             "TYPE 33": AggregateType33(),
             "TYPE 34": AggregateType34(),
+            "TYPE 35": AggregateType35(),
         }
 
     def add_error(self, aggregate_error_type: str, message: str) -> None:
