@@ -147,6 +147,7 @@ TEST_DATA_ERROR_PLATE_CREATION_FAILED: Final[
 MLWH_TABLE_NAME: Final[str] = "lighthouse_sample"
 MLWH_MONGODB_ID: Final[str] = "mongodb_id"
 MLWH_ROOT_SAMPLE_ID: Final[str] = "root_sample_id"
+MLWH_COG_UK_ID: Final[str] = "cog_uk_id"
 MLWH_RNA_ID: Final[str] = "rna_id"
 MLWH_PLATE_BARCODE: Final[str] = "plate_barcode"
 MLWH_COORDINATE: Final[str] = "coordinate"

@@ -38,6 +38,7 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_MONGO_COG_UK_ID,
     FIELD_MONGO_LAB_ID,
     FIELD_MONGODB_ID,
     FIELD_MUST_SEQUENCE,
@@ -60,6 +61,7 @@ from crawler.constants import (
     MLWH_CH4_CQ,
     MLWH_CH4_RESULT,
     MLWH_CH4_TARGET,
+    MLWH_COG_UK_ID,
     MLWH_COORDINATE,
     MLWH_CREATED_AT,
     MLWH_DATE_TESTED,
@@ -140,6 +142,7 @@ def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:
         # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
         MLWH_MONGODB_ID: str(sample.get(FIELD_MONGODB_ID)),
         MLWH_ROOT_SAMPLE_ID: sample.get(FIELD_ROOT_SAMPLE_ID),
+        MLWH_COG_UK_ID: sample.get(FIELD_MONGO_COG_UK_ID),
         MLWH_RNA_ID: sample.get(FIELD_RNA_ID),
         MLWH_PLATE_BARCODE: sample.get(FIELD_PLATE_BARCODE),
         MLWH_COORDINATE: unpad_coordinate(sample.get(FIELD_COORDINATE)),
