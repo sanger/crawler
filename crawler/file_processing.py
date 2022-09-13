@@ -65,6 +65,7 @@ from crawler.constants import (
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_LINE_NUMBER,
+    FIELD_MONGO_COG_UK_ID,
     FIELD_MONGO_LAB_ID,
     FIELD_MONGODB_ID,
     FIELD_PLATE_BARCODE,
@@ -91,7 +92,13 @@ from crawler.db.mysql import insert_or_update_samples_in_mlwh
 from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.db_helpers import create_mongo_import_record
 from crawler.helpers.enums import CentreFileState
-from crawler.helpers.general_helpers import create_source_plate_doc, current_time, get_sftp_connection, pad_coordinate
+from crawler.helpers.general_helpers import (
+    create_source_plate_doc,
+    current_time,
+    generate_baracoda_barcodes,
+    get_sftp_connection,
+    pad_coordinate,
+)
 from crawler.helpers.logging_helpers import LoggingCollection
 from crawler.types import CentreConf, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc
 
@@ -653,7 +660,13 @@ class CentreFile:
         updated_docs: List[ModifiedRow] = []
 
         try:
-            pass
+            prefix = self.centre_config[CENTRE_KEY_PREFIX]
+            count = len(docs_to_insert)
+            cog_uk_ids = generate_baracoda_barcodes(self.config, prefix, count)
+
+            for i, row in enumerate(docs_to_insert):
+                row[FIELD_MONGO_COG_UK_ID] = cog_uk_ids[i]
+                updated_docs.append(row)
         except Exception as ex:
             self.logging_collection.add_error(
                 "TYPE 35",
@@ -687,7 +700,7 @@ class CentreFile:
             # inserted_ids is in the same order as docs_to_insert, even if the query has ordered=False parameter
             return list(result.inserted_ids)
 
-        # TODO could trap DuplicateKeyError specifically
+        # Cannot simply trap DuplicateKeyError specifically because the first error prevents all others being raised.
         except BulkWriteError as e:
             # This is happening when there are duplicates in the data and the index prevents the records from being
             # written
