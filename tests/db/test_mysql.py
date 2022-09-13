@@ -156,19 +156,20 @@ def test_partition():
 def test_reset_is_current_flags(mlwh_rw_db):
     connection, cursor = mlwh_rw_db
 
-    def insert_lighthouse_sample(root_sample_id, rna_id, result, is_current):
+    def insert_lighthouse_sample(root_sample_id, rna_id, cog_uk_id, result, is_current):
         cursor.execute(
             (
-                f"INSERT INTO lighthouse_sample (root_sample_id, rna_id, result, updated_at, is_current)"
-                f" VALUES ('{root_sample_id}', '{rna_id}', '{result}', '2020-01-02 03:04:05', {is_current});"
+                "INSERT INTO lighthouse_sample"
+                f" (root_sample_id, rna_id, cog_uk_id, result, updated_at, is_current) VALUES"
+                f" ('{root_sample_id}', '{rna_id}', '{cog_uk_id}', '{result}', '2020-01-02 03:04:05', {is_current});"
             )
         )
 
-    insert_lighthouse_sample("rna_1", "rna_A01", "negative", 0)
-    insert_lighthouse_sample("rna_2", "rna_A01", "positive", 1)
-    insert_lighthouse_sample("rna_3", "rna_A02", "positive", 0)
-    insert_lighthouse_sample("rna_4", "rna_A02", "negative", 1)
-    insert_lighthouse_sample("rna_5", "rna_A03", "positive", 1)
+    insert_lighthouse_sample("rna_1", "rna_A01", "TEST-123ABC", "negative", 0)
+    insert_lighthouse_sample("rna_2", "rna_A01", "TEST-123ABD", "positive", 1)
+    insert_lighthouse_sample("rna_3", "rna_A02", "TEST-123ABE", "positive", 0)
+    insert_lighthouse_sample("rna_4", "rna_A02", "TEST-123ABF", "negative", 1)
+    insert_lighthouse_sample("rna_5", "rna_A03", "TEST-123AC0", "positive", 1)
 
     connection.commit()
 
@@ -236,6 +237,7 @@ def test_insert_samples_in_mlwh_inserts_one_complete_sample_correctly(config, ml
         "rna_id",
         "root_sample_id",
         "source",
+        "cog_uk_id",
     ]
     cursor.execute(f"SELECT {','.join(fields)} FROM lighthouse_sample;")
     rows = [row for row in cursor.fetchall()]
@@ -272,6 +274,7 @@ def test_insert_samples_in_mlwh_inserts_one_complete_sample_correctly(config, ml
         "95123456789012345_C03",
         "BAA94123456",
         "Bob's Biotech",
+        "TEST-1234ABCD",
     )
 
 

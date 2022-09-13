@@ -17,6 +17,7 @@ SQL_MLWH_MULTIPLE_INSERT = """
 INSERT INTO lighthouse_sample (
 mongodb_id,
 root_sample_id,
+cog_uk_id,
 rna_id,
 plate_barcode,
 coordinate,
@@ -50,6 +51,7 @@ is_current
 VALUES (
 %(mongodb_id)s,
 %(root_sample_id)s,
+%(cog_uk_id)s,
 %(rna_id)s,
 %(plate_barcode)s,
 %(coordinate)s,
