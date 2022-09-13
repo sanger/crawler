@@ -1,21 +1,14 @@
-import json
 from datetime import datetime
-from functools import partial
-from http import HTTPStatus
 from unittest.mock import patch
 
 import pytest
-import responses
-from requests import ConnectionError
 
-from crawler.exceptions import CherrypickerDataError
 from crawler.helpers.cherrypicker_test_data import (
     WELL_COORDS,
     _create_rna_id,
     _create_root_sample_id,
     _flat_list_of_positives_per_plate,
     _flatten,
-    _generate_baracoda_barcodes,
     create_barcode_meta,
     create_barcodes,
     create_plate_messages,
@@ -26,20 +19,6 @@ from crawler.helpers.cherrypicker_test_data import (
 def logger():
     with patch("crawler.helpers.cherrypicker_test_data.LOGGER") as logger:
         yield logger
-
-
-@pytest.fixture
-def request_post_mock():
-    with patch("requests.post") as mock:
-        yield mock
-
-
-@pytest.fixture
-def mocked_responses():
-    """Easily mock responses from HTTP calls.
-    https://github.com/getsentry/responses#responses-as-a-pytest-fixture"""
-    with responses.RequestsMock() as rsps:
-        yield rsps
 
 
 def test_flatten_reduces_lists():
@@ -61,96 +40,12 @@ def test_create_barcodes(config, count):
     expected = ["TEST-012345", "TEST-012346", "TEST-012347"]
 
     with patch(
-        "crawler.helpers.cherrypicker_test_data._generate_baracoda_barcodes", return_value=expected
+        "crawler.helpers.cherrypicker_test_data.generate_baracoda_barcodes", return_value=expected
     ) as generate_barcodes:
         actual = create_barcodes(config, count)
 
     assert generate_barcodes.called_with(count)
     assert actual == expected
-
-
-@pytest.mark.parametrize("count", [2, 3])
-def test_generate_baracoda_barcodes_working_fine(config, count, mocked_responses):
-    expected = ["TEST-012345", "TEST-012346", "TEST-012347"]
-    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/TEST/new?count={count}"
-
-    mocked_responses.add(
-        responses.POST,
-        baracoda_url,
-        json={"barcodes_group": {"barcodes": expected}},
-        status=HTTPStatus.CREATED,
-    )
-
-    out = _generate_baracoda_barcodes(config, count)
-    assert out == expected
-    assert len(mocked_responses.calls) == 1
-
-
-@pytest.mark.parametrize("count", [2, 3])
-def test_generate_baracoda_barcodes_will_retry_if_fail(config, count, mocked_responses):
-    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/TEST/new?count={count}"
-
-    mocked_responses.add(
-        responses.POST,
-        baracoda_url,
-        json={"errors": ["Some error from baracoda"]},
-        status=HTTPStatus.INTERNAL_SERVER_ERROR,
-    )
-
-    with pytest.raises(Exception):
-        _generate_baracoda_barcodes(config, count)
-
-    assert len(mocked_responses.calls) == config.BARACODA_RETRY_ATTEMPTS
-
-
-@pytest.mark.parametrize("count", [2, 3])
-@pytest.mark.parametrize("exception_type", [ConnectionError, Exception])
-def test_generate_baracoda_barcodes_will_retry_if_exception(config, count, exception_type, mocked_responses):
-    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/TEST/new?count={count}"
-
-    mocked_responses.add(
-        responses.POST,
-        baracoda_url,
-        body=exception_type("Some error"),
-        status=HTTPStatus.INTERNAL_SERVER_ERROR,
-    )
-
-    with pytest.raises(CherrypickerDataError):
-        _generate_baracoda_barcodes(config, count)
-
-    assert len(mocked_responses.calls) == config.BARACODA_RETRY_ATTEMPTS
-
-
-@pytest.mark.parametrize("count", [2, 3])
-def test_generate_baracoda_barcodes_will_not_raise_error_if_success_after_retry(config, count, mocked_responses):
-    expected = ["TEST-012345", "TEST-012346", "TEST-012347"]
-    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/TEST/new?count={count}"
-
-    def request_callback(request, data):
-        data["calls"] = data["calls"] + 1
-
-        if data["calls"] == config.BARACODA_RETRY_ATTEMPTS:
-            return (
-                HTTPStatus.CREATED,
-                {},
-                json.dumps({"barcodes_group": {"barcodes": expected}}),
-            )
-        return (
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-            {},
-            json.dumps({"errors": ["Some error from baracoda"]}),
-        )
-
-    mocked_responses.add_callback(
-        responses.POST,
-        baracoda_url,
-        callback=partial(request_callback, data={"calls": 0}),
-        content_type="application/json",
-    )
-
-    _generate_baracoda_barcodes(config, count)
-
-    assert len(mocked_responses.calls) == config.BARACODA_RETRY_ATTEMPTS
 
 
 @pytest.mark.parametrize(

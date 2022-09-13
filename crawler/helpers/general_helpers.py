@@ -4,9 +4,11 @@ import string
 import uuid
 from datetime import datetime
 from decimal import Decimal
+from http import HTTPStatus
 from typing import Any, Dict, Iterable, List, Optional
 
 import pysftp
+import requests
 from bson.decimal128 import Decimal128
 
 from crawler.constants import (
@@ -17,6 +19,9 @@ from crawler.constants import (
     DART_ROOT_SAMPLE_ID,
     DART_STATE,
     DART_STATE_PICKABLE,
+    ERROR_BARACODA_COG_BARCODES,
+    ERROR_BARACODA_CONNECTION,
+    ERROR_BARACODA_UNKNOWN,
     FIELD_BARCODE,
     FIELD_CH1_CQ,
     FIELD_CH1_RESULT,
@@ -83,9 +88,10 @@ from crawler.constants import (
     MLWH_UPDATED_AT,
     RESULT_VALUE_POSITIVE,
 )
+from crawler.exceptions import BaracodaError
 from crawler.types import Config, DartWellProp, ModifiedRowValue, SampleDoc, SourcePlateDoc
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def current_time() -> str:
@@ -127,6 +133,36 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
         password=sftp_password,
         cnopts=cnopts,
     )
+
+
+def generate_baracoda_barcodes(config: Config, prefix: str, num_required: int) -> list:
+    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{prefix}/new?count={num_required}"
+
+    retries = config.BARACODA_RETRY_ATTEMPTS
+    exception_msg = None
+    response_json = None
+    while retries > 0:
+        try:
+            response = requests.post(baracoda_url)
+            if response.status_code == HTTPStatus.CREATED:
+                response_json = response.json()
+                barcodes: list = response_json["barcodes_group"]["barcodes"]
+                return barcodes
+            else:
+                retries = retries - 1
+                LOGGER.error(ERROR_BARACODA_COG_BARCODES)
+                LOGGER.error(response.json())
+                exception_msg = ERROR_BARACODA_COG_BARCODES
+        except requests.ConnectionError as e:
+            retries = retries - 1
+            LOGGER.error(ERROR_BARACODA_CONNECTION)
+            exception_msg = f"{ERROR_BARACODA_CONNECTION} -- {str(e)}"
+        except Exception:
+            retries = retries - 1
+            LOGGER.error(ERROR_BARACODA_UNKNOWN)
+            exception_msg = ERROR_BARACODA_UNKNOWN
+
+    raise BaracodaError(exception_msg)
 
 
 def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:
