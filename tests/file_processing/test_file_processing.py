@@ -7,10 +7,10 @@ from io import StringIO
 from typing import List
 from unittest.mock import MagicMock, patch
 
+import pytest
 from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
 from mysql.connector.connection_cext import CMySQLConnection
-from pytest import mark
 
 from crawler.constants import (
     CENTRE_KEY_BACKUPS_FOLDER,
@@ -48,6 +48,7 @@ from crawler.constants import (
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_LINE_NUMBER,
+    FIELD_MONGO_COG_UK_ID,
     FIELD_MONGO_LAB_ID,
     FIELD_MUST_SEQUENCE,
     FIELD_PLATE_BARCODE,
@@ -71,6 +72,7 @@ from crawler.constants import (
     MLWH_CH4_CQ,
     MLWH_CH4_RESULT,
     MLWH_CH4_TARGET,
+    MLWH_COG_UK_ID,
     MLWH_COORDINATE,
     MLWH_CREATED_AT,
     MLWH_DATE_TESTED,
@@ -118,7 +120,7 @@ def test_get_download_dir(config):
         assert centre.get_download_dir() == f"{config.DIR_DOWNLOADED_DATA}{centre_config[CENTRE_KEY_PREFIX]}/"
 
 
-def test_process_files(mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn):
+def test_process_files(mongo_database, config, baracoda, testing_files_for_process, testing_centres, pyodbc_conn):
     _, mongo_database = mongo_database
 
     centre_config = config.CENTRES[3]
@@ -202,7 +204,7 @@ def test_process_files_correctly_handles_files_not_to_be_processed(
     assert len(os.listdir(errors_path)) == 3
 
 
-def test_process_files_one_wrong_format(mongo_database, config, testing_files_for_process, testing_centres):
+def test_process_files_one_wrong_format(mongo_database, config, baracoda, testing_files_for_process, testing_centres):
     """Test using files in the files/TEST directory; they include a rogue XLSX file dressed as CSV file."""
     _, mongo_database = mongo_database
 
@@ -236,7 +238,7 @@ HSLL_CONSOLIDATED_SURVEILLANCE_FILENAME1 = "HSL123456.csv"
 HSLL_CONSOLIDATED_SURVEILLANCE_FILENAME2 = "HSL123456789.csv"
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "filename, centre_config_index, expected_value",
     [
         [UNCONSOLIDATED_SURVEILLANCE_FILENAME, 0, True],
@@ -260,7 +262,7 @@ def test_can_identify_valid_filename(config, filename, centre_config_index, expe
     assert centre.is_valid_filename(filename) is expected_value
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "filename, expected_value",
     [
         [UNCONSOLIDATED_SURVEILLANCE_FILENAME, False],
@@ -273,7 +275,7 @@ def test_can_identify_consolidated_filename(config, filename, expected_value):
     assert centre.is_consolidated_filename(filename) is expected_value
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "filename, expected_value",
     [
         [UNCONSOLIDATED_SURVEILLANCE_FILENAME, False],
@@ -286,7 +288,7 @@ def test_can_identify_eagle_filename(config, filename, expected_value):
     assert centre.is_eagle_filename(filename) is expected_value
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "filename, expected_value",
     [
         [UNCONSOLIDATED_SURVEILLANCE_FILENAME, False],
@@ -299,7 +301,7 @@ def test_can_identify_consolidated_surveillance_filename(config, filename, expec
     assert centre.is_consolidated_surveillance_filename(filename) is expected_value
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "filename, expected_value",
     [
         [UNCONSOLIDATED_SURVEILLANCE_FILENAME, True],
@@ -312,7 +314,7 @@ def test_can_identify_surveillance_filename(config, filename, expected_value):
     assert centre.is_surveillance_filename(filename) is expected_value
 
 
-def test_process_files_with_whitespace(mongo_database, config, testing_files_for_process, testing_centres):
+def test_process_files_with_whitespace(mongo_database, config, baracoda, testing_files_for_process, testing_centres):
     """Test using files in the files/TEST directory; they include a file with lots of whitespace."""
     _, mongo_database = mongo_database
 
@@ -351,7 +353,7 @@ def test_process_files_with_whitespace(mongo_database, config, testing_files_for
 # ----- tests for class CentreFile -----
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "filename, expected_value",
     [
         [UNCONSOLIDATED_SURVEILLANCE_FILENAME, False],
@@ -1229,7 +1231,7 @@ def test_where_positive_result_does_not_align_with_ct_channel_results(config):
         assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "filename, expected_value",
     [
         [UNCONSOLIDATED_SURVEILLANCE_FILENAME, True],
@@ -1493,6 +1495,7 @@ def test_insert_samples_from_docs_into_mlwh(
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABC",
             FIELD_RNA_ID: "TC-rna-00000029_H11",
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_COORDINATE: "H11",
@@ -1506,6 +1509,7 @@ def test_insert_samples_from_docs_into_mlwh(
         {
             "_id": ObjectId("5f562d9931d9959b92544729"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000005",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABD",
             FIELD_RNA_ID: "TC-rna-00000029_H12",
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_COORDINATE: "H12",
@@ -1549,6 +1553,7 @@ def test_insert_samples_from_docs_into_mlwh(
 
     assert rows[0][MLWH_MONGODB_ID] == "5f562d9931d9959b92544728"
     assert rows[0][MLWH_ROOT_SAMPLE_ID] == "ABC00000004"
+    assert rows[0][MLWH_COG_UK_ID] == "TEST-123ABC"
     assert rows[0][MLWH_RNA_ID] == "TC-rna-00000029_H11"
     assert rows[0][MLWH_PLATE_BARCODE] == "TC-rna-00000029"
     assert rows[0][MLWH_COORDINATE] == "H11"
@@ -1578,6 +1583,7 @@ def test_insert_samples_from_docs_into_mlwh(
 
     assert rows[1][MLWH_MONGODB_ID] == "5f562d9931d9959b92544729"
     assert rows[1][MLWH_ROOT_SAMPLE_ID] == "ABC00000005"
+    assert rows[1][MLWH_COG_UK_ID] == "TEST-123ABD"
     assert rows[1][MLWH_RNA_ID] == "TC-rna-00000029_H12"
     assert rows[1][MLWH_PLATE_BARCODE] == "TC-rna-00000029"
     assert rows[1][MLWH_COORDINATE] == "H12"
@@ -1614,6 +1620,7 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_con
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABC",
             FIELD_RNA_ID: "TC-rna-00000029_H11",
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_COORDINATE: "H11",
@@ -1648,6 +1655,7 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_none(
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABC",
             FIELD_RNA_ID: "TC-rna-00000029_H11",
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_COORDINATE: "H11",
@@ -1684,6 +1692,7 @@ def test_insert_samples_from_docs_into_mlwh_returns_false_none_connection(config
             {
                 "_id": ObjectId("5f562d9931d9959b92544728"),
                 FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+                FIELD_MONGO_COG_UK_ID: "TEST-123ABC",
                 FIELD_RNA_ID: "TC-rna-00000029_H11",
                 FIELD_PLATE_BARCODE: "TC-rna-00000029",
                 FIELD_COORDINATE: "H11",
@@ -1708,6 +1717,7 @@ def test_insert_samples_from_docs_into_mlwh_returns_false_not_connected(config, 
             {
                 "_id": ObjectId("5f562d9931d9959b92544728"),
                 FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+                FIELD_MONGO_COG_UK_ID: "TEST-123ABC",
                 FIELD_RNA_ID: "TC-rna-00000029_H11",
                 FIELD_PLATE_BARCODE: "TC-rna-00000029",
                 FIELD_COORDINATE: "H11",
@@ -1732,6 +1742,7 @@ def test_insert_samples_from_docs_into_mlwh_returns_failure_executing(config, ml
                 {
                     "_id": ObjectId("5f562d9931d9959b92544728"),
                     FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+                    FIELD_MONGO_COG_UK_ID: "TEST-123ABC",
                     FIELD_RNA_ID: "TC-rna-00000029_H11",
                     FIELD_PLATE_BARCODE: "TC-rna-00000029",
                     FIELD_COORDINATE: "H11",
@@ -1780,6 +1791,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_failure_adding_new_plate(co
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABC",
             FIELD_RNA_ID: "TC-rna-00000029_H11",
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_LAB_ID: "AP",
@@ -1809,6 +1821,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_non_pending_plate_does_not_
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABC",
             FIELD_RNA_ID: "TC-rna-00000029_H11",
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_LAB_ID: "AP",
@@ -1834,6 +1847,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_none_well_index(config):
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABC",
             FIELD_RNA_ID: "TC-rna-00000029_H11",
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_LAB_ID: "AP",
@@ -1865,6 +1879,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABC",
             FIELD_RNA_ID: "TC-rna-00000029_A01",
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_COORDINATE: "A01",
@@ -1874,6 +1889,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000006",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABD",
             FIELD_RNA_ID: "TC-rna-00000024_B01",
             FIELD_PLATE_BARCODE: "TC-rna-00000024",
             FIELD_COORDINATE: "B01",
@@ -1883,6 +1899,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_multiple_new_plates(config)
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000008",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABE",
             FIELD_RNA_ID: "TC-rna-00000024_H01",
             FIELD_PLATE_BARCODE: "TC-rna-00000020",
             FIELD_COORDINATE: "H01",
@@ -1944,6 +1961,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABC",
             FIELD_RNA_ID: f"{plate_barcode}_A01",
             FIELD_PLATE_BARCODE: plate_barcode,
             FIELD_COORDINATE: "A01",
@@ -1953,6 +1971,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000006",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABD",
             FIELD_RNA_ID: f"{plate_barcode}_A02",
             FIELD_PLATE_BARCODE: plate_barcode,
             FIELD_COORDINATE: "A02",
@@ -1962,6 +1981,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000008",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABE",
             FIELD_RNA_ID: f"{plate_barcode}_A03",
             FIELD_PLATE_BARCODE: plate_barcode,
             FIELD_COORDINATE: "A03",
@@ -1971,6 +1991,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_single_new_plate_multiple_w
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000009",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABF",
             FIELD_RNA_ID: f"{plate_barcode}_A04",
             FIELD_PLATE_BARCODE: plate_barcode,
             FIELD_COORDINATE: "A04",
@@ -2091,7 +2112,7 @@ def test_docs_to_insert_updated_with_source_plate_uuids_uses_existing_plates(con
     assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 0
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "filename, expected_type25_errors_count",
     [
         [UNCONSOLIDATED_SURVEILLANCE_FILENAME, 1],
@@ -2213,6 +2234,7 @@ def test_is_current_correctly_set(config, mlwh_connection):
         {
             "_id": ObjectId("5f562d9931d9959b92544721"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABC",
             FIELD_RNA_ID: "TC-rna-00000029_A01",
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_COORDINATE: "H11",
@@ -2223,6 +2245,7 @@ def test_is_current_correctly_set(config, mlwh_connection):
         {
             "_id": ObjectId("5f562d9931d9959b92544722"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000004",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABD",
             FIELD_RNA_ID: "TC-rna-00000029_A01",
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_COORDINATE: "H11",
@@ -2233,6 +2256,7 @@ def test_is_current_correctly_set(config, mlwh_connection):
         {
             "_id": ObjectId("5f562d9931d9959b92544723"),
             FIELD_ROOT_SAMPLE_ID: "ABC00000005",
+            FIELD_MONGO_COG_UK_ID: "TEST-123ABE",
             FIELD_RNA_ID: "TC-rna-00000029_B01",
             FIELD_PLATE_BARCODE: "TC-rna-00000029",
             FIELD_COORDINATE: "H11",
@@ -2315,7 +2339,7 @@ def test_center_can_download_only_recent_files(config, tmpdir, downloadable_file
         ]
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "filename, mode, expected_value",
     [
         ["AP_sanger_report_200423_2218.csv", 33188, True],

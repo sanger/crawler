@@ -1,11 +1,16 @@
 import copy
+import json
 import logging
 import logging.config
+import re
 import shutil
 from datetime import datetime
+from http import HTTPStatus
 from unittest.mock import patch
+from urllib import response
 
 import pytest
+import responses
 import sqlalchemy
 from lab_share_lib.config_readers import get_config
 from sqlalchemy import MetaData
@@ -133,6 +138,32 @@ def mlwh_rw_db(mlwh_connection):
         yield (mlwh_connection, cursor)
     finally:
         cursor.close()
+
+
+@pytest.fixture
+def baracoda(config):
+    barcode_index = int("123abc", 16)
+    barcodes_group_endpoint = re.escape("/barcodes_group/") + r"(\w+)" + re.escape("/new?count=") + r"(\d+)"
+
+    def generate_barcodes(request):
+        nonlocal barcode_index
+
+        match = re.match(barcodes_group_endpoint, request.path_url)
+        prefix = match.groups()[0]
+        count = int(match.groups()[1])
+
+        barcodes = [f"{prefix}-{hex(barcode_index + i)}" for i in range(count)]
+        barcode_index += count
+
+        return (HTTPStatus.CREATED, {}, json.dumps({"barcodes_group": {"barcodes": barcodes}}))
+
+    with responses.RequestsMock() as rsps:
+        rsps.add_callback(
+            responses.POST,
+            re.compile(re.escape(config.BARACODA_BASE_URL) + barcodes_group_endpoint),
+            generate_barcodes,
+        )
+        yield
 
 
 @pytest.fixture
