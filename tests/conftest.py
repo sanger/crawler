@@ -7,7 +7,6 @@ import shutil
 from datetime import datetime
 from http import HTTPStatus
 from unittest.mock import patch
-from urllib import response
 
 import pytest
 import responses
@@ -148,9 +147,9 @@ def baracoda(config):
     def generate_barcodes(request):
         nonlocal barcode_index
 
-        match = re.match(barcodes_group_endpoint, request.path_url)
-        prefix = match.groups()[0]
-        count = int(match.groups()[1])
+        if match := re.match(barcodes_group_endpoint, request.path_url):
+            prefix = match.groups()[0]
+            count = int(match.groups()[1])
 
         barcodes = [f"{prefix}-{(barcode_index + i):x}".upper() for i in range(count)]
         barcode_index += count

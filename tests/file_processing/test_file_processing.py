@@ -97,7 +97,7 @@ from crawler.db.mongo import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
 from crawler.helpers.general_helpers import get_sftp_connection
 from crawler.types import Config, ModifiedRow, SampleDoc
-from tests.conftest import centre_file, generate_new_object_for_string
+from tests.conftest import generate_new_object_for_string
 
 # ----- tests helpers -----
 
@@ -2226,7 +2226,7 @@ def test_docs_to_insert_updated_with_source_plate_handles_duplicate_existing_bar
 
 
 def test_docs_to_insert_updated_with_cog_uk_ids_adds_cog_uk_ids(config, baracoda):
-    original_docs = [
+    original_docs: List[ModifiedRow] = [
         {"_id": ObjectId("5f562d9931d9959b92544728")},
         {"_id": ObjectId("5f562d9931d9959b92544729")},
         {"_id": ObjectId("5f562d9931d9959b9254472a")},
@@ -2243,7 +2243,7 @@ def test_docs_to_insert_updated_with_cog_uk_ids_adds_cog_uk_ids(config, baracoda
 
 
 def test_docs_to_insert_updated_with_cog_uk_ids_logs_baracoda_error_and_returns_empty_list(config):
-    original_docs = [
+    original_docs: List[ModifiedRow] = [
         {"_id": ObjectId("5f562d9931d9959b92544728")},
         {"_id": ObjectId("5f562d9931d9959b92544729")},
         {"_id": ObjectId("5f562d9931d9959b9254472a")},
