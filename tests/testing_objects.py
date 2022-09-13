@@ -698,6 +698,7 @@ MLWH_SAMPLE_UNCONNECTED_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "DISCONNECTED_1",
             "root_sample_id": "root_1",
+            "cog_uk_id": "123ABC",
             "rna_id": "123_A01",
             "plate_barcode": "123",
             "coordinate": "A1",
@@ -711,6 +712,7 @@ MLWH_SAMPLE_UNCONNECTED_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "DISCONNECTED_2",
             "root_sample_id": "root_2",
+            "cog_uk_id": "123ABD",
             "rna_id": "456_A01",
             "plate_barcode": "456",
             "coordinate": "A1",
@@ -724,6 +726,7 @@ MLWH_SAMPLE_UNCONNECTED_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "DISCONNECTED_3",
             "root_sample_id": "root_3",
+            "cog_uk_id": "123ABE",
             "rna_id": "123_B01",
             "plate_barcode": "123",
             "coordinate": "A1",
@@ -737,6 +740,7 @@ MLWH_SAMPLE_UNCONNECTED_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "DISCONNECTED_4",
             "root_sample_id": "root_4",
+            "cog_uk_id": "123ABF",
             "rna_id": "123_C01",
             "plate_barcode": "123",
             "coordinate": "A1",
@@ -750,6 +754,7 @@ MLWH_SAMPLE_UNCONNECTED_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "DISCONNECTED_5",
             "root_sample_id": "root_5",
+            "cog_uk_id": "123AC0",
             "rna_id": "789_C01",
             "plate_barcode": "789",
             "coordinate": "C1",
@@ -764,6 +769,7 @@ MLWH_SAMPLE_UNCONNECTED_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "DISCONNECTED_6",
             "root_sample_id": "root_6",
+            "cog_uk_id": "123AC1",
             "rna_id": "781_C01",
             "plate_barcode": "781",
             "coordinate": "C1",
@@ -778,6 +784,7 @@ MLWH_SAMPLE_UNCONNECTED_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "DISCONNECTED_7",
             "root_sample_id": "root_7",
+            "cog_uk_id": "123AC2",
             "rna_id": "782_D01",
             "plate_barcode": "782",
             "coordinate": "D1",
@@ -797,6 +804,7 @@ MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "aaaaaaaaaaaaaaaaaaaaaaa1",
             "root_sample_id": "root_1",
+            "cog_uk_id": "123ABC",
             "rna_id": "pb_4_A01",
             "plate_barcode": "123",
             "coordinate": "A1",
@@ -810,6 +818,7 @@ MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "aaaaaaaaaaaaaaaaaaaaaaa2",
             "root_sample_id": "root_2",
+            "cog_uk_id": "123ABD",
             "rna_id": "pb_5_A01",
             "plate_barcode": "456",
             "coordinate": "A1",
@@ -823,6 +832,7 @@ MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "aaaaaaaaaaaaaaaaaaaaaaa3",
             "root_sample_id": "root_3",
+            "cog_uk_id": "123ABE",
             "rna_id": "pb_6_A01",
             "plate_barcode": "123",
             "coordinate": "A1",
@@ -836,6 +846,7 @@ MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "aaaaaaaaaaaaaaaaaaaaaaa4",
             "root_sample_id": "root_4",
+            "cog_uk_id": "123ABF",
             "rna_id": "pb_7_A01",
             "plate_barcode": "123",
             "coordinate": "A1",
@@ -849,6 +860,7 @@ MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "aaaaaaaaaaaaaaaaaaaaaaa5",
             "root_sample_id": "root_5",
+            "cog_uk_id": "123AC0",
             "rna_id": "pb_7_A01",
             "plate_barcode": "789",
             "coordinate": "A1",
@@ -863,6 +875,7 @@ MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "aaaaaaaaaaaaaaaaaaaaaaa6",
             "root_sample_id": "root_6",
+            "cog_uk_id": "123AC1",
             "rna_id": "pb_7_A01",
             "plate_barcode": "781",
             "coordinate": "B1",
@@ -877,6 +890,7 @@ MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "aaaaaaaaaaaaaaaaaaaaaaa7",
             "root_sample_id": "root_7",
+            "cog_uk_id": "123AC2",
             "rna_id": "pb_7_A01",
             "plate_barcode": "782",
             "coordinate": "B2",
@@ -950,6 +964,7 @@ MLWH_SAMPLE_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "1",
             "root_sample_id": "root_5",
+            "cog_uk_id": "123ABC",
             "rna_id": "pb_4_A01",
             "plate_barcode": "pb_4",
             "coordinate": "A1",
@@ -963,6 +978,7 @@ MLWH_SAMPLE_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "2",
             "root_sample_id": "root_6",
+            "cog_uk_id": "123ABD",
             "rna_id": "pb_5_A01",
             "plate_barcode": "pb_5",
             "coordinate": "A1",
@@ -976,6 +992,7 @@ MLWH_SAMPLE_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "3",
             "root_sample_id": "root_5",
+            "cog_uk_id": "123ABE",
             "rna_id": "pb_6_A01",
             "plate_barcode": "pb_6",
             "coordinate": "A1",
@@ -989,6 +1006,7 @@ MLWH_SAMPLE_LIGHTHOUSE_SAMPLE: Dict[str, Any] = {
         {
             "mongodb_id": "4",
             "root_sample_id": "root_4",
+            "cog_uk_id": "123ABF",
             "rna_id": "pb_3_A01",
             "plate_barcode": "pb_3",
             "coordinate": "A1",
