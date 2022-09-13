@@ -152,7 +152,7 @@ def baracoda(config):
         prefix = match.groups()[0]
         count = int(match.groups()[1])
 
-        barcodes = [f"{prefix}-{hex(barcode_index + i)}" for i in range(count)]
+        barcodes = [f"{prefix}-{(barcode_index + i):x}".upper() for i in range(count)]
         barcode_index += count
 
         return (HTTPStatus.CREATED, {}, json.dumps({"barcodes_group": {"barcodes": barcodes}}))

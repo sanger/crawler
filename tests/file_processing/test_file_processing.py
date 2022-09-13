@@ -97,7 +97,7 @@ from crawler.db.mongo import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
 from crawler.helpers.general_helpers import get_sftp_connection
 from crawler.types import Config, ModifiedRow, SampleDoc
-from tests.conftest import generate_new_object_for_string
+from tests.conftest import centre_file, generate_new_object_for_string
 
 # ----- tests helpers -----
 
@@ -2223,6 +2223,43 @@ def test_docs_to_insert_updated_with_source_plate_handles_duplicate_existing_bar
 
     assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
     assert centre_file.logging_collection.aggregator_types["TYPE 25"].count_errors == 1
+
+
+def test_docs_to_insert_updated_with_cog_uk_ids_adds_cog_uk_ids(config, baracoda):
+    original_docs = [
+        {"_id": ObjectId("5f562d9931d9959b92544728")},
+        {"_id": ObjectId("5f562d9931d9959b92544729")},
+        {"_id": ObjectId("5f562d9931d9959b9254472a")},
+    ]
+
+    centre = Centre(config, config.CENTRES[0])
+    prefix = centre.centre_config[CENTRE_KEY_PREFIX]
+    centre_file = CentreFile("some file", centre)
+    actual = centre_file.docs_to_insert_updated_with_cog_uk_ids(original_docs)
+
+    assert actual[0][FIELD_MONGO_COG_UK_ID] == f"{prefix}-123ABC"
+    assert actual[1][FIELD_MONGO_COG_UK_ID] == f"{prefix}-123ABD"
+    assert actual[2][FIELD_MONGO_COG_UK_ID] == f"{prefix}-123ABE"
+
+
+def test_docs_to_insert_updated_with_cog_uk_ids_logs_baracoda_error_and_returns_empty_list(config):
+    original_docs = [
+        {"_id": ObjectId("5f562d9931d9959b92544728")},
+        {"_id": ObjectId("5f562d9931d9959b92544729")},
+        {"_id": ObjectId("5f562d9931d9959b9254472a")},
+    ]
+
+    centre = Centre(config, config.CENTRES[0])
+    centre_file = CentreFile("some file", centre)
+
+    with patch("crawler.file_processing.logger") as logger:
+        actual = centre_file.docs_to_insert_updated_with_cog_uk_ids(original_docs)
+
+    assert actual == []
+    assert centre_file.logging_collection.get_count_of_all_errors_and_criticals() == 1
+    assert centre_file.logging_collection.aggregator_types["TYPE 35"].count_errors == 1
+    logger.critical.assert_called_once()
+    logger.exception.assert_called_once()
 
 
 # Test is_current set to true for latest results only
