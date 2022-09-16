@@ -65,6 +65,7 @@ from crawler.constants import (
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_LINE_NUMBER,
+    FIELD_MONGO_COG_UK_ID,
     FIELD_MONGO_LAB_ID,
     FIELD_MONGODB_ID,
     FIELD_PLATE_BARCODE,
@@ -91,7 +92,13 @@ from crawler.db.mysql import insert_or_update_samples_in_mlwh
 from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.db_helpers import create_mongo_import_record
 from crawler.helpers.enums import CentreFileState
-from crawler.helpers.general_helpers import create_source_plate_doc, current_time, get_sftp_connection, pad_coordinate
+from crawler.helpers.general_helpers import (
+    create_source_plate_doc,
+    current_time,
+    generate_baracoda_barcodes,
+    get_sftp_connection,
+    pad_coordinate,
+)
 from crawler.helpers.logging_helpers import LoggingCollection
 from crawler.types import CentreConf, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc
 
@@ -436,6 +443,7 @@ class CentreFile:
 
         # Internally traps TYPE 26 failed assigning source plate UUIDs error and returns []
         docs_to_insert = self.docs_to_insert_updated_with_source_plate_uuids(docs_to_insert)
+        docs_to_insert = self.docs_to_insert_updated_with_cog_uk_ids(docs_to_insert)
 
         if (num_docs_to_insert := len(docs_to_insert)) > 0:
             # Mongodb, MLWH and DART will all be updated from the same memory object after parsing the files
@@ -638,6 +646,38 @@ class CentreFile:
 
         return updated_docs
 
+    def docs_to_insert_updated_with_cog_uk_ids(self, docs_to_insert: List[ModifiedRow]) -> List[ModifiedRow]:
+        """Updates sample records with COG UK IDs.
+
+        Arguments:
+            docs_to_insert {List[ModifiedRow]} -- the sample records to update.
+
+        Returns:
+            List[ModifiedRow] -- the updated samples.
+        """
+        logger.debug("Attempting to update docs with COG UK IDs")
+
+        updated_docs: List[ModifiedRow] = []
+
+        try:
+            prefix = self.centre_config[CENTRE_KEY_PREFIX]
+            count = len(docs_to_insert)
+            cog_uk_ids = generate_baracoda_barcodes(self.config, prefix, count)
+
+            for i, row in enumerate(docs_to_insert):
+                row[FIELD_MONGO_COG_UK_ID] = cog_uk_ids[i]
+                updated_docs.append(row)
+        except Exception as ex:
+            self.logging_collection.add_error(
+                "TYPE 35",
+                f"Failed assigning COG UK IDs to samples in file {self.file_name}",
+            )
+            logger.critical("Error assigning COG UK IDs to samples in file " f"{self.file_name}: {ex}")
+            logger.exception(ex)
+            updated_docs = []
+
+        return updated_docs
+
     def insert_samples_from_docs_into_mongo_db(self, docs_to_insert: List[ModifiedRow]) -> List[Any]:
         """Insert sample records into the mongo database from the parsed, filtered and modified CSV file information.
 
@@ -660,7 +700,7 @@ class CentreFile:
             # inserted_ids is in the same order as docs_to_insert, even if the query has ordered=False parameter
             return list(result.inserted_ids)
 
-        # TODO could trap DuplicateKeyError specifically
+        # Cannot simply trap DuplicateKeyError specifically because the first error prevents all others being raised.
         except BulkWriteError as e:
             # This is happening when there are duplicates in the data and the index prevents the records from being
             # written
