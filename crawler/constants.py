@@ -133,12 +133,17 @@ TEST_DATA_ERROR_NUMBER_OF_PLATES: Final[str] = "Number of plates to generate mus
 TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES: Final[
     str
 ] = "One or more plates expected fewer than 0 or more than 96 positive samples."
-TEST_DATA_ERROR_BARACODA_COG_BARCODES: Final[str] = "Unable to create COG barcodes"
-TEST_DATA_ERROR_BARACODA_CONNECTION: Final[str] = "Unable to access baracoda"
-TEST_DATA_ERROR_BARACODA_UNKNOWN: Final[str] = "Unknown error accessing baracoda"
 TEST_DATA_ERROR_PLATE_CREATION_FAILED: Final[
     str
 ] = "One or more plates failed to generate data correctly. Please try again."
+
+
+###
+# Baracoda error messages
+###
+ERROR_BARACODA_COG_BARCODES: Final[str] = "Unable to create COG barcodes"
+ERROR_BARACODA_CONNECTION: Final[str] = "Unable to access baracoda"
+ERROR_BARACODA_UNKNOWN: Final[str] = "Unknown error accessing baracoda"
 
 
 ##
@@ -147,6 +152,7 @@ TEST_DATA_ERROR_PLATE_CREATION_FAILED: Final[
 MLWH_TABLE_NAME: Final[str] = "lighthouse_sample"
 MLWH_MONGODB_ID: Final[str] = "mongodb_id"
 MLWH_ROOT_SAMPLE_ID: Final[str] = "root_sample_id"
+MLWH_COG_UK_ID: Final[str] = "cog_uk_id"
 MLWH_RNA_ID: Final[str] = "rna_id"
 MLWH_PLATE_BARCODE: Final[str] = "plate_barcode"
 MLWH_COORDINATE: Final[str] = "coordinate"

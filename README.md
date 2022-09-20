@@ -298,7 +298,7 @@ To run the tests, execute:
 
 ## Formatting, Type Checking and Linting
 
-Black is used as a formatter, to format code before commiting:
+Black is used as a formatter, to format code before committing:
 
     black .
 

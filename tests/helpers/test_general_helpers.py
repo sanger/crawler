@@ -1,11 +1,16 @@
+import json
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
+from functools import partial
+from http import HTTPStatus
 from unittest.mock import ANY, patch
 
 import pytest
+import responses
 from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
+from requests import ConnectionError
 
 from crawler.constants import (
     DART_EMPTY_VALUE,
@@ -55,9 +60,11 @@ from crawler.constants import (
     MLWH_UPDATED_AT,
     RESULT_VALUE_POSITIVE,
 )
+from crawler.exceptions import BaracodaError
 from crawler.helpers.general_helpers import (
     create_source_plate_doc,
     extract_duplicated_values,
+    generate_baracoda_barcodes,
     get_dart_well_index,
     get_sftp_connection,
     is_found_in_list,
@@ -80,6 +87,14 @@ def sftp_connection_class():
         yield connection
 
 
+@pytest.fixture
+def mocked_responses():
+    """Easily mock responses from HTTP calls.
+    https://github.com/getsentry/responses#responses-as-a-pytest-fixture"""
+    with responses.RequestsMock() as rsps:
+        yield rsps
+
+
 @pytest.mark.parametrize("given_username, expected_username", [[None, "foo"], ["", "foo"], ["username", "username"]])
 @pytest.mark.parametrize("given_password, expected_password", [[None, "pass"], ["", "pass"], ["password", "password"]])
 def test_get_sftp_connection(
@@ -92,6 +107,97 @@ def test_get_sftp_connection(
     sftp_connection_class.assert_called_once_with(
         host=config.SFTP_HOST, port=config.SFTP_PORT, username=expected_username, password=expected_password, cnopts=ANY
     )
+
+
+@pytest.mark.parametrize("count", [2, 3])
+@pytest.mark.parametrize("prefix", ("TEST", "ALDP"))
+def test_generate_baracoda_barcodes_working_fine(config, count, prefix, mocked_responses):
+    expected = [f"{prefix}-012345", f"{prefix}-012346", f"{prefix}-012347"]
+    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{prefix}/new?count={count}"
+
+    mocked_responses.add(
+        responses.POST,
+        baracoda_url,
+        json={"barcodes_group": {"barcodes": expected}},
+        status=HTTPStatus.CREATED,
+    )
+
+    actual = generate_baracoda_barcodes(config, prefix, count)
+
+    assert actual == expected
+    assert len(mocked_responses.calls) == 1
+
+
+@pytest.mark.parametrize("count", [2, 3])
+@pytest.mark.parametrize("prefix", ("TEST", "ALDP"))
+def test_generate_baracoda_barcodes_will_retry_if_fail(config, count, prefix, mocked_responses):
+    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{prefix}/new?count={count}"
+
+    mocked_responses.add(
+        responses.POST,
+        baracoda_url,
+        json={"errors": ["Some error from baracoda"]},
+        status=HTTPStatus.INTERNAL_SERVER_ERROR,
+    )
+
+    with pytest.raises(Exception):
+        generate_baracoda_barcodes(config, prefix, count)
+
+    assert len(mocked_responses.calls) == config.BARACODA_RETRY_ATTEMPTS
+
+
+@pytest.mark.parametrize("count", [2, 3])
+@pytest.mark.parametrize("prefix", ("TEST", "ALDP"))
+@pytest.mark.parametrize("exception_type", [ConnectionError, Exception])
+def test_generate_baracoda_barcodes_will_retry_if_exception(config, count, prefix, exception_type, mocked_responses):
+    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{prefix}/new?count={count}"
+
+    mocked_responses.add(
+        responses.POST,
+        baracoda_url,
+        body=exception_type("Some error"),
+        status=HTTPStatus.INTERNAL_SERVER_ERROR,
+    )
+
+    with pytest.raises(BaracodaError):
+        generate_baracoda_barcodes(config, prefix, count)
+
+    assert len(mocked_responses.calls) == config.BARACODA_RETRY_ATTEMPTS
+
+
+@pytest.mark.parametrize("count", [2, 3])
+@pytest.mark.parametrize("prefix", ("TEST", "ALDP"))
+def test_generate_baracoda_barcodes_will_not_raise_error_if_success_after_retry(
+    config, count, prefix, mocked_responses
+):
+    expected = [f"{prefix}-012345", f"{prefix}-012346", f"{prefix}-012347"]
+    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{prefix}/new?count={count}"
+
+    def request_callback(request, data):
+        data["calls"] = data["calls"] + 1
+
+        if data["calls"] == config.BARACODA_RETRY_ATTEMPTS:
+            return (
+                HTTPStatus.CREATED,
+                {},
+                json.dumps({"barcodes_group": {"barcodes": expected}}),
+            )
+        return (
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            {},
+            json.dumps({"errors": ["Some error from baracoda"]}),
+        )
+
+    mocked_responses.add_callback(
+        responses.POST,
+        baracoda_url,
+        callback=partial(request_callback, data={"calls": 0}),
+        content_type="application/json",
+    )
+
+    generate_baracoda_barcodes(config, prefix, count)
+
+    assert len(mocked_responses.calls) == config.BARACODA_RETRY_ATTEMPTS
 
 
 # tests for parsing Decimal128

@@ -2,9 +2,6 @@ import logging
 import random
 import uuid
 from datetime import datetime
-from http import HTTPStatus
-
-import requests
 
 from crawler.constants import (
     FIELD_DATE_TESTED,
@@ -15,11 +12,8 @@ from crawler.constants import (
     FIELD_ROOT_SAMPLE_ID,
     FIELD_VIRAL_PREP_ID,
     TEST_DATA_CENTRE_LAB_ID,
-    TEST_DATA_ERROR_BARACODA_COG_BARCODES,
-    TEST_DATA_ERROR_BARACODA_CONNECTION,
-    TEST_DATA_ERROR_BARACODA_UNKNOWN,
 )
-from crawler.exceptions import CherrypickerDataError
+from crawler.helpers.general_helpers import generate_baracoda_barcodes
 from crawler.rabbit.messages.create_plate_message import CreatePlateMessage, Plate, Sample
 from crawler.types import Config
 
@@ -51,7 +45,7 @@ BARACODA_PREFIX = "TEST"
 def create_barcodes(config: Config, num_required: int) -> list:
     # call Baracoda here and fetch a set of barcodes with the prefix we want
     LOGGER.info(f"Num barcodes required from Baracoda = {num_required}")
-    list_barcodes = _generate_baracoda_barcodes(config, num_required)
+    list_barcodes = generate_baracoda_barcodes(config, BARACODA_PREFIX, num_required)
     return list_barcodes
 
 
@@ -66,37 +60,6 @@ def create_barcode_meta(plate_specs: list, list_barcodes: list) -> list:
 
     pos_per_plate = _flat_list_of_positives_per_plate(plate_specs)
     return [[list_barcodes[i], f"number of positives: {pos_per_plate[i]}"] for i in range(len(pos_per_plate))]
-
-
-def _generate_baracoda_barcodes(config: Config, num_required: int) -> list:
-    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{BARACODA_PREFIX}/new?count={num_required}"
-
-    retries = config.BARACODA_RETRY_ATTEMPTS
-    except_obj = None
-    response_json = None
-    while retries > 0:
-        try:
-            response = requests.post(baracoda_url)
-            if response.status_code == HTTPStatus.CREATED:
-                response_json = response.json()
-                barcodes: list = response_json["barcodes_group"]["barcodes"]
-                return barcodes
-            else:
-                retries = retries - 1
-                LOGGER.error(TEST_DATA_ERROR_BARACODA_COG_BARCODES)
-                LOGGER.error(response.json())
-                except_obj = CherrypickerDataError(TEST_DATA_ERROR_BARACODA_COG_BARCODES)
-        except requests.ConnectionError as e:
-            retries = retries - 1
-            LOGGER.error(TEST_DATA_ERROR_BARACODA_CONNECTION)
-            except_obj = CherrypickerDataError(f"{TEST_DATA_ERROR_BARACODA_CONNECTION} -- {str(e)}")
-        except Exception:
-            retries = retries - 1
-            LOGGER.error(TEST_DATA_ERROR_BARACODA_UNKNOWN)
-
-    if except_obj is not None:
-        raise except_obj
-    raise CherrypickerDataError(TEST_DATA_ERROR_BARACODA_UNKNOWN)
 
 
 def _flatten(nested_list: list) -> list:
@@ -132,7 +95,7 @@ def _create_sample(dt: datetime, index: int, result: str, plate_barcode: str) ->
         plateCoordinate=well_coordinate,
         preferentiallySequence=False,
         mustSequence=False,
-        fitToPick=True,
+        fitToPick=True if result == "positive" else False,
         result=result,
         testedDateUtc=dt,
     )

@@ -18,6 +18,7 @@ from crawler.constants import (
     FIELD_RNA_ID,
     FIELD_ROOT_SAMPLE_ID,
     FIELD_SOURCE,
+    MLWH_COG_UK_ID,
     MLWH_COORDINATE,
     MLWH_FILTERED_POSITIVE,
     MLWH_FILTERED_POSITIVE_TIMESTAMP,
@@ -228,6 +229,7 @@ def test_update_mlwh_filtered_positive_fields_calls_to_update_samples(config, ml
             MLWH_COORDINATE: "A1",
             MLWH_PLATE_BARCODE: "123",
             MLWH_ROOT_SAMPLE_ID: "MCM001",
+            MLWH_COG_UK_ID: "123ABC",
             MLWH_RNA_ID: "AAA123",
             MLWH_RESULT: RESULT_VALUE_POSITIVE,
             MLWH_FILTERED_POSITIVE: None,
@@ -239,6 +241,7 @@ def test_update_mlwh_filtered_positive_fields_calls_to_update_samples(config, ml
             MLWH_COORDINATE: "B1",
             MLWH_PLATE_BARCODE: "123",
             MLWH_ROOT_SAMPLE_ID: "MCM002",
+            MLWH_COG_UK_ID: "123ABD",
             MLWH_RNA_ID: "BBB123",
             MLWH_RESULT: RESULT_VALUE_POSITIVE,
             MLWH_FILTERED_POSITIVE: True,
@@ -247,9 +250,9 @@ def test_update_mlwh_filtered_positive_fields_calls_to_update_samples(config, ml
         },
     ]
     insert_sql = """\
-    INSERT INTO lighthouse_sample (mongodb_id, root_sample_id, rna_id, plate_barcode, coordinate,
+    INSERT INTO lighthouse_sample (mongodb_id, root_sample_id, cog_uk_id, rna_id, plate_barcode, coordinate,
     result, filtered_positive, filtered_positive_version, filtered_positive_timestamp)
-    VALUES (%(mongodb_id)s, %(root_sample_id)s, %(rna_id)s, %(plate_barcode)s, %(coordinate)s,
+    VALUES (%(mongodb_id)s, %(root_sample_id)s, %(cog_uk_id)s, %(rna_id)s, %(plate_barcode)s, %(coordinate)s,
     %(result)s, %(filtered_positive)s, %(filtered_positive_version)s,
     %(filtered_positive_timestamp)s)
     """

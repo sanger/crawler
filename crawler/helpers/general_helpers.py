@@ -4,9 +4,11 @@ import string
 import uuid
 from datetime import datetime
 from decimal import Decimal
+from http import HTTPStatus
 from typing import Any, Dict, Iterable, List, Optional
 
 import pysftp
+import requests
 from bson.decimal128 import Decimal128
 
 from crawler.constants import (
@@ -17,6 +19,9 @@ from crawler.constants import (
     DART_ROOT_SAMPLE_ID,
     DART_STATE,
     DART_STATE_PICKABLE,
+    ERROR_BARACODA_COG_BARCODES,
+    ERROR_BARACODA_CONNECTION,
+    ERROR_BARACODA_UNKNOWN,
     FIELD_BARCODE,
     FIELD_CH1_CQ,
     FIELD_CH1_RESULT,
@@ -38,6 +43,7 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE_VERSION,
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_MONGO_COG_UK_ID,
     FIELD_MONGO_LAB_ID,
     FIELD_MONGODB_ID,
     FIELD_MUST_SEQUENCE,
@@ -60,6 +66,7 @@ from crawler.constants import (
     MLWH_CH4_CQ,
     MLWH_CH4_RESULT,
     MLWH_CH4_TARGET,
+    MLWH_COG_UK_ID,
     MLWH_COORDINATE,
     MLWH_CREATED_AT,
     MLWH_DATE_TESTED,
@@ -81,9 +88,10 @@ from crawler.constants import (
     MLWH_UPDATED_AT,
     RESULT_VALUE_POSITIVE,
 )
+from crawler.exceptions import BaracodaError
 from crawler.types import Config, DartWellProp, ModifiedRowValue, SampleDoc, SourcePlateDoc
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def current_time() -> str:
@@ -127,6 +135,36 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
     )
 
 
+def generate_baracoda_barcodes(config: Config, prefix: str, num_required: int) -> list:
+    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{prefix}/new?count={num_required}"
+
+    retries = config.BARACODA_RETRY_ATTEMPTS
+    exception_msg = None
+    response_json = None
+    while retries > 0:
+        try:
+            response = requests.post(baracoda_url)
+            if response.status_code == HTTPStatus.CREATED:
+                response_json = response.json()
+                barcodes: list = response_json["barcodes_group"]["barcodes"]
+                return barcodes
+            else:
+                retries = retries - 1
+                LOGGER.error(ERROR_BARACODA_COG_BARCODES)
+                LOGGER.error(response.json())
+                exception_msg = ERROR_BARACODA_COG_BARCODES
+        except requests.ConnectionError as e:
+            retries = retries - 1
+            LOGGER.error(ERROR_BARACODA_CONNECTION)
+            exception_msg = f"{ERROR_BARACODA_CONNECTION} -- {str(e)}"
+        except Exception:
+            retries = retries - 1
+            LOGGER.error(ERROR_BARACODA_UNKNOWN)
+            exception_msg = ERROR_BARACODA_UNKNOWN
+
+    raise BaracodaError(exception_msg)
+
+
 def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:
     """Transform common mongo document fields into MySQL fields for MLWH.
 
@@ -140,6 +178,7 @@ def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:
         # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
         MLWH_MONGODB_ID: str(sample.get(FIELD_MONGODB_ID)),
         MLWH_ROOT_SAMPLE_ID: sample.get(FIELD_ROOT_SAMPLE_ID),
+        MLWH_COG_UK_ID: sample.get(FIELD_MONGO_COG_UK_ID),
         MLWH_RNA_ID: sample.get(FIELD_RNA_ID),
         MLWH_PLATE_BARCODE: sample.get(FIELD_PLATE_BARCODE),
         MLWH_COORDINATE: unpad_coordinate(sample.get(FIELD_COORDINATE)),

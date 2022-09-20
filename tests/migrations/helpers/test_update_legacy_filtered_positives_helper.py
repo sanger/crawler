@@ -144,9 +144,9 @@ def test_update_mlwh_filtered_positive_fields_batched_calls_to_update_samples(
     config, mlwh_connection, mongo_samples_with_filtered_positive_fields, mlwh_samples_with_filtered_positive_fields
 ):
     insert_sql = """\
-    INSERT INTO lighthouse_sample (mongodb_id, root_sample_id, rna_id, plate_barcode, coordinate,
+    INSERT INTO lighthouse_sample (mongodb_id, root_sample_id, cog_uk_id, rna_id, plate_barcode, coordinate,
     result, filtered_positive, filtered_positive_version, filtered_positive_timestamp)
-    VALUES (%(mongodb_id)s, %(root_sample_id)s, %(rna_id)s, %(plate_barcode)s, %(coordinate)s,
+    VALUES (%(mongodb_id)s, %(root_sample_id)s, %(cog_uk_id)s, %(rna_id)s, %(plate_barcode)s, %(coordinate)s,
     %(result)s, %(filtered_positive)s, %(filtered_positive_version)s,
     %(filtered_positive_timestamp)s)
     """
