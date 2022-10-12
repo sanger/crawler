@@ -1,5 +1,5 @@
-# Use alpine for a smaller image size and install only the required packages
-FROM python:3.8-slim-buster
+# Use bullseye for a smaller image size and install only the required packages
+FROM python:3.10-slim-bullseye
 
 # > Setting PYTHONUNBUFFERED to a non empty value ensures that the python output is sent straight to
 # > terminal (e.g. your container log) without being first buffered and that you can see the output
