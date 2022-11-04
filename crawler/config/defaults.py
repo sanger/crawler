@@ -36,7 +36,13 @@ ROOT_PASSWORD = os.environ.get("ROOT_PASSWORD", "")
 ###
 # Baracoda
 ###
-BARACODA_BASE_URL = "http://uat.baracoda.psd.sanger.ac.uk"
+BARACODA_BASE_URL = f"http://{LOCALHOST}:7900"
+BARACODA_RETRY_ATTEMPTS = 3
+
+###
+# Cherrytrack
+###
+CHERRYTRACK_BASE_URL = f"http://{LOCALHOST}:8000"
 
 ###
 # mongo details
