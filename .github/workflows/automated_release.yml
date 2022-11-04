@@ -61,15 +61,18 @@ jobs:
           docker.pkg.github.com/${IMAGE_NAME}:${BRANCH_NAME}
           python -m pytest --no-cov -vx
 
-      - name: Set release tag
+      - name: Set release name
         # https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable
-        run: echo "RELEASE_VERSION=$(printf -- '%s%s\n' $(cat .release-version) $([ ${BRANCH_NAME} = "develop" ] && printf -- '-%s-develop' ${GITHUB_RUN_ID} || echo ""))" >> $GITHUB_ENV
+        run: echo "RELEASE_NAME=$(printf -- '%s%s\n' $(cat .release-version) $([ ${BRANCH_NAME} = "develop" ] && printf -- '-%s-develop' ${GITHUB_RUN_ID} || echo ""))" >> $GITHUB_ENV
+
+      - name: Set release tag
+        run: echo "RELEASE_TAG=v$RELEASE_NAME" >> $GITHUB_ENV
 
       - name: Create release
         uses: ncipollo/release-action@v1.8.8
         with:
-          name: ${{ env.RELEASE_VERSION }}
-          tag: v${{ env.RELEASE_VERSION }}
+          name: ${{ env.RELEASE_NAME }}
+          tag: ${{ env.RELEASE_TAG }}
           prerelease: ${{ !(github.ref == 'refs/heads/master') }}
           commit: ${{ github.sha }}
 
@@ -84,11 +87,11 @@ jobs:
         run: >-
           docker tag
           docker.pkg.github.com/${IMAGE_NAME}:${BRANCH_NAME}
-          docker.pkg.github.com/${IMAGE_NAME}:${{ env.RELEASE_VERSION }}
+          docker.pkg.github.com/${IMAGE_NAME}:${{ env.RELEASE_TAG }}
 
       - name: Push release tag image to registry
         run: >-
-          docker push docker.pkg.github.com/${IMAGE_NAME}:${{ env.RELEASE_VERSION }}
+          docker push docker.pkg.github.com/${IMAGE_NAME}:${{ env.RELEASE_TAG }}
 
       - name: Remove the oldest package
         # The delete-package-versions action has become broken and the fix doesn't look imminent.
