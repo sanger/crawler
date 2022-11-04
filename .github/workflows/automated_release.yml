@@ -69,7 +69,7 @@ jobs:
         uses: ncipollo/release-action@v1.8.8
         with:
           name: ${{ env.RELEASE_VERSION }}
-          tag: ${{ env.RELEASE_VERSION }}
+          tag: v${{ env.RELEASE_VERSION }}
           prerelease: ${{ !(github.ref == 'refs/heads/master') }}
           commit: ${{ github.sha }}
 
@@ -84,11 +84,11 @@ jobs:
         run: >-
           docker tag
           docker.pkg.github.com/${IMAGE_NAME}:${BRANCH_NAME}
-          docker.pkg.github.com/${IMAGE_NAME}:${{ env.RELEASE_VERSION }}
+          docker.pkg.github.com/${IMAGE_NAME}:v${{ env.RELEASE_VERSION }}
 
       - name: Push release tag image to registry
         run: >-
-          docker push docker.pkg.github.com/${IMAGE_NAME}:${{ env.RELEASE_VERSION }}
+          docker push docker.pkg.github.com/${IMAGE_NAME}:v${{ env.RELEASE_VERSION }}
 
       - name: Remove the oldest package
         # The delete-package-versions action has become broken and the fix doesn't look imminent.
