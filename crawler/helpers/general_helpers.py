@@ -1,15 +1,14 @@
 import logging
-import os
 import re
 import string
-import sys
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from importlib import import_module
-from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
+from http import HTTPStatus
+from typing import Any, Dict, Iterable, List, Optional
 
 import pysftp
+import requests
 from bson.decimal128 import Decimal128
 
 from crawler.constants import (
@@ -20,6 +19,9 @@ from crawler.constants import (
     DART_ROOT_SAMPLE_ID,
     DART_STATE,
     DART_STATE_PICKABLE,
+    ERROR_BARACODA_COG_BARCODES,
+    ERROR_BARACODA_CONNECTION,
+    ERROR_BARACODA_UNKNOWN,
     FIELD_BARCODE,
     FIELD_CH1_CQ,
     FIELD_CH1_RESULT,
@@ -39,9 +41,10 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
     FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_LAB_ID,
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_MONGO_COG_UK_ID,
+    FIELD_MONGO_LAB_ID,
     FIELD_MONGODB_ID,
     FIELD_MUST_SEQUENCE,
     FIELD_PLATE_BARCODE,
@@ -63,6 +66,7 @@ from crawler.constants import (
     MLWH_CH4_CQ,
     MLWH_CH4_RESULT,
     MLWH_CH4_TARGET,
+    MLWH_COG_UK_ID,
     MLWH_COORDINATE,
     MLWH_CREATED_AT,
     MLWH_DATE_TESTED,
@@ -84,9 +88,10 @@ from crawler.constants import (
     MLWH_UPDATED_AT,
     RESULT_VALUE_POSITIVE,
 )
+from crawler.exceptions import BaracodaError
 from crawler.types import Config, DartWellProp, ModifiedRowValue, SampleDoc, SourcePlateDoc
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def current_time() -> str:
@@ -119,7 +124,7 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
     sftp_host = config.SFTP_HOST
     sftp_port = config.SFTP_PORT
     sftp_username = config.SFTP_READ_USERNAME if not username else username
-    sftp_password = config.SFTP_READ_PASSWORD if not username else password
+    sftp_password = config.SFTP_READ_PASSWORD if not password else password
 
     return pysftp.Connection(
         host=sftp_host,
@@ -130,26 +135,34 @@ def get_sftp_connection(config: Config, username: str = "", password: str = "") 
     )
 
 
-def get_config(settings_module: str = "") -> Tuple[Config, str]:
-    """Get the config for the app by importing a module named by an environmental variable. This allows easy switching
-    between environments and inheriting default config values.
+def generate_baracoda_barcodes(config: Config, prefix: str, num_required: int) -> list:
+    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{prefix}/new?count={num_required}"
 
-    Arguments:
-        settings_module (str, optional): the settings module to load. Defaults to "".
+    retries = config.BARACODA_RETRY_ATTEMPTS
+    exception_msg = None
+    response_json = None
+    while retries > 0:
+        try:
+            response = requests.post(baracoda_url)
+            if response.status_code == HTTPStatus.CREATED:
+                response_json = response.json()
+                barcodes: list = response_json["barcodes_group"]["barcodes"]
+                return barcodes
+            else:
+                retries = retries - 1
+                LOGGER.error(ERROR_BARACODA_COG_BARCODES)
+                LOGGER.error(response.json())
+                exception_msg = ERROR_BARACODA_COG_BARCODES
+        except requests.ConnectionError as e:
+            retries = retries - 1
+            LOGGER.error(ERROR_BARACODA_CONNECTION)
+            exception_msg = f"{ERROR_BARACODA_CONNECTION} -- {str(e)}"
+        except Exception:
+            retries = retries - 1
+            LOGGER.error(ERROR_BARACODA_UNKNOWN)
+            exception_msg = ERROR_BARACODA_UNKNOWN
 
-    Returns:
-        Tuple[Config, str]: tuple with the config module loaded and available to use via `config.<param>` and the
-        settings module used
-    """
-    try:
-        if not settings_module:
-            settings_module = os.environ["SETTINGS_MODULE"]
-
-        config_module = cast(Config, import_module(settings_module))
-
-        return config_module, settings_module
-    except KeyError as e:
-        sys.exit(f"{e} required in environmental variables for config")
+    raise BaracodaError(exception_msg)
 
 
 def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:
@@ -165,13 +178,14 @@ def map_mongo_to_sql_common(sample: SampleDoc) -> Dict[str, Any]:
         # hexadecimal string representation of BSON ObjectId. Do ObjectId(hex_string) to turn it back
         MLWH_MONGODB_ID: str(sample.get(FIELD_MONGODB_ID)),
         MLWH_ROOT_SAMPLE_ID: sample.get(FIELD_ROOT_SAMPLE_ID),
+        MLWH_COG_UK_ID: sample.get(FIELD_MONGO_COG_UK_ID),
         MLWH_RNA_ID: sample.get(FIELD_RNA_ID),
         MLWH_PLATE_BARCODE: sample.get(FIELD_PLATE_BARCODE),
         MLWH_COORDINATE: unpad_coordinate(sample.get(FIELD_COORDINATE)),
         MLWH_RESULT: sample.get(FIELD_RESULT),
         MLWH_DATE_TESTED: sample.get(FIELD_DATE_TESTED),
         MLWH_SOURCE: sample.get(FIELD_SOURCE),
-        MLWH_LAB_ID: sample.get(FIELD_LAB_ID),
+        MLWH_LAB_ID: sample.get(FIELD_MONGO_LAB_ID),
         # channel fields
         MLWH_CH1_TARGET: sample.get(FIELD_CH1_TARGET),
         MLWH_CH1_RESULT: sample.get(FIELD_CH1_RESULT),
@@ -348,7 +362,7 @@ def map_mongo_doc_to_dart_well_props(sample: SampleDoc) -> DartWellProp:
         DART_STATE: DART_STATE_PICKABLE if is_sample_pickable(sample) else DART_EMPTY_VALUE,
         DART_ROOT_SAMPLE_ID: str(sample[FIELD_ROOT_SAMPLE_ID]),
         DART_RNA_ID: str(sample[FIELD_RNA_ID]),
-        DART_LAB_ID: str(sample.get(FIELD_LAB_ID, DART_EMPTY_VALUE)),
+        DART_LAB_ID: str(sample.get(FIELD_MONGO_LAB_ID, DART_EMPTY_VALUE)),
         DART_LH_SAMPLE_UUID: str(sample.get(FIELD_LH_SAMPLE_UUID, DART_EMPTY_VALUE)),
     }
 
@@ -366,10 +380,32 @@ def create_source_plate_doc(plate_barcode: str, lab_id: str) -> SourcePlateDoc:
     return {
         FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4()),
         FIELD_BARCODE: plate_barcode,
-        FIELD_LAB_ID: lab_id,
+        FIELD_MONGO_LAB_ID: lab_id,
         FIELD_UPDATED_AT: datetime.utcnow(),
         FIELD_CREATED_AT: datetime.utcnow(),
     }
+
+
+def extract_duplicated_values(values):
+    """A helper method for finding duplicated values in an iterable.
+    The returned set will contain only values that existed more than once.
+
+    Arguments:
+        values: Iterable -- An iterable containing hashable values.
+
+    Returns:
+        Set of values that were duplicated at least once.
+    """
+    seen = set()
+    dupes = set()
+
+    for x in values:
+        if x in seen:
+            dupes.add(x)
+        else:
+            seen.add(x)
+
+    return dupes
 
 
 def is_found_in_list(needle: str, haystack: List[str]) -> bool:

@@ -19,7 +19,10 @@ from bson.decimal128 import Decimal128
 from pymongo.database import Database
 from pymongo.errors import BulkWriteError
 
-from crawler.config.centres import (
+from crawler.constants import (
+    ALLOWED_CH_RESULT_VALUES,
+    ALLOWED_CH_TARGET_VALUES,
+    ALLOWED_RESULT_VALUES,
     CENTRE_KEY_BACKUPS_FOLDER,
     CENTRE_KEY_BARCODE_FIELD,
     CENTRE_KEY_BARCODE_REGEX,
@@ -33,18 +36,11 @@ from crawler.config.centres import (
     CENTRE_KEY_PREFIX,
     CENTRE_KEY_SFTP_ROOT_READ,
     CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES,
-)
-from crawler.constants import (
-    ALLOWED_CH_RESULT_VALUES,
-    ALLOWED_CH_TARGET_VALUES,
-    ALLOWED_RESULT_VALUES,
-    COLLECTION_CENTRES,
     COLLECTION_IMPORTS,
     COLLECTION_SAMPLES,
     COLLECTION_SOURCE_PLATES,
     DART_STATE_PENDING,
     FIELD_BARCODE,
-    FIELD_CENTRE_NAME,
     FIELD_CH1_CQ,
     FIELD_CH1_RESULT,
     FIELD_CH1_TARGET,
@@ -69,6 +65,8 @@ from crawler.constants import (
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
     FIELD_LINE_NUMBER,
+    FIELD_MONGO_COG_UK_ID,
+    FIELD_MONGO_LAB_ID,
     FIELD_MONGODB_ID,
     FIELD_PLATE_BARCODE,
     FIELD_RESULT,
@@ -89,13 +87,20 @@ from crawler.db.dart import (
     add_dart_well_properties_if_positive,
     create_dart_sql_server_conn,
 )
-from crawler.db.mongo import create_import_record, create_mongo_client, get_mongo_collection, get_mongo_db
+from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import insert_or_update_samples_in_mlwh
 from crawler.filtered_positive_identifier import current_filtered_positive_identifier
+from crawler.helpers.db_helpers import create_mongo_import_record
 from crawler.helpers.enums import CentreFileState
-from crawler.helpers.general_helpers import create_source_plate_doc, current_time, get_sftp_connection, pad_coordinate
+from crawler.helpers.general_helpers import (
+    create_source_plate_doc,
+    current_time,
+    generate_baracoda_barcodes,
+    get_sftp_connection,
+    pad_coordinate,
+)
 from crawler.helpers.logging_helpers import LoggingCollection
-from crawler.types import CentreConf, CentreDoc, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc
+from crawler.types import CentreConf, Config, CSVRow, ModifiedRow, RowSignature, SourcePlateDoc
 
 logger = logging.getLogger(__name__)
 
@@ -374,31 +379,15 @@ class CentreFile:
                     return True
         return False
 
-    def get_centre_from_db(self) -> CentreDoc:
-        """Gets a document from the mongo centre collection which describes a lighthouse centre.
-
-        Raises:
-            Exception: if no centre is found, raise an exception
-
-        Returns:
-            CentreDoc: mongo document describing a centre
-        """
-        centre_collection = get_mongo_collection(self.get_db(), COLLECTION_CENTRES)
-
-        if centre := centre_collection.find_one(filter={FIELD_CENTRE_NAME: self.centre_config[CENTRE_KEY_NAME]}):
-            return cast(CentreDoc, centre)
-
-        raise Exception("Unable to find the centre in the centre collection.")
-
     def is_unconsolidated_surveillance_file(self) -> bool:
-        """Identifies whether this file is from the batch of unconsolidated surveillance files for the centre that uploaded it.
+        """Identifies whether this file is from the batch of unconsolidated surveillance files for the centre that
+        uploaded it.
 
         Returns:
             bool: True if the filename matches the unconsolidated surveillance regex specified
                   in the centre's configuration. False otherwise.
         """
-        centre = self.get_centre_from_db()
-        compiled_regex = re.compile(centre[CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE])
+        compiled_regex = re.compile(self.centre_config[CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE])
         return bool(compiled_regex.match(self.file_name))
 
     def set_state_for_file(self) -> CentreFileState:
@@ -407,10 +396,11 @@ class CentreFile:
         Returns:
             CentreFileState - enum representation of file state
         """
-        centre = self.get_centre_from_db()
-
         # check whether file is on the blacklist and should be ignored
-        if CENTRE_KEY_FILE_NAMES_TO_IGNORE in centre and self.file_name in centre[CENTRE_KEY_FILE_NAMES_TO_IGNORE]:
+        if (
+            CENTRE_KEY_FILE_NAMES_TO_IGNORE in self.centre_config
+            and self.file_name in self.centre_config[CENTRE_KEY_FILE_NAMES_TO_IGNORE]
+        ):
             self.file_state = CentreFileState.FILE_IN_BLACKLIST
 
         # check whether file has already been processed to error directory
@@ -424,7 +414,7 @@ class CentreFile:
 
         # check for this being an unconsolidated samples file where the centre doesn't support those
         elif (
-            centre.get(CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES, False)
+            self.centre_config.get(CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES, False)
             and self.is_unconsolidated_surveillance_file()
         ):
             self.file_state = CentreFileState.FILE_SHOULD_NOT_BE_PROCESSED
@@ -453,6 +443,7 @@ class CentreFile:
 
         # Internally traps TYPE 26 failed assigning source plate UUIDs error and returns []
         docs_to_insert = self.docs_to_insert_updated_with_source_plate_uuids(docs_to_insert)
+        docs_to_insert = self.docs_to_insert_updated_with_cog_uk_ids(docs_to_insert)
 
         if (num_docs_to_insert := len(docs_to_insert)) > 0:
             # Mongodb, MLWH and DART will all be updated from the same memory object after parsing the files
@@ -526,7 +517,7 @@ class CentreFile:
         """Writes to the imports collection with information about the CSV file processed."""
         imports_collection = get_mongo_collection(self.get_db(), COLLECTION_IMPORTS)
 
-        create_import_record(
+        create_mongo_import_record(
             imports_collection,
             self.centre_config,
             self.docs_inserted,
@@ -562,7 +553,7 @@ class CentreFile:
                         FIELD_ROOT_SAMPLE_ID: wrong_instance[FIELD_ROOT_SAMPLE_ID],
                         FIELD_RNA_ID: wrong_instance[FIELD_RNA_ID],
                         FIELD_RESULT: wrong_instance[FIELD_RESULT],
-                        FIELD_LAB_ID: wrong_instance[FIELD_LAB_ID],
+                        FIELD_MONGO_LAB_ID: wrong_instance[FIELD_MONGO_LAB_ID],
                     }
                 )[0]
                 if not (entry):
@@ -605,13 +596,13 @@ class CentreFile:
         def update_doc_from_source_plate(
             row: ModifiedRow, existing_plate: SourcePlateDoc, skip_lab_check: bool = False
         ) -> None:
-            if skip_lab_check or self.is_consolidated or row[FIELD_LAB_ID] == existing_plate[FIELD_LAB_ID]:
+            if skip_lab_check or self.is_consolidated or row[FIELD_LAB_ID] == existing_plate[FIELD_MONGO_LAB_ID]:
                 row[FIELD_LH_SOURCE_PLATE_UUID] = existing_plate[FIELD_LH_SOURCE_PLATE_UUID]
                 updated_docs.append(row)
             else:
                 error_message = (
                     f"Source plate barcode '{row[FIELD_PLATE_BARCODE]}' in file '{self.file_name}' already exists "
-                    f"with a different lab_id: {existing_plate[FIELD_LAB_ID]}"
+                    f"with a different lab_id: {existing_plate[FIELD_MONGO_LAB_ID]}"
                 )
                 self.logging_collection.add_error("TYPE 25", error_message)
                 logger.error(error_message)
@@ -636,7 +627,7 @@ class CentreFile:
                     continue
 
                 # then add a new plate
-                new_plate = create_source_plate_doc(str(plate_barcode), str(doc[FIELD_LAB_ID]))
+                new_plate = create_source_plate_doc(str(plate_barcode), str(doc[FIELD_MONGO_LAB_ID]))
                 new_plates.append(new_plate)
                 update_doc_from_source_plate(doc, new_plate, True)
 
@@ -651,6 +642,38 @@ class CentreFile:
             )
             logger.critical("Error assigning source plate UUIDs to samples in file " f"{self.file_name}: {e}")
             logger.exception(e)
+            updated_docs = []
+
+        return updated_docs
+
+    def docs_to_insert_updated_with_cog_uk_ids(self, docs_to_insert: List[ModifiedRow]) -> List[ModifiedRow]:
+        """Updates sample records with COG UK IDs.
+
+        Arguments:
+            docs_to_insert {List[ModifiedRow]} -- the sample records to update.
+
+        Returns:
+            List[ModifiedRow] -- the updated samples.
+        """
+        logger.debug("Attempting to update docs with COG UK IDs")
+
+        updated_docs: List[ModifiedRow] = []
+
+        try:
+            prefix = self.centre_config[CENTRE_KEY_PREFIX]
+            count = len(docs_to_insert)
+            cog_uk_ids = generate_baracoda_barcodes(self.config, prefix, count)
+
+            for i, row in enumerate(docs_to_insert):
+                row[FIELD_MONGO_COG_UK_ID] = cog_uk_ids[i]
+                updated_docs.append(row)
+        except Exception as ex:
+            self.logging_collection.add_error(
+                "TYPE 35",
+                f"Failed assigning COG UK IDs to samples in file {self.file_name}",
+            )
+            logger.critical("Error assigning COG UK IDs to samples in file " f"{self.file_name}: {ex}")
+            logger.exception(ex)
             updated_docs = []
 
         return updated_docs
@@ -677,7 +700,7 @@ class CentreFile:
             # inserted_ids is in the same order as docs_to_insert, even if the query has ordered=False parameter
             return list(result.inserted_ids)
 
-        # TODO could trap DuplicateKeyError specifically
+        # Cannot simply trap DuplicateKeyError specifically because the first error prevents all others being raised.
         except BulkWriteError as e:
             # This is happening when there are duplicates in the data and the index prevents the records from being
             # written

@@ -1,0 +1,46 @@
+{
+  "namespace": "uk.ac.sanger.psd",
+  "type": "record",
+  "name": "CreatePlateMapFeedbackMessage",
+  "doc": "A feedback message describing the status of a processed CreatePlateMapMessage.",
+  "fields": [
+    {
+      "name": "sourceMessageUuid", "type": "string",
+      "doc": "The message ID of the CreatePlateMapMessage being reported on."
+    },
+    {
+      "name": "countOfTotalSamples", "type": "int",
+      "doc": "The number of samples that were read from the original message."
+    },
+    {
+      "name": "countOfValidSamples", "type": "int",
+      "doc": "The number of samples that were processed without error."
+    },
+    {
+      "name": "operationWasErrorFree", "type": "boolean",
+      "doc": "Boolean indicating whether or not the message was processed successfully."
+    },
+    {
+      "name": "errors",
+      "doc": "Array of errors generated.",
+      "type": {
+        "type": "array",
+        "items": {
+          "name": "ProcessingError", "type": "record",
+          "doc": "An error generated during processing of the create message.",
+          "fields": [
+            { "name": "typeId", "type": "int", "doc": "An ID indicating the type of the error." },
+            {
+              "name": "origin",
+              "doc": "Where the error originated from in the message.  One of parsing errors, an error at the root of the message, an error in the plate metadata or an error in an individual sample.",
+              "type": { "name": "messagePart", "type": "enum", "symbols": ["parsing", "root", "plate", "sample"] }
+            },
+            { "name": "sampleUuid", "type": ["null", "string"], "doc": "The UUID of the affected sample, or null if the error isn't from a sample." },
+            { "name": "field", "type": ["null", "string"], "doc": "The field generating the error, or null if the error isn't field specific." },
+            { "name": "description", "type": "string", "doc": "A description of the error encountered." }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -136,3 +136,6 @@ dmypy.json
 
 # talisman
 .talismanrc
+
+# RabbitMQ admin tool
+rabbitmqadmin

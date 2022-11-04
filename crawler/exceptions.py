@@ -32,3 +32,31 @@ class DartStateError(Error):
             return f"DartStateError: {self.message}"
         else:
             return f"DartStateError: {default_message}"
+
+
+class BaracodaError(Error):
+    """Raised when communication with Baracoda results in unsuccessful states/outcomes."""
+
+    def __init__(self, message):
+        self.message = message
+
+
+class CherrypickerDataError(Error):
+    """Raised during cherrypicker test data creation. The message is assumed to be user friendly."""
+
+    def __init__(self, message):
+        self.message = message
+
+
+class TransientRabbitError(Error):
+    """Raised during processing of a RabbitMQ message when a transient issue occurs.
+    For example, this might be a database being inaccessible.  The message should be reprocessed.
+    """
+
+    def __init__(self, message):
+        """Constructs a new processing error message.
+
+        Arguments:
+            message {str} -- A message to log and possibly show to the user/caller.
+        """
+        self.message = message

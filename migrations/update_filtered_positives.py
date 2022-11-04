@@ -1,10 +1,13 @@
 import logging
 import logging.config
 from datetime import datetime
+from typing import Tuple, cast
+
+from lab_share_lib.config_readers import get_config
 
 from crawler.filtered_positive_identifier import current_filtered_positive_identifier
 from crawler.helpers.cherrypicked_samples import filter_out_cherrypicked_samples
-from crawler.helpers.general_helpers import get_config
+from crawler.types import Config
 from migrations.helpers.update_filtered_positives_helper import (
     pending_plate_barcodes_from_dart,
     positive_result_samples_from_mongo,
@@ -24,7 +27,7 @@ def run(settings_module: str = "", omit_dart: bool = False) -> None:
         settings_module {str} -- settings module from which to generate the app config
         omit_dart {bool} -- whether to omit DART queries/updates from the process
     """
-    config, settings_module = get_config(settings_module)
+    config, settings_module = cast(Tuple[Config, str], get_config(settings_module))
     logging.config.dictConfig(config.LOGGING)
 
     logger.info("-" * 80)

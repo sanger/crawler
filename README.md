@@ -12,6 +12,9 @@ saves valid data to MongoDB.
 <!-- toc -->
 
 - [Requirements for Development](#requirements-for-development)
+  * [Additional Dependencies](#additional-dependencies)
+    + [Test data generator (requires Baracoda)](#test-data-generator-requires-baracoda)
+    + [Update sample message processing (requires Cherrytrack)](#update-sample-message-processing-requires-cherrytrack)
 - [Getting Started](#getting-started)
   * [Configuring Environment](#configuring-environment)
   * [Setup Steps](#setup-steps)
@@ -20,11 +23,11 @@ saves valid data to MongoDB.
   * [Updating the MLWH `lighthouse_sample` Table](#updating-the-mlwh-lighthouse_sample-table)
   * [Migrating Legacy Data to DART](#migrating-legacy-data-to-dart)
 - [Priority Samples](#priority-samples)
-  * [Glossary](#glossary)
   * [Filtered Positive Rules](#filtered-positive-rules)
     + [Version 0 `v0`](#version-0-v0)
     + [Version 1 `v1`](#version-1-v1)
-    + [Version 2 `v2` - **Current Version**](#version-2-v2---current-version)
+    + [Version 2 `v2`](#version-2-v2)
+    + [Version 3 `v3` - **Current Version**](#version-3-v3---current-version)
     + [Propagating Filtered Positive version changes to MongoDB, MLWH and (optionally) DART](#propagating-filtered-positive-version-changes-to-mongodb-mlwh-and-optionally-dart)
 - [Testing](#testing)
   * [Testing Requirements](#testing-requirements)
@@ -55,6 +58,34 @@ The following tools are required for development:
         brew install mongodb-community@4.2
         brew services start mongodb-community@4.2
 
+- To support the parsing of messages from RabbitMQ instead of via SFTP, both
+  RabbitMQ and Redpanda must be available.  Running these from Docker is highly
+  recommended.  Follow the instructions under the Docker section of this
+  document to bringing up the dependencies and ensure these are available.
+
+### Additional Dependencies
+
+Some activities in Crawler require additional dependencies from other
+repositories.
+
+#### Test data generator (requires Baracoda)
+
+If you intend to test/develop/use the test data generation functionality of
+Crawler at the `/v1/cherrypick-test-data` endpoint, you will also need to be
+running a local instance of [Baracoda](https://github.com/sanger/baracoda).  If
+you need to change the port Crawler uses to contact Baracoda, you can do so in
+the `BARACODA_BASE_URL` in the config file `crawler/config/defaults.py`.
+
+#### Update sample message processing (requires Cherrytrack)
+
+If you will be sending RabbitMQ messages to update plate map samples, the system
+will check Cherrytrack to see whether the plate has already been picked.
+Cherrytrack can be run locally from a clone of [its
+repository](https://github.com/sanger/cherrytrack).  If you need Crawler to
+communicate with Cherrytrack on a different port, you can change the port used
+by updating the  `CHERRYTRACK_BASE_URL` in the config file
+`crawler/config/defaults.py`.
+
 ## Getting Started
 
 ### Configuring Environment
@@ -75,6 +106,16 @@ Install the require dependencies:
 Once all the required packages are installed, enter the virtual environment with (this will also load the `.env` file):
 
     pipenv shell
+
+Crawler requires access to an instance of RabbitMQ which is among the
+dependencies [Docker Compose](#docker) can set up for you.  Otherwise if you
+have a local instance of RabbitMQ, it can also be used after changing the
+RabbitMQ host and port in `./setup_dev_rabbit.py` and in
+`./crawler/config/defaults.py`.  Crawler will generate errors if the expected
+resources are not present in RabbitMQ, so run the following to generate those in
+your dev environment.
+
+    python ./setup_dev_rabbit.py
 
 To then run the app, use the command:
 
@@ -257,7 +298,7 @@ To run the tests, execute:
 
 ## Formatting, Type Checking and Linting
 
-Black is used as a formatter, to format code before commiting:
+Black is used as a formatter, to format code before committing:
 
     black .
 
@@ -281,15 +322,17 @@ If you do not have root access pyodbc will not work if you use brew. Using the
 docker compose you can set up the full stack and it will also set the correct
 environment variables.
 
-To run the database dependencies used by Crawler and also Lighthouse, there is a
-separate configuration for Docker Compose. This is shared with Lighthouse so if
-you start these dependencies here, there's no need to also attempt to do so in
-the Lighthouse repository. They are the same resources in both and the second
-one to be started will show exceptions about ports already being allocated:
+To run the dependencies used by Crawler and also Lighthouse, there is a separate
+configuration for Docker Compose:
 
     ./dependencies/up.sh
 
-When you want to shut the databases back down, you can do so with:
+**Note:** *These dependencies are shared with Lighthouse so if you start these
+dependencies here, there's no need to also attempt to do so in the Lighthouse
+repository. They are the same resources in both and the second one to be started
+will show exceptions about ports already being allocated.*
+
+When you want to shut the dependencies back down, you can do so with:
 
     ./dependencies/down.sh
 

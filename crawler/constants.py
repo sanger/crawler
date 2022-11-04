@@ -8,6 +8,31 @@ from typing import Final, Set, Tuple
 SCHEDULER_JOB_ID_RUN_CRAWLER: Final[str] = "run_crawler"
 
 ###
+# Logger names
+###
+LOGGER_NAME_RABBIT_MESSAGES: Final[str] = "rabbit_messages"
+
+###
+# CentreConf dictionary keys
+###
+CENTRE_KEY_BACKUPS_FOLDER: Final = "backups_folder"
+CENTRE_KEY_BARCODE_FIELD: Final = "barcode_field"
+CENTRE_KEY_BARCODE_REGEX: Final = "barcode_regex"
+CENTRE_KEY_BIOMEK_LABWARE_CLASS: Final = "biomek_labware_class"
+CENTRE_KEY_DATA_SOURCE: Final = "data_source"
+CENTRE_KEY_FEEDBACK_ROUTING_KEY_PREFIX: Final = "feedback_routing_key_prefix"
+CENTRE_KEY_FILE_NAMES_TO_IGNORE: Final = "file_names_to_ignore"
+CENTRE_KEY_FILE_REGEX_CONSOLIDATED_EAGLE: Final = "sftp_file_regex_consolidated_eagle"
+CENTRE_KEY_FILE_REGEX_CONSOLIDATED_SURVEILLANCE: Final = "sftp_file_regex_consolidated_surveillance"
+CENTRE_KEY_FILE_REGEX_UNCONSOLIDATED_SURVEILLANCE: Final = "sftp_file_regex_unconsolidated_surveillance"
+CENTRE_KEY_INCLUDE_IN_SCHEDULED_RUNS: Final = "include_in_scheduled_runs"
+CENTRE_KEY_LAB_ID_DEFAULT: Final = "lab_id_default"
+CENTRE_KEY_NAME: Final = "name"
+CENTRE_KEY_PREFIX: Final = "prefix"
+CENTRE_KEY_SFTP_ROOT_READ: Final = "sftp_root_read"
+CENTRE_KEY_SKIP_UNCONSOLIDATED_SURVEILLANCE_FILES: Final = "skip_unconsolidated_surveillance_files"
+
+###
 # mongo collections
 ###
 COLLECTION_CENTRES: Final[str] = "centres"
@@ -45,30 +70,40 @@ FIELD_PICK_RESULT: Final[str] = "PickResult"
 ###
 # mongo fields
 ###
-FIELD_MONGODB_ID: Final[str] = "_id"
-FIELD_PLATE_BARCODE: Final[str] = "plate_barcode"
+FIELD_ADD_TO_DART: Final[str] = "add_to_dart"
+FIELD_BARCODE: Final[str] = "barcode"
+FIELD_BARCODES: Final[str] = "barcodes"
 FIELD_CENTRE_NAME: Final[str] = "name"
 FIELD_COORDINATE: Final[str] = "coordinate"
-FIELD_LINE_NUMBER: Final[str] = "line_number"
-FIELD_FILE_NAME: Final[str] = "file_name"
-FIELD_FILE_NAME_DATE: Final[str] = "file_name_date"
 FIELD_CREATED_AT: Final[str] = "created_at"
-FIELD_UPDATED_AT: Final[str] = "updated_at"
-FIELD_SOURCE: Final[str] = "source"
+FIELD_EVE_CREATED: Final[str] = "_created"
+FIELD_EVE_UPDATED: Final[str] = "_updated"
+FIELD_FAILURE_REASON: Final[str] = "failure_reason"
+FIELD_FILE_NAME_DATE: Final[str] = "file_name_date"
+FIELD_FILE_NAME: Final[str] = "file_name"
 FIELD_LH_SAMPLE_UUID: Final[str] = "lh_sample_uuid"
 FIELD_LH_SOURCE_PLATE_UUID: Final[str] = "lh_source_plate_uuid"
-FIELD_BARCODE: Final[str] = "barcode"
+FIELD_LINE_NUMBER: Final[str] = "line_number"
+FIELD_MONGO_COG_UK_ID: Final[str] = "COG UK ID"
+FIELD_MONGO_DATE_TESTED: Final[str] = "Date Tested"
+FIELD_MONGO_FILTERED_POSITIVE: Final[str] = "filtered_positive"
+FIELD_MONGO_LAB_ID: Final[str] = "Lab ID"
+FIELD_MONGO_MESSAGE_UUID: Final[str] = "message_uuid"
+FIELD_MONGO_RESULT: Final[str] = "Result"
+FIELD_MONGO_RNA_ID: Final[str] = "RNA ID"
+FIELD_MONGO_ROOT_SAMPLE_ID: Final[str] = "Root Sample ID"
+FIELD_MONGO_SAMPLE_INDEX: Final[str] = "sample_index"
+FIELD_MONGO_SOURCE_PLATE_BARCODE: Final[str] = "barcode"
+FIELD_MONGODB_ID: Final[str] = "_id"
 FIELD_MUST_SEQUENCE: Final[str] = "must_sequence"
+FIELD_PLATE_BARCODE: Final[str] = "plate_barcode"
+FIELD_PLATE_SPECS: Final[str] = "plate_specs"
 FIELD_PREFERENTIALLY_SEQUENCE: Final[str] = "preferentially_sequence"
 FIELD_PROCESSED: Final[str] = "processed"
 FIELD_SAMPLE_ID: Final[str] = "sample_id"
+FIELD_SOURCE: Final[str] = "source"
 FIELD_STATUS: Final[str] = "status"
-FIELD_PLATE_SPECS: Final[str] = "plate_specs"
-FIELD_ADD_TO_DART: Final[str] = "add_to_dart"
-FIELD_BARCODES: Final[str] = "barcodes"
-FIELD_FAILURE_REASON: Final[str] = "failure_reason"
-FIELD_EVE_CREATED: Final[str] = "_created"
-FIELD_EVE_UPDATED: Final[str] = "_updated"
+FIELD_UPDATED_AT: Final[str] = "updated_at"
 
 # filtered-positive field names
 FIELD_FILTERED_POSITIVE_TIMESTAMP: Final[str] = "filtered_positive_timestamp"
@@ -86,7 +121,8 @@ FIELD_STATUS_FAILED: Final[str] = "failed"
 ###
 # cherrypicker test data
 ###
-# the prefix for the centre which processes generated data
+# the lab ID and prefix for the centre which processes generated data
+TEST_DATA_CENTRE_LAB_ID: Final[str] = "CPTD"
 TEST_DATA_CENTRE_PREFIX: Final[str] = "CPTD"
 
 # processing errors for the API endpoint for generating data
@@ -97,6 +133,17 @@ TEST_DATA_ERROR_NUMBER_OF_PLATES: Final[str] = "Number of plates to generate mus
 TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES: Final[
     str
 ] = "One or more plates expected fewer than 0 or more than 96 positive samples."
+TEST_DATA_ERROR_PLATE_CREATION_FAILED: Final[
+    str
+] = "One or more plates failed to generate data correctly. Please try again."
+
+
+###
+# Baracoda error messages
+###
+ERROR_BARACODA_COG_BARCODES: Final[str] = "Unable to create COG barcodes"
+ERROR_BARACODA_CONNECTION: Final[str] = "Unable to access baracoda"
+ERROR_BARACODA_UNKNOWN: Final[str] = "Unknown error accessing baracoda"
 
 
 ##
@@ -105,6 +152,7 @@ TEST_DATA_ERROR_NUMBER_OF_POS_SAMPLES: Final[
 MLWH_TABLE_NAME: Final[str] = "lighthouse_sample"
 MLWH_MONGODB_ID: Final[str] = "mongodb_id"
 MLWH_ROOT_SAMPLE_ID: Final[str] = "root_sample_id"
+MLWH_COG_UK_ID: Final[str] = "cog_uk_id"
 MLWH_RNA_ID: Final[str] = "rna_id"
 MLWH_PLATE_BARCODE: Final[str] = "plate_barcode"
 MLWH_COORDINATE: Final[str] = "coordinate"
@@ -230,6 +278,30 @@ EVENT_CHERRYPICK_LAYOUT_SET: Final[str] = "cherrypick_layout_set"
 
 # As per Beckman events detailed in https://ssg-confluence.internal.sanger.ac.uk/display/PSDPUB/Cherrypicking+Events
 PLATE_EVENT_DESTINATION_CREATED: Final[str] = "lh_beckman_cp_destination_created"
+
+###
+# RabbitMQ message keys
+###
+RABBITMQ_CREATE_FEEDBACK_ORIGIN_PARSING = "parsing"
+RABBITMQ_CREATE_FEEDBACK_ORIGIN_PLATE = "plate"
+RABBITMQ_CREATE_FEEDBACK_ORIGIN_ROOT = "root"
+RABBITMQ_CREATE_FEEDBACK_ORIGIN_SAMPLE = "sample"
+
+RABBITMQ_UPDATE_FEEDBACK_ORIGIN_PARSING = "parsing"
+RABBITMQ_UPDATE_FEEDBACK_ORIGIN_ROOT = "root"
+RABBITMQ_UPDATE_FEEDBACK_ORIGIN_FIELD = "field"
+
+RABBITMQ_HEADER_KEY_SUBJECT = "subject"
+RABBITMQ_HEADER_KEY_VERSION = "version"
+
+RABBITMQ_ROUTING_KEY_CREATE_PLATE = "crud.create.plate"
+RABBITMQ_ROUTING_KEY_CREATE_PLATE_FEEDBACK = "feedback.created.plate"
+RABBITMQ_ROUTING_KEY_UPDATE_SAMPLE_FEEDBACK = "feedback.updated.sample"
+
+RABBITMQ_SUBJECT_CREATE_PLATE = "create-plate-map"
+RABBITMQ_SUBJECT_CREATE_PLATE_FEEDBACK = "create-plate-map-feedback"
+RABBITMQ_SUBJECT_UPDATE_SAMPLE = "update-plate-map-sample"
+RABBITMQ_SUBJECT_UPDATE_SAMPLE_FEEDBACK = "update-plate-map-sample-feedback"
 
 
 ###

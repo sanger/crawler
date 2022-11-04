@@ -4,8 +4,10 @@ from unittest.mock import patch
 import pytest
 from bson.objectid import ObjectId
 
-from crawler.config.centres import CENTRE_KEY_LAB_ID_DEFAULT, CENTRE_KEY_NAME, CENTRE_KEY_PREFIX
 from crawler.constants import (
+    CENTRE_KEY_LAB_ID_DEFAULT,
+    CENTRE_KEY_NAME,
+    CENTRE_KEY_PREFIX,
     COLLECTION_PRIORITY_SAMPLES,
     COLLECTION_SAMPLES,
     DART_STATE_PENDING,
@@ -312,7 +314,7 @@ class TestPrioritySamplesProcess:
         assert self.mock_conn().cursor().commit.call_count == len(self.expected_dart_plates)
         self.mock_conn().close.assert_called_once()
 
-    def test_adding_plate_and_wells_to_dart_fails_with_expection(self, mongo_database, config):
+    def test_adding_plate_and_wells_to_dart_fails_with_exception(self, mongo_database, config):
         _, mongo_database = mongo_database
 
         with patch("crawler.priority_samples_process.add_dart_well_properties", side_effect=Exception("Boom!")):

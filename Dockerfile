@@ -1,4 +1,5 @@
-# Use alpine for a smaller image size and install only the required packages
+# Use buster for a smaller image size and install only the required packages.
+# Note that bullseye uses Debian 11 which cannot install msodbcsql17.
 FROM python:3.8-slim-buster
 
 # > Setting PYTHONUNBUFFERED to a non empty value ensures that the python output is sent straight to
@@ -12,6 +13,7 @@ RUN apt-get update && \
     apt-get install -y \
     build-essential \
     curl \
+    git \
     unixodbc-dev
 
 # Install the Microsoft ODBC driver for SQL Server
@@ -44,6 +46,8 @@ RUN pipenv sync --dev --system && \
 
 # Copy all the source to the image
 COPY . .
+
+RUN pipenv install --dev
 
 # "The best use for ENTRYPOINT is to set the image’s main command, allowing that image to be run as though it was that
 #   command (and then use CMD as the default flags)."

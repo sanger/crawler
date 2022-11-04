@@ -9,8 +9,9 @@ from typing import Any, Dict, Final, Iterator, List, Mapping, Tuple
 
 from pymongo.database import Database
 
-from crawler.config.centres import CENTRE_KEY_BIOMEK_LABWARE_CLASS, CENTRE_KEY_NAME
 from crawler.constants import (
+    CENTRE_KEY_BIOMEK_LABWARE_CLASS,
+    CENTRE_KEY_NAME,
     COLLECTION_PRIORITY_SAMPLES,
     DART_STATE_PENDING,
     FIELD_MONGODB_ID,

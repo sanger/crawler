@@ -1,7 +1,20 @@
 import argparse
+from typing import Tuple, cast
+
+from lab_share_lib.config_readers import get_config
 
 from crawler import main
-from crawler.config.centres import CENTRE_KEY_PREFIX, CENTRES
+from crawler.config.centres import get_centres_config
+from crawler.constants import CENTRE_KEY_PREFIX
+from crawler.types import Config
+
+
+def centre_prefix_choices():
+    config, _ = cast(Tuple[Config, str], get_config(""))
+    centres = get_centres_config(config, "SFTP")
+
+    return [centre[CENTRE_KEY_PREFIX] for centre in centres]
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -29,7 +42,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--centre-prefix",
         dest="centre_prefix",
-        choices=[centre[CENTRE_KEY_PREFIX] for centre in CENTRES],
+        choices=centre_prefix_choices(),
         help="process only this centre's plate map files",
     )
 

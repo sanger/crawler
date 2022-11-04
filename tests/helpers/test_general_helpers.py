@@ -1,11 +1,16 @@
+import json
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
-from unittest.mock import patch
+from functools import partial
+from http import HTTPStatus
+from unittest.mock import ANY, patch
 
 import pytest
+import responses
 from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
+from requests import ConnectionError
 
 from crawler.constants import (
     DART_EMPTY_VALUE,
@@ -22,9 +27,9 @@ from crawler.constants import (
     FIELD_FILTERED_POSITIVE,
     FIELD_FILTERED_POSITIVE_TIMESTAMP,
     FIELD_FILTERED_POSITIVE_VERSION,
-    FIELD_LAB_ID,
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_MONGO_LAB_ID,
     FIELD_MONGODB_ID,
     FIELD_MUST_SEQUENCE,
     FIELD_PLATE_BARCODE,
@@ -55,10 +60,14 @@ from crawler.constants import (
     MLWH_UPDATED_AT,
     RESULT_VALUE_POSITIVE,
 )
+from crawler.exceptions import BaracodaError
 from crawler.helpers.general_helpers import (
     create_source_plate_doc,
-    get_config,
+    extract_duplicated_values,
+    generate_baracoda_barcodes,
     get_dart_well_index,
+    get_sftp_connection,
+    is_found_in_list,
     is_sample_pickable,
     is_sample_positive,
     map_mongo_doc_to_dart_well_props,
@@ -72,9 +81,123 @@ from crawler.types import SampleDoc
 from tests.conftest import generate_new_object_for_string
 
 
-def test_get_config():
-    with pytest.raises(ModuleNotFoundError):
-        get_config("x.y.z")
+@pytest.fixture
+def sftp_connection_class():
+    with patch("pysftp.Connection") as connection:
+        yield connection
+
+
+@pytest.fixture
+def mocked_responses():
+    """Easily mock responses from HTTP calls.
+    https://github.com/getsentry/responses#responses-as-a-pytest-fixture"""
+    with responses.RequestsMock() as rsps:
+        yield rsps
+
+
+@pytest.mark.parametrize("given_username, expected_username", [[None, "foo"], ["", "foo"], ["username", "username"]])
+@pytest.mark.parametrize("given_password, expected_password", [[None, "pass"], ["", "pass"], ["password", "password"]])
+def test_get_sftp_connection(
+    config, given_username, expected_username, given_password, expected_password, sftp_connection_class
+):
+    actual = get_sftp_connection(config, username=given_username, password=given_password)
+
+    assert actual == sftp_connection_class.return_value
+
+    sftp_connection_class.assert_called_once_with(
+        host=config.SFTP_HOST, port=config.SFTP_PORT, username=expected_username, password=expected_password, cnopts=ANY
+    )
+
+
+@pytest.mark.parametrize("count", [2, 3])
+@pytest.mark.parametrize("prefix", ("TEST", "ALDP"))
+def test_generate_baracoda_barcodes_working_fine(config, count, prefix, mocked_responses):
+    expected = [f"{prefix}-012345", f"{prefix}-012346", f"{prefix}-012347"]
+    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{prefix}/new?count={count}"
+
+    mocked_responses.add(
+        responses.POST,
+        baracoda_url,
+        json={"barcodes_group": {"barcodes": expected}},
+        status=HTTPStatus.CREATED,
+    )
+
+    actual = generate_baracoda_barcodes(config, prefix, count)
+
+    assert actual == expected
+    assert len(mocked_responses.calls) == 1
+
+
+@pytest.mark.parametrize("count", [2, 3])
+@pytest.mark.parametrize("prefix", ("TEST", "ALDP"))
+def test_generate_baracoda_barcodes_will_retry_if_fail(config, count, prefix, mocked_responses):
+    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{prefix}/new?count={count}"
+
+    mocked_responses.add(
+        responses.POST,
+        baracoda_url,
+        json={"errors": ["Some error from baracoda"]},
+        status=HTTPStatus.INTERNAL_SERVER_ERROR,
+    )
+
+    with pytest.raises(Exception):
+        generate_baracoda_barcodes(config, prefix, count)
+
+    assert len(mocked_responses.calls) == config.BARACODA_RETRY_ATTEMPTS
+
+
+@pytest.mark.parametrize("count", [2, 3])
+@pytest.mark.parametrize("prefix", ("TEST", "ALDP"))
+@pytest.mark.parametrize("exception_type", [ConnectionError, Exception])
+def test_generate_baracoda_barcodes_will_retry_if_exception(config, count, prefix, exception_type, mocked_responses):
+    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{prefix}/new?count={count}"
+
+    mocked_responses.add(
+        responses.POST,
+        baracoda_url,
+        body=exception_type("Some error"),
+        status=HTTPStatus.INTERNAL_SERVER_ERROR,
+    )
+
+    with pytest.raises(BaracodaError):
+        generate_baracoda_barcodes(config, prefix, count)
+
+    assert len(mocked_responses.calls) == config.BARACODA_RETRY_ATTEMPTS
+
+
+@pytest.mark.parametrize("count", [2, 3])
+@pytest.mark.parametrize("prefix", ("TEST", "ALDP"))
+def test_generate_baracoda_barcodes_will_not_raise_error_if_success_after_retry(
+    config, count, prefix, mocked_responses
+):
+    expected = [f"{prefix}-012345", f"{prefix}-012346", f"{prefix}-012347"]
+    baracoda_url = f"{config.BARACODA_BASE_URL}/barcodes_group/{prefix}/new?count={count}"
+
+    def request_callback(request, data):
+        data["calls"] = data["calls"] + 1
+
+        if data["calls"] == config.BARACODA_RETRY_ATTEMPTS:
+            return (
+                HTTPStatus.CREATED,
+                {},
+                json.dumps({"barcodes_group": {"barcodes": expected}}),
+            )
+        return (
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            {},
+            json.dumps({"errors": ["Some error from baracoda"]}),
+        )
+
+    mocked_responses.add_callback(
+        responses.POST,
+        baracoda_url,
+        callback=partial(request_callback, data={"calls": 0}),
+        content_type="application/json",
+    )
+
+    generate_baracoda_barcodes(config, prefix, count)
+
+    assert len(mocked_responses.calls) == config.BARACODA_RETRY_ATTEMPTS
 
 
 # tests for parsing Decimal128
@@ -122,7 +245,7 @@ def test_map_mongo_sample_to_mysql(config):
         FIELD_RESULT: "Negative",
         FIELD_DATE_TESTED: date_tested,
         FIELD_SOURCE: "Test Centre",
-        FIELD_LAB_ID: "TC",
+        FIELD_MONGO_LAB_ID: "TC",
         FIELD_FILTERED_POSITIVE: True,
         FIELD_FILTERED_POSITIVE_VERSION: "v2.3",
         FIELD_FILTERED_POSITIVE_TIMESTAMP: filtered_positive_timestamp,
@@ -168,7 +291,7 @@ def test_map_mongo_sample_to_mysql_with_copy(config):
         FIELD_RESULT: "Negative",
         FIELD_DATE_TESTED: date_tested,
         FIELD_SOURCE: "Test Centre",
-        FIELD_LAB_ID: "TC",
+        FIELD_MONGO_LAB_ID: "TC",
         FIELD_CREATED_AT: created_at,
         FIELD_UPDATED_AT: updated_at,
     }
@@ -282,7 +405,7 @@ def test_map_mongo_doc_to_dart_well_props(config):
         FIELD_FILTERED_POSITIVE: True,
         FIELD_ROOT_SAMPLE_ID: "ABC00000004",
         FIELD_RNA_ID: "TC-rna-00000029_H01",
-        FIELD_LAB_ID: "TC",
+        FIELD_MONGO_LAB_ID: "TC",
         FIELD_LH_SAMPLE_UUID: test_uuid,
     }
 
@@ -358,7 +481,7 @@ def test_create_source_plate_doc(freezer):
 
         assert source_plate[FIELD_LH_SOURCE_PLATE_UUID] == str(test_uuid)
         assert source_plate[FIELD_BARCODE] == plate_barcode
-        assert source_plate[FIELD_LAB_ID] == lab_id
+        assert source_plate[FIELD_MONGO_LAB_ID] == lab_id
         assert source_plate[FIELD_UPDATED_AT] == now
         assert source_plate[FIELD_CREATED_AT] == now
 
@@ -409,3 +532,28 @@ def test_is_sample_pickable():
     assert is_sample_pickable({FIELD_FILTERED_POSITIVE: True}) is True
     assert is_sample_pickable({FIELD_MUST_SEQUENCE: True}) is True
     assert is_sample_pickable({FIELD_PREFERENTIALLY_SEQUENCE: True}) is False
+
+
+@pytest.mark.parametrize(
+    "input, expected",
+    [
+        [[], set()],
+        [["one", "two", "three", "four"], set()],
+        [["one", "two", "three", "two"], set(["two"])],
+        [["one", "two", "three", "two", "four", "two", "one"], set(["one", "two"])],
+    ],
+)
+def test_extract_duplicated_values_gives_correct_result(input, expected):
+    assert extract_duplicated_values(input) == expected
+
+
+@pytest.mark.parametrize(
+    "needle, haystack, expected",
+    [
+        ["two", ["one", "two", "three", "four"], True],
+        ["one", [], False],
+        ["ten", ["one", "two", "three", "two", "four", "two", "one"], False],
+    ],
+)
+def test_is_found_in_list_gives_correct_result(needle, haystack, expected):
+    assert is_found_in_list(needle, haystack) is expected

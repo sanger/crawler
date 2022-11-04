@@ -15,6 +15,7 @@ from crawler.constants import (
     FIELD_LAB_ID,
     FIELD_LH_SAMPLE_UUID,
     FIELD_LH_SOURCE_PLATE_UUID,
+    FIELD_MONGO_LAB_ID,
     FIELD_MONGODB_ID,
     FIELD_PLATE_BARCODE,
     FIELD_ROOT_SAMPLE_ID,
@@ -209,13 +210,13 @@ def samples_updated_with_source_plate_uuids(mongo_db: Database, samples: List[Sa
     def update_doc_from_source_plate(
         sample: SampleDoc, existing_plate: SourcePlateDoc, skip_lab_check: bool = False
     ) -> None:
-        if skip_lab_check or sample[FIELD_LAB_ID] == existing_plate[FIELD_LAB_ID]:
+        if skip_lab_check or sample[FIELD_LAB_ID] == existing_plate[FIELD_MONGO_LAB_ID]:
             sample[FIELD_LH_SOURCE_PLATE_UUID] = existing_plate[FIELD_LH_SOURCE_PLATE_UUID]
             updated_samples.append(sample)
         else:
             logger.error(
                 f"ERROR: Source plate barcode {sample[FIELD_PLATE_BARCODE]} already exists with different lab_id "
-                f"{existing_plate[FIELD_LAB_ID]}",
+                f"{existing_plate[FIELD_MONGO_LAB_ID]}",
             )
 
     try:
@@ -232,7 +233,7 @@ def samples_updated_with_source_plate_uuids(mongo_db: Database, samples: List[Sa
                 continue
 
             # then add a new plate
-            new_plate = new_mongo_source_plate(str(plate_barcode), str(sample[FIELD_LAB_ID]))
+            new_plate = new_mongo_source_plate(str(plate_barcode), str(sample[FIELD_MONGO_LAB_ID]))
             new_plates.append(new_plate)
             update_doc_from_source_plate(sample, new_plate, True)
 
@@ -261,7 +262,7 @@ def new_mongo_source_plate(plate_barcode: str, lab_id: str) -> SourcePlateDoc:
     return {
         FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4()),
         FIELD_BARCODE: plate_barcode,
-        FIELD_LAB_ID: lab_id,
+        FIELD_MONGO_LAB_ID: lab_id,
         FIELD_UPDATED_AT: timestamp,
         FIELD_CREATED_AT: timestamp,
     }

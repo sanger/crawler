@@ -1,20 +1,29 @@
 import copy
+import json
 import logging
 import logging.config
+import re
 import shutil
 from datetime import datetime
+from http import HTTPStatus
 from unittest.mock import patch
 
 import pytest
+import responses
 import sqlalchemy
+from lab_share_lib.config_readers import get_config
 from sqlalchemy import MetaData
 
 from crawler import create_app
-from crawler.config.centres import CENTRE_KEY_FILE_NAMES_TO_IGNORE
 from crawler.constants import (
+    CENTRE_KEY_DATA_SOURCE,
+    CENTRE_KEY_FILE_NAMES_TO_IGNORE,
     COLLECTION_CENTRES,
+    COLLECTION_CHERRYPICK_TEST_DATA,
+    COLLECTION_IMPORTS,
     COLLECTION_PRIORITY_SAMPLES,
     COLLECTION_SAMPLES,
+    COLLECTION_SOURCE_PLATES,
     FIELD_FILTERED_POSITIVE,
     FIELD_MONGODB_ID,
     MLWH_TABLE_NAME,
@@ -22,17 +31,22 @@ from crawler.constants import (
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.db.mysql import create_mysql_connection
 from crawler.file_processing import Centre, CentreFile
-from crawler.helpers.general_helpers import get_config, get_sftp_connection
+from crawler.helpers.db_helpers import ensure_mongo_collections_indexed
+from crawler.helpers.general_helpers import get_sftp_connection
 from tests.testing_objects import (
     EVENT_WH_DATA,
     FILTERED_POSITIVE_TESTING_SAMPLES,
     MLWH_SAMPLE_LIGHTHOUSE_SAMPLE,
     MLWH_SAMPLE_STOCK_RESOURCE,
+    MLWH_SAMPLE_UNCONNECTED_LIGHTHOUSE_SAMPLE,
+    MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE,
     MLWH_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS,
     MONGO_SAMPLES_WITH_FILTERED_POSITIVE_FIELDS,
     MONGO_SAMPLES_WITHOUT_FILTERED_POSITIVE_FIELDS,
     TESTING_PRIORITY_SAMPLES,
     TESTING_SAMPLES,
+    TESTING_SAMPLES_WITH_LAB_ID,
+    TESTING_SOURCE_PLATES,
 )
 
 logger = logging.getLogger(__name__)
@@ -73,17 +87,28 @@ def mongo_client(config):
 
 
 @pytest.fixture
+def mongo_collections():
+    return [
+        COLLECTION_IMPORTS,
+        COLLECTION_SAMPLES,
+        COLLECTION_PRIORITY_SAMPLES,
+        COLLECTION_SOURCE_PLATES,
+        COLLECTION_CHERRYPICK_TEST_DATA,
+    ]
+
+
+@pytest.fixture
 def mongo_database(mongo_client):
     config, mongo_client = mongo_client
     db = get_mongo_db(config, mongo_client)
-    try:
-        yield config, db
-    # Drop the database after each test to ensure they are independent
-    # A transaction may be more appropriate here, but that means significant
-    # code changes, as 'sessions' need to be passed around. I'm also not
-    # sure what version of mongo is being used in production.
-    finally:
-        mongo_client.drop_database(db)
+
+    # Ensure any existing data is gone before a test starts
+    mongo_client.drop_database(db)
+
+    # Create indexes on collections -- this also creates the empty source_plates and samples collections
+    ensure_mongo_collections_indexed(db)
+
+    yield config, db
 
 
 @pytest.fixture
@@ -115,7 +140,33 @@ def mlwh_rw_db(mlwh_connection):
 
 
 @pytest.fixture
-def pyodbc_conn(config):
+def baracoda(config):
+    barcode_index = int("123abc", 16)
+    barcodes_group_endpoint = re.escape("/barcodes_group/") + r"(\w+)" + re.escape("/new?count=") + r"(\d+)"
+
+    def generate_barcodes(request):
+        nonlocal barcode_index
+
+        if match := re.match(barcodes_group_endpoint, request.path_url):
+            prefix = match.groups()[0]
+            count = int(match.groups()[1])
+
+        barcodes = [f"{prefix}-{(barcode_index + i):x}".upper() for i in range(count)]
+        barcode_index += count
+
+        return (HTTPStatus.CREATED, {}, json.dumps({"barcodes_group": {"barcodes": barcodes}}))
+
+    with responses.RequestsMock() as rsps:
+        rsps.add_callback(
+            responses.POST,
+            re.compile(re.escape(config.BARACODA_BASE_URL) + barcodes_group_endpoint),
+            generate_barcodes,
+        )
+        yield
+
+
+@pytest.fixture
+def pyodbc_conn():
     with patch("pyodbc.connect") as mock_connect:
         yield mock_connect
 
@@ -138,9 +189,29 @@ def testing_files_for_process(cleanup_backups):
         shutil.rmtree("tmp/files")
 
 
+def samples_collection_with_samples(mongo_database, samples=None):
+    samples_collection = get_mongo_collection(mongo_database, COLLECTION_SAMPLES)
+    samples_collection.delete_many({})
+
+    if samples and len(samples) > 0:
+        samples_collection.insert_many(samples)
+
+    return samples_collection
+
+
+@pytest.fixture(params=[[]])
+def samples_collection_accessor(mongo_database, request):
+    return samples_collection_with_samples(mongo_database[1], request.param)
+
+
 @pytest.fixture
-def samples_collection_accessor(mongo_database):
-    return get_mongo_collection(mongo_database[1], COLLECTION_SAMPLES)
+def source_plates_collection_accessor(mongo_database):
+    return get_mongo_collection(mongo_database[1], COLLECTION_SOURCE_PLATES)
+
+
+@pytest.fixture
+def imports_collection_accessor(mongo_database):
+    return get_mongo_collection(mongo_database[1], COLLECTION_IMPORTS)
 
 
 @pytest.fixture
@@ -154,8 +225,25 @@ def centres_collection_accessor(mongo_database):
 
 
 @pytest.fixture
-def testing_samples(samples_collection_accessor):
-    result = samples_collection_accessor.insert_many(TESTING_SAMPLES)
+def testing_samples(mongo_database):
+    samples_collection = samples_collection_with_samples(mongo_database[1], TESTING_SAMPLES)
+    return list(samples_collection.find({}))
+
+
+@pytest.fixture
+def testing_source_plates(source_plates_collection_accessor):
+    result = source_plates_collection_accessor.insert_many(TESTING_SOURCE_PLATES)
+    # source_plates = list(source_plates_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
+    try:
+        # yield source_plates
+        yield result
+    finally:
+        source_plates_collection_accessor.delete_many({})
+
+
+@pytest.fixture
+def testing_samples_with_lab_id(samples_collection_accessor):
+    result = samples_collection_accessor.insert_many(TESTING_SAMPLES_WITH_LAB_ID)
     samples = list(samples_collection_accessor.find({FIELD_MONGODB_ID: {"$in": result.inserted_ids}}))
     try:
         yield samples
@@ -295,6 +383,46 @@ def mlwh_beckman_cherrypicked(config, mlwh_sql_engine):
 
 
 @pytest.fixture
+def mlwh_samples_with_lab_id_for_migration(config, mlwh_sql_engine):
+    def delete_data():
+        delete_from_mlwh(mlwh_sql_engine, config.MLWH_LIGHTHOUSE_SAMPLE_TABLE)
+
+    try:
+        delete_data()
+
+        # inserts
+        insert_into_mlwh(
+            MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE["lighthouse_sample"],
+            mlwh_sql_engine,
+            config.MLWH_LIGHTHOUSE_SAMPLE_TABLE,
+        )
+
+        yield
+    finally:
+        delete_data()
+
+
+@pytest.fixture
+def mlwh_testing_samples_unconnected(config, mlwh_sql_engine):
+    def delete_data():
+        delete_from_mlwh(mlwh_sql_engine, config.MLWH_LIGHTHOUSE_SAMPLE_TABLE)
+
+    try:
+        delete_data()
+
+        # inserts
+        insert_into_mlwh(
+            MLWH_SAMPLE_UNCONNECTED_LIGHTHOUSE_SAMPLE["lighthouse_sample"],
+            mlwh_sql_engine,
+            config.MLWH_LIGHTHOUSE_SAMPLE_TABLE,
+        )
+
+        yield
+    finally:
+        delete_data()
+
+
+@pytest.fixture
 def mlwh_cherrypicked_samples(config, mlwh_sql_engine):
     def delete_data():
         delete_from_mlwh(mlwh_sql_engine, config.MLWH_STOCK_RESOURCES_TABLE)
@@ -356,6 +484,12 @@ def get_table(sql_engine, table_name):
 
 
 @pytest.fixture
+def query_lighthouse_sample(mlwh_sql_engine):
+    with mlwh_sql_engine.begin() as connection:
+        yield connection
+
+
+@pytest.fixture
 def event_wh_sql_engine(config):
     create_engine_string = f"mysql+pymysql://{config.WAREHOUSES_RW_CONN_STRING}/{config.EVENTS_WH_DB}"
     return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
@@ -372,6 +506,24 @@ def testing_centres(centres_collection_accessor, config):
     result = centres_collection_accessor.insert_many(config.CENTRES)
     try:
         yield result
+    finally:
+        centres_collection_accessor.delete_many({})
+
+
+@pytest.fixture
+def test_data_source_centres(centres_collection_accessor, config):
+    data_source_centres = [
+        {
+            CENTRE_KEY_DATA_SOURCE: "SFTP",
+        },
+        {
+            CENTRE_KEY_DATA_SOURCE: "RabbitMQ",
+        },
+    ]
+
+    centres_collection_accessor.insert_many(data_source_centres)
+    try:
+        yield centres_collection_accessor, config
     finally:
         centres_collection_accessor.delete_many({})
 

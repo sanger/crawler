@@ -13,11 +13,6 @@ jobs:
   build_test_release_push:
     runs-on: ubuntu-latest
     services:
-      mongodb:
-        image: mongo:4.2.5
-        ports:
-          - 27017:27017
-
       mysql:
         image: mysql:5.7
         ports:
@@ -41,12 +36,19 @@ jobs:
           docker run
           --network host
           --entrypoint ''
+          --env SETTINGS_MODULE=crawler.config.test
           docker.pkg.github.com/${IMAGE_NAME}:${BRANCH_NAME}
           python setup_test_db.py
 
       - name: Start a testing SFTP server
         run: |
           docker run -p "3010:22" -v ${PWD}/test:/home/foo -d atmoz/sftp foo:pass:1001
+
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.7.0
+        with:
+          mongodb-version: 4.2
+          mongodb-replica-set: heron_rs
 
       - name: Run tests against the image
         run: >-
@@ -55,6 +57,7 @@ jobs:
           --entrypoint ''
           --env SFTP_SERVER=localhost
           --env SFTP_PORT=3010
+          --env SETTINGS_MODULE=crawler.config.test
           docker.pkg.github.com/${IMAGE_NAME}:${BRANCH_NAME}
           python -m pytest --no-cov -vx
 

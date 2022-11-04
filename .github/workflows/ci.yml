@@ -3,12 +3,17 @@ name: CI
 on:
   push:
     branches:
+      - develop-*
       - develop
       - master
   pull_request:
     branches:
+      - develop-*
       - develop
       - master
+
+env:
+  SETTINGS_MODULE: crawler.config.test
 
 jobs:
   black:
@@ -85,10 +90,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     services:
-      mongodb:
-        image: mongo:4.2.5
-        ports:
-          - 27017:27017
       mysql:
         image: mysql:5.7
         ports:
@@ -120,6 +121,11 @@ jobs:
       - name: Start a testing SFTP server
         run: |
           docker run -p "3010:22" -v ${PWD}/test:/home/foo -d atmoz/sftp foo:pass:1001
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.7.0
+        with:
+          mongodb-version: 4.2
+          mongodb-replica-set: heron_rs
       - name: Test with pytest
         run: |
           SFTP_SERVER=localhost SFTP_PORT=3010 python -m pytest -vx

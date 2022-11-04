@@ -1,71 +1,37 @@
-import os
-import shutil
-from collections import namedtuple
 from datetime import datetime
 from unittest.mock import patch
 
 import pytest
 
 from crawler.helpers.cherrypicker_test_data import (
+    WELL_COORDS,
+    _create_rna_id,
+    _create_root_sample_id,
+    _flat_list_of_positives_per_plate,
+    _flatten,
     create_barcode_meta,
     create_barcodes,
-    create_csv_rows,
-    create_plate_rows,
-    create_rna_id,
-    create_rna_pcr_id,
-    create_root_sample_id,
-    create_row,
-    create_test_timestamp,
-    create_viral_prep_id,
-    flat_list_of_positives_per_plate,
-    flatten,
-    generate_baracoda_barcodes,
-    write_plates_file,
+    create_plate_messages,
 )
-from crawler.helpers.general_helpers import is_found_in_list
-
-LoggerMessages = namedtuple("LoggerMessages", ["info", "error"])
 
 
 @pytest.fixture
-def logger_messages():
-    with patch("crawler.helpers.cherrypicker_test_data.logger") as logger:
-        infos = []
-        logger.info.side_effect = lambda msg: infos.append(msg)
-
-        errors = []
-        logger.error.side_effect = lambda msg: errors.append(msg)
-
-        yield LoggerMessages(info=infos, error=errors)
-
-
-@pytest.fixture
-def request_post_mock():
-    with patch("requests.post") as mock:
-        yield mock
+def logger():
+    with patch("crawler.helpers.cherrypicker_test_data.LOGGER") as logger:
+        yield logger
 
 
 def test_flatten_reduces_lists():
-    actual = flatten([[1, 2], [3, 4], [5, 6]])
+    actual = _flatten([[1, 2], [3, 4], [5, 6]])
     expected = [1, 2, 3, 4, 5, 6]
 
     assert actual == expected
 
 
 def test_flatten_reduces_one_level_only():
-    actual = flatten([[1, [2, 3]], [[4, 5], 6]])
+    actual = _flatten([[1, [2, 3]], [[4, 5], 6]])
     expected = [1, [2, 3], [4, 5], 6]
 
-    assert actual == expected
-
-
-@pytest.mark.parametrize("count", [2, 3])
-def test_generate_baracoda_barcodes_calls_correct_baracoda_endpoint(request_post_mock, config, count):
-    expected = ["TEST-012345", "TEST-012346", "TEST-012347"]
-    request_post_mock.return_value.json.return_value = {"barcodes_group": {"barcodes": expected}}
-    actual = generate_baracoda_barcodes(config, count)
-
-    assert request_post_mock.called_with(f"{config.BARACODA_BASE_URL}/barcodes_group/TEST/new?count={count}")
     assert actual == expected
 
 
@@ -91,20 +57,7 @@ def test_create_barcodes(config, count):
     ],
 )
 def test_create_root_sample_id(barcode, well_num, expected):
-    actual = create_root_sample_id(barcode, well_num)
-    assert actual == expected
-
-
-@pytest.mark.parametrize(
-    "barcode, well_num, well_coordinate, expected",
-    [
-        ["TEST-123450", 4, "A04", "VPID-TEST-12345004_A04"],
-        ["TEST-123451", 34, "C10", "VPID-TEST-12345134_C10"],
-        ["TEST-123452", 96, "H12", "VPID-TEST-12345296_H12"],
-    ],
-)
-def test_create_viral_prep_id(barcode, well_num, well_coordinate, expected):
-    actual = create_viral_prep_id(barcode, well_num, well_coordinate)
+    actual = _create_root_sample_id(barcode, well_num)
     assert actual == expected
 
 
@@ -117,106 +70,18 @@ def test_create_viral_prep_id(barcode, well_num, well_coordinate, expected):
     ],
 )
 def test_create_rna_id(barcode, well_coordinate, expected):
-    actual = create_rna_id(barcode, well_coordinate)
+    actual = _create_rna_id(barcode, well_coordinate)
     assert actual == expected
-
-
-@pytest.mark.parametrize(
-    "barcode, well_num, well_coordinate, expected",
-    [
-        ["TEST-123450", 4, "A04", "RNA_PCR-TEST-12345004_A04"],
-        ["TEST-123451", 34, "C10", "RNA_PCR-TEST-12345134_C10"],
-        ["TEST-123452", 96, "H12", "RNA_PCR-TEST-12345296_H12"],
-    ],
-)
-def test_create_rna_pcr_id(barcode, well_num, well_coordinate, expected):
-    actual = create_rna_pcr_id(barcode, well_num, well_coordinate)
-    assert actual == expected
-
-
-def test_create_test_timestamp():
-    dt = datetime(2012, 3, 4, 5, 6, 7)
-    expected = "2012-03-04 05:06:07 UTC"
-    actual = create_test_timestamp(dt)
-
-    assert actual == expected
-
-
-@patch("crawler.helpers.cherrypicker_test_data.create_test_timestamp")
-@patch("crawler.helpers.cherrypicker_test_data.create_rna_pcr_id")
-@patch("crawler.helpers.cherrypicker_test_data.create_rna_id")
-@patch("crawler.helpers.cherrypicker_test_data.create_viral_prep_id")
-@patch("crawler.helpers.cherrypicker_test_data.create_root_sample_id")
-def test_create_row(rs_id, vp_id, rna_id, rna_pcr_id, timestamp):
-    rs_id.return_value = "RSID"
-    vp_id.return_value = "VPID"
-    rna_id.return_value = "RNAID"
-    rna_pcr_id.return_value = "RNAPCRID"
-    timestamp.return_value = "TS"
-
-    dt = datetime(2012, 3, 4, 5, 6, 7)
-    well_index = 2
-    result = "Positive"
-    barcode = "TEST-123456"
-    lab_id = "TEST-LAB"
-
-    actual = create_row(dt, well_index, result, barcode, lab_id)
-
-    expected = ["RSID", "VPID", "RNAID", "RNAPCRID", result, "TS", lab_id]
-    well_num = well_index + 1
-    well_coordinate = "A02"
-
-    assert actual == expected
-    assert rs_id.called_with(barcode, well_num)
-    assert vp_id.called_with(barcode, well_num, well_coordinate)
-    assert rna_id.called_with(barcode, well_coordinate)
-    assert rna_pcr_id.called_with(barcode, well_num, well_coordinate)
-    assert timestamp.called_with(dt)
-
-
-@patch("random.shuffle")
-@patch("crawler.helpers.cherrypicker_test_data.create_row")
-def test_create_plate_rows(create_row, shuffle):
-    positives = negatives = 0
-    dt = datetime(2012, 3, 4, 5, 6, 7)
-    barcode = "TEST-123456"
-    lab_id = "TEST-LAB"
-
-    def create_row_side_effect(dt_arg, _, result_arg, barcode_arg, lab_id_arg):
-        nonlocal positives, negatives, dt, barcode
-
-        assert dt_arg == dt
-        assert barcode_arg == barcode
-        assert lab_id_arg == lab_id
-
-        if result_arg == "Positive":
-            positives += 1
-        elif result_arg == "Negative":
-            negatives += 1
-
-        return ["A", "row"]
-
-    create_row.side_effect = create_row_side_effect
-
-    actual = create_plate_rows(dt, 40, barcode, lab_id)
-    expected = [["A", "row"]] * 96
-
-    assert actual == expected
-    assert shuffle.called_with(["Positive"] * 40 + ["Negative"] * 56)
-    assert create_row.call_count == 96
-    assert positives == 40
-    assert negatives == 56
 
 
 def test_flat_list_of_positives_per_plate():
-    actual = flat_list_of_positives_per_plate([[2, 5], [3, 10]])
+    actual = _flat_list_of_positives_per_plate([[2, 5], [3, 10]])
     expected = [5, 5, 10, 10, 10]
 
     assert actual == expected
 
 
-def test_create_csv_rows():
-    # Note this is an integration of all the methods tested above, so not strictly a unit test!
+def test_create_plate_messages():
     plate_specs = [[1, 0], [2, 40], [1, 96], [2, 40]]
     dt = datetime(2012, 3, 4, 5, 6, 7)
     barcodes = {
@@ -227,96 +92,42 @@ def test_create_csv_rows():
         "TEST-40POS03": 40,
         "TEST-40POS04": 40,
     }
-    lab_id = "TEST-LAB"
 
-    actual = create_csv_rows(plate_specs, dt, list(barcodes.keys()), lab_id)
+    actual = create_plate_messages(plate_specs, dt, list(barcodes.keys()))
 
-    wells_per_plate = 96
-    expected_count = wells_per_plate * len(barcodes)
-    assert len(actual) == expected_count
+    assert len(actual) == 6
 
-    # Check that identifier fields are unique across the rows
-    assert len(set([row[0] for row in actual])) == expected_count
-    assert len(set([row[1] for row in actual])) == expected_count
-    assert len(set([row[2] for row in actual])) == expected_count
-    assert len(set([row[3] for row in actual])) == expected_count
+    for message_i in range(6):
+        expected_barcode = list(barcodes.keys())[message_i]
 
-    # Check that the timestamp and lab ID was added to all rows identically
-    assert len(set([row[5] for row in actual])) == 1
-    assert len(set([row[6] for row in actual])) == 1
-    assert actual[0][6] == lab_id
+        message = actual[message_i]
+        assert type(message["messageUuid"]) == bytes
+        assert len(message["messageUuid"]) == 36
+        assert message["messageCreateDateUtc"] == dt
 
-    # Per plate checks
-    for barcode, positives in barcodes.items():
-        barcode_rows = [row for row in actual if barcode in row[0]]
-        assert len(barcode_rows) == wells_per_plate
+        plate = message["plate"]
+        assert plate["labId"] == "CPTD"
+        assert plate["plateBarcode"] == expected_barcode
+        assert len(plate["samples"]) == 96
 
-        # Assert that expected fields contain the correct prefix and barcode
-        assert all([row[0].startswith(f"RSID-{barcode}") for row in barcode_rows])
-        assert all([row[1].startswith(f"VPID-{barcode}") for row in barcode_rows])
-        assert all([row[2].startswith(f"{barcode}_") for row in barcode_rows])
-        assert all([row[3].startswith(f"RNA_PCR-{barcode}") for row in barcode_rows])
+        for sample_i in range(96):
+            sample = plate["samples"][sample_i]
+            assert type(sample["sampleUuid"]) == bytes
+            assert len(sample["sampleUuid"]) == 36
+            assert sample["rootSampleId"] == f"RSID-{expected_barcode}{str(sample_i + 1).zfill(2)}"
+            assert sample["rnaId"] == f"{expected_barcode}_{WELL_COORDS[sample_i]}"
+            assert sample["cogUkId"] == f"{expected_barcode}{hex(sample_i + 1)[2:].zfill(2)}"
+            assert sample["plateCoordinate"] == WELL_COORDS[sample_i]
+            assert sample["preferentiallySequence"] is False
+            assert sample["mustSequence"] is False
+            assert sample["fitToPick"] is (True if sample["result"] == "positive" else False)
+            assert sample["testedDateUtc"] == dt
 
-        # Check the correct number of positives and negatives were generated
-        positive_rows = [row for row in barcode_rows if "Positive" == row[4]]
-        negative_rows = [row for row in barcode_rows if "Negative" == row[4]]
-        assert len(positive_rows) == positives
-        assert len(negative_rows) == 96 - positives
-
-
-@pytest.fixture
-def test_rows_data():
-    return [
-        ["RSID-01", "VPID-01", "RNAID-01", "RNAPCRID-01", "Positive", "Timestamp", "CPTD"],
-        ["RSID-02", "VPID-02", "RNAID-02", "RNAPCRID-02", "Negative", "Timestamp", "CPTD"],
-    ]
-
-
-@pytest.fixture
-def expected_test_output():
-    return """Root Sample ID,Viral Prep ID,RNA ID,RNA-PCR ID,Result,Date Tested,Lab ID
-RSID-01,VPID-01,RNAID-01,RNAPCRID-01,Positive,Timestamp,CPTD
-RSID-02,VPID-02,RNAID-02,RNAPCRID-02,Negative,Timestamp,CPTD
-"""  # noqa E501
-
-
-@pytest.mark.parametrize("existing_output_path", [True, False])
-def test_write_plates_file_success(existing_output_path, test_rows_data, expected_test_output, logger_messages):
-    data_path = os.path.join("tmp", "data")
-    output_path = os.path.join(data_path, "TEST")
-    filename = "testing.csv"
-
-    shutil.rmtree(data_path, ignore_errors=True)
-
-    try:
-        if existing_output_path:
-            os.makedirs(output_path)
-
-        write_plates_file(test_rows_data, output_path, filename)
-
-        with open(os.path.join(output_path, filename), mode="r") as f:
-            saved_data = f.read()
-        assert saved_data == expected_test_output
-
-    finally:
-        shutil.rmtree(data_path, ignore_errors=True)
-
-    assert len(logger_messages.error) == 0
-    assert is_found_in_list("Writing to file", logger_messages.info)
-    assert is_found_in_list("Test data plates file written", logger_messages.info)
-    assert is_found_in_list("testing.csv", logger_messages.info)
-
-
-def test_write_plates_file_exception(test_rows_data, logger_messages):
-    output_path = os.path.join("tmp", "data", "TEST")
-    filename = "testing.csv"
-
-    with patch("builtins.open", side_effect=OSError(5, "Unable to write file")):
-        with pytest.raises(OSError):
-            write_plates_file(test_rows_data, output_path, filename)
-
-    assert is_found_in_list("Exception", logger_messages.error)
-    assert is_found_in_list("Unable to write file", logger_messages.error)
+        # Check the correct number of positives exist among all the samples
+        assert (
+            len(list(filter(lambda sample: sample["result"] == "positive", plate["samples"])))
+            == barcodes[expected_barcode]
+        )
 
 
 def test_create_barcode_meta():

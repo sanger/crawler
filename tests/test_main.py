@@ -16,7 +16,7 @@ from crawler.main import run
 NUMBER_CENTRES = 12
 NUMBER_VALID_SAMPLES = 7
 NUMBER_SAMPLES_ON_PARTIAL_IMPORT = 10
-NUMBER_OF_FILES_PROCESSED = 12
+NUMBER_OF_FILES_PROCESSED = 10
 NUMBER_ACCEPTED_SOURCE_PLATES = 4
 
 
@@ -28,7 +28,7 @@ NUMBER_ACCEPTED_SOURCE_PLATES = 4
 # tests.
 
 
-def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
+def test_run(mongo_database, baracoda, testing_files_for_process, pyodbc_conn):
     _, mongo_database = mongo_database
     with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
         run(False, False, False, "crawler.config.integration")
@@ -86,7 +86,7 @@ def test_run(mongo_database, testing_files_for_process, pyodbc_conn):
     assert 0 == len(subfolders), f"Wrong number of subfolders. Expected: 0, Actual: {len(subfolders)}"
 
 
-def test_error_run(mongo_database, testing_files_for_process, pyodbc_conn):
+def test_error_run(mongo_database, baracoda, testing_files_for_process, pyodbc_conn):
     _, mongo_database = mongo_database
 
     with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
@@ -122,7 +122,7 @@ def test_error_run(mongo_database, testing_files_for_process, pyodbc_conn):
     assert imports_collection.count_documents({}) == NUMBER_OF_FILES_PROCESSED + 1
 
 
-def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_for_process, pyodbc_conn):
+def test_error_run_duplicates_in_imports_message(mongo_database, baracoda, testing_files_for_process, pyodbc_conn):
     _, mongo_database = mongo_database
 
     # copy an additional file with duplicates
@@ -152,7 +152,7 @@ def test_error_run_duplicates_in_imports_message(mongo_database, testing_files_f
 
 
 def test_error_run_duplicates_plate_barcodes_from_different_labs_message(
-    mongo_database, testing_files_for_process, pyodbc_conn
+    mongo_database, baracoda, testing_files_for_process, pyodbc_conn
 ):
     _, mongo_database = mongo_database
 
@@ -185,7 +185,7 @@ def test_error_run_duplicates_plate_barcodes_from_different_labs_message(
     ][1]
 
 
-def test_run_creates_right_files_backups(mongo_database, testing_files_for_process, pyodbc_conn):
+def test_run_creates_right_files_backups(mongo_database, baracoda, testing_files_for_process, pyodbc_conn):
     """
     NBNBNB!!!
 
@@ -224,12 +224,6 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     (_, _, files) = next(os.walk("tmp/backups/MILK/errors"))
     assert 2 == len(files)
 
-    (_, _, files) = next(os.walk("tmp/backups/QEUH/successes"))
-    assert 0 == len(files)
-
-    (_, _, files) = next(os.walk("tmp/backups/QEUH/errors"))
-    assert 2 == len(files)
-
     (_, _, files) = next(os.walk("tmp/backups/TEST/successes"))
     assert 1 == len(files), "Fail success TEST"
 
@@ -248,6 +242,10 @@ def test_run_creates_right_files_backups(mongo_database, testing_files_for_proce
     invalidate_caches()
 
     try:
+        # Delete the mongo centres collection so that it gets repopulated from the new config this run
+        centres_collection = get_mongo_collection(mongo_database, COLLECTION_CENTRES)
+        centres_collection.drop()
+
         # Run with a different config that does not blacklist one of the files
         with patch("crawler.file_processing.CentreFile.insert_samples_from_docs_into_mlwh"):
             run(False, False, False, "crawler.config.integration_with_blacklist_change")
