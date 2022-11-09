@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime
 from functools import reduce
-from typing import List, Tuple, cast
+from typing import List, Optional, Tuple, cast
 
 from bson.objectid import ObjectId
 from lab_share_lib.config_readers import get_config
@@ -37,7 +37,7 @@ from crawler.types import Config
 logger = logging.getLogger(__name__)
 
 
-def process(run_id: str, config: Config = None) -> List[List[str]]:
+def process(run_id: str, config: Optional[Config] = None) -> List[List[str]]:
     """Generates cherrypicker test data for processing by Crawler and then
     processes it via the usual runner.
 
