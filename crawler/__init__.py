@@ -2,6 +2,7 @@ import logging
 import logging.config
 import os
 from http import HTTPStatus
+from typing import Optional
 
 import flask
 import werkzeug
@@ -16,7 +17,7 @@ from crawler.helpers.db_helpers import ensure_mongo_collections_indexed
 scheduler = APScheduler()
 
 
-def create_app(config_object: str = None) -> flask.Flask:
+def create_app(config_object: Optional[str] = None) -> flask.Flask:
     app = flask.Flask(__name__)
 
     if config_object is None:
