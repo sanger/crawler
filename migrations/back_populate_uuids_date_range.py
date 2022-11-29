@@ -1,7 +1,7 @@
 import logging
 import logging.config
 from datetime import datetime
-from typing import Any, Dict, Iterator, List, Tuple
+from typing import List, Tuple
 
 from bson.objectid import ObjectId
 from pymongo.collection import Collection
@@ -17,10 +17,9 @@ from crawler.constants import (
     MONGO_DATETIME_FORMAT,
 )
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
-from crawler.db.mysql import create_mysql_connection
 from crawler.helpers.cherrypicked_samples import extract_required_cp_info
 from crawler.types import Config, SampleDoc
-from migrations.helpers.shared_helper import valid_datetime_string
+from migrations.helpers.shared_helper import mysql_generator, valid_datetime_string
 from migrations.helpers.update_filtered_positives_helper import update_dart_fields
 
 logger = logging.getLogger(__name__)
@@ -95,7 +94,7 @@ def update_mongo(config: Config, updated_at: datetime) -> None:
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
         counter = 0
-        for mysql_sample in mysql_sample_generator(
+        for mysql_sample in mysql_generator(
             config=config,
             query=f"SELECT * FROM lighthouse_sample WHERE updated_at > '{updated_at.strftime('%Y-%m-%d %H:%M')}'",
         ):
@@ -127,14 +126,6 @@ def update_mongo(config: Config, updated_at: datetime) -> None:
                 logger.debug(f"{counter = }")
 
         logger.debug(f"{counter} samples updated in mongo")
-
-
-def mysql_sample_generator(config: Config, query: str) -> Iterator[Dict[str, Any]]:
-    with create_mysql_connection(config=config, readonly=True) as connection:
-        with connection.cursor(dictionary=True, buffered=False) as cursor:
-            cursor.execute(query)
-            for row in cursor:
-                yield row
 
 
 def update_dart(config: Config, start_datetime: datetime, end_datetime: datetime) -> None:

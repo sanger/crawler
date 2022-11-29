@@ -173,16 +173,14 @@ SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID = (
     f" WHERE { MLWH_MONGODB_ID } = %({MLWH_MONGODB_ID})s"
 )
 
-
 SQL_MLWH_COUNT_MONGO_IDS = (
-    f"SELECT COUNT(*)" f" FROM lighthouse_sample" f" WHERE lighthouse_sample.mongodb_id IN (%(mongo_ids)s)"
+    f"SELECT COUNT(*) FROM lighthouse_sample WHERE lighthouse_sample.mongodb_id IN (%(mongo_ids)s)"
 )
 
+SQL_MLWH_GET_SAMPLE_FOR_MONGO_ID = f"SELECT * FROM lighthouse_sample WHERE {MLWH_MONGODB_ID} = %({MLWH_MONGODB_ID})s"
 
-SQL_MLWH_GET_BY_RNA_ID = (
-    f"SELECT id, mongodb_id" f" FROM lighthouse_sample" f" WHERE lighthouse_sample.rna_id = '%(rna_id)s'"
-)
+SQL_MLWH_GET_BY_RNA_ID = f"SELECT id, mongodb_id FROM lighthouse_sample WHERE lighthouse_sample.rna_id = '%(rna_id)s'"
 
 SQL_MLWH_UPDATE_MONGODB_ID_BY_ID = (
-    f"UPDATE lighthouse_sample" f" SET mongodb_id = '%(mongodb_id)s'" f" WHERE lighthouse_sample.id = %(id)s"
+    f"UPDATE lighthouse_sample SET mongodb_id = '%(mongodb_id)s' WHERE lighthouse_sample.id = %(id)s"
 )
