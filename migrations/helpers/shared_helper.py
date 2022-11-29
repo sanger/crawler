@@ -42,11 +42,10 @@ def valid_datetime_string(s_datetime: Optional[str]) -> bool:
         return False
 
 
-def extract_barcodes(config: Config, filepath: str) -> List[str]:
+def extract_barcodes(filepath: str) -> List[str]:
     """Extract the list of barcodes from the csv file
 
     Arguments:
-        config {Config} -- application config specifying database details
         filepath {str} -- the filepath of the csv file containing the list of source plate barcodes
 
     Returns:

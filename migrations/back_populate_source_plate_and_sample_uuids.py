@@ -80,7 +80,7 @@ def run(config: Config, s_filepath: str) -> None:
 
     logger.info(f"Starting update process with supplied file {filepath}")
 
-    source_plate_barcodes = extract_barcodes(config=config, filepath=filepath)
+    source_plate_barcodes = extract_barcodes(filepath=filepath)
 
     logger.info(f"Source plate barcodes {source_plate_barcodes}")
     update_uuids_mongo_and_mlwh(config=config, source_plate_barcodes=source_plate_barcodes)

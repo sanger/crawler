@@ -25,7 +25,7 @@ def run(config: Config, s_filepath: str) -> None:
 
     logger.info(f"Starting migration process with supplied file {filepath}")
 
-    source_plate_barcodes = extract_barcodes(config=config, filepath=filepath)
+    source_plate_barcodes = extract_barcodes(filepath=filepath)
 
     logger.info(f"Source plate barcodes {source_plate_barcodes}")
     reconnect_mlwh_with_mongo(config=config, source_plate_barcodes=source_plate_barcodes)
