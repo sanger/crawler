@@ -150,8 +150,8 @@ def check_samples_are_valid(
     if len(samples_only_sample_uuid) > 0 and not should_suppress_sample_uuid_error:
         raise ExceptionSampleWithSampleUUIDNotSourceUUID(
             f"{len(samples_only_sample_uuid)} samples have a sample uuid but no source plate uuid. "
-            f"Suppress this exception by setting the '{SUPPRESS_ERROR_KEY_EXISTING_SAMPLE_UUIDS}' environment variable to true.\n\n"
-            f"Affected MongoDB IDs: {extract_mongodb_ids(samples_only_sample_uuid)}"
+            f"Suppress this exception by setting the '{SUPPRESS_ERROR_KEY_EXISTING_SAMPLE_UUIDS}' "
+            f"environment variable to true.\n\n Affected MongoDB IDs: {extract_mongodb_ids(samples_only_sample_uuid)}"
         )
 
     """
