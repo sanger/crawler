@@ -39,11 +39,11 @@ class ExceptionSampleCountsForMongoAndMLWHNotMatching(Exception):
 
 
 """
-1. get list of all samples from lighthouse_sample table where updated_at is a known timestamp
-2. iterate through 1. by matching the `_id` with `mongodb_id`; if the `sample_uuid` is different, overwrite and add a
-flag that the UUID has been updated
-3. get all the mongo samples that have had their UUID updated
-4. run the DART migration over these samples for the same date which was used when populating DART
+Iterates over the list of plate barcodes provided in a CSV file.
+Finds all the samples in MongoDB with that plate barcode and iterates over those.
+Looks for the same sample in the lighthouse_sample table using mongodb_id and checks whether it has an lh_sample_uuid.
+If not, the sample is skipped.
+Otherwise the lh_sample_uuid is added to the MongoDB document along with a key uuid_updated set to 'true'.
 """
 
 
