@@ -95,7 +95,10 @@ def update_mongo_uuids(config: Config, source_plate_barcodes: List[str]) -> None
                 # update sample in Mongo ‘samples’ to set lh_sample_uuid and updated_timestamp
                 try:
                     query = SQL_MLWH_GET_SAMPLE_FOR_MONGO_ID % {MLWH_MONGODB_ID: sample_doc[FIELD_MONGODB_ID]}
-                    mlwh_sample = mysql_generator(config=config, query=query).next()
+                    mlwh_sample = next(mysql_generator(config=config, query=query))
+
+                    if mlwh_sample[FIELD_LH_SAMPLE_UUID] is None:
+                        continue
 
                     sample_doc[FIELD_LH_SAMPLE_UUID] = mlwh_sample[MLWH_LH_SAMPLE_UUID]
                     sample_doc[FIELD_UPDATED_AT] = datetime.utcnow()
@@ -181,7 +184,7 @@ def check_samples_are_valid(
 
     # select count of rows from MLWH for list_mongo_ids
     query = SQL_MLWH_COUNT_MONGO_IDS % {"mongo_ids": ",".join([f'"{mongo_id}"' for mongo_id in list_mongo_ids])}
-    count_mlwh_rows = int(mysql_generator(config=config, query=query).next()[0])
+    count_mlwh_rows = next(mysql_generator(config=config, query=query))["COUNT(*)"]
 
     # check numbers of rows matches
     count_mongo_rows = len(list_mongo_ids)
