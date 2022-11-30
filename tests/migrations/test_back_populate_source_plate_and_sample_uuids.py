@@ -246,6 +246,7 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_dont_change_sample_uuid
 
 
 def test_check_samples_are_valid_finds_problems_with_samples(
+    monkeypatch,
     config,
     testing_samples_with_lab_id,
     samples_collection_accessor,
@@ -268,6 +269,18 @@ def test_check_samples_are_valid_finds_problems_with_samples(
     # When sample_uuid has value but source_plate_uuid has not
     with pytest.raises(ExceptionSampleWithSampleUUIDNotSourceUUID):
         check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["789"])
+
+    # When sample_uuid has value but source_plate_uuid has not, but the environment variable was set to ignore this
+    # Expect no exceptions to be raised -- if any occur the test will fail
+    with monkeypatch.context() as mp:
+        mp.setenv("SUPPRESS_ERROR_FOR_EXISTING_SAMPLE_UUIDS", "true")
+        check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["789"])
+
+    # When sample_uuid has value but source_plate_uuid has not, but the suppress environment variable was set to false
+    with monkeypatch.context() as mp:
+        mp.setenv("SUPPRESS_ERROR_FOR_EXISTING_SAMPLE_UUIDS", "false")
+        with pytest.raises(ExceptionSampleWithSampleUUIDNotSourceUUID):
+            check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["789"])
 
     # When source plate uuid has value but sample_uuid has not and there is no source plate record
     with pytest.raises(ExceptionSampleWithSourceUUIDNotSampleUUID):
