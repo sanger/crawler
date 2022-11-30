@@ -1,5 +1,6 @@
 import logging
 import logging.config
+import os
 from datetime import datetime
 from typing import Dict, List, Optional, cast
 from uuid import uuid4
@@ -28,6 +29,8 @@ from migrations.helpers.shared_helper import extract_barcodes, get_mongo_samples
 
 logger = logging.getLogger(__name__)
 
+SUPPRESS_ERROR_KEY_EXISTING_SAMPLE_UUIDS = "SUPPRESS_ERROR_FOR_EXISTING_SAMPLE_UUIDS"
+
 
 class ExceptionSampleWithSampleUUIDNotSourceUUID(Exception):
     pass
@@ -49,6 +52,9 @@ class ExceptionSampleCountsForMongoAndMLWHNotMatching(Exception):
 Assumptions:
 1. checked source plates do not already have lh_source_plate_uuid or lh_sample_uuid in either
 the mongo 'source_plate' or 'samples' collections, or in the MLWH lighthouse_sample table
+  - Where Mongo does have lh_sample_uuid set but no lh_source_plate_uuid, an exception will be raised, but if you want
+    to continue regardless, run the migration again with environment variable SUPPRESS_ERROR_FOR_EXISTING_SAMPLE_UUIDS
+    set to true. Existing sample UUIDs will not be modified.
 2. the samples do not have any duplicates for the same RNA Id in either mongo or MLWH
 
 Csv file format: 'barcode' as the header on the first line, then one source plate barcode per line
@@ -66,7 +72,7 @@ Steps:
 6.  iterate through the samples in the source plate:
 7.      generate and insert a new source_plate row with a new lh_source_plate_uuid, using lab_id from first sample
 8.      generate new lh_sample_uuid
-9.      update sample in Mongo ‘samples’ to set lh_source_plate uuid, lh_sample_uuid, and updated_timestamp
+9.      update sample in Mongo 'samples' to set lh_source_plate uuid, lh_sample_uuid, and updated_timestamp
 10.     update sample in MLWH 'lighthouse_samples' to set lh_source_plate, lh_sample_uuid, and updated_timestamp
 """
 
@@ -101,8 +107,8 @@ def check_samples_are_valid(
     )
     if len(source_plates) > 0:
         raise ExceptionSourcePlateDefined(
-            f"Some of the plates are already present in the source plates because they may"
-            f" have already been picked which is not supported by the script: {source_plates}"
+            f"{len(source_plates)} plates are already present in the source plates because they may "
+            f"have already been picked which is not supported by the script: {source_plates}"
         )
 
     """
@@ -119,7 +125,8 @@ def check_samples_are_valid(
     )
     if len(samples_only_source_plate) > 0:
         raise ExceptionSampleWithSourceUUIDNotSampleUUID(
-            f"Some of the samples have only a source plate uuid but no sample uuid: {samples_only_source_plate}"
+            f"{len(samples_only_source_plate)}  of the samples have only a source plate uuid but no sample uuid. "
+            f"Affected MongoDB IDs: {extract_mongodb_ids(samples_only_source_plate)}"
         )
 
     """
@@ -134,9 +141,17 @@ def check_samples_are_valid(
             }
         )
     )
-    if len(samples_only_sample_uuid) > 0:
+
+    should_suppress_sample_uuid_error = (
+        SUPPRESS_ERROR_KEY_EXISTING_SAMPLE_UUIDS in os.environ
+        and os.environ[SUPPRESS_ERROR_KEY_EXISTING_SAMPLE_UUIDS].lower() != "false"
+    )
+
+    if len(samples_only_sample_uuid) > 0 and not should_suppress_sample_uuid_error:
         raise ExceptionSampleWithSampleUUIDNotSourceUUID(
-            f"Some of the samples have a sample uuid but no source plate uuid: {samples_only_sample_uuid}"
+            f"{len(samples_only_sample_uuid)} samples have a sample uuid but no source plate uuid. "
+            f"Suppress this exception by setting the '{SUPPRESS_ERROR_KEY_EXISTING_SAMPLE_UUIDS}' environment variable to true.\n\n"
+            f"Affected MongoDB IDs: {extract_mongodb_ids(samples_only_sample_uuid)}"
         )
 
     """
@@ -161,6 +176,12 @@ def check_samples_are_valid(
             f"The number of samples for the list of barcodes in Mongo does not match"
             f"the number in the MLWH: {count_mongo_rows}!={count_mlwh_rows}"
         )
+
+
+def extract_mongodb_ids(samples: List[SampleDoc]) -> List[str]:
+    """Get the MongoDB IDs for a list of documents."""
+
+    return [str(sample[FIELD_MONGODB_ID]) for sample in samples]
 
 
 def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]) -> None:
