@@ -2,6 +2,7 @@ import pytest
 
 from crawler.constants import FIELD_MONGODB_ID, FIELD_PLATE_BARCODE, FIELD_RNA_ID, MLWH_MONGODB_ID, MLWH_RNA_ID
 from migrations import reconnect_mlwh_with_mongo
+from tests.testing_objects import TESTING_SAMPLES_WITH_LAB_ID
 
 
 def test_reconnect_mlwh_with_mongo_missing_file(config):
@@ -10,8 +11,9 @@ def test_reconnect_mlwh_with_mongo_missing_file(config):
         reconnect_mlwh_with_mongo.run(config, filepath)
 
 
+@pytest.mark.parametrize("samples_collection_accessor", [TESTING_SAMPLES_WITH_LAB_ID], indirect=True)
 def test_reconnect_mlwh_with_mongo_not_raise_exception(
-    config, testing_samples_with_lab_id, samples_collection_accessor, mlwh_testing_samples_unconnected
+    config, samples_collection_accessor, mlwh_testing_samples_unconnected
 ):
     filepath = "./tests/data/populate_old_plates.csv"
     try:
@@ -20,14 +22,15 @@ def test_reconnect_mlwh_with_mongo_not_raise_exception(
         raise AssertionError(exc)
 
 
+@pytest.mark.parametrize("samples_collection_accessor", [TESTING_SAMPLES_WITH_LAB_ID], indirect=True)
 def test_reconnect_mlwh_with_mongo_can_connect_with_mlwh(
     config,
     query_lighthouse_sample,
-    testing_samples_with_lab_id,
     samples_collection_accessor,
     mlwh_testing_samples_unconnected,
 ):
     filepath = "./tests/data/populate_old_plates.csv"
+    samples_in_mongo = list(samples_collection_accessor.find({}))
 
     reconnect_mlwh_with_mongo.run(config, filepath)
 
@@ -37,14 +40,14 @@ def test_reconnect_mlwh_with_mongo_can_connect_with_mlwh(
     )
 
     obtained_mlwh_samples = list(cursor.fetchall())
-    assert obtained_mlwh_samples[0]["mongodb_id"] == str(testing_samples_with_lab_id[0][FIELD_MONGODB_ID])
+    assert obtained_mlwh_samples[0]["mongodb_id"] == str(samples_in_mongo[0][FIELD_MONGODB_ID])
 
     mlwh_dict = {}
     for mlsample in obtained_mlwh_samples:
         mlwh_dict[mlsample[MLWH_RNA_ID]] = mlsample[MLWH_MONGODB_ID]
 
     mongo_dict = {}
-    for sample in testing_samples_with_lab_id:
+    for sample in samples_in_mongo:
         if sample[FIELD_PLATE_BARCODE] == "123":
             mongo_dict[sample[FIELD_RNA_ID]] = str(sample[FIELD_MONGODB_ID])
 
