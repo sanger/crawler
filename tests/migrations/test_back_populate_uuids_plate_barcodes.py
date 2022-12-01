@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from unittest.mock import call, patch
 
 import pytest
 from bson import ObjectId
@@ -77,13 +78,19 @@ NON_MATCHING_MLWH_LIGHTHOUSE_SAMPLE = {
 }
 
 
+@pytest.fixture
+def logger():
+    with patch("migrations.back_populate_uuids_plate_barcodes.LOGGER") as logger:
+        yield logger
+
+
 def test_run_handles_no_samples_in_mongo(config):
     subject.run(config, CSV_FILEPATH)
 
 
 @pytest.mark.parametrize("samples_collection_accessor", [[MONGO_SAMPLE_WITHOUT_UUID]], indirect=True)
 @pytest.mark.parametrize("mlwh_sql_engine", [MATCHING_MLWH_LIGHTHOUSE_SAMPLE], indirect=True)
-def test_run_updates_uuid_in_mongo_correctly(config, samples_collection_accessor, mlwh_sql_engine, freezer):
+def test_run_updates_uuid_in_mongo_correctly(config, samples_collection_accessor, mlwh_sql_engine, freezer, logger):
     subject.run(config, CSV_FILEPATH)
 
     assert samples_collection_accessor.count_documents({}) == 1
@@ -94,6 +101,10 @@ def test_run_updates_uuid_in_mongo_correctly(config, samples_collection_accessor
 
     # Note that MongoDB rounds the milliseconds, hence this check being a less-than operation
     assert datetime.utcnow() - sample[FIELD_UPDATED_AT] < timedelta(seconds=1)
+
+    logger.info.assert_has_calls(
+        [call("Count of successful Mongo updates = 1"), call("Count of failed Mongo updates = 0")]
+    )
 
 
 @pytest.mark.parametrize("samples_collection_accessor", [[MONGO_SAMPLE_WITH_EMPTY_STRING_UUID]], indirect=True)
@@ -120,4 +131,35 @@ def test_run_throws_exception_when_uuid_already_exists(config, samples_collectio
 
     sample = samples_collection_accessor.find({})[0]
     assert sample["lh_sample_uuid"] == "Existing-UUID"
+    assert "uuid_update" not in sample
+
+
+@pytest.mark.parametrize("samples_collection_accessor", [[MONGO_SAMPLE_WITHOUT_UUID]], indirect=True)
+def test_run_throws_exception_when_no_samples_in_mlwh(config, samples_collection_accessor):
+    with pytest.raises(subject.ExceptionSampleCountsForMongoAndMLWHNotMatching) as exc_info:
+        subject.run(config, CSV_FILEPATH)
+
+    assert "Mongo (1)" in str(exc_info)
+    assert "MLWH (0)" in str(exc_info)
+
+    assert samples_collection_accessor.count_documents({}) == 1
+
+    sample = samples_collection_accessor.find({})[0]
+    assert "lh_sample_uuid" not in sample
+    assert "uuid_update" not in sample
+
+
+@pytest.mark.parametrize("samples_collection_accessor", [[MONGO_SAMPLE_WITHOUT_UUID]], indirect=True)
+@pytest.mark.parametrize("mlwh_sql_engine", [NON_MATCHING_MLWH_LIGHTHOUSE_SAMPLE], indirect=True)
+def test_run_throws_exception_when_matching_sample_not_in_mlwh(config, samples_collection_accessor, mlwh_sql_engine):
+    with pytest.raises(subject.ExceptionSampleCountsForMongoAndMLWHNotMatching) as exc_info:
+        subject.run(config, CSV_FILEPATH)
+
+    assert "Mongo (1)" in str(exc_info)
+    assert "MLWH (0)" in str(exc_info)
+
+    assert samples_collection_accessor.count_documents({}) == 1
+
+    sample = samples_collection_accessor.find({})[0]
+    assert "lh_sample_uuid" not in sample
     assert "uuid_update" not in sample
