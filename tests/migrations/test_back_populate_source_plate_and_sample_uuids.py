@@ -51,11 +51,10 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_missing_file(config):
 def test_back_populate_source_plate_uuid_and_sample_uuid_not_raise_exception(
     config, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
 ):
-    filepath = "./tests/data/populate_old_plates.csv"
-    try:
-        back_populate_source_plate_and_sample_uuids.run(config, filepath)
-    except Exception as exc:
-        raise AssertionError(exc)
+    filepath = "./tests/data/populate_old_plates_1.csv"
+
+    # Expect no exceptions to be raised -- if any occur the test will fail
+    back_populate_source_plate_and_sample_uuids.run(config, filepath)
 
 
 @pytest.mark.parametrize("samples_collection_accessor", [TESTING_SAMPLES_WITH_LAB_ID], indirect=True)
@@ -65,7 +64,7 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_populates_sample_uuid(
     query_lighthouse_sample,
     mlwh_samples_with_lab_id_for_migration,
 ):
-    filepath = "./tests/data/populate_old_plates.csv"
+    filepath = "./tests/data/populate_old_plates_1.csv"
     samples_before = list(samples_collection_accessor.find({FIELD_PLATE_BARCODE: "123"}))
 
     assert len(samples_before) > 0
@@ -142,7 +141,7 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid(
     mlwh_samples_with_lab_id_for_migration,
 ):
 
-    filepath = "./tests/data/populate_old_plates.csv"
+    filepath = "./tests/data/populate_old_plates_1.csv"
     samples_before = list(samples_collection_accessor.find({FIELD_PLATE_BARCODE: "123"}))
 
     assert len(samples_before) > 0
@@ -216,7 +215,7 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid_w
 def test_back_populate_source_plate_uuid_and_sample_uuid_dont_change_source_plate_other_barcodes(
     config, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
 ):
-    filepath = "./tests/data/populate_old_plates.csv"
+    filepath = "./tests/data/populate_old_plates_1.csv"
     samples_before = list(samples_collection_accessor.find({FIELD_PLATE_BARCODE: "456"}))
 
     assert len(samples_before) > 0
@@ -236,7 +235,7 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_dont_change_source_plat
 def test_back_populate_source_plate_uuid_and_sample_uuid_dont_change_sample_uuid_other_barcodes(
     config, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
 ):
-    filepath = "./tests/data/populate_old_plates.csv"
+    filepath = "./tests/data/populate_old_plates_1.csv"
     samples_before = list(samples_collection_accessor.find({FIELD_PLATE_BARCODE: "456"}))
 
     assert len(samples_before) > 0

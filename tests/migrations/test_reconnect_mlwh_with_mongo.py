@@ -15,7 +15,7 @@ def test_reconnect_mlwh_with_mongo_missing_file(config):
 def test_reconnect_mlwh_with_mongo_not_raise_exception(
     config, samples_collection_accessor, mlwh_testing_samples_unconnected
 ):
-    filepath = "./tests/data/populate_old_plates.csv"
+    filepath = "./tests/data/populate_old_plates_1.csv"
     try:
         reconnect_mlwh_with_mongo.run(config, filepath)
     except Exception as exc:
@@ -29,7 +29,7 @@ def test_reconnect_mlwh_with_mongo_can_connect_with_mlwh(
     samples_collection_accessor,
     mlwh_testing_samples_unconnected,
 ):
-    filepath = "./tests/data/populate_old_plates.csv"
+    filepath = "./tests/data/populate_old_plates_1.csv"
     samples_in_mongo = list(samples_collection_accessor.find({}))
 
     reconnect_mlwh_with_mongo.run(config, filepath)
