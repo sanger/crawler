@@ -25,7 +25,7 @@ from migrations.helpers.shared_helper import (
     validate_args,
 )
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 FIELD_UUID_UPDATED = "uuid_updated"
 
@@ -50,13 +50,13 @@ Otherwise the lh_sample_uuid is added to the MongoDB document along with a key u
 def run(config: Config, s_filepath: str) -> None:
     filepath = validate_args(config=config, s_filepath=s_filepath)
 
-    logger.info("-" * 80)
-    logger.info("STARTING BACK POPULATING UUIDS")
-    logger.info(f"Time start: {datetime.now()}")
+    LOGGER.info("-" * 80)
+    LOGGER.info("STARTING BACK POPULATING UUIDS")
+    LOGGER.info(f"Time start: {datetime.now()}")
 
     source_plate_barcodes = extract_barcodes(filepath=filepath)
 
-    logger.info(f"Starting update process with input file {filepath}")
+    LOGGER.info(f"Starting update process with input file {filepath}")
 
     update_mongo_uuids(config=config, source_plate_barcodes=source_plate_barcodes)
 
@@ -82,7 +82,7 @@ def update_mongo_uuids(config: Config, source_plate_barcodes: List[str]) -> None
         check_samples_are_valid(config, samples_collection, source_plate_barcodes)
 
         for source_plate_barcode in source_plate_barcodes:
-            logger.info(f"Processing source plate barcode {source_plate_barcode}")
+            LOGGER.info(f"Processing source plate barcode {source_plate_barcode}")
 
             # List[SampleDoc]
             sample_docs = get_mongo_samples_for_source_plate(samples_collection, source_plate_barcode)
@@ -90,7 +90,7 @@ def update_mongo_uuids(config: Config, source_plate_barcodes: List[str]) -> None
             # iterate through samples
             for sample_doc in sample_docs:
                 # will every sample doc have a plate_barcode and lab id?
-                logger.info(f"Sample in well {sample_doc[FIELD_COORDINATE]}")
+                LOGGER.info(f"Sample in well {sample_doc[FIELD_COORDINATE]}")
 
                 # update sample in Mongo ‘samples’ to set lh_sample_uuid and updated_timestamp
                 try:
@@ -111,11 +111,11 @@ def update_mongo_uuids(config: Config, source_plate_barcodes: List[str]) -> None
 
                 except Exception as e:
                     counter_mongo_update_failures += 1
-                    logger.critical("Failed to update sample in Mongo for mongo id " f"{sample_doc[FIELD_MONGODB_ID]}")
-                    logger.exception(e)
+                    LOGGER.critical("Failed to update sample in Mongo for mongo id " f"{sample_doc[FIELD_MONGODB_ID]}")
+                    LOGGER.exception(e)
 
-    logger.info(f"Count of successful Mongo updates = {counter_mongo_update_successes}")
-    logger.info(f"Count of failed Mongo updates = {counter_mongo_update_failures}")
+    LOGGER.info(f"Count of successful Mongo updates = {counter_mongo_update_successes}")
+    LOGGER.info(f"Count of failed Mongo updates = {counter_mongo_update_failures}")
 
 
 def update_mongo_sample(samples_collection: Collection, sample_doc: SampleDoc) -> bool:
@@ -145,8 +145,8 @@ def update_mongo_sample(samples_collection: Collection, sample_doc: SampleDoc) -
         return mongo_sample is not None
 
     except Exception as e:
-        logger.critical("Failed to update sample in mongo for mongo id " f"{sample_doc[FIELD_MONGODB_ID]}")
-        logger.exception(e)
+        LOGGER.critical("Failed to update sample in mongo for mongo id " f"{sample_doc[FIELD_MONGODB_ID]}")
+        LOGGER.exception(e)
 
         return False
 
@@ -163,7 +163,10 @@ def check_samples_are_valid(
         samples_collection.find(
             {
                 FIELD_PLATE_BARCODE: {"$in": source_plate_barcodes},
-                FIELD_LH_SAMPLE_UUID: {"$ne": None},
+                "$and": [
+                    {FIELD_LH_SAMPLE_UUID: {"$ne": None}},
+                    {FIELD_LH_SAMPLE_UUID: {"$ne": ""}},
+                ],
             }
         )
     )
@@ -182,6 +185,10 @@ def check_samples_are_valid(
 
     list_mongo_ids = [str(x[FIELD_MONGODB_ID]) for x in query_mongo]
 
+    if len(list_mongo_ids) == 0:
+        # There are no samples to check so this is a valid list of samples
+        return
+
     # select count of rows from MLWH for list_mongo_ids
     query = SQL_MLWH_COUNT_MONGO_IDS % {"mongo_ids": ",".join([f'"{mongo_id}"' for mongo_id in list_mongo_ids])}
     count_mlwh_rows = next(mysql_generator(config=config, query=query))["COUNT(*)"]
@@ -190,6 +197,6 @@ def check_samples_are_valid(
     count_mongo_rows = len(list_mongo_ids)
     if count_mongo_rows != count_mlwh_rows:
         raise ExceptionSampleCountsForMongoAndMLWHNotMatching(
-            f"The number of samples for the list of barcodes in Mongo ({count_mongo_rows}) does not match"
+            f"The number of samples for the list of barcodes in Mongo ({count_mongo_rows}) does not match "
             f"the number in MLWH ({count_mlwh_rows})."
         )

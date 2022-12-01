@@ -11,7 +11,7 @@ def test_valid_datetime_string():
 
 
 def test_extract_barcodes_read_barcodes():
-    filepath = "./tests/data/populate_old_plates.csv"
+    filepath = "./tests/data/populate_old_plates_1.csv"
 
     assert extract_barcodes(filepath) == ["123"]
 

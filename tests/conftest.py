@@ -201,7 +201,11 @@ def samples_collection_with_samples(mongo_database, samples=None):
 
 @pytest.fixture(params=[[]])
 def samples_collection_accessor(mongo_database, request):
-    return samples_collection_with_samples(mongo_database[1], request.param)
+    samples_collection = samples_collection_with_samples(mongo_database[1], request.param)
+    try:
+        yield samples_collection
+    finally:
+        samples_collection.delete_many({})
 
 
 @pytest.fixture
@@ -333,131 +337,86 @@ def event_wh_data(config, event_wh_sql_engine):
 
 
 @pytest.fixture
-def mlwh_sentinel_cherrypicked(config, mlwh_sql_engine):
-    def delete_data():
-        delete_from_mlwh(mlwh_sql_engine, config.MLWH_STOCK_RESOURCES_TABLE)
-        delete_from_mlwh(mlwh_sql_engine, config.MLWH_SAMPLE_TABLE)
-        delete_from_mlwh(mlwh_sql_engine, config.MLWH_STUDY_TABLE)
+def event_wh_sql_engine(config):
+    create_engine_string = f"mysql+pymysql://{config.WAREHOUSES_RW_CONN_STRING}/{config.EVENTS_WH_DB}"
+    return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
+
+
+def mlwh_sql_engine_with_data(config, data_dict=None):
+    create_engine_string = f"mysql+pymysql://{config.WAREHOUSES_RW_CONN_STRING}/{config.ML_WH_DB}"
+    engine = sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
+
+    if data_dict is not None:
+        delete_sql_engine_tables(engine, data_dict.keys())
+
+        for table, data in data_dict.items():
+            insert_into_mlwh(data, engine, table)
+
+    return engine
+
+
+@pytest.fixture(params=[{}])
+def mlwh_sql_engine(config, request):
+    engine = mlwh_sql_engine_with_data(config, request.param)
 
     try:
-        delete_data()
-
-        # inserts
-        insert_into_mlwh(MLWH_SAMPLE_STOCK_RESOURCE["sample"], mlwh_sql_engine, config.MLWH_SAMPLE_TABLE)
-        insert_into_mlwh(MLWH_SAMPLE_STOCK_RESOURCE["study"], mlwh_sql_engine, config.MLWH_STUDY_TABLE)
-        insert_into_mlwh(
-            MLWH_SAMPLE_STOCK_RESOURCE["stock_resource"],
-            mlwh_sql_engine,
-            config.MLWH_STOCK_RESOURCES_TABLE,
-        )
-
-        yield
+        yield engine
     finally:
-        delete_data()
+        delete_sql_engine_tables(engine, request.param.keys())
 
 
 @pytest.fixture
-def mlwh_beckman_cherrypicked(config, mlwh_sql_engine):
-    def delete_data():
-        delete_from_mlwh(mlwh_sql_engine, config.MLWH_SAMPLE_TABLE)
-        delete_from_mlwh(mlwh_sql_engine, config.MLWH_LIGHTHOUSE_SAMPLE_TABLE)
+def mlwh_sentinel_cherrypicked(config):
+    engine = mlwh_sql_engine_with_data(config, MLWH_SAMPLE_STOCK_RESOURCE)
 
     try:
-        delete_data()
-
-        # inserts
-        insert_into_mlwh(
-            MLWH_SAMPLE_LIGHTHOUSE_SAMPLE["lighthouse_sample"],
-            mlwh_sql_engine,
-            config.MLWH_LIGHTHOUSE_SAMPLE_TABLE,
-        )
-        insert_into_mlwh(
-            MLWH_SAMPLE_LIGHTHOUSE_SAMPLE["sample"],
-            mlwh_sql_engine,
-            config.MLWH_SAMPLE_TABLE,
-        )
-
-        yield
+        yield engine
     finally:
-        delete_data()
+        delete_sql_engine_tables(engine, MLWH_SAMPLE_STOCK_RESOURCE.keys())
 
 
 @pytest.fixture
-def mlwh_samples_with_lab_id_for_migration(config, mlwh_sql_engine):
-    def delete_data():
-        delete_from_mlwh(mlwh_sql_engine, config.MLWH_LIGHTHOUSE_SAMPLE_TABLE)
+def mlwh_beckman_cherrypicked(config):
+    engine = mlwh_sql_engine_with_data(config, MLWH_SAMPLE_LIGHTHOUSE_SAMPLE)
 
     try:
-        delete_data()
-
-        # inserts
-        insert_into_mlwh(
-            MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE["lighthouse_sample"],
-            mlwh_sql_engine,
-            config.MLWH_LIGHTHOUSE_SAMPLE_TABLE,
-        )
-
-        yield
+        yield engine
     finally:
-        delete_data()
+        delete_sql_engine_tables(engine, MLWH_SAMPLE_LIGHTHOUSE_SAMPLE.keys())
 
 
 @pytest.fixture
-def mlwh_testing_samples_unconnected(config, mlwh_sql_engine):
-    def delete_data():
-        delete_from_mlwh(mlwh_sql_engine, config.MLWH_LIGHTHOUSE_SAMPLE_TABLE)
+def mlwh_samples_with_lab_id_for_migration(config):
+    engine = mlwh_sql_engine_with_data(config, MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE)
 
     try:
-        delete_data()
-
-        # inserts
-        insert_into_mlwh(
-            MLWH_SAMPLE_UNCONNECTED_LIGHTHOUSE_SAMPLE["lighthouse_sample"],
-            mlwh_sql_engine,
-            config.MLWH_LIGHTHOUSE_SAMPLE_TABLE,
-        )
-
-        yield
+        yield engine
     finally:
-        delete_data()
+        delete_sql_engine_tables(engine, MLWH_SAMPLE_WITH_LAB_ID_LIGHTHOUSE_SAMPLE.keys())
 
 
 @pytest.fixture
-def mlwh_cherrypicked_samples(config, mlwh_sql_engine):
-    def delete_data():
-        delete_from_mlwh(mlwh_sql_engine, config.MLWH_STOCK_RESOURCES_TABLE)
-        delete_from_mlwh(mlwh_sql_engine, config.MLWH_SAMPLE_TABLE)
-        delete_from_mlwh(mlwh_sql_engine, config.MLWH_STUDY_TABLE)
-        delete_from_mlwh(mlwh_sql_engine, config.MLWH_LIGHTHOUSE_SAMPLE_TABLE)
+def mlwh_testing_samples_unconnected(config):
+    engine = mlwh_sql_engine_with_data(config, MLWH_SAMPLE_UNCONNECTED_LIGHTHOUSE_SAMPLE)
 
     try:
-        delete_data()
-
-        # inserts
-        insert_into_mlwh(
-            MLWH_SAMPLE_LIGHTHOUSE_SAMPLE["lighthouse_sample"],
-            mlwh_sql_engine,
-            config.MLWH_LIGHTHOUSE_SAMPLE_TABLE,
-        )
-        insert_into_mlwh(
-            MLWH_SAMPLE_STOCK_RESOURCE["sample"] + MLWH_SAMPLE_LIGHTHOUSE_SAMPLE["sample"],
-            mlwh_sql_engine,
-            config.MLWH_SAMPLE_TABLE,
-        )
-        insert_into_mlwh(
-            MLWH_SAMPLE_STOCK_RESOURCE["study"],
-            mlwh_sql_engine,
-            config.MLWH_STUDY_TABLE,
-        )
-        insert_into_mlwh(
-            MLWH_SAMPLE_STOCK_RESOURCE["stock_resource"],
-            mlwh_sql_engine,
-            config.MLWH_STOCK_RESOURCES_TABLE,
-        )
-
-        yield
+        yield engine
     finally:
-        delete_data()
+        delete_sql_engine_tables(engine, MLWH_SAMPLE_UNCONNECTED_LIGHTHOUSE_SAMPLE.keys())
+
+
+@pytest.fixture
+def mlwh_cherrypicked_samples(config):
+    data = copy.deepcopy(MLWH_SAMPLE_STOCK_RESOURCE)
+    data["sample"].extend(MLWH_SAMPLE_LIGHTHOUSE_SAMPLE["sample"])
+    data["lighthouse_sample"] = MLWH_SAMPLE_LIGHTHOUSE_SAMPLE["lighthouse_sample"]
+
+    engine = mlwh_sql_engine_with_data(config, data)
+
+    try:
+        yield engine
+    finally:
+        delete_sql_engine_tables(engine, data.keys())
 
 
 def insert_into_mlwh(data, mlwh_sql_engine, table_name):
@@ -469,12 +428,13 @@ def insert_into_mlwh(data, mlwh_sql_engine, table_name):
         connection.execute(table.insert(), data)
 
 
-def delete_from_mlwh(mlwh_sql_engine, table_name):
-    table = get_table(mlwh_sql_engine, table_name)
+def delete_sql_engine_tables(engine, tables):
+    for table_name in reversed(tables):
+        table = get_table(engine, table_name)
 
-    with mlwh_sql_engine.begin() as connection:
-        print("Deleting MLWH test data")
-        connection.execute(table.delete())
+        with engine.begin() as connection:
+            print("Deleting test data")
+            connection.execute(table.delete())
 
 
 def get_table(sql_engine, table_name):
@@ -487,18 +447,6 @@ def get_table(sql_engine, table_name):
 def query_lighthouse_sample(mlwh_sql_engine):
     with mlwh_sql_engine.begin() as connection:
         yield connection
-
-
-@pytest.fixture
-def event_wh_sql_engine(config):
-    create_engine_string = f"mysql+pymysql://{config.WAREHOUSES_RW_CONN_STRING}/{config.EVENTS_WH_DB}"
-    return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
-
-
-@pytest.fixture
-def mlwh_sql_engine(config):
-    create_engine_string = f"mysql+pymysql://{config.WAREHOUSES_RW_CONN_STRING}/{config.ML_WH_DB}"
-    return sqlalchemy.create_engine(create_engine_string, pool_recycle=3600)
 
 
 @pytest.fixture
