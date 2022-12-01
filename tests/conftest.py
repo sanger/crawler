@@ -201,7 +201,11 @@ def samples_collection_with_samples(mongo_database, samples=None):
 
 @pytest.fixture(params=[[]])
 def samples_collection_accessor(mongo_database, request):
-    return samples_collection_with_samples(mongo_database[1], request.param)
+    samples_collection = samples_collection_with_samples(mongo_database[1], request.param)
+    try:
+        yield samples_collection
+    finally:
+        samples_collection.delete_many({})
 
 
 @pytest.fixture
