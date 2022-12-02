@@ -253,6 +253,7 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_dont_change_sample_uuid
 
 @pytest.mark.parametrize("samples_collection_accessor", [TESTING_SAMPLES_WITH_LAB_ID], indirect=True)
 def test_check_samples_are_valid_finds_problems_with_samples(
+    monkeypatch,
     config,
     samples_collection_accessor,
     source_plates_collection_accessor,
@@ -268,24 +269,32 @@ def test_check_samples_are_valid_finds_problems_with_samples(
         check_sample_not_contains_sample_uuid(sample)
 
     # When both are right
-    try:
-        check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["123", "456"])
-    except Exception as exc:
-        raise AssertionError(exc)
+    # Expect no exceptions to be raised -- if any occur the test will fail
+    check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["123", "456"])
 
     # When sample_uuid has value but source_plate_uuid has not
     with pytest.raises(ExceptionSampleWithSampleUUIDNotSourceUUID):
         check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["789"])
+
+    # When sample_uuid has value but source_plate_uuid has not, but the environment variable was set to ignore this
+    # Expect no exceptions to be raised -- if any occur the test will fail
+    with monkeypatch.context() as mp:
+        mp.setenv("SUPPRESS_ERROR_FOR_EXISTING_SAMPLE_UUIDS", "true")
+        check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["789"])
+
+    # When sample_uuid has value but source_plate_uuid has not, but the suppress environment variable was set to false
+    with monkeypatch.context() as mp:
+        mp.setenv("SUPPRESS_ERROR_FOR_EXISTING_SAMPLE_UUIDS", "false")
+        with pytest.raises(ExceptionSampleWithSampleUUIDNotSourceUUID):
+            check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["789"])
 
     # When source plate uuid has value but sample_uuid has not and there is no source plate record
     with pytest.raises(ExceptionSampleWithSourceUUIDNotSampleUUID):
         check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["781"])
 
     # When a sample has sample uuid and source plate and the plate not in source plate collection, is right
-    try:
-        check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["782"])
-    except Exception as exc:
-        raise AssertionError(exc)
+    # Expect no exceptions to be raised -- if any occur the test will fail
+    check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["782"])
 
     # When a source plate from input is already defined in the source plates collection
     with pytest.raises(ExceptionSourcePlateDefined):
