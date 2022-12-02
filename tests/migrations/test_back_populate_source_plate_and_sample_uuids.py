@@ -19,6 +19,7 @@ from migrations.back_populate_source_plate_and_sample_uuids import (
     check_samples_are_valid,
     mlwh_count_samples_from_mongo_ids,
 )
+from tests.testing_objects import TESTING_SAMPLES_WITH_LAB_ID
 
 # ----- test fixture helpers -----
 
@@ -46,24 +47,24 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_missing_file(config):
         back_populate_source_plate_and_sample_uuids.run(config, filepath)
 
 
+@pytest.mark.parametrize("samples_collection_accessor", [TESTING_SAMPLES_WITH_LAB_ID], indirect=True)
 def test_back_populate_source_plate_uuid_and_sample_uuid_not_raise_exception(
-    config, testing_samples_with_lab_id, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
+    config, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
 ):
-    filepath = "./tests/data/populate_old_plates.csv"
-    try:
-        back_populate_source_plate_and_sample_uuids.run(config, filepath)
-    except Exception as exc:
-        raise AssertionError(exc)
+    filepath = "./tests/data/populate_old_plates_1.csv"
+
+    # Expect no exceptions to be raised -- if any occur the test will fail
+    back_populate_source_plate_and_sample_uuids.run(config, filepath)
 
 
+@pytest.mark.parametrize("samples_collection_accessor", [TESTING_SAMPLES_WITH_LAB_ID], indirect=True)
 def test_back_populate_source_plate_uuid_and_sample_uuid_populates_sample_uuid(
     config,
-    testing_samples_with_lab_id,
     samples_collection_accessor,
     query_lighthouse_sample,
     mlwh_samples_with_lab_id_for_migration,
 ):
-    filepath = "./tests/data/populate_old_plates.csv"
+    filepath = "./tests/data/populate_old_plates_1.csv"
     samples_before = list(samples_collection_accessor.find({FIELD_PLATE_BARCODE: "123"}))
 
     assert len(samples_before) > 0
@@ -105,8 +106,9 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_populates_sample_uuid(
         assert mongo_dict[mongo_id] == mlwh_dict[mongo_id]
 
 
+@pytest.mark.parametrize("samples_collection_accessor", [TESTING_SAMPLES_WITH_LAB_ID], indirect=True)
 def test_back_populate_source_plate_uuid_and_sample_uuid_works_with_two_plates(
-    config, testing_samples_with_lab_id, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
+    config, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
 ):
     filepath = "./tests/data/populate_old_plates_2.csv"
     samples_before = list(
@@ -131,15 +133,15 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_works_with_two_plates(
         viewed_uuids.append(sample[FIELD_LH_SAMPLE_UUID])
 
 
+@pytest.mark.parametrize("samples_collection_accessor", [TESTING_SAMPLES_WITH_LAB_ID], indirect=True)
 def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid(
     config,
-    testing_samples_with_lab_id,
     samples_collection_accessor,
     query_lighthouse_sample,
     mlwh_samples_with_lab_id_for_migration,
 ):
 
-    filepath = "./tests/data/populate_old_plates.csv"
+    filepath = "./tests/data/populate_old_plates_1.csv"
     samples_before = list(samples_collection_accessor.find({FIELD_PLATE_BARCODE: "123"}))
 
     assert len(samples_before) > 0
@@ -179,8 +181,9 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid(
         assert mongo_dict[mongo_id] == mlwh_dict[mongo_id]
 
 
+@pytest.mark.parametrize("samples_collection_accessor", [TESTING_SAMPLES_WITH_LAB_ID], indirect=True)
 def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid_with_two_plates_input(
-    config, testing_samples_with_lab_id, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
+    config, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
 ):
     filepath = "./tests/data/populate_old_plates_2.csv"
     samples_before = list(
@@ -208,10 +211,11 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid_w
     assert samples_after[3][FIELD_LH_SOURCE_PLATE_UUID] == source_plate_uuid_second
 
 
+@pytest.mark.parametrize("samples_collection_accessor", [TESTING_SAMPLES_WITH_LAB_ID], indirect=True)
 def test_back_populate_source_plate_uuid_and_sample_uuid_dont_change_source_plate_other_barcodes(
-    config, testing_samples_with_lab_id, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
+    config, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
 ):
-    filepath = "./tests/data/populate_old_plates.csv"
+    filepath = "./tests/data/populate_old_plates_1.csv"
     samples_before = list(samples_collection_accessor.find({FIELD_PLATE_BARCODE: "456"}))
 
     assert len(samples_before) > 0
@@ -227,10 +231,11 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_dont_change_source_plat
         assert not (FIELD_LH_SOURCE_PLATE_UUID in sample)
 
 
+@pytest.mark.parametrize("samples_collection_accessor", [TESTING_SAMPLES_WITH_LAB_ID], indirect=True)
 def test_back_populate_source_plate_uuid_and_sample_uuid_dont_change_sample_uuid_other_barcodes(
-    config, testing_samples_with_lab_id, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
+    config, samples_collection_accessor, mlwh_samples_with_lab_id_for_migration
 ):
-    filepath = "./tests/data/populate_old_plates.csv"
+    filepath = "./tests/data/populate_old_plates_1.csv"
     samples_before = list(samples_collection_accessor.find({FIELD_PLATE_BARCODE: "456"}))
 
     assert len(samples_before) > 0
@@ -246,9 +251,9 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_dont_change_sample_uuid
         check_sample_not_contains_sample_uuid(sample)
 
 
+@pytest.mark.parametrize("samples_collection_accessor", [TESTING_SAMPLES_WITH_LAB_ID], indirect=True)
 def test_check_samples_are_valid_finds_problems_with_samples(
     config,
-    testing_samples_with_lab_id,
     samples_collection_accessor,
     source_plates_collection_accessor,
     testing_source_plates,

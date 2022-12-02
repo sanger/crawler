@@ -24,7 +24,7 @@ from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_quer
 from crawler.helpers.general_helpers import create_source_plate_doc, map_mongo_to_sql_common
 from crawler.sql_queries import SQL_MLWH_COUNT_MONGO_IDS, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID
 from crawler.types import Config, SampleDoc
-from migrations.helpers.shared_helper import extract_barcodes, validate_args
+from migrations.helpers.shared_helper import extract_barcodes, get_mongo_samples_for_source_plate, validate_args
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ def run(config: Config, s_filepath: str) -> None:
 
     logger.info(f"Starting update process with supplied file {filepath}")
 
-    source_plate_barcodes = extract_barcodes(config=config, filepath=filepath)
+    source_plate_barcodes = extract_barcodes(filepath=filepath)
 
     logger.info(f"Source plate barcodes {source_plate_barcodes}")
     update_uuids_mongo_and_mlwh(config=config, source_plate_barcodes=source_plate_barcodes)
@@ -190,7 +190,7 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
             logger.info(f"Processing source plate barcode {source_plate_barcode}")
 
             # List[SampleDoc]
-            sample_docs = get_samples_for_source_plate(samples_collection, source_plate_barcode)
+            sample_docs = get_mongo_samples_for_source_plate(samples_collection, source_plate_barcode)
 
             # iterate through samples
             current_source_plate_uuid = None
@@ -353,25 +353,3 @@ def create_mongo_source_plate_record(
         logger.exception(e)
 
     return None
-
-
-def get_samples_for_source_plate(samples_collection: Collection, source_plate_barcode: str) -> List[SampleDoc]:
-    """Fetches the mongo samples collection rows for a given plate barcode
-
-    Arguments:
-        samples_collection {Collection} -- the mongo samples collection
-        source_plate_barcode {str} -- the barcode of the source plate
-
-    Returns:
-        List[SampleDoc] -- the list of samples for the plate barcode
-    """
-    logger.debug(f"Selecting samples for source plate {source_plate_barcode}")
-
-    match = {
-        "$match": {
-            # Filter by the plate barcode
-            FIELD_PLATE_BARCODE: source_plate_barcode
-        }
-    }
-
-    return list(samples_collection.aggregate([match]))

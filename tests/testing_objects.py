@@ -533,6 +533,15 @@ EVENT_WH_DATA: Dict[str, Any] = {
 }
 
 MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
+    "study": [
+        {
+            "id_study_tmp": "1",
+            "last_updated": "2015-11-25 11:35:30",
+            "recorded_at": "2015-11-25 11:35:30",
+            "id_study_lims": "1",
+            "id_lims": "SQSCP",
+        }
+    ],
     "sample": [
         {
             "id_sample_tmp": "1",
@@ -681,15 +690,6 @@ MLWH_SAMPLE_STOCK_RESOURCE: Dict[str, Any] = {
             "id_stock_resource_lims": "5",
             "labware_type": "well",
         },
-    ],
-    "study": [
-        {
-            "id_study_tmp": "1",
-            "last_updated": "2015-11-25 11:35:30",
-            "recorded_at": "2015-11-25 11:35:30",
-            "id_study_lims": "1",
-            "id_lims": "SQSCP",
-        }
     ],
 }
 
