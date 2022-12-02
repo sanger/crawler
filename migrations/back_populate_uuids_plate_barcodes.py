@@ -34,6 +34,10 @@ class ExceptionSampleWithSampleUUID(Exception):
     pass
 
 
+class ExceptionNoSamplesForGivenPlateBarcodes(Exception):
+    pass
+
+
 class ExceptionSampleCountsForMongoAndMLWHNotMatching(Exception):
     pass
 
@@ -41,9 +45,13 @@ class ExceptionSampleCountsForMongoAndMLWHNotMatching(Exception):
 """
 Iterates over the list of plate barcodes provided in a CSV file.
 Finds all the samples in MongoDB with that plate barcode and iterates over those.
+
 Looks for the same sample in the lighthouse_sample table using mongodb_id and checks whether it has an lh_sample_uuid.
 If not, the sample is skipped.
 Otherwise the lh_sample_uuid is added to the MongoDB document along with a key uuid_updated set to 'true'.
+
+Note that newer samples, since Rabbit MQ was used for adding plate maps, will not have a mongodb_id value populated!
+If samples are included in the migration where the mongodb_id does not exist in MLWH, an exception will be raised.
 """
 
 
@@ -186,8 +194,7 @@ def check_samples_are_valid(
     list_mongo_ids = [str(x[FIELD_MONGODB_ID]) for x in query_mongo]
 
     if len(list_mongo_ids) == 0:
-        # There are no samples to check so this is a valid list of samples
-        return
+        raise ExceptionNoSamplesForGivenPlateBarcodes("There are no samples in Mongo for the given plate barcodes.")
 
     # select count of rows from MLWH for list_mongo_ids
     query = SQL_MLWH_COUNT_MONGO_IDS % {"mongo_ids": ",".join([f'"{mongo_id}"' for mongo_id in list_mongo_ids])}
