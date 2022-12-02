@@ -41,9 +41,13 @@ class ExceptionSampleCountsForMongoAndMLWHNotMatching(Exception):
 """
 Iterates over the list of plate barcodes provided in a CSV file.
 Finds all the samples in MongoDB with that plate barcode and iterates over those.
+
 Looks for the same sample in the lighthouse_sample table using mongodb_id and checks whether it has an lh_sample_uuid.
 If not, the sample is skipped.
 Otherwise the lh_sample_uuid is added to the MongoDB document along with a key uuid_updated set to 'true'.
+
+Note that newer samples, since Rabbit MQ was used for adding plate maps, will not have a mongodb_id value populated!
+If samples are included in the migration where the mongodb_id does not exist in MLWH, an exception will be raised.
 """
 
 
