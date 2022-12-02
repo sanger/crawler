@@ -97,7 +97,7 @@ def test_run_updates_uuid_in_mongo_correctly(config, samples_collection_accessor
 
     sample = samples_collection_accessor.find({})[0]
     assert sample[FIELD_LH_SAMPLE_UUID] == "123-UUID"
-    assert sample["uuid_updated"] is True
+    assert sample[subject.FIELD_UUID_UPDATED] is True
 
     # Note that MongoDB rounds the milliseconds, hence this check being a less-than operation
     assert datetime.utcnow() - sample[FIELD_UPDATED_AT] < timedelta(seconds=1)
@@ -116,7 +116,7 @@ def test_run_updates_uuid_in_mongo_when_currently_empty_string(config, samples_c
 
     sample = samples_collection_accessor.find({})[0]
     assert sample["lh_sample_uuid"] == "123-UUID"
-    assert sample["uuid_updated"] is True
+    assert sample[subject.FIELD_UUID_UPDATED] is True
 
 
 @pytest.mark.parametrize("samples_collection_accessor", [[MONGO_SAMPLE_WITH_EXISTING_UUID]], indirect=True)
@@ -131,7 +131,7 @@ def test_run_throws_exception_when_uuid_already_exists(config, samples_collectio
 
     sample = samples_collection_accessor.find({})[0]
     assert sample["lh_sample_uuid"] == "Existing-UUID"
-    assert "uuid_update" not in sample
+    assert subject.FIELD_UUID_UPDATED not in sample
 
 
 @pytest.mark.parametrize("samples_collection_accessor", [[MONGO_SAMPLE_WITHOUT_UUID]], indirect=True)
@@ -146,7 +146,7 @@ def test_run_throws_exception_when_no_samples_in_mlwh(config, samples_collection
 
     sample = samples_collection_accessor.find({})[0]
     assert "lh_sample_uuid" not in sample
-    assert "uuid_update" not in sample
+    assert subject.FIELD_UUID_UPDATED not in sample
 
 
 @pytest.mark.parametrize("samples_collection_accessor", [[MONGO_SAMPLE_WITHOUT_UUID]], indirect=True)
@@ -162,4 +162,4 @@ def test_run_throws_exception_when_matching_sample_not_in_mlwh(config, samples_c
 
     sample = samples_collection_accessor.find({})[0]
     assert "lh_sample_uuid" not in sample
-    assert "uuid_update" not in sample
+    assert subject.FIELD_UUID_UPDATED not in sample
