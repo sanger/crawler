@@ -34,6 +34,10 @@ class ExceptionSampleWithSampleUUID(Exception):
     pass
 
 
+class ExceptionNoSamplesForGivenPlateBarcodes(Exception):
+    pass
+
+
 class ExceptionSampleCountsForMongoAndMLWHNotMatching(Exception):
     pass
 
@@ -190,8 +194,7 @@ def check_samples_are_valid(
     list_mongo_ids = [str(x[FIELD_MONGODB_ID]) for x in query_mongo]
 
     if len(list_mongo_ids) == 0:
-        # There are no samples to check so this is a valid list of samples
-        return
+        raise ExceptionNoSamplesForGivenPlateBarcodes("There are no samples in Mongo for the given plate barcodes.")
 
     # select count of rows from MLWH for list_mongo_ids
     query = SQL_MLWH_COUNT_MONGO_IDS % {"mongo_ids": ",".join([f'"{mongo_id}"' for mongo_id in list_mongo_ids])}

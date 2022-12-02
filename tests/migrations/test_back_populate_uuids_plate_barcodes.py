@@ -84,8 +84,9 @@ def logger():
         yield logger
 
 
-def test_run_handles_no_samples_in_mongo(config):
-    subject.run(config, CSV_FILEPATH)
+def test_run_throws_when_no_samples_found_in_mongo(config):
+    with pytest.raises(subject.ExceptionNoSamplesForGivenPlateBarcodes):
+        subject.run(config, CSV_FILEPATH)
 
 
 @pytest.mark.parametrize("samples_collection_accessor", [[MONGO_SAMPLE_WITHOUT_UUID]], indirect=True)
