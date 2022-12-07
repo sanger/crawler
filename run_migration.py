@@ -8,7 +8,8 @@ from lab_share_lib.config_readers import get_config
 from crawler.types import Config
 from migrations import (
     back_populate_source_plate_and_sample_uuids,
-    back_populate_uuids,
+    back_populate_uuids_date_range,
+    back_populate_uuids_plate_barcodes,
     reconnect_mlwh_with_mongo,
     update_dart,
     update_filtered_positives,
@@ -39,7 +40,8 @@ print("* update_mlwh_with_legacy_samples")
 print("* update_mlwh_and_dart_with_legacy_samples")
 print("* update_filtered_positives")
 print("* update_legacy_filtered_positives")
-print("* back_populate_uuids")
+print("* back_populate_uuids_date_range")
+print("* back_populate_uuids_plate_barcodes")
 print("* back_populate_source_plate_and_sample_uuids")
 print("* reconnect_mlwh_with_mongo (ONLY RUN THIS MIGRATION IN TESTING ENVIRONMENTS)")
 
@@ -102,7 +104,7 @@ def migration_back_populate_source_plate_and_sample_uuids():
     back_populate_source_plate_and_sample_uuids.run(config, csv_file)
 
 
-def migration_back_populate_uuids():
+def migration_back_populate_uuids_date_range():
     if not len(sys.argv) == 5:
         print(
             "Please add start and end datetime range arguments and the updated_at timestamp for this migration "
@@ -114,11 +116,23 @@ def migration_back_populate_uuids():
     s_end_datetime = sys.argv[3]
     updated_at = sys.argv[4]
 
-    print("Running back_populate_uuids")
+    print("Running back_populate_uuids_date_range")
 
-    back_populate_uuids.run(
+    back_populate_uuids_date_range.run(
         config, s_start_datetime=s_start_datetime, s_end_datetime=s_end_datetime, updated_at=updated_at
     )
+
+
+def migration_back_populate_uuids_plate_barcodes():
+    if not len(sys.argv) == 3:
+        print("Please add a csv file, aborting")
+        return
+
+    csv_file = sys.argv[2]
+
+    print("Running back_populate_uuids_plate_barcodes")
+
+    back_populate_uuids_plate_barcodes.run(config, s_filepath=csv_file)
 
 
 def migration_update_legacy_filtered_positives():
@@ -141,7 +155,8 @@ def migration_by_name(migration_name):
         "update_mlwh_and_dart_with_legacy_samples": migration_update_mlwh_and_dart_with_legacy_samples,
         "update_filtered_positives": migration_update_filtered_positives,
         "update_legacy_filtered_positives": migration_update_legacy_filtered_positives,
-        "back_populate_uuids": migration_back_populate_uuids,
+        "back_populate_uuids_date_range": migration_back_populate_uuids_date_range,
+        "back_populate_uuids_plate_barcodes": migration_back_populate_uuids_plate_barcodes,
         "back_populate_source_plate_and_sample_uuids": migration_back_populate_source_plate_and_sample_uuids,
         "reconnect_mlwh_with_mongo": migration_reconnect_mlwh_with_mongo,
     }

@@ -5,10 +5,13 @@ import sys
 import traceback
 from csv import DictReader
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
-from crawler.constants import FIELD_MONGO_SOURCE_PLATE_BARCODE, MONGO_DATETIME_FORMAT
-from crawler.types import Config
+from pymongo.collection import Collection
+
+from crawler.constants import FIELD_MONGO_SOURCE_PLATE_BARCODE, FIELD_PLATE_BARCODE, MONGO_DATETIME_FORMAT
+from crawler.db.mysql import create_mysql_connection
+from crawler.types import Config, SampleDoc
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +45,10 @@ def valid_datetime_string(s_datetime: Optional[str]) -> bool:
         return False
 
 
-def extract_barcodes(config: Config, filepath: str) -> List[str]:
+def extract_barcodes(filepath: str) -> List[str]:
     """Extract the list of barcodes from the csv file
 
     Arguments:
-        config {Config} -- application config specifying database details
         filepath {str} -- the filepath of the csv file containing the list of source plate barcodes
 
     Returns:
@@ -106,3 +108,33 @@ def valid_filepath(s_filepath: str) -> bool:
         return file_extension == ".csv"
 
     return False
+
+
+def mysql_generator(config: Config, query: str) -> Iterator[Dict[str, Any]]:
+    with create_mysql_connection(config=config, readonly=True) as connection:
+        with connection.cursor(dictionary=True, buffered=False) as cursor:
+            cursor.execute(query)
+            for row in cursor:
+                yield row
+
+
+def get_mongo_samples_for_source_plate(samples_collection: Collection, source_plate_barcode: str) -> List[SampleDoc]:
+    """Fetches the mongo samples collection rows for a given plate barcode
+
+    Arguments:
+        samples_collection {Collection} -- the mongo samples collection
+        source_plate_barcode {str} -- the barcode of the source plate
+
+    Returns:
+        List[SampleDoc] -- the list of samples for the plate barcode
+    """
+    logger.debug(f"Selecting samples for source plate {source_plate_barcode}")
+
+    match = {
+        "$match": {
+            # Filter by the plate barcode
+            FIELD_PLATE_BARCODE: source_plate_barcode
+        }
+    }
+
+    return list(samples_collection.aggregate([match]))

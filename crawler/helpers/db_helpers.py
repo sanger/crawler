@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Any, List, Mapping
+from typing import Any, List, Mapping, Optional
 
 import pymongo
 from pymongo.client_session import ClientSession
@@ -127,7 +127,7 @@ def populate_mongo_collection(collection: Collection, documents: List[Mapping[st
 
 
 def samples_filtered_for_duplicates_in_mongo(
-    samples_collection: Collection, samples: List[Mapping[str, Any]], session: ClientSession = None
+    samples_collection: Collection, samples: List[Mapping[str, Any]], session: Optional[ClientSession] = None
 ) -> List[Mapping[str, Any]]:
     dup_query = {
         "$or": [
