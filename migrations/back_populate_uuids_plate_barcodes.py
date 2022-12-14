@@ -20,6 +20,7 @@ from crawler.sql_queries import SQL_MLWH_COUNT_MONGO_IDS, SQL_MLWH_GET_SAMPLE_FO
 from crawler.types import Config, SampleDoc
 from migrations.helpers.shared_helper import (
     extract_barcodes,
+    extract_mongodb_ids,
     get_mongo_samples_for_source_plate,
     mysql_generator,
     validate_args,
@@ -179,7 +180,9 @@ def check_samples_are_valid(
         )
     )
     if len(samples_with_sample_uuid) > 0:
-        raise ExceptionSampleWithSampleUUID(f"Some of the samples have a sample uuid: {samples_with_sample_uuid}")
+        raise ExceptionSampleWithSampleUUID(
+            f"Some of the samples have a sample uuid: {extract_mongodb_ids(samples_with_sample_uuid)}"
+        )
 
     """
     Validate that there are matching sample rows in both mongo and mlwh for the list of barcodes supplied
@@ -191,7 +194,7 @@ def check_samples_are_valid(
         samples_collection.find({FIELD_PLATE_BARCODE: {"$in": source_plate_barcodes}}, {FIELD_MONGODB_ID: 1})
     )
 
-    list_mongo_ids = [str(x[FIELD_MONGODB_ID]) for x in query_mongo]
+    list_mongo_ids = extract_mongodb_ids(query_mongo)
 
     if len(list_mongo_ids) == 0:
         raise ExceptionNoSamplesForGivenPlateBarcodes("There are no samples in Mongo for the given plate barcodes.")

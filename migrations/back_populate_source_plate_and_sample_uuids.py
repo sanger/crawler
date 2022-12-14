@@ -25,7 +25,12 @@ from crawler.db.mysql import create_mysql_connection, run_mysql_executemany_quer
 from crawler.helpers.general_helpers import create_source_plate_doc, map_mongo_to_sql_common
 from crawler.sql_queries import SQL_MLWH_COUNT_MONGO_IDS, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID
 from crawler.types import Config, SampleDoc
-from migrations.helpers.shared_helper import extract_barcodes, get_mongo_samples_for_source_plate, validate_args
+from migrations.helpers.shared_helper import (
+    extract_barcodes,
+    extract_mongodb_ids,
+    get_mongo_samples_for_source_plate,
+    validate_args,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -176,12 +181,6 @@ def check_samples_are_valid(
             f"The number of samples for the list of barcodes in Mongo does not match"
             f"the number in the MLWH: {count_mongo_rows}!={count_mlwh_rows}"
         )
-
-
-def extract_mongodb_ids(samples: List[SampleDoc]) -> List[str]:
-    """Get the MongoDB IDs for a list of documents."""
-
-    return [str(sample[FIELD_MONGODB_ID]) for sample in samples]
 
 
 def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]) -> None:
