@@ -110,6 +110,7 @@ def update_mongo_uuids(config: Config, source_plate_barcodes: List[str]) -> None
                         continue
 
                     sample_doc[FIELD_LH_SAMPLE_UUID] = mlwh_sample[MLWH_LH_SAMPLE_UUID]
+                    sample_doc[FIELD_UUID_UPDATED] = True
                     sample_doc[FIELD_UPDATED_AT] = datetime.utcnow()
 
                     success = update_mongo_sample(samples_collection, sample_doc)
@@ -145,7 +146,7 @@ def update_mongo_sample(samples_collection: Collection, sample_doc: SampleDoc) -
             update={
                 "$set": {
                     FIELD_LH_SAMPLE_UUID: sample_doc[FIELD_LH_SAMPLE_UUID],
-                    FIELD_UUID_UPDATED: True,
+                    FIELD_UUID_UPDATED: sample_doc[FIELD_UUID_UPDATED],
                     FIELD_UPDATED_AT: sample_doc[FIELD_UPDATED_AT],
                 }
             },
