@@ -25,6 +25,23 @@ config.LOGGING["loggers"]["crawler"]["handlers"] = ["colored_stream"]
 config.LOGGING["formatters"]["colored"][
     "format"
 ] = "{asctime:<15} {name:<60}:{lineno:<3} {log_color}{levelname:<7} {message}"
+
+config.LOGGING["formatters"]["migration_data"] = {
+    "style": "{",
+    "format": "{asctime:<15} {levelname:<7} {message}",
+}
+config.LOGGING["handlers"]["migration_data_file"] = {
+    "level": "DEBUG",
+    "class": "logging.FileHandler",
+    "formatter": "migration_data",
+    "filename": "migration_data.log",
+}
+config.LOGGING["loggers"]["migration_data"] = {
+    "handlers": ["migration_data_file"],
+    "level": "DEBUG",
+    "propagate": True,
+}
+
 logging.config.dictConfig(config.LOGGING)
 
 ##
