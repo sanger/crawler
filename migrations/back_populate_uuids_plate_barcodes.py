@@ -106,7 +106,7 @@ def update_mongo_uuids(config: Config, source_plate_barcodes: List[str]) -> None
                     query = SQL_MLWH_GET_SAMPLE_FOR_MONGO_ID % {MLWH_MONGODB_ID: sample_doc[FIELD_MONGODB_ID]}
                     mlwh_sample = next(mysql_generator(config=config, query=query))
 
-                    if mlwh_sample[FIELD_LH_SAMPLE_UUID] is None:
+                    if mlwh_sample[MLWH_LH_SAMPLE_UUID] is None:
                         continue
 
                     sample_doc[FIELD_LH_SAMPLE_UUID] = mlwh_sample[MLWH_LH_SAMPLE_UUID]
