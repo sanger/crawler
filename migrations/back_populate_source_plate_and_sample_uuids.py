@@ -32,7 +32,7 @@ from migrations.helpers.shared_helper import (
     validate_args,
 )
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 SUPPRESS_ERROR_KEY_EXISTING_SAMPLE_UUIDS = "SUPPRESS_ERROR_FOR_EXISTING_SAMPLE_UUIDS"
 
@@ -85,15 +85,15 @@ Steps:
 def run(config: Config, s_filepath: str) -> None:
     filepath = validate_args(config=config, s_filepath=s_filepath)
 
-    logger.info("-" * 80)
-    logger.info("STARTING BACK POPULATING SOURCE PLATE AND SAMPLE UUIDS")
-    logger.info(f"Time start: {datetime.now()}")
+    LOGGER.info("-" * 80)
+    LOGGER.info("STARTING BACK POPULATING SOURCE PLATE AND SAMPLE UUIDS")
+    LOGGER.info(f"Time start: {datetime.now()}")
 
-    logger.info(f"Starting update process with supplied file {filepath}")
+    LOGGER.info(f"Starting update process with supplied file {filepath}")
 
     source_plate_barcodes = extract_barcodes(filepath=filepath)
 
-    logger.info(f"Source plate barcodes {source_plate_barcodes}")
+    LOGGER.info(f"Source plate barcodes {source_plate_barcodes}")
     update_uuids_mongo_and_mlwh(config=config, source_plate_barcodes=source_plate_barcodes)
 
 
@@ -207,7 +207,7 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
         check_samples_are_valid(config, samples_collection, source_plates_collection, source_plate_barcodes)
 
         for source_plate_barcode in source_plate_barcodes:
-            logger.info(f"Processing source plate barcode {source_plate_barcode}")
+            LOGGER.info(f"Processing source plate barcode {source_plate_barcode}")
 
             # List[SampleDoc]
             sample_docs = get_mongo_samples_for_source_plate(samples_collection, source_plate_barcode)
@@ -216,12 +216,12 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
             current_source_plate_uuid = None
             for sample_doc in sample_docs:
                 # will every sample doc have a plate_barcode and lab id?
-                logger.info(f"Sample in well {sample_doc[FIELD_COORDINATE]}")
+                LOGGER.info(f"Sample in well {sample_doc[FIELD_COORDINATE]}")
 
                 if current_source_plate_uuid is None:
                     # extract lab id from sample doc
                     lab_id = cast(str, sample_doc[FIELD_MONGO_LAB_ID])
-                    logger.info(f"Creating a source_plate collection row with lab id = {lab_id}")
+                    LOGGER.info(f"Creating a source_plate collection row with lab id = {lab_id}")
                     # create source_plate record and extract lh_source_plate_uuid for next samples
                     current_source_plate_uuid = create_mongo_source_plate_record(
                         source_plates_collection, source_plate_barcode, lab_id
@@ -243,8 +243,8 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
 
                 except Exception as e:
                     counter_mongo_update_failures += 1
-                    logger.critical("Failed to update sample in Mongo for mongo id " f"{sample_doc[FIELD_MONGODB_ID]}")
-                    logger.exception(e)
+                    LOGGER.critical("Failed to update sample in Mongo for mongo id " f"{sample_doc[FIELD_MONGODB_ID]}")
+                    LOGGER.exception(e)
 
                 # update sample in MLWH 'lighthouse_samples' to set lh_source_plate,
                 # lh_sample_uuid, and updated_timestamp
@@ -257,13 +257,13 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
                         counter_mlwh_update_failures += 1
                 except Exception as e:
                     counter_mlwh_update_failures += 1
-                    logger.critical("Failed to update sample in MLWH for mongo id " f"{sample_doc[FIELD_MONGODB_ID]}")
-                    logger.exception(e)
+                    LOGGER.critical("Failed to update sample in MLWH for mongo id " f"{sample_doc[FIELD_MONGODB_ID]}")
+                    LOGGER.exception(e)
 
-    logger.info(f"Count of successful Mongo updates = {counter_mongo_update_successes}")
-    logger.info(f"Count of failed Mongo updates = {counter_mongo_update_failures}")
-    logger.info(f"Count of successful MLWH updates = {counter_mlwh_update_successes}")
-    logger.info(f"Count of failed MLWH updates = {counter_mlwh_update_failures}")
+    LOGGER.info(f"Count of successful Mongo updates = {counter_mongo_update_successes}")
+    LOGGER.info(f"Count of failed Mongo updates = {counter_mongo_update_failures}")
+    LOGGER.info(f"Count of successful MLWH updates = {counter_mlwh_update_successes}")
+    LOGGER.info(f"Count of failed MLWH updates = {counter_mlwh_update_failures}")
 
     return
 
@@ -297,8 +297,8 @@ def update_mongo_sample_uuid_and_source_plate_uuid(samples_collection: Collectio
             return True
 
     except Exception as e:
-        logger.critical("Failed to update sample in mongo for mongo id " f"{sample_doc[FIELD_MONGODB_ID]}")
-        logger.exception(e)
+        LOGGER.critical("Failed to update sample in mongo for mongo id " f"{sample_doc[FIELD_MONGODB_ID]}")
+        LOGGER.exception(e)
     return False
 
 
@@ -363,13 +363,13 @@ def create_mongo_source_plate_record(
         new_plate_doc = create_source_plate_doc(source_plate_barcode, lab_id)
         new_plate_uuid = new_plate_doc[FIELD_LH_SOURCE_PLATE_UUID]
 
-        logger.debug(f"Attempting to insert new source plate for barcode {source_plate_barcode} and lab id {lab_id}")
+        LOGGER.debug(f"Attempting to insert new source plate for barcode {source_plate_barcode} and lab id {lab_id}")
         source_plates_collection.insert_one(new_plate_doc)
 
         return cast(str, new_plate_uuid)
 
     except Exception as e:
-        logger.critical(f"Error inserting a source plate row for barcode {source_plate_barcode} and lab id {lab_id}")
-        logger.exception(e)
+        LOGGER.critical(f"Error inserting a source plate row for barcode {source_plate_barcode} and lab id {lab_id}")
+        LOGGER.exception(e)
 
     return None
