@@ -22,7 +22,7 @@ LOGGING: Dict[str, Any] = {
     "filters": {
         "package_path": {
             "()": "crawler.utils.PackagePathFilter",
-        }
+        },
     },
     "handlers": {
         "colored_stream": {
