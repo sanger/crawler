@@ -27,6 +27,7 @@ from migrations.helpers.shared_helper import (
 )
 
 LOGGER = logging.getLogger(__name__)
+DATA_LOGGER = logging.getLogger("migration_data")
 
 FIELD_UUID_UPDATED = "uuid_updated"
 
@@ -109,14 +110,18 @@ def update_mongo_uuids(config: Config, source_plate_barcodes: List[str]) -> None
                     if mlwh_sample[MLWH_LH_SAMPLE_UUID] is None:
                         continue
 
+                    log_mongo_sample_fields("Before update", sample_doc)
+
                     sample_doc[FIELD_LH_SAMPLE_UUID] = mlwh_sample[MLWH_LH_SAMPLE_UUID]
                     sample_doc[FIELD_UUID_UPDATED] = True
                     sample_doc[FIELD_UPDATED_AT] = datetime.utcnow()
 
                     success = update_mongo_sample(samples_collection, sample_doc)
                     if success:
+                        log_mongo_sample_fields("After successful update", sample_doc)
                         counter_mongo_update_successes += 1
                     else:
+                        log_mongo_sample_fields("Failed to update", sample_doc)
                         counter_mongo_update_failures += 1
 
                 except Exception as e:
@@ -126,6 +131,11 @@ def update_mongo_uuids(config: Config, source_plate_barcodes: List[str]) -> None
 
     LOGGER.info(f"Count of successful Mongo updates = {counter_mongo_update_successes}")
     LOGGER.info(f"Count of failed Mongo updates = {counter_mongo_update_failures}")
+
+
+def log_mongo_sample_fields(description, mongo_sample):
+    DATA_LOGGER.info(f"Logging sample fields -- {description}")
+    DATA_LOGGER.info(mongo_sample)
 
 
 def update_mongo_sample(samples_collection: Collection, sample_doc: SampleDoc) -> bool:
