@@ -9,7 +9,12 @@ from typing import Any, Dict, Iterator, List, Optional
 
 from pymongo.collection import Collection
 
-from crawler.constants import FIELD_MONGO_SOURCE_PLATE_BARCODE, FIELD_PLATE_BARCODE, MONGO_DATETIME_FORMAT
+from crawler.constants import (
+    FIELD_MONGO_SOURCE_PLATE_BARCODE,
+    FIELD_MONGODB_ID,
+    FIELD_PLATE_BARCODE,
+    MONGO_DATETIME_FORMAT,
+)
 from crawler.db.mysql import create_mysql_connection
 from crawler.types import Config, SampleDoc
 
@@ -138,3 +143,9 @@ def get_mongo_samples_for_source_plate(samples_collection: Collection, source_pl
     }
 
     return list(samples_collection.aggregate([match]))
+
+
+def extract_mongodb_ids(samples: List[SampleDoc]) -> List[str]:
+    """Get the MongoDB IDs for a list of documents."""
+
+    return [str(sample[FIELD_MONGODB_ID]) for sample in samples]

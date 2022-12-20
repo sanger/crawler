@@ -164,9 +164,22 @@ SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT = (
     f" WHERE { MLWH_RNA_ID } IN (%s)"
 )
 
+# Note that this query must output at least the same fields as the update query below.
+SQL_MLWH_GET_SAMPLE_FOR_MONGO_ID = (
+    f"SELECT"
+    f"   id,"
+    f"   {MLWH_MONGODB_ID},"
+    f"   {MLWH_LH_SAMPLE_UUID},"
+    f"   {MLWH_LH_SOURCE_PLATE_UUID},"
+    f"   {MLWH_UPDATED_AT}"
+    f" FROM lighthouse_sample "
+    f" WHERE {MLWH_MONGODB_ID} = '%({MLWH_MONGODB_ID})s'"
+)
+
 SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID = (
     f"UPDATE lighthouse_sample"
     f" SET"
+    # Note that the fields being set here must be matched by the select query above.
     f" { MLWH_LH_SAMPLE_UUID } = %({MLWH_LH_SAMPLE_UUID})s,"
     f" { MLWH_LH_SOURCE_PLATE_UUID } = %({MLWH_LH_SOURCE_PLATE_UUID})s,"
     f" { MLWH_UPDATED_AT } = %({MLWH_UPDATED_AT})s"
@@ -176,8 +189,6 @@ SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID = (
 SQL_MLWH_COUNT_MONGO_IDS = (
     f"SELECT COUNT(*) FROM lighthouse_sample WHERE lighthouse_sample.mongodb_id IN (%(mongo_ids)s)"
 )
-
-SQL_MLWH_GET_SAMPLE_FOR_MONGO_ID = f"SELECT * FROM lighthouse_sample WHERE {MLWH_MONGODB_ID} = '%({MLWH_MONGODB_ID})s'"
 
 SQL_MLWH_GET_BY_RNA_ID = f"SELECT id, mongodb_id FROM lighthouse_sample WHERE lighthouse_sample.rna_id = '%(rna_id)s'"
 

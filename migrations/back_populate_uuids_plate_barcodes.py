@@ -20,12 +20,14 @@ from crawler.sql_queries import SQL_MLWH_COUNT_MONGO_IDS, SQL_MLWH_GET_SAMPLE_FO
 from crawler.types import Config, SampleDoc
 from migrations.helpers.shared_helper import (
     extract_barcodes,
+    extract_mongodb_ids,
     get_mongo_samples_for_source_plate,
     mysql_generator,
     validate_args,
 )
 
 LOGGER = logging.getLogger(__name__)
+DATA_LOGGER = logging.getLogger("migration_data")
 
 FIELD_UUID_UPDATED = "uuid_updated"
 
@@ -105,16 +107,21 @@ def update_mongo_uuids(config: Config, source_plate_barcodes: List[str]) -> None
                     query = SQL_MLWH_GET_SAMPLE_FOR_MONGO_ID % {MLWH_MONGODB_ID: sample_doc[FIELD_MONGODB_ID]}
                     mlwh_sample = next(mysql_generator(config=config, query=query))
 
-                    if mlwh_sample[FIELD_LH_SAMPLE_UUID] is None:
+                    if mlwh_sample[MLWH_LH_SAMPLE_UUID] is None:
                         continue
 
+                    log_mongo_sample_fields("Before update", sample_doc)
+
                     sample_doc[FIELD_LH_SAMPLE_UUID] = mlwh_sample[MLWH_LH_SAMPLE_UUID]
+                    sample_doc[FIELD_UUID_UPDATED] = True
                     sample_doc[FIELD_UPDATED_AT] = datetime.utcnow()
 
                     success = update_mongo_sample(samples_collection, sample_doc)
                     if success:
+                        log_mongo_sample_fields("After successful update", sample_doc)
                         counter_mongo_update_successes += 1
                     else:
+                        log_mongo_sample_fields("Failed to update", sample_doc)
                         counter_mongo_update_failures += 1
 
                 except Exception as e:
@@ -124,6 +131,11 @@ def update_mongo_uuids(config: Config, source_plate_barcodes: List[str]) -> None
 
     LOGGER.info(f"Count of successful Mongo updates = {counter_mongo_update_successes}")
     LOGGER.info(f"Count of failed Mongo updates = {counter_mongo_update_failures}")
+
+
+def log_mongo_sample_fields(description, mongo_sample):
+    DATA_LOGGER.info(f"Logging sample fields -- {description}")
+    DATA_LOGGER.info(mongo_sample)
 
 
 def update_mongo_sample(samples_collection: Collection, sample_doc: SampleDoc) -> bool:
@@ -144,7 +156,7 @@ def update_mongo_sample(samples_collection: Collection, sample_doc: SampleDoc) -
             update={
                 "$set": {
                     FIELD_LH_SAMPLE_UUID: sample_doc[FIELD_LH_SAMPLE_UUID],
-                    FIELD_UUID_UPDATED: True,
+                    FIELD_UUID_UPDATED: sample_doc[FIELD_UUID_UPDATED],
                     FIELD_UPDATED_AT: sample_doc[FIELD_UPDATED_AT],
                 }
             },
@@ -179,7 +191,9 @@ def check_samples_are_valid(
         )
     )
     if len(samples_with_sample_uuid) > 0:
-        raise ExceptionSampleWithSampleUUID(f"Some of the samples have a sample uuid: {samples_with_sample_uuid}")
+        raise ExceptionSampleWithSampleUUID(
+            f"Some of the samples have a sample uuid: {extract_mongodb_ids(samples_with_sample_uuid)}"
+        )
 
     """
     Validate that there are matching sample rows in both mongo and mlwh for the list of barcodes supplied
@@ -191,7 +205,7 @@ def check_samples_are_valid(
         samples_collection.find({FIELD_PLATE_BARCODE: {"$in": source_plate_barcodes}}, {FIELD_MONGODB_ID: 1})
     )
 
-    list_mongo_ids = [str(x[FIELD_MONGODB_ID]) for x in query_mongo]
+    list_mongo_ids = extract_mongodb_ids(query_mongo)
 
     if len(list_mongo_ids) == 0:
         raise ExceptionNoSamplesForGivenPlateBarcodes("There are no samples in Mongo for the given plate barcodes.")
