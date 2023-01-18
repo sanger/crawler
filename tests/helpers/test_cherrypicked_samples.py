@@ -26,6 +26,7 @@ from crawler.helpers.cherrypicked_samples import (
     get_cherrypicked_samples_by_date,
     remove_cherrypicked_samples,
 )
+from tests.conftest import MockedError
 
 
 def generate_example_samples(range, start_datetime):
@@ -444,20 +445,20 @@ def test_get_cherrypicked_samples_by_date_v1_returns_expected(config, event_wh_d
 
 
 def test_filter_out_cherrypicked_samples_throws_for_error_extracting_required_cp_info(config, testing_samples):
-    with patch("crawler.helpers.cherrypicked_samples.extract_required_cp_info", side_effect=Exception("Boom!")):
-        with pytest.raises(Exception):
+    with patch("crawler.helpers.cherrypicked_samples.extract_required_cp_info", side_effect=MockedError("Boom!")):
+        with pytest.raises(MockedError):
             filter_out_cherrypicked_samples(config, testing_samples)
 
 
 def test_filter_out_cherrypicked_samples_throws_for_error_getting_cherrypicked_samples(config, testing_samples):
-    with patch("crawler.helpers.cherrypicked_samples.get_cherrypicked_samples", side_effect=Exception("Boom!")):
-        with pytest.raises(Exception):
+    with patch("crawler.helpers.cherrypicked_samples.get_cherrypicked_samples", side_effect=MockedError("Boom!")):
+        with pytest.raises(MockedError):
             filter_out_cherrypicked_samples(config, testing_samples)
 
 
 def test_filter_out_cherrypicked_samples_returns_input_samples_with_none_cp_samples_df(config, testing_samples):
     with patch("crawler.helpers.cherrypicked_samples.get_cherrypicked_samples", return_value=None):
-        with pytest.raises(Exception):
+        with pytest.raises(ConnectionError):
             filter_out_cherrypicked_samples(config, testing_samples)
 
 
@@ -473,8 +474,10 @@ def test_filter_out_cherrypicked_samples_throws_for_error_removing_cp_samples(co
     cp_samples_df = MagicMock()
     type(cp_samples_df).empty = PropertyMock(return_value=False)
     with patch("crawler.helpers.cherrypicked_samples.get_cherrypicked_samples", return_value=cp_samples_df):
-        with patch("crawler.helpers.cherrypicked_samples.remove_cherrypicked_samples", side_effect=Exception("Boom!")):
-            with pytest.raises(Exception):
+        with patch(
+            "crawler.helpers.cherrypicked_samples.remove_cherrypicked_samples", side_effect=MockedError("Boom!")
+        ):
+            with pytest.raises(MockedError):
                 filter_out_cherrypicked_samples(config, testing_samples)
 
 

@@ -54,6 +54,10 @@ CONFIG, _ = get_config("crawler.config.test")
 logging.config.dictConfig(CONFIG.LOGGING)
 
 
+class MockedError(Exception):
+    pass
+
+
 @pytest.fixture
 def app():
     app = create_app("crawler.config.test")

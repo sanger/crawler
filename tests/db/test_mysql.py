@@ -19,6 +19,7 @@ from crawler.db.mysql import (
 )
 from crawler.helpers.logging_helpers import LoggingCollection
 from crawler.sql_queries import SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH, SQL_MLWH_MULTIPLE_INSERT
+from tests.conftest import MockedError
 from tests.testing_objects import MLWH_SAMPLE_COMPLETE
 
 
@@ -64,10 +65,10 @@ def test_run_mysql_executemany_query_execute_error(config):
     conn.close = MagicMock()
 
     cursor = conn.cursor.return_value
-    cursor.executemany = MagicMock(side_effect=Exception("Boom!"))
+    cursor.executemany = MagicMock(side_effect=MockedError("Boom!"))
     cursor.close = MagicMock()
 
-    with pytest.raises(Exception):
+    with pytest.raises(MockedError):
         run_mysql_executemany_query(
             mysql_conn=conn, sql_query=SQL_MLWH_MULTIPLE_INSERT, values=["test"]  # type: ignore
         )
@@ -115,10 +116,10 @@ def test_run_mysql_execute_formatted_query_execute_error(config):
     conn.close = MagicMock()
 
     cursor = conn.cursor.return_value
-    cursor.execute = MagicMock(side_effect=Exception("Boom!"))
+    cursor.execute = MagicMock(side_effect=MockedError("Boom!"))
     cursor.close = MagicMock()
 
-    with pytest.raises(Exception):
+    with pytest.raises(MockedError):
         run_mysql_execute_formatted_query(
             mysql_conn=conn,
             formatted_sql_query=SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE_BATCH,

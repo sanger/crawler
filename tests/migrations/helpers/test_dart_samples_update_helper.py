@@ -28,6 +28,7 @@ from migrations.helpers.dart_samples_update_helper import (
     samples_updated_with_source_plate_uuids,
     update_mongo_fields,
 )
+from tests.conftest import MockedError
 
 # ----- test helpers -----
 
@@ -256,7 +257,7 @@ def test_migrate_all_dbs_returns_early_failed_mongo_samples_update(config, mock_
         mock_collection = MagicMock()
         if collection_name == COLLECTION_SAMPLES:
             mock_collection.aggregate.return_value = test_samples
-            mock_collection.bulk_write.side_effect = Exception("Boom!")
+            mock_collection.bulk_write.side_effect = MockedError("Boom!")
         elif collection_name == COLLECTION_SOURCE_PLATES:
             mock_collection.find_one.return_value = None
         else:
@@ -283,7 +284,7 @@ def test_migrate_all_dbs_returns_early_failed_mongo_source_plates_update(
             mock_collection.aggregate.return_value = test_samples
         elif collection_name == COLLECTION_SOURCE_PLATES:
             mock_collection.find_one.return_value = None
-            mock_collection.insert_many.side_effect = Exception("Boom!")
+            mock_collection.insert_many.side_effect = MockedError("Boom!")
         else:
             raise ValueError(f"{collection_name} is not recognized/expected")
         return mock_collection
@@ -311,7 +312,7 @@ def test_migrate_all_dbs_returns_early_failed_mlwh_update(config, mock_mysql_con
         return mock_collection
 
     with patch("migrations.helpers.dart_samples_update_helper.get_mongo_collection", side_effect=side_effect):
-        mock_mysql_connection.side_effect = Exception("Boom!")  # mock creating MLWH mysql connection to fail
+        mock_mysql_connection.side_effect = MockedError("Boom!")  # mock creating MLWH mysql connection to fail
 
         migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))
 

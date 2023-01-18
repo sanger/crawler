@@ -13,6 +13,7 @@ from crawler.filtered_positive_identifier import (
     FilteredPositiveIdentifierV2,
 )
 from migrations import update_legacy_filtered_positives
+from tests.conftest import MockedError
 
 start_date_input = "201209_0000"
 end_date_input = "201217_0000"
@@ -184,9 +185,9 @@ def test_update_legacy_filtered_positives_catches_error_connecting_to_mongo(
     mock_filtered_positive_fields_set.return_value = False
 
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
-    mock_update_mongo.side_effect = Exception("Boom!")
+    mock_update_mongo.side_effect = MockedError("Boom!")
 
-    with pytest.raises(Exception):
+    with pytest.raises(MockedError):
         update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
 
     mock_update_mongo.assert_called_once()
@@ -205,9 +206,9 @@ def test_get_cherrypicked_samples_by_date_error_raises_exception(
     mock_filtered_positive_fields_set.return_value = False
     mock_mongo_samples_by_date.return_value = [{"plate_barcode": "1"}]
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
-    mock_get_cherrypicked_samples_by_date.side_effect = Exception("Boom!")
+    mock_get_cherrypicked_samples_by_date.side_effect = MockedError("Boom!")
 
-    with pytest.raises(Exception):
+    with pytest.raises(MockedError):
         update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
 
     mock_update_mongo.assert_not_called()
@@ -228,7 +229,7 @@ def test_get_cherrypicked_samples_by_date_connection_error_raises_exception(
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.return_value = None
 
-    with pytest.raises(Exception):
+    with pytest.raises(AttributeError):
         update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
 
     mock_update_mongo.assert_not_called()
@@ -246,9 +247,9 @@ def test_extract_required_cp_info_error_raises_exception(
 
     mock_filtered_positive_fields_set.return_value = False
     mock_mongo_samples_by_date.return_value = [{"plate_barcode": "1"}]
-    mock_extract_required_cp_info.side_effect = Exception("Boom!")
+    mock_extract_required_cp_info.side_effect = MockedError("Boom!")
 
-    with pytest.raises(Exception):
+    with pytest.raises(MockedError):
         update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
 
     mock_update_mongo.assert_not_called()
@@ -270,9 +271,9 @@ def test_split_mongo_samples_by_version_error_raises_exception(
     mock_extract_required_cp_info.return_value = [["id_1"], ["plate_barcode_1"]]
     mock_get_cherrypicked_samples_by_date.return_value = pd.DataFrame({"id": ["s1", "s2"]})
 
-    mock_split_mongo_samples_by_version.side_effect = Exception("Boom!")
+    mock_split_mongo_samples_by_version.side_effect = MockedError("Boom!")
 
-    with pytest.raises(Exception):
+    with pytest.raises(MockedError):
         update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
 
     mock_update_mongo.assert_not_called()
@@ -342,9 +343,9 @@ def test_update_filtered_positive_fields_error_raises_exception(
     }
     mock_filtered_positive_identifier_by_version.return_value = FilteredPositiveIdentifierV0()
 
-    mock_update_filtered_positive_fields.side_effect = Exception("Boom!")
+    mock_update_filtered_positive_fields.side_effect = MockedError("Boom!")
 
-    with pytest.raises(Exception):
+    with pytest.raises(MockedError):
         update_legacy_filtered_positives.run("crawler.config.integration", start_date_input, end_date_input)
 
     mock_update_mongo.assert_not_called()

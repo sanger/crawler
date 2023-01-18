@@ -37,6 +37,7 @@ from crawler.rabbit.messages.parsers.create_plate_message import (
     CreatePlateMessage,
     ErrorType,
 )
+from tests.conftest import MockedError
 from tests.testing_objects import CREATE_PLATE_MESSAGE
 
 MONGO_SAMPLES = [
@@ -370,7 +371,7 @@ def test_export_to_dart_handles_no_connection_to_database(subject, logger):
 
 
 def test_export_to_dart_handles_insertion_failures(subject, pyodbc_conn, logger):
-    error = Exception("Boom!")
+    error = MockedError("Boom!")
 
     with patch("crawler.processing.create_plate_exporter.add_dart_plate_if_doesnt_exist") as add_plate_method:
         add_plate_method.side_effect = error
@@ -387,7 +388,7 @@ def test_export_to_dart_handles_insertion_failures(subject, pyodbc_conn, logger)
 def test_export_to_dart_rolls_back_on_insert_exception(subject):
     with patch("crawler.processing.create_plate_exporter.create_dart_sql_server_conn") as connect:
         with patch("crawler.processing.create_plate_exporter.add_dart_plate_if_doesnt_exist") as add_plate_method:
-            add_plate_method.side_effect = Exception("Boom!")
+            add_plate_method.side_effect = MockedError("Boom!")
             subject.export_to_dart()
 
     cursor = connect.return_value.cursor.return_value

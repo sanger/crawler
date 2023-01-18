@@ -97,7 +97,7 @@ from crawler.db.mongo import get_mongo_collection
 from crawler.file_processing import ERRORS_DIR, SUCCESSES_DIR, Centre, CentreFile
 from crawler.helpers.general_helpers import get_sftp_connection
 from crawler.types import Config, ModifiedRow, SampleDoc
-from tests.conftest import generate_new_object_for_string
+from tests.conftest import MockedError, generate_new_object_for_string
 
 # ----- tests helpers -----
 
@@ -161,7 +161,7 @@ def test_process_files_dont_add_to_dart_flag_not_set(
 def test_process_files_dont_add_to_dart_mlwh_failed(
     mongo_database, config, testing_files_for_process, testing_centres, pyodbc_conn
 ):
-    with patch("crawler.db.mysql.run_mysql_executemany_query", side_effect=Exception("Boom!")):
+    with patch("crawler.db.mysql.run_mysql_executemany_query", side_effect=MockedError("Boom!")):
         _, mongo_database = mongo_database
 
         centre_config = config.CENTRES[0]
@@ -1734,7 +1734,7 @@ def test_insert_samples_from_docs_into_mlwh_returns_false_not_connected(config, 
 
 def test_insert_samples_from_docs_into_mlwh_returns_failure_executing(config, mlwh_connection):
     with patch("crawler.db.mysql.create_mysql_connection"):
-        with patch("crawler.db.mysql.run_mysql_executemany_query", side_effect=Exception("Boom!")):
+        with patch("crawler.db.mysql.run_mysql_executemany_query", side_effect=MockedError("Boom!")):
             centre = Centre(config, config.CENTRES[0])
             centre_file = CentreFile("some file", centre)
 
@@ -1775,7 +1775,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_failed_cursor(config):
     centre_file = CentreFile("some file", centre)
 
     with patch("crawler.file_processing.create_dart_sql_server_conn") as mock_conn:
-        mock_conn().cursor = MagicMock(side_effect=Exception("Boom!"))
+        mock_conn().cursor = MagicMock(side_effect=MockedError("Boom!"))
         centre_file.insert_plates_and_wells_from_docs_into_dart([])
 
         # logs error on failing to initialise the SQL server cursor
@@ -1801,7 +1801,7 @@ def test_insert_plates_and_wells_from_docs_into_dart_failure_adding_new_plate(co
     ]
 
     with patch("crawler.file_processing.create_dart_sql_server_conn") as mock_conn:
-        with patch("crawler.file_processing.add_dart_plate_if_doesnt_exist", side_effect=Exception("Boom!")):
+        with patch("crawler.file_processing.add_dart_plate_if_doesnt_exist", side_effect=MockedError("Boom!")):
             centre_file.insert_plates_and_wells_from_docs_into_dart(docs_to_insert)
 
             # logs error and rolls back on exception calling a stored procedure

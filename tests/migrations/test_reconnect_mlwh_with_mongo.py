@@ -7,7 +7,7 @@ from tests.testing_objects import TESTING_SAMPLES_WITH_LAB_ID
 
 def test_reconnect_mlwh_with_mongo_missing_file(config):
     filepath = "not_found"
-    with pytest.raises(Exception):
+    with pytest.raises(FileNotFoundError):
         reconnect_mlwh_with_mongo.run(config, filepath)
 
 

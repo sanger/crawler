@@ -35,6 +35,7 @@ from crawler.priority_samples_process import (
     print_summary,
     update_priority_samples,
 )
+from tests.conftest import MockedError
 
 
 class TestPrioritySamplesProcess:
@@ -248,7 +249,7 @@ class TestPrioritySamplesProcess:
     def test_mlwh_insert_fails_in_update_priority_samples(self, config, mongo_database):
         _, mongo_database = mongo_database
 
-        with patch("crawler.db.mysql.run_mysql_executemany_query", side_effect=Exception("Boom!")):
+        with patch("crawler.db.mysql.run_mysql_executemany_query", side_effect=MockedError("Boom!")):
             update_priority_samples(mongo_database, config, True)
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
@@ -317,7 +318,7 @@ class TestPrioritySamplesProcess:
     def test_adding_plate_and_wells_to_dart_fails_with_exception(self, mongo_database, config):
         _, mongo_database = mongo_database
 
-        with patch("crawler.priority_samples_process.add_dart_well_properties", side_effect=Exception("Boom!")):
+        with patch("crawler.priority_samples_process.add_dart_well_properties", side_effect=MockedError("Boom!")):
             update_priority_samples(mongo_database, config, True)
 
             assert logging_collection.get_count_of_all_errors_and_criticals() >= 1
