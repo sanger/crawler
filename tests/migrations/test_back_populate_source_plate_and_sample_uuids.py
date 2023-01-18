@@ -43,7 +43,7 @@ def check_sample_not_contains_source_plate_uuid(sample):
 
 def test_back_populate_source_plate_uuid_and_sample_uuid_missing_file(config):
     filepath = "not_found"
-    with pytest.raises(Exception):
+    with pytest.raises(FileNotFoundError):
         back_populate_source_plate_and_sample_uuids.run(config, filepath)
 
 

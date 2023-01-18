@@ -17,6 +17,7 @@ from migrations.helpers.update_legacy_filtered_positives_helper import (
     split_mongo_samples_by_version,
     update_mlwh_filtered_positive_fields_batched,
 )
+from tests.conftest import MockedError
 
 start_datetime = datetime.strptime("201209_0000", MONGO_DATETIME_FORMAT)
 end_datetime = datetime.strptime("201217_0000", MONGO_DATETIME_FORMAT)
@@ -130,9 +131,9 @@ def test_update_mlwh_filtered_positive_fields_batched_raises_with_error_updating
 
     with patch(
         "migrations.helpers.update_legacy_filtered_positives_helper.run_mysql_execute_formatted_query",
-        side_effect=Exception("Boom!"),
+        side_effect=MockedError("Boom!"),
     ):
-        with pytest.raises(Exception):
+        with pytest.raises(MockedError):
             update_mlwh_filtered_positive_fields_batched(
                 config, mongo_samples_with_filtered_positive_fields, version, update_timestamp
             )

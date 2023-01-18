@@ -101,7 +101,9 @@ def migrate_all_dbs(config: Config, s_start_datetime: str = "", s_end_datetime: 
             cp_samples_df = get_cherrypicked_samples(config, list(root_sample_ids), list(plate_barcodes))
 
             if cp_samples_df is None:  # we need to check if it is None explicitly
-                raise Exception("Unable to determine cherry-picked sample - potentially error connecting to MySQL")
+                raise ConnectionError(
+                    "Unable to determine cherry-picked sample - potentially error connecting to MySQL"
+                )
 
             # get the samples between those dates minus the cherry-picked ones
             if cp_samples_df is not None and not cp_samples_df.empty:

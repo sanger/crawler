@@ -140,7 +140,7 @@ def test_generate_baracoda_barcodes_will_retry_if_fail(config, count, prefix, mo
         status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(BaracodaError):
         generate_baracoda_barcodes(config, prefix, count)
 
     assert len(mocked_responses.calls) == config.BARACODA_RETRY_ATTEMPTS

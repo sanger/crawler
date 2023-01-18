@@ -28,6 +28,7 @@ from crawler.rabbit.messages.parsers.update_sample_message import (
     ErrorType,
     UpdateSampleMessage,
 )
+from tests.conftest import MockedError
 from tests.testing_objects import UPDATE_SAMPLE_MESSAGE
 
 
@@ -243,7 +244,7 @@ def test_verify_plate_state_raises_transient_error_when_dart_query_cannot_be_mad
     set_up_response_for_cherrytrack_plate(subject, config, HTTPStatus.NOT_FOUND)
 
     with patch("crawler.processing.update_sample_exporter.get_dart_plate_state") as get_plate_state:
-        get_plate_state.side_effect = Exception("Boom!")
+        get_plate_state.side_effect = MockedError("Boom!")
         with pytest.raises(TransientRabbitError) as ex_info:
             subject.verify_plate_state()
 
@@ -299,7 +300,7 @@ def test_update_mongo_logs_info(subject, logger):
 
 
 def test_update_mongo_when_connection_fails(subject, logger):
-    exception = Exception("Boom!")
+    exception = MockedError("Boom!")
 
     with patch("crawler.processing.update_sample_exporter.get_mongo_collection") as get_mongo_collection:
         get_mongo_collection.side_effect = exception
@@ -375,7 +376,7 @@ def test_update_dart_updates_well_properties_with_correct_values(
 
 def test_update_dart_logs_if_update_well_properties_for_dart_fails(subject, logger):
     add_sample_to_subject(subject)
-    add_exception = Exception("Boom!")
+    add_exception = MockedError("Boom!")
 
     with patch("crawler.processing.update_sample_exporter.add_dart_well_properties_if_positive") as add_method:
         add_method.side_effect = add_exception
