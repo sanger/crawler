@@ -41,6 +41,7 @@ from migrations.helpers.update_filtered_positives_helper import (
     update_mlwh_filtered_positive_fields,
     update_mongo_filtered_positive_fields,
 )
+from tests.conftest import MockedError
 
 # ----- test fixture helpers -----
 
@@ -67,8 +68,8 @@ def mock_mongo_collection():
 
 
 def test_pending_plate_barcodes_from_dart_throws_for_error_generating_connection(config, mock_dart_conn):
-    mock_dart_conn.side_effect = Exception("Boom!")
-    with pytest.raises(Exception):
+    mock_dart_conn.side_effect = MockedError("Boom!")
+    with pytest.raises(MockedError):
         pending_plate_barcodes_from_dart(config)
 
 
@@ -85,7 +86,7 @@ def test_pending_plate_barcodes_from_dart_throws_for_error_generating_cursor(con
 
 
 def test_pending_plate_barcodes_from_dart_handles_error_executing_statement(config, mock_dart_conn):
-    mock_dart_conn().cursor().execute.side_effect = Exception("Boom!")
+    mock_dart_conn().cursor().execute.side_effect = MockedError("Boom!")
     pending_plate_barcodes_from_dart(config)
 
 
@@ -102,8 +103,8 @@ def test_pending_plate_barcodes_from_dart_returns_expected_plate_barcodes(config
 
 
 def test_positive_result_samples_from_mongo_throws_for_errors_creating_client(config, mock_mongo_client):
-    mock_mongo_client.side_effect = Exception("Boom!")
-    with pytest.raises(Exception):
+    mock_mongo_client.side_effect = MockedError("Boom!")
+    with pytest.raises(MockedError):
         positive_result_samples_from_mongo(config, [])
 
 
@@ -121,8 +122,8 @@ def test_positive_result_samples_from_mongo_throws_for_error_getting_collection(
 
 
 def test_positive_result_samples_from_mongo_throws_for_error_finding_samples(config, mock_mongo_collection):
-    mock_mongo_collection().aggregate.side_effect = Exception("Boom!")
-    with pytest.raises(Exception):
+    mock_mongo_collection().aggregate.side_effect = MockedError("Boom!")
+    with pytest.raises(MockedError):
         positive_result_samples_from_mongo(config, [])
 
 
@@ -332,8 +333,8 @@ def test_biomek_labclass_by_centre_name(config):
 
 
 def test_update_dart_fields_throws_with_error_connecting_to_dart(config, mock_dart_conn):
-    mock_dart_conn.side_effect = NotImplementedError("Boom!")
-    with pytest.raises(Exception):
+    mock_dart_conn.side_effect = MockedError("Boom!")
+    with pytest.raises(MockedError):
         update_dart_fields(config, [])
 
 
@@ -344,7 +345,7 @@ def test_update_dart_fields_throws_no_dart_connection(config, mock_dart_conn):
 
 
 def test_update_dart_fields_returns_false_with_error_creating_cursor(config, mock_dart_conn):
-    mock_dart_conn().cursor.side_effect = NotImplementedError("Boom!")
+    mock_dart_conn().cursor.side_effect = MockedError("Boom!")
     result = update_dart_fields(config, [])
     assert result is False
 
@@ -352,7 +353,7 @@ def test_update_dart_fields_returns_false_with_error_creating_cursor(config, moc
 def test_update_dart_fields_returns_false_error_adding_plate(config, mock_dart_conn):
     with patch(
         "migrations.helpers.update_filtered_positives_helper.add_dart_plate_if_doesnt_exist",
-        side_effect=Exception("Boom!"),
+        side_effect=MockedError("Boom!"),
     ):
         samples = [{FIELD_PLATE_BARCODE: "123", FIELD_SOURCE: config.CENTRES[0][CENTRE_KEY_NAME]}]
         result = update_dart_fields(config, samples)
@@ -406,7 +407,7 @@ def test_update_dart_fields_returns_false_error_mapping_to_well_props(config, mo
         ):
             with patch(
                 "migrations.helpers.update_filtered_positives_helper.map_mongo_doc_to_dart_well_props",  # noqa: E501
-                side_effect=Exception("Boom!"),
+                side_effect=MockedError("Boom!"),
             ):
                 with patch(
                     "migrations.helpers.update_filtered_positives_helper.set_dart_well_properties"

@@ -37,7 +37,7 @@ def filter_out_cherrypicked_samples(config: Config, samples: List[SampleDoc]) ->
     cp_samples_df = get_cherrypicked_samples(config, list(root_sample_ids), list(plate_barcodes))
 
     if cp_samples_df is None:
-        raise Exception("Unable to determine cherry-picked samples - potentially error connecting to MySQL")
+        raise ConnectionError("Unable to determine cherry-picked samples - potentially error connecting to MySQL")
     elif not cp_samples_df.empty:
         cp_samples = cp_samples_df[[FIELD_ROOT_SAMPLE_ID, FIELD_PLATE_BARCODE]].to_numpy().tolist()
         return remove_cherrypicked_samples(samples, cp_samples)
