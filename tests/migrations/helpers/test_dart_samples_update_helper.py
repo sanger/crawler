@@ -345,7 +345,6 @@ def test_migrate_all_dbs_with_cherry_picked_samples_mocked(
         with patch(
             "migrations.helpers.dart_samples_update_helper.remove_cherrypicked_samples"
         ) as mock_remove_cherrypicked_samples:
-
             migrate_all_dbs(config, start_datetime.strftime("%y%m%d_%H%M"), end_datetime.strftime("%y%m%d_%H%M"))
 
             samples = get_samples(mongo_db.samples, start_datetime, end_datetime)

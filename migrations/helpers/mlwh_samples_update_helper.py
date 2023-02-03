@@ -57,7 +57,6 @@ def update_mlwh_with_legacy_samples(config: Config, s_start_datetime: str = "", 
             print(f"Updating MLWH database for {len(mysql_samples)} sample documents")
             # create connection to the MLWH database
             with create_mysql_connection(config, False) as mlwh_conn:
-
                 # execute sql query to insert/update timestamps into MLWH
                 run_mysql_executemany_query(mlwh_conn, SQL_MLWH_MULTIPLE_INSERT, mysql_samples)
         else:
