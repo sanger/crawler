@@ -442,8 +442,8 @@ def delete_sql_engine_tables(engine, tables):
 
 
 def get_table(sql_engine, table_name):
-    metadata = MetaData(sql_engine)
-    metadata.reflect()
+    metadata = MetaData()
+    metadata.reflect(sql_engine)
     return metadata.tables[table_name]
 
 
