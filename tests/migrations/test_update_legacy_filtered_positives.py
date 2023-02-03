@@ -103,7 +103,6 @@ def mock_valid_datetime_string():
 def test_update_legacy_filtered_positives_exception_raised_if_user_cancels_migration(
     mock_user_input, mock_helper_database_updates, filtered_positive_testing_samples
 ):
-
     mock_user_input.return_value = "no"
     mock_update_mongo, mock_update_mlwh = mock_helper_database_updates
 
