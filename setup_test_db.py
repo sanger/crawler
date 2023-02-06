@@ -1,4 +1,6 @@
 # flake8: noqa
+from sqlalchemy import text
+
 import crawler.config.test as config
 from crawler.db.mysql import create_mysql_connection_engine
 
@@ -11,6 +13,7 @@ sql_engine = create_mysql_connection_engine(config.WAREHOUSES_RW_CONN_STRING)
 create_db = """
 CREATE DATABASE IF NOT EXISTS `unified_warehouse_test` /*!40100 DEFAULT CHARACTER SET latin1 */;
 """
+
 drop_table_lh_sample = """
 DROP TABLE IF EXISTS `unified_warehouse_test`.`lighthouse_sample`;
 """
@@ -204,25 +207,25 @@ CREATE TABLE `unified_warehouse_test`.`study` (
 """
 
 with sql_engine.connect() as connection:
-    connection.execute(create_db)
+    connection.execute(text(create_db))
 
     print("*** Dropping table LIGHTHOUSE SAMPLE ***")
-    connection.execute(drop_table_lh_sample)
+    connection.execute(text(drop_table_lh_sample))
     print("*** Dropping table STOCK RESOURCE ***")
-    connection.execute(drop_table_stock_resource)
+    connection.execute(text(drop_table_stock_resource))
     print("*** Dropping table STUDY ***")
-    connection.execute(drop_table_study)
+    connection.execute(text(drop_table_study))
     print("*** Dropping table SAMPLE ***")
-    connection.execute(drop_table_sample)
+    connection.execute(text(drop_table_sample))
 
     print("*** Creating table SAMPLE ***")
-    connection.execute(create_table_sample)
+    connection.execute(text(create_table_sample))
     print("*** Creating table STUDY ***")
-    connection.execute(create_table_study)
+    connection.execute(text(create_table_study))
     print("*** Creating table STOCK RESOURCE ***")
-    connection.execute(create_table_stock_resource)
+    connection.execute(text(create_table_stock_resource))
     print("*** Creating table LIGHTHOUSE SAMPLE ***")
-    connection.execute(create_table_lh_sample)
+    connection.execute(text(create_table_lh_sample))
 
 print("Initialising the test MySQL events warehouse database")
 
@@ -370,36 +373,36 @@ CREATE VIEW `unified_warehouse_test`.`cherrypicked_samples` AS
 """
 
 with sql_engine.connect() as connection:
-    connection.execute(create_db)
+    connection.execute(text(create_db))
 
     print("*** Dropping view CHERRYPICKED SAMPLES ***")
-    connection.execute(drop_view_cherrypicked_samples)
+    connection.execute(text(drop_view_cherrypicked_samples))
     print("*** Dropping table ROLES ***")
-    connection.execute(drop_table_roles)
+    connection.execute(text(drop_table_roles))
     print("*** Dropping table ROLE TYPES ***")
-    connection.execute(drop_table_role_types)
+    connection.execute(text(drop_table_role_types))
     print("*** Dropping table EVENTS ***")
-    connection.execute(drop_table_events)
+    connection.execute(text(drop_table_events))
     print("*** Dropping table EVENT TYPES ***")
-    connection.execute(drop_table_event_types)
+    connection.execute(text(drop_table_event_types))
     print("*** Dropping table SUBJECT ***")
-    connection.execute(drop_table_subjects)
+    connection.execute(text(drop_table_subjects))
     print("*** Dropping table SUBJECT TYPES ***")
-    connection.execute(drop_table_subject_types)
+    connection.execute(text(drop_table_subject_types))
 
     print("*** Creating table SUBJECT TYPES ***")
-    connection.execute(create_table_subject_types)
+    connection.execute(text(create_table_subject_types))
     print("*** Creating table SUBJECTS ***")
-    connection.execute(create_table_subjects)
+    connection.execute(text(create_table_subjects))
     print("*** Creating table EVENT TYPES ***")
-    connection.execute(create_table_event_types)
+    connection.execute(text(create_table_event_types))
     print("*** Creating table EVENTS ***")
-    connection.execute(create_table_events)
+    connection.execute(text(create_table_events))
     print("*** Creating table ROLE TYPES ***")
-    connection.execute(create_table_role_types)
+    connection.execute(text(create_table_role_types))
     print("*** Creating table ROLES ***")
-    connection.execute(create_table_roles)
+    connection.execute(text(create_table_roles))
     print("*** Creating view CHERRYPICKED SAMPLES ***")
-    connection.execute(create_cherrypicked_samples_view)
+    connection.execute(text(create_cherrypicked_samples_view))
 
 print("Done")
