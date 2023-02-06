@@ -403,7 +403,6 @@ def test_checksum_not_match(config, tmpdir):
 
 def test_checksum_match(config, tmpdir):
     with patch.dict(config.CENTRES[0], {CENTRE_KEY_BACKUPS_FOLDER: tmpdir.realpath()}):
-
         tmpdir.mkdir(SUCCESSES_DIR)
 
         list_files = create_checksum_files_for(
@@ -836,7 +835,6 @@ def test_parse_and_format_file_rows_to_add_file_details(config, freezer):
     fake_file_name = "fake_200507_1340.csv"
     centre_file = centre_file_with_mocked_filtered_positive_identifier(config, fake_file_name)
     with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
-
         extra_fields_added = [
             {
                 "Root Sample ID": "1",
@@ -898,7 +896,6 @@ def test_parse_and_format_file_rows_detects_duplicates(config, freezer):
     fake_file_name = "fake_200507_1340.csv"
     centre_file = centre_file_with_mocked_filtered_positive_identifier(config, fake_file_name)
     with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
-
         extra_fields_added = [
             {
                 "Root Sample ID": "1",
@@ -1650,7 +1647,6 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_con
 def test_insert_samples_from_docs_into_mlwh_date_tested_none(
     config: Config, mlwh_connection: CMySQLConnection, centre_file: CentreFile
 ) -> None:
-
     docs: List[SampleDoc] = [
         {
             "_id": ObjectId("5f562d9931d9959b92544728"),

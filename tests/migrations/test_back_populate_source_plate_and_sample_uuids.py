@@ -140,7 +140,6 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid(
     query_lighthouse_sample,
     mlwh_samples_with_lab_id_for_migration,
 ):
-
     filepath = "./tests/data/populate_old_plates_1.csv"
     samples_before = list(samples_collection_accessor.find({FIELD_PLATE_BARCODE: "123"}))
 

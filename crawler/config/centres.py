@@ -295,7 +295,7 @@ def get_centres_config(config: Config, data_source: str = "") -> List[CentreConf
             def test_data_source(centre):
                 try:
                     return centre.get(CENTRE_KEY_DATA_SOURCE).lower() == data_source.lower()
-                except (AttributeError):
+                except AttributeError:
                     return False
 
             centres = list(filter(test_data_source, centres))
