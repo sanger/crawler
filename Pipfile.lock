@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "2e63c109f65e42d23e7b97dbc2cde99c8231ef818ea24a22f19f0c3e4976463e"
+            "sha256": "b42fae0e42aeedd4e9f09cea02fae1f00982e91e633fde65006cb6c1764f3d45"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -328,6 +328,33 @@
             "markers": "python_version >= '3.7' and python_version < '4.0'",
             "version": "==2.3.0"
         },
+        "fastavro": {
+            "hashes": [
+                "sha256:11159cf23f5ff4b752b028a77bd2a7941599932527e8a6512779e25b0503f037",
+                "sha256:182671595683054ec234beec03f485b5c889c21c08e429577ae7929480703409",
+                "sha256:2e3f5ae42e033dbb6e0efa788c4b8a4e5a59bc2b9cb83f717b6d85176727faed",
+                "sha256:31c924ed2fdad56182b543941cdec9cc384443cc3ca9462e0580afeb4dc64f4b",
+                "sha256:4b8bcae4ed6343af186e638061cdfbc5331cdb5e026d055099c91d4f07be838c",
+                "sha256:4d56cc05ceb1c9f4de19c1f330a4f140af3b944834d63cd0e11517deaea21ee1",
+                "sha256:4f7a744569b4b44ea1f4f87e7ea8298e1e2bf23779aa6ef255b95f9f38faad48",
+                "sha256:5cb2d8ea7b21493bb18ff7c68401edbc663bbd8a57016d6cf2c4b0a2dc4464e7",
+                "sha256:5ff701d6b228218a3d9c09b392205dd0899afa501a4f14724bef0ce13a719700",
+                "sha256:6f233a1d0d95265f81a25c274f55017bd39d9b8f7f1387a4235bf8e01841a9ff",
+                "sha256:74fe0fb24a489e2fd567775935eb55a461fc6c4da8b5e3467245752ac2098284",
+                "sha256:86ce89743711355eee7d3fec34847de1ab574f4567aa4a667e966711bb2e0cd9",
+                "sha256:8ad522c7f2c7791cfe54a7e87af8ac09634872f4fdeef28deec97fab8de38b24",
+                "sha256:8b671a97e864e4c024061c0d6f93f2768ba0595f917317ca4fe3e99dca6fcf3d",
+                "sha256:980ce7fdccf328d287e8b789f4e3b422f64c84ed9cd81c05dd7c560c3d8076b1",
+                "sha256:a107a8b333628c0f8a2ece5d5a57c69923719a139b106ace4050206250df4b13",
+                "sha256:a5f104bc5b4986bbbcab170918c4d8ffa4f8efa3ebe8ec190954178630074d5a",
+                "sha256:b793252a6325341890bbbbdca2804d4db3d5d29ff7f15a58fcf84dda440808fa",
+                "sha256:e15e8163581983f07a3156902761cf746bbe1e646abd9553cc9a1cede6e23ae9",
+                "sha256:e9be910ca1645e0e5c4192d667cfdfa58dff4f8690db5af1ae33602643d41a78",
+                "sha256:f8f7f11af8c2c074341217d6247b7ba09cadcd55f899e046c14e3a44afa5fc95"
+            ],
+            "markers": "python_version >= '3.7'",
+            "version": "==1.7.1"
+        },
         "flask": {
             "hashes": [
                 "sha256:642c450d19c4ad482f96729bd2a8f6d32554aa1e231f4f6b4e7e5264b16cca2b",
@@ -532,7 +559,7 @@
         "lab-share-lib": {
             "editable": false,
             "git": "https://github.com/sanger/lab-share-lib.git",
-            "ref": "2f4717974e85a3f0542134723f6a43a8ee9cd8f6"
+            "ref": "3f11d4b41695faeefbdd4f0045a6a85451b2b6dd"
         },
         "markupsafe": {
             "hashes": [
