@@ -62,17 +62,17 @@
                   {
                     "name": "preferentiallySequence",
                     "doc": "Sample should be sequenced sooner than others.",
-                    "type": { "name": "preferentiallySequenceValue", "type": ["null", "boolean"] }
+                    "type": { "name": "preferentiallySequenceValue", "type": "boolean" }
                   },
                   {
                     "name": "mustSequence",
                     "doc": "Must be sequenced.",
-                    "type": { "name": "mustSequenceValue", "type": ["null", "boolean"] }
+                    "type": { "name": "mustSequenceValue", "type": "boolean" }
                   },
                   {
                     "name": "fitToPick",
                     "doc": "Does sample need to be picked.",
-                    "type": { "name": "fitToPickValue", "type": "type": ["null", "boolean"] }
+                    "type": { "name": "fitToPickValue", "type": "boolean" }
                   },
                   {
                     "name": "result",
