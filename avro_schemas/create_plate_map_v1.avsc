@@ -40,7 +40,7 @@
                 "fields": [
                   {
                     "name": "sampleUuid",
-                    "doc": "Unique sample ID, assigned by PAM.",
+                    "doc": "Unique sample ID, assigned by GSU.",
                     "type": {"name": "version4SampleUuid", "type": "fixed", "size": 36}
                   },
                   {
