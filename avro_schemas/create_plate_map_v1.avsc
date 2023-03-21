@@ -60,19 +60,16 @@
                     "doc": "Location of the sample on the plate."
                   },
                   {
-                    "name": "preferentiallySequence",
-                    "doc": "Sample should be sequenced sooner than others.",
-                    "type": { "name": "preferentiallySequenceValue", "type": "boolean" }
+                    "name": "preferentiallySequence", "type": "boolean",
+                    "doc": "Sample should be sequenced sooner than others."
                   },
                   {
-                    "name": "mustSequence",
-                    "doc": "Must be sequenced.",
-                    "type": { "name": "mustSequenceValue", "type": "boolean" }
+                    "name": "mustSequence", "type": "boolean",
+                    "doc": "Must be sequenced."
                   },
                   {
-                    "name": "fitToPick",
-                    "doc": "Does sample need to be picked.",
-                    "type": { "name": "fitToPickValue", "type": "boolean" }
+                    "name": "fitToPick", "type": "boolean",
+                    "doc": "Does sample need to be picked."
                   },
                   {
                     "name": "result",
