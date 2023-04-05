@@ -3,7 +3,7 @@ from typing import Dict, Iterator, List, Optional, Set, Tuple
 
 import pandas as pd
 import sqlalchemy
-from pandas import DataFrame
+from pandas import DataFrame, concat
 
 from crawler.constants import FIELD_PLATE_BARCODE, FIELD_ROOT_SAMPLE_ID
 from crawler.sql_queries import SQL_MLWH_GET_CP_SAMPLES, SQL_MLWH_GET_CP_SAMPLES_BY_DATE
@@ -180,7 +180,7 @@ def build_data_frame_from_database_queries_aggregation(
             # and then it would retrieve the same rows for that root sample id twice
             # do reset_index after dropping duplicates to make sure the rows are numbered in a way that makes sense
 
-            concat_frame = concat_frame.append(data_frame).drop_duplicates().reset_index(drop=True)
+            concat_frame = concat((concat_frame, data_frame)).drop_duplicates().reset_index(drop=True)
 
         return concat_frame
     except Exception as e:
