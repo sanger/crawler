@@ -3,7 +3,7 @@ import logging.config
 from datetime import datetime
 from typing import Any, List, cast
 
-from mysql.connector.cursor_cext import CMySQLCursor
+from mysql.connector.cursor_cext import MySQLCursorAbstract
 from pymongo.collection import Collection
 
 from crawler.constants import COLLECTION_SAMPLES, FIELD_COORDINATE, FIELD_MONGODB_ID, FIELD_PLATE_BARCODE, FIELD_RNA_ID
@@ -101,7 +101,7 @@ def mlwh_get_samples_by_rna_id(config: Config, rna_id: str) -> Any:
     """
     with create_mysql_connection(config, False) as mysql_conn:
         if mysql_conn is not None and mysql_conn.is_connected():
-            cursor: CMySQLCursor = mysql_conn.cursor()
+            cursor: MySQLCursorAbstract = mysql_conn.cursor()
             query_str = SQL_MLWH_GET_BY_RNA_ID % {"rna_id": str(rna_id)}
             cursor.execute(query_str)
             rows = cursor.fetchall()
@@ -116,7 +116,7 @@ def mlwh_get_samples_by_rna_id(config: Config, rna_id: str) -> Any:
 def mlwh_update_sample_mongo_db_id(config: Config, id: int, mongodb_id: str) -> None:
     with create_mysql_connection(config, False) as mysql_conn:
         if mysql_conn is not None and mysql_conn.is_connected():
-            cursor: CMySQLCursor = mysql_conn.cursor()
+            cursor: MySQLCursorAbstract = mysql_conn.cursor()
             query_str = SQL_MLWH_UPDATE_MONGODB_ID_BY_ID % {"id": id, "mongodb_id": mongodb_id}
             cursor.execute(query_str)
             mysql_conn.commit()
