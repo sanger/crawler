@@ -37,10 +37,10 @@ def test_create_mysql_connection_exception(config):
 def test_run_mysql_executemany_query_success(config):
     conn = CMySQLConnection()
 
-    conn.cursor = MagicMock()
-    conn.commit = MagicMock()
-    conn.rollback = MagicMock()
-    conn.close = MagicMock()
+    conn.cursor = MagicMock()  # type: ignore
+    conn.commit = MagicMock()  # type: ignore
+    conn.rollback = MagicMock()  # type: ignore
+    conn.close = MagicMock()  # type: ignore
 
     cursor = conn.cursor.return_value
     cursor.executemany = MagicMock()
@@ -59,10 +59,10 @@ def test_run_mysql_executemany_query_success(config):
 def test_run_mysql_executemany_query_execute_error(config):
     conn = CMySQLConnection()
 
-    conn.cursor = MagicMock()
-    conn.commit = MagicMock()
-    conn.rollback = MagicMock()
-    conn.close = MagicMock()
+    conn.cursor = MagicMock()  # type: ignore
+    conn.commit = MagicMock()  # type: ignore
+    conn.rollback = MagicMock()  # type: ignore
+    conn.close = MagicMock()  # type: ignore
 
     cursor = conn.cursor.return_value
     cursor.executemany = MagicMock(side_effect=MockedError("Boom!"))
@@ -84,10 +84,10 @@ def test_run_mysql_executemany_query_execute_error(config):
 def test_run_mysql_execute_formatted_query_success(config):
     conn = CMySQLConnection()
 
-    conn.cursor = MagicMock()
-    conn.commit = MagicMock()
-    conn.rollback = MagicMock()
-    conn.close = MagicMock()
+    conn.cursor = MagicMock()  # type: ignore
+    conn.commit = MagicMock()  # type: ignore
+    conn.rollback = MagicMock()  # type: ignore
+    conn.close = MagicMock()  # type: ignore
 
     cursor = conn.cursor.return_value
     cursor.execute = MagicMock()
@@ -110,10 +110,10 @@ def test_run_mysql_execute_formatted_query_success(config):
 def test_run_mysql_execute_formatted_query_execute_error(config):
     conn = CMySQLConnection()
 
-    conn.cursor = MagicMock()
-    conn.commit = MagicMock()
-    conn.rollback = MagicMock()
-    conn.close = MagicMock()
+    conn.cursor = MagicMock()  # type: ignore
+    conn.commit = MagicMock()  # type: ignore
+    conn.rollback = MagicMock()  # type: ignore
+    conn.close = MagicMock()  # type: ignore
 
     cursor = conn.cursor.return_value
     cursor.execute = MagicMock(side_effect=MockedError("Boom!"))
