@@ -374,7 +374,12 @@ def mlwh_count_samples_from_mongo_ids(config: Config, mongo_ids: List[str]) -> i
         cursor: MySQLCursorAbstract = mysql_conn.cursor()
         query_str = SQL_MLWH_COUNT_MONGO_IDS % {"mongo_ids": str(mongo_ids).strip("[]")}
         cursor.execute(query_str)
-        return cast(int, cursor.fetchone()[0])
+        result = cursor.fetchone()
+
+        if result is None:
+            raise Exception("Query result was not valid")
+
+        return cast(int, result[0])
     else:
         raise Exception("Cannot connect mysql")
 
