@@ -23,6 +23,23 @@ from tests.conftest import MockedError
 from tests.testing_objects import MLWH_SAMPLE_COMPLETE
 
 
+class TestMySQLConnection(MySQLConnectionAbstract):
+    _do_handshake = MagicMock()
+    _execute_query = MagicMock()
+    _open_connection = MagicMock()
+    close = MagicMock()
+    commit = MagicMock()
+    cursor = MagicMock()
+    database = MagicMock()
+    disconnect = MagicMock()
+    get_rows = MagicMock()
+    in_transaction = MagicMock()
+    info_query = MagicMock()
+    is_connected = MagicMock()
+    ping = MagicMock()
+    rollback = MagicMock()
+
+
 def test_create_mysql_connection_none(config):
     with patch("mysql.connector.connect", return_value=None):
         assert create_mysql_connection(config) is None
@@ -35,12 +52,7 @@ def test_create_mysql_connection_exception(config):
 
 
 def test_run_mysql_executemany_query_success(config):
-    conn = MySQLConnectionAbstract()
-
-    conn.cursor = MagicMock()
-    conn.commit = MagicMock()
-    conn.rollback = MagicMock()
-    conn.close = MagicMock()
+    conn = TestMySQLConnection()
 
     cursor = conn.cursor.return_value
     cursor.executemany = MagicMock()
@@ -57,12 +69,7 @@ def test_run_mysql_executemany_query_success(config):
 
 
 def test_run_mysql_executemany_query_execute_error(config):
-    conn = MySQLConnectionAbstract()
-
-    conn.cursor = MagicMock()
-    conn.commit = MagicMock()
-    conn.rollback = MagicMock()
-    conn.close = MagicMock()
+    conn = TestMySQLConnection()
 
     cursor = conn.cursor.return_value
     cursor.executemany = MagicMock(side_effect=MockedError("Boom!"))
@@ -80,12 +87,7 @@ def test_run_mysql_executemany_query_execute_error(config):
 
 
 def test_run_mysql_execute_formatted_query_success(config):
-    conn = MySQLConnectionAbstract()
-
-    conn.cursor = MagicMock()
-    conn.commit = MagicMock()
-    conn.rollback = MagicMock()
-    conn.close = MagicMock()
+    conn = TestMySQLConnection()
 
     cursor = conn.cursor.return_value
     cursor.execute = MagicMock()
@@ -106,12 +108,7 @@ def test_run_mysql_execute_formatted_query_success(config):
 
 
 def test_run_mysql_execute_formatted_query_execute_error(config):
-    conn = MySQLConnectionAbstract()
-
-    conn.cursor = MagicMock()
-    conn.commit = MagicMock()
-    conn.rollback = MagicMock()
-    conn.close = MagicMock()
+    conn = TestMySQLConnection()
 
     cursor = conn.cursor.return_value
     cursor.execute = MagicMock(side_effect=MockedError("Boom!"))
