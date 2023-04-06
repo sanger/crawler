@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
-from mysql.connector.connection_cext import CMySQLConnection
+from mysql.connector.connection_cext import MySQLConnectionAbstract
 
 from crawler.constants import (
     CENTRE_KEY_BACKUPS_FOLDER,
@@ -1481,7 +1481,7 @@ def test_file_name_date_parses_right(config):
 
 
 def test_insert_samples_from_docs_into_mlwh(
-    config: Config, mlwh_connection: CMySQLConnection, centre_file: CentreFile
+    config: Config, mlwh_connection: MySQLConnectionAbstract, centre_file: CentreFile
 ) -> None:
     """Tests for inserting docs into mlwh using rows with and without ct columns"""
     date_tested_1 = datetime(2020, 4, 23, 14, 40, 0)
@@ -1645,7 +1645,7 @@ def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_con
 
 
 def test_insert_samples_from_docs_into_mlwh_date_tested_none(
-    config: Config, mlwh_connection: CMySQLConnection, centre_file: CentreFile
+    config: Config, mlwh_connection: MySQLConnectionAbstract, centre_file: CentreFile
 ) -> None:
     docs: List[SampleDoc] = [
         {

@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, cast
 from uuid import uuid4
 
-from mysql.connector.cursor_cext import CMySQLCursor
+from mysql.connector.cursor_cext import MySQLCursorAbstract
 from pymongo.collection import Collection
 
 from crawler.constants import (
@@ -371,10 +371,15 @@ def mlwh_count_samples_from_mongo_ids(config: Config, mongo_ids: List[str]) -> i
     mysql_conn = create_mysql_connection(config, False)
 
     if mysql_conn is not None and mysql_conn.is_connected():
-        cursor: CMySQLCursor = mysql_conn.cursor()
+        cursor: MySQLCursorAbstract = mysql_conn.cursor()
         query_str = SQL_MLWH_COUNT_MONGO_IDS % {"mongo_ids": str(mongo_ids).strip("[]")}
         cursor.execute(query_str)
-        return cast(int, cursor.fetchone()[0])
+        result = cursor.fetchone()
+
+        if result is None:
+            raise Exception("Query result was not valid")
+
+        return cast(int, result[0])
     else:
         raise Exception("Cannot connect mysql")
 
