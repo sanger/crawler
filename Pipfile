@@ -33,7 +33,7 @@ python-dotenv = "~=1.0"
 requests = "~=2.28"
 slackclient = "~=2.9"
 sqlalchemy = "~=2.0"
-lab-share-lib = { git = 'https://github.com/sanger/lab-share-lib.git', ref = 'v0.1.4', editable = false }
+lab-share-lib = { git = 'https://github.com/sanger/lab-share-lib.git', ref = 'v0.1.6', editable = false }
 
 [requires]
 python_version = "3.8"
