@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy import text
 
 from crawler.constants import FIELD_MONGODB_ID, FIELD_PLATE_BARCODE, FIELD_RNA_ID, MLWH_MONGODB_ID, MLWH_RNA_ID
 from migrations import reconnect_mlwh_with_mongo
@@ -35,15 +36,15 @@ def test_reconnect_mlwh_with_mongo_can_connect_with_mlwh(
     reconnect_mlwh_with_mongo.run(config, filepath)
 
     # Now we check in mlwh
-    cursor = query_lighthouse_sample.execute(
-        "SELECT rna_id, mongodb_id FROM lighthouse_sample WHERE plate_barcode = '123'"
+    cursor_result = query_lighthouse_sample.execute(
+        text("SELECT rna_id, mongodb_id FROM lighthouse_sample WHERE plate_barcode = '123'")
     )
+    results = list(cursor_result.mappings())
 
-    obtained_mlwh_samples = list(cursor.fetchall())
-    assert obtained_mlwh_samples[0]["mongodb_id"] == str(samples_in_mongo[0][FIELD_MONGODB_ID])
+    assert results[0]["mongodb_id"] == str(samples_in_mongo[0][FIELD_MONGODB_ID])
 
     mlwh_dict = {}
-    for mlsample in obtained_mlwh_samples:
+    for mlsample in results:
         mlwh_dict[mlsample[MLWH_RNA_ID]] = mlsample[MLWH_MONGODB_ID]
 
     mongo_dict = {}

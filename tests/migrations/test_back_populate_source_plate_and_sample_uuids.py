@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 import pytest
 from pymongo import ASCENDING
+from sqlalchemy import text
 
 from crawler.constants import (
     FIELD_LH_SAMPLE_UUID,
@@ -83,23 +84,23 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_populates_sample_uuid(
         viewed_uuids.append(sample[FIELD_LH_SAMPLE_UUID])
 
     # Now we check in mlwh
-    cursor = query_lighthouse_sample.execute(
-        "SELECT COUNT(*) FROM lighthouse_sample WHERE plate_barcode = '123' AND lh_sample_uuid IS NOT NULL"
+    cursor_result = query_lighthouse_sample.execute(
+        text("SELECT COUNT(*) FROM lighthouse_sample WHERE plate_barcode = '123' AND lh_sample_uuid IS NOT NULL")
     )
 
-    sample_count = cursor.fetchone()[0]
+    sample_count = cursor_result.first()[0]
     assert sample_count == len(samples_after)
 
-    cursor = query_lighthouse_sample.execute(
-        "SELECT * FROM lighthouse_sample WHERE plate_barcode = '123' AND lh_sample_uuid IS NOT NULL"
+    cursor_result = query_lighthouse_sample.execute(
+        text("SELECT * FROM lighthouse_sample WHERE plate_barcode = '123' AND lh_sample_uuid IS NOT NULL")
     )
 
-    obtained_mlwh_samples = list(cursor.fetchall())
+    results = list(cursor_result.mappings())
     mongo_dict = {}
     for sample in samples_after:
         mongo_dict[str(sample[FIELD_MONGODB_ID])] = sample[FIELD_LH_SAMPLE_UUID]
     mlwh_dict = {}
-    for mlsample in obtained_mlwh_samples:
+    for mlsample in results:
         mlwh_dict[mlsample[MLWH_MONGODB_ID]] = mlsample[FIELD_LH_SAMPLE_UUID]
 
     for mongo_id in mongo_dict.keys():
@@ -140,7 +141,6 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid(
     query_lighthouse_sample,
     mlwh_samples_with_lab_id_for_migration,
 ):
-
     filepath = "./tests/data/populate_old_plates_1.csv"
     samples_before = list(samples_collection_accessor.find({FIELD_PLATE_BARCODE: "123"}))
 
@@ -158,23 +158,23 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_has_source_plate_uuid(
         assert sample[FIELD_LH_SOURCE_PLATE_UUID] == source_plate_uuid
 
     # Now we check in mlwh
-    cursor = query_lighthouse_sample.execute(
-        "SELECT COUNT(*) FROM lighthouse_sample WHERE lh_source_plate_uuid IS NOT NULL"
+    cursor_result = query_lighthouse_sample.execute(
+        text("SELECT COUNT(*) FROM lighthouse_sample WHERE lh_source_plate_uuid IS NOT NULL")
     )
 
-    sample_count = cursor.fetchone()[0]
+    sample_count = cursor_result.first()[0]
     assert sample_count == len(samples_after)
 
-    cursor = query_lighthouse_sample.execute(
-        "SELECT * FROM lighthouse_sample WHERE lh_source_plate_uuid IS NOT NULL ORDER BY mongodb_id ASC"
+    cursor_result = query_lighthouse_sample.execute(
+        text("SELECT * FROM lighthouse_sample WHERE lh_source_plate_uuid IS NOT NULL ORDER BY mongodb_id ASC")
     )
 
-    obtained_mlwh_samples = list(cursor.fetchall())
+    results = list(cursor_result.mappings())
     mongo_dict = {}
     for sample in samples_after:
         mongo_dict[str(sample[FIELD_MONGODB_ID])] = sample[FIELD_LH_SOURCE_PLATE_UUID]
     mlwh_dict = {}
-    for mlsample in obtained_mlwh_samples:
+    for mlsample in results:
         mlwh_dict[mlsample[MLWH_MONGODB_ID]] = mlsample[FIELD_LH_SOURCE_PLATE_UUID]
 
     for mongo_id in mongo_dict.keys():

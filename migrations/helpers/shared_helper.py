@@ -119,7 +119,7 @@ def mysql_generator(config: Config, query: str) -> Iterator[Dict[str, Any]]:
     with create_mysql_connection(config=config, readonly=True) as connection:
         with connection.cursor(dictionary=True, buffered=False) as cursor:
             cursor.execute(query)
-            for row in cursor:
+            for row in cursor.fetchall():
                 yield row
 
 

@@ -5,8 +5,8 @@ from typing import Any, Dict, Generator, Iterable, List, cast
 
 import mysql.connector as mysql
 import sqlalchemy
-from mysql.connector.connection_cext import CMySQLConnection
-from mysql.connector.cursor_cext import CMySQLCursor
+from mysql.connector.connection_cext import MySQLConnectionAbstract
+from mysql.connector.cursor_cext import MySQLCursorAbstract
 from sqlalchemy.engine.base import Engine
 
 from crawler.constants import MLWH_RNA_ID
@@ -18,15 +18,15 @@ from crawler.types import Config, ModifiedRow
 logger = logging.getLogger(__name__)
 
 
-def create_mysql_connection(config: Config, readonly: bool = True) -> CMySQLConnection:
-    """Create a CMySQLConnection with the given config parameters.
+def create_mysql_connection(config: Config, readonly: bool = True) -> MySQLConnectionAbstract:
+    """Create a MySQLConnectionAbstract with the given config parameters.
 
     Arguments:
         config (Config): application config specifying database details
         readonly (bool, optional): use the readonly credentials. Defaults to True.
 
     Returns:
-        CMySQLConnection: a client used to interact with the database server
+        MySQLConnectionAbstract: a client used to interact with the database server
     """
     mlwh_db_host = config.MLWH_DB_HOST
     mlwh_db_port = config.MLWH_DB_PORT
@@ -61,20 +61,22 @@ def create_mysql_connection(config: Config, readonly: bool = True) -> CMySQLConn
     except mysql.Error as e:
         logger.error(f"Exception on connecting to MySQL database: {e}")
 
-    return cast(CMySQLConnection, mysql_conn)
+    return cast(MySQLConnectionAbstract, mysql_conn)
 
 
-def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, values: List[Dict[str, str]]) -> None:
+def run_mysql_executemany_query(
+    mysql_conn: MySQLConnectionAbstract, sql_query: str, values: List[Dict[str, str]]
+) -> None:
     """Writes the sample testing information into the MLWH.
 
     Arguments:
-        mysql_conn {CMySQLConnection} -- a client used to interact with the database server
+        mysql_conn {MySQLConnectionAbstract} -- a client used to interact with the database server
         sql_query {str} -- the SQL query to run (see sql_queries.py)
         values {List[Dict[str, str]]} -- array of value hashes representing documents inserted into
         the Mongo DB
     """
     # fetch the cursor from the DB connection
-    cursor: CMySQLCursor = mysql_conn.cursor()
+    cursor: MySQLCursorAbstract = mysql_conn.cursor()
 
     try:
         # executing the query with values
@@ -128,12 +130,12 @@ def run_mysql_executemany_query(mysql_conn: CMySQLConnection, sql_query: str, va
 
 
 def run_mysql_execute_formatted_query(
-    mysql_conn: CMySQLConnection, formatted_sql_query: str, formatting_args: List[str], query_args: List[Any]
+    mysql_conn: MySQLConnectionAbstract, formatted_sql_query: str, formatting_args: List[str], query_args: List[Any]
 ) -> None:
     """Executes formatted sql query, unwrapping and batching based on number of input arguments
 
     Arguments:
-        mysql_conn {CMySQLConnection} -- a client used to interact with the database server
+        mysql_conn {MySQLConnectionAbstract} -- a client used to interact with the database server
         formatted_sql_query {str} -- the formatted SQL query to run (unwrapped using % workflow)
         formatting_args {List[str]} -- arguments to batch and unwrap the formatted sql query
         query_args {List[Any]} -- additional sql query arguments
@@ -225,7 +227,7 @@ def partition(iterable: Iterable, partition_size: int) -> Generator[List[Any], N
         yield part
 
 
-def reset_is_current_flags(cursor: CMySQLCursor, rna_ids: List[str], chunk_size: int = 1000) -> None:
+def reset_is_current_flags(cursor: MySQLCursorAbstract, rna_ids: List[str], chunk_size: int = 1000) -> None:
     """Receives a cursor with an active connection and a list of rna_ids and
     runs an update resetting any is_current flags to false for all the specified
     rna ids in groups of chunk_size.
