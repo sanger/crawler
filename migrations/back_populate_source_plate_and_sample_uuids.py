@@ -188,7 +188,7 @@ def check_samples_are_valid(
     count_mongo_rows = len(list_mongo_ids)
     if count_mongo_rows != count_mlwh_rows:
         raise ExceptionSampleCountsForMongoAndMLWHNotMatching(
-            f"The number of samples for the list of barcodes in Mongo does not match"
+            f"The number of samples for the list of barcodes in Mongo does not match "
             f"the number in the MLWH: {count_mongo_rows}!={count_mlwh_rows}"
         )
 
