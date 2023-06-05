@@ -108,7 +108,7 @@ def run(config: Config, s_filepath: str) -> None:
 
 
 def check_samples_are_valid(
-    config: Config,
+    mysql_conn: MySQLConnectionAbstract,
     samples_collection: Collection,
     source_plates_collection: Collection,
     source_plate_barcodes: List[str],
@@ -182,7 +182,7 @@ def check_samples_are_valid(
     list_mongo_ids = [str(x[FIELD_MONGODB_ID]) for x in query_mongo]
 
     # select count of rows from MLWH for list_mongo_ids
-    count_mlwh_rows = mlwh_count_samples_from_mongo_ids(config, list_mongo_ids)
+    count_mlwh_rows = mlwh_count_samples_from_mongo_ids(mysql_conn, list_mongo_ids)
 
     # check numbers of rows matches
     count_mongo_rows = len(list_mongo_ids)
@@ -215,7 +215,7 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
             samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
             source_plates_collection = get_mongo_collection(mongo_db, COLLECTION_SOURCE_PLATES)
 
-            check_samples_are_valid(config, samples_collection, source_plates_collection, source_plate_barcodes)
+            check_samples_are_valid(mysql_conn, samples_collection, source_plates_collection, source_plate_barcodes)
 
             for source_plate_barcode in source_plate_barcodes:
                 LOGGER.info(f"Processing source plate barcode {source_plate_barcode}")
@@ -331,6 +331,7 @@ def update_mlwh_sample_uuid_and_source_plate_uuid(
     """Updates a sample in the sample in the MLWH database
 
     Arguments:
+        mysql_conn {MySQLConnectionAbstract} -- a connection to the MLWH MySQL database
         config {Config} -- application config specifying database details
         sample_doc {SampleDoc} -- the sample document whose fields should be updated
 
@@ -364,23 +365,22 @@ def log_mlwh_sample_fields(description, mlwh_sample):
     DATA_LOGGER.info(mlwh_sample)
 
 
-def mlwh_count_samples_from_mongo_ids(config: Config, mongo_ids: List[str]) -> int:
+def mlwh_count_samples_from_mongo_ids(mysql_conn: MySQLConnectionAbstract, mongo_ids: List[str]) -> int:
     """Count samples from mongo_ids
 
     Arguments:
-        config {Config} -- application config specifying database details
+        mysql_conn {MySQLConnectionAbstract} -- a connection to the MLWH MySQL database
         mongo_ids {List[str]} -- the list of mongo_ids to find
 
     Returns:
         int -- number of samples
     """
-    mysql_conn = create_mysql_connection(config, False)
-
     if mysql_conn is not None and mysql_conn.is_connected():
-        cursor: MySQLCursorAbstract = mysql_conn.cursor()
         query_str = SQL_MLWH_COUNT_MONGO_IDS % {"mongo_ids": str(mongo_ids).strip("[]")}
-        cursor.execute(query_str)
-        result = cursor.fetchone()
+
+        with closing(mysql_conn.cursor()) as cursor:
+            cursor.execute(query_str)
+            result = cursor.fetchone()
 
         if result is None:
             raise Exception("Query result was not valid")
