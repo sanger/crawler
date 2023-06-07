@@ -7,7 +7,6 @@ from typing import Dict, List, Optional, cast
 from uuid import uuid4
 
 from mysql.connector.connection_cext import MySQLConnectionAbstract
-from mysql.connector.cursor_cext import MySQLCursorAbstract
 from pymongo.collection import Collection
 
 from crawler.constants import (
@@ -37,7 +36,7 @@ from migrations.helpers.shared_helper import (
     extract_barcodes,
     extract_mongodb_ids,
     get_mongo_samples_for_source_plate,
-    mysql_generator,
+    mysql_generator_from_connection,
     validate_args,
 )
 
@@ -268,7 +267,7 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
                     # lh_sample_uuid, and updated_timestamp
                     sample_doc[FIELD_MONGODB_ID] = str(sample_doc[FIELD_MONGODB_ID])
                     try:
-                        success = update_mlwh_sample_uuid_and_source_plate_uuid(mysql_conn, config, sample_doc)
+                        success = update_mlwh_sample_uuid_and_source_plate_uuid(mysql_conn, sample_doc)
                         if success:
                             counter_mlwh_update_successes += 1
                         else:
@@ -280,10 +279,10 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
                         )
                         LOGGER.exception(e)
 
-        LOGGER.info(f"Count of successful Mongo updates = {counter_mongo_update_successes}")
-        LOGGER.info(f"Count of failed Mongo updates = {counter_mongo_update_failures}")
-        LOGGER.info(f"Count of successful MLWH updates = {counter_mlwh_update_successes}")
-        LOGGER.info(f"Count of failed MLWH updates = {counter_mlwh_update_failures}")
+    LOGGER.info(f"Count of successful Mongo updates = {counter_mongo_update_successes}")
+    LOGGER.info(f"Count of failed Mongo updates = {counter_mongo_update_failures}")
+    LOGGER.info(f"Count of successful MLWH updates = {counter_mlwh_update_successes}")
+    LOGGER.info(f"Count of failed MLWH updates = {counter_mlwh_update_failures}")
 
 
 def log_mongo_sample_fields(description, mongo_sample):
@@ -325,14 +324,11 @@ def update_mongo_sample_uuid_and_source_plate_uuid(samples_collection: Collectio
     return False
 
 
-def update_mlwh_sample_uuid_and_source_plate_uuid(
-    mysql_conn: MySQLConnectionAbstract, config: Config, sample_doc: SampleDoc
-) -> bool:
+def update_mlwh_sample_uuid_and_source_plate_uuid(mysql_conn: MySQLConnectionAbstract, sample_doc: SampleDoc) -> bool:
     """Updates a sample in the sample in the MLWH database
 
     Arguments:
         mysql_conn {MySQLConnectionAbstract} -- a connection to the MLWH MySQL database
-        config {Config} -- application config specifying database details
         sample_doc {SampleDoc} -- the sample document whose fields should be updated
 
     Returns:
@@ -344,7 +340,7 @@ def update_mlwh_sample_uuid_and_source_plate_uuid(
 
         # Log the current fields on the MLWH sample
         query = SQL_MLWH_GET_SAMPLE_FOR_MONGO_ID % {MLWH_MONGODB_ID: sample_mlwh[MLWH_MONGODB_ID]}
-        existing_sample = next(mysql_generator(config=config, query=query))
+        existing_sample = next(mysql_generator_from_connection(mysql_conn, query))
         log_mlwh_sample_fields("Before update", existing_sample)
 
         run_mysql_executemany_query(
@@ -352,7 +348,7 @@ def update_mlwh_sample_uuid_and_source_plate_uuid(
         )
 
         # Log the new fields on the MLWH sample
-        post_update_sample = next(mysql_generator(config=config, query=query))
+        post_update_sample = next(mysql_generator_from_connection(mysql_conn, query))
         log_mlwh_sample_fields("After update", post_update_sample)
 
         return True
