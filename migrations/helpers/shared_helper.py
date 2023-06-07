@@ -125,7 +125,8 @@ def mysql_generator_from_connection(connection: MySQLConnectionAbstract, query: 
 
 def mysql_generator_from_config(config: Config, query: str) -> Iterator[Dict[str, Any]]:
     with create_mysql_connection(config=config, readonly=True) as connection:
-        return mysql_generator_from_connection(connection, query)
+        for row in mysql_generator_from_connection(connection, query):
+            yield row
 
 
 def get_mongo_samples_for_source_plate(samples_collection: Collection, source_plate_barcode: str) -> List[SampleDoc]:
