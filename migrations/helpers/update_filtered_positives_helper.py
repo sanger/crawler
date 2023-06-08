@@ -1,4 +1,5 @@
 import logging
+from contextlib import closing
 from datetime import datetime
 from typing import Dict, List, Optional
 
@@ -189,14 +190,13 @@ def update_mlwh_filtered_positive_fields(config: Config, samples: List[SampleDoc
     Returns:
         bool -- whether the updates completed successfully
     """
-    mysql_conn = create_mysql_connection(config, False)
-
-    if mysql_conn is not None and mysql_conn.is_connected():
-        mlwh_samples = [map_mongo_to_sql_common(sample) for sample in samples]
-        run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE, mlwh_samples)
-        return True
-    else:
-        return False
+    with closing(create_mysql_connection(config, False)) as mysql_conn:
+        if mysql_conn is not None and mysql_conn.is_connected():
+            mlwh_samples = [map_mongo_to_sql_common(sample) for sample in samples]
+            run_mysql_executemany_query(mysql_conn, SQL_MLWH_MULTIPLE_FILTERED_POSITIVE_UPDATE, mlwh_samples)
+            return True
+        else:
+            return False
 
 
 def update_dart_fields(config: Config, samples: List[SampleDoc]) -> bool:

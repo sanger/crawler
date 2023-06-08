@@ -254,7 +254,7 @@ def test_back_populate_source_plate_uuid_and_sample_uuid_dont_change_sample_uuid
 @pytest.mark.parametrize("samples_collection_accessor", [TESTING_SAMPLES_WITH_LAB_ID], indirect=True)
 def test_check_samples_are_valid_finds_problems_with_samples(
     monkeypatch,
-    config,
+    mlwh_connection,
     samples_collection_accessor,
     source_plates_collection_accessor,
     testing_source_plates,
@@ -270,40 +270,52 @@ def test_check_samples_are_valid_finds_problems_with_samples(
 
     # When both are right
     # Expect no exceptions to be raised -- if any occur the test will fail
-    check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["123", "456"])
+    check_samples_are_valid(
+        mlwh_connection, samples_collection_accessor, source_plates_collection_accessor, ["123", "456"]
+    )
 
     # When sample_uuid has value but source_plate_uuid has not
     with pytest.raises(ExceptionSampleWithSampleUUIDNotSourceUUID):
-        check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["789"])
+        check_samples_are_valid(
+            mlwh_connection, samples_collection_accessor, source_plates_collection_accessor, ["789"]
+        )
 
     # When sample_uuid has value but source_plate_uuid has not, but the environment variable was set to ignore this
     # Expect no exceptions to be raised -- if any occur the test will fail
     with monkeypatch.context() as mp:
         mp.setenv("SUPPRESS_ERROR_FOR_EXISTING_SAMPLE_UUIDS", "true")
-        check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["789"])
+        check_samples_are_valid(
+            mlwh_connection, samples_collection_accessor, source_plates_collection_accessor, ["789"]
+        )
 
     # When sample_uuid has value but source_plate_uuid has not, but the suppress environment variable was set to false
     with monkeypatch.context() as mp:
         mp.setenv("SUPPRESS_ERROR_FOR_EXISTING_SAMPLE_UUIDS", "false")
         with pytest.raises(ExceptionSampleWithSampleUUIDNotSourceUUID):
-            check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["789"])
+            check_samples_are_valid(
+                mlwh_connection, samples_collection_accessor, source_plates_collection_accessor, ["789"]
+            )
 
     # When source plate uuid has value but sample_uuid has not and there is no source plate record
     with pytest.raises(ExceptionSampleWithSourceUUIDNotSampleUUID):
-        check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["781"])
+        check_samples_are_valid(
+            mlwh_connection, samples_collection_accessor, source_plates_collection_accessor, ["781"]
+        )
 
     # When a sample has sample uuid and source plate and the plate not in source plate collection, is right
     # Expect no exceptions to be raised -- if any occur the test will fail
-    check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["782"])
+    check_samples_are_valid(mlwh_connection, samples_collection_accessor, source_plates_collection_accessor, ["782"])
 
     # When a source plate from input is already defined in the source plates collection
     with pytest.raises(ExceptionSourcePlateDefined):
-        check_samples_are_valid(config, samples_collection_accessor, source_plates_collection_accessor, ["783"])
+        check_samples_are_valid(
+            mlwh_connection, samples_collection_accessor, source_plates_collection_accessor, ["783"]
+        )
 
 
-def test_count_samples_from_mongo_ids(config, mlwh_samples_with_lab_id_for_migration):
+def test_count_samples_from_mongo_ids(mlwh_connection, mlwh_samples_with_lab_id_for_migration):
     value = mlwh_count_samples_from_mongo_ids(
-        config,
+        mlwh_connection,
         [
             "aaaaaaaaaaaaaaaaaaaaaaa1",
             "aaaaaaaaaaaaaaaaaaaaaaa2",
@@ -314,7 +326,7 @@ def test_count_samples_from_mongo_ids(config, mlwh_samples_with_lab_id_for_migra
     assert value == 4
 
     value = mlwh_count_samples_from_mongo_ids(
-        config,
+        mlwh_connection,
         [
             "aaaaaaaaaaaaaaaaaaaaaaa1",
             "aaaaaaaaaaaaaaaaaaaaaaa4",
@@ -323,8 +335,8 @@ def test_count_samples_from_mongo_ids(config, mlwh_samples_with_lab_id_for_migra
     )
     assert value == 3
 
-    value = mlwh_count_samples_from_mongo_ids(config, ["aaaaaaaaaaaaaaaaaaaaaaa6"])
+    value = mlwh_count_samples_from_mongo_ids(mlwh_connection, ["aaaaaaaaaaaaaaaaaaaaaaa6"])
     assert value == 1
 
-    value = mlwh_count_samples_from_mongo_ids(config, ["ASDFASDFASF"])
+    value = mlwh_count_samples_from_mongo_ids(mlwh_connection, ["ASDFASDFASF"])
     assert value == 0
