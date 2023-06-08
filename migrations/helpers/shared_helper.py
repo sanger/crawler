@@ -7,6 +7,7 @@ from csv import DictReader
 from datetime import datetime
 from typing import Any, Dict, Iterator, List, Optional
 
+from mysql.connector.connection_cext import MySQLConnectionAbstract
 from pymongo.collection import Collection
 
 from crawler.constants import (
@@ -115,12 +116,17 @@ def valid_filepath(s_filepath: str) -> bool:
     return False
 
 
-def mysql_generator(config: Config, query: str) -> Iterator[Dict[str, Any]]:
+def mysql_generator_from_connection(connection: MySQLConnectionAbstract, query: str) -> Iterator[Dict[str, Any]]:
+    with connection.cursor(dictionary=True, buffered=False) as cursor:
+        cursor.execute(query)
+        for row in cursor.fetchall():
+            yield row
+
+
+def mysql_generator_from_config(config: Config, query: str) -> Iterator[Dict[str, Any]]:
     with create_mysql_connection(config=config, readonly=True) as connection:
-        with connection.cursor(dictionary=True, buffered=False) as cursor:
-            cursor.execute(query)
-            for row in cursor.fetchall():
-                yield row
+        for row in mysql_generator_from_connection(connection, query):
+            yield row
 
 
 def get_mongo_samples_for_source_plate(samples_collection: Collection, source_plate_barcode: str) -> List[SampleDoc]:

@@ -1,5 +1,6 @@
 import logging
 import uuid
+from contextlib import closing
 from datetime import datetime
 from typing import List
 
@@ -139,7 +140,7 @@ def migrate_all_dbs(config: Config, s_start_datetime: str = "", s_end_datetime: 
         if (num_sql_docs := len(mysql_samples)) > 0:
             logger.info(f"Updating MLWH database for {num_sql_docs} sample documents")
             # create connection to the MLWH database
-            with create_mysql_connection(config, False) as mlwh_conn:
+            with closing(create_mysql_connection(config, False)) as mlwh_conn:
                 # 5. update the MLWH (should be an idempotent operation)
 
                 # TODO: Check here would migration dbs be ok?
