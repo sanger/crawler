@@ -184,7 +184,7 @@ SQL_MLWH_GET_SAMPLES_FOR_MONGO_IDS = (
     f"   {MLWH_LH_SOURCE_PLATE_UUID},"
     f"   {MLWH_UPDATED_AT}"
     f" FROM lighthouse_sample "
-    f" WHERE {MLWH_MONGODB_ID} IN ('%(mongo_ids)s')"
+    f" WHERE {MLWH_MONGODB_ID} IN (%(mongo_ids)s)"
 )
 
 SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID = (
