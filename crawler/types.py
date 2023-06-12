@@ -19,22 +19,22 @@ FlaskResponse = Tuple[Dict[str, Any], int]  # a response from a Flask endpoint, 
 
 
 class CentreConf(TypedDict):
-    backups_folder: str
-    barcode_field: str
-    barcode_regex: str
+    backups_folder: NotRequired[str]
+    barcode_field: NotRequired[str]
+    barcode_regex: NotRequired[str]
     biomek_labware_class: str
     data_source: str
     feedback_routing_key_prefix: NotRequired[str]
-    file_names_to_ignore: List[str]
-    include_in_scheduled_runs: bool
+    file_names_to_ignore: NotRequired[List[str]]
+    include_in_scheduled_runs: NotRequired[bool]
     lab_id_default: str
     name: str
-    prefix: str
-    sftp_file_regex_consolidated_eagle: str
-    sftp_file_regex_consolidated_surveillance: str
-    sftp_file_regex_unconsolidated_surveillance: str
-    sftp_root_read: str
-    skip_unconsolidated_surveillance_files: bool
+    prefix: NotRequired[str]
+    sftp_file_regex_consolidated_eagle: NotRequired[str]
+    sftp_file_regex_consolidated_surveillance: NotRequired[str]
+    sftp_file_regex_unconsolidated_surveillance: NotRequired[str]
+    sftp_root_read: NotRequired[str]
+    skip_unconsolidated_surveillance_files: NotRequired[bool]
 
 
 class Config(ModuleType):

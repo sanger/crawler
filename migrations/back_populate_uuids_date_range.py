@@ -19,7 +19,7 @@ from crawler.constants import (
 from crawler.db.mongo import create_mongo_client, get_mongo_collection, get_mongo_db
 from crawler.helpers.cherrypicked_samples import extract_required_cp_info
 from crawler.types import Config, SampleDoc
-from migrations.helpers.shared_helper import mysql_generator, valid_datetime_string
+from migrations.helpers.shared_helper import mysql_generator_from_config, valid_datetime_string
 from migrations.helpers.update_filtered_positives_helper import update_dart_fields
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ def update_mongo(config: Config, updated_at: datetime) -> None:
         samples_collection = get_mongo_collection(mongo_db, COLLECTION_SAMPLES)
 
         counter = 0
-        for mysql_sample in mysql_generator(
+        for mysql_sample in mysql_generator_from_config(
             config=config,
             query=f"SELECT * FROM lighthouse_sample WHERE updated_at > '{updated_at.strftime('%Y-%m-%d %H:%M')}'",
         ):

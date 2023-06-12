@@ -124,10 +124,6 @@ def run_mysql_executemany_query(
         logger.debug("Closing the cursor.")
         cursor.close()
 
-        # close the connection
-        logger.debug("Closing the MLWH database connection.")
-        mysql_conn.close()
-
 
 def run_mysql_execute_formatted_query(
     mysql_conn: MySQLConnectionAbstract, formatted_sql_query: str, formatting_args: List[str], query_args: List[Any]
