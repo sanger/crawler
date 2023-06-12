@@ -3,6 +3,7 @@ import os
 import stat
 import sys
 import traceback
+from contextlib import closing
 from csv import DictReader
 from datetime import datetime
 from typing import Any, Dict, Iterator, List, Optional
@@ -117,14 +118,14 @@ def valid_filepath(s_filepath: str) -> bool:
 
 
 def mysql_generator_from_connection(connection: MySQLConnectionAbstract, query: str) -> Iterator[Dict[str, Any]]:
-    with connection.cursor(dictionary=True, buffered=False) as cursor:
+    with closing(connection.cursor(dictionary=True, buffered=False)) as cursor:
         cursor.execute(query)
         for row in cursor.fetchall():
             yield row
 
 
 def mysql_generator_from_config(config: Config, query: str) -> Iterator[Dict[str, Any]]:
-    with create_mysql_connection(config=config, readonly=True) as connection:
+    with closing(create_mysql_connection(config=config, readonly=True)) as connection:
         for row in mysql_generator_from_connection(connection, query):
             yield row
 

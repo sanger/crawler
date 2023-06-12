@@ -164,7 +164,7 @@ SQL_MLWH_MARK_ALL_SAMPLES_NOT_MOST_RECENT = (
     f" WHERE { MLWH_RNA_ID } IN (%s)"
 )
 
-# Note that this query must output at least the same fields as the update query below.
+# Note that these queries must output at least the same fields as the update query below.
 SQL_MLWH_GET_SAMPLE_FOR_MONGO_ID = (
     f"SELECT"
     f"   id,"
@@ -174,6 +174,17 @@ SQL_MLWH_GET_SAMPLE_FOR_MONGO_ID = (
     f"   {MLWH_UPDATED_AT}"
     f" FROM lighthouse_sample "
     f" WHERE {MLWH_MONGODB_ID} = '%({MLWH_MONGODB_ID})s'"
+)
+
+SQL_MLWH_GET_SAMPLES_FOR_MONGO_IDS = (
+    f"SELECT"
+    f"   id,"
+    f"   {MLWH_MONGODB_ID},"
+    f"   {MLWH_LH_SAMPLE_UUID},"
+    f"   {MLWH_LH_SOURCE_PLATE_UUID},"
+    f"   {MLWH_UPDATED_AT}"
+    f" FROM lighthouse_sample "
+    f" WHERE {MLWH_MONGODB_ID} IN (%(mongo_ids)s)"
 )
 
 SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID = (
