@@ -125,7 +125,7 @@ def mysql_generator_from_connection(connection: MySQLConnectionAbstract, query: 
 
 
 def mysql_generator_from_config(config: Config, query: str) -> Iterator[Dict[str, Any]]:
-    with create_mysql_connection(config=config, readonly=True) as connection:
+    with closing(create_mysql_connection(config=config, readonly=True)) as connection:
         for row in mysql_generator_from_connection(connection, query):
             yield row
 
