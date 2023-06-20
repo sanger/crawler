@@ -9,9 +9,6 @@ on:
 env:
   IMAGE_NAME: ${{ github.repository }}/${{ github.event.repository.name }}
 
-permissions:
-  packages: write
-
 jobs:
   build_test_release_push:
     runs-on: ubuntu-latest
@@ -100,7 +97,7 @@ jobs:
         uses: snok/container-retention-policy@v2
         with:
           image-names: ${{ github.event.repository.name }}/*
-          cut-off: Ten months ago UTC
+          cut-off: Four months ago UTC
           timestamp-to-use: updated_at
           account-type: org
           org-name: sanger
