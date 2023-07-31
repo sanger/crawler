@@ -21,7 +21,7 @@ def test_get_mongo_collection(mongo_database):
     collection_name = "test_collection"
     test_collection = get_mongo_collection(mongo_database, collection_name)
 
-    assert type(test_collection) == Collection
+    assert type(test_collection) is Collection
     assert test_collection.name == collection_name
 
 

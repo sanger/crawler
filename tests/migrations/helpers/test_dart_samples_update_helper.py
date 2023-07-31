@@ -121,7 +121,7 @@ def test_add_sample_uuid_field():
 
     for sample in add_sample_uuid_field(test_samples):
         assert FIELD_LH_SAMPLE_UUID in [*sample]
-        assert type(sample[FIELD_LH_SAMPLE_UUID]) == str
+        assert type(sample[FIELD_LH_SAMPLE_UUID]) is str
 
 
 def test_new_mongo_source_plate(freezer):

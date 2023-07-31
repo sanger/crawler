@@ -53,7 +53,7 @@ def test_operation_was_error_free_gives_expected_value(subject):
 def test_errors_list_gives_list_of_appropriate_objects(subject):
     assert subject.errors_list.name == FIELD_ERRORS_LIST
     assert len(subject.errors_list.value) == 2
-    assert all([type(s) == CreatePlateFeedbackError for s in subject.errors_list.value])
+    assert all([type(s) is CreatePlateFeedbackError for s in subject.errors_list.value])
 
 
 def test_error_type_id_gives_expected_values(subject):

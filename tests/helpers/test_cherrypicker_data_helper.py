@@ -101,7 +101,7 @@ def test_create_plate_messages():
         expected_barcode = list(barcodes.keys())[message_i]
 
         message = actual[message_i]
-        assert type(message["messageUuid"]) == bytes
+        assert type(message["messageUuid"]) is bytes
         assert len(message["messageUuid"]) == 36
         assert message["messageCreateDateUtc"] == dt
 
@@ -112,7 +112,7 @@ def test_create_plate_messages():
 
         for sample_i in range(96):
             sample = plate["samples"][sample_i]
-            assert type(sample["sampleUuid"]) == bytes
+            assert type(sample["sampleUuid"]) is bytes
             assert len(sample["sampleUuid"]) == 36
             assert sample["rootSampleId"] == f"RSID-{expected_barcode}{str(sample_i + 1).zfill(2)}"
             assert sample["rnaId"] == f"{expected_barcode}_{WELL_COORDS[sample_i]}"
