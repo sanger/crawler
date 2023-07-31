@@ -1128,10 +1128,10 @@ def test_changes_ct_channel_cq_value_data_type(config: Config, centre_file: Cent
         csv_to_test_reader = DictReader(fake_csv)
 
         augmented_data = centre_file.parse_and_format_file_rows(csv_to_test_reader)
-        assert type(augmented_data[0][FIELD_CH1_CQ]) == Decimal128
-        assert type(augmented_data[0][FIELD_CH2_CQ]) == Decimal128
-        assert type(augmented_data[0][FIELD_CH3_CQ]) == Decimal128
-        assert type(augmented_data[0][FIELD_CH4_CQ]) == Decimal128
+        assert type(augmented_data[0][FIELD_CH1_CQ]) is Decimal128
+        assert type(augmented_data[0][FIELD_CH2_CQ]) is Decimal128
+        assert type(augmented_data[0][FIELD_CH3_CQ]) is Decimal128
+        assert type(augmented_data[0][FIELD_CH4_CQ]) is Decimal128
 
 
 def test_where_ct_channel_cq_value_is_not_numeric(config):

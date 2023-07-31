@@ -41,7 +41,7 @@ def test_message_uuid_gives_expected_value(subject):
 
 def test_message_create_date_gives_expected_value(subject):
     assert subject.message_create_date.name == FIELD_MESSAGE_CREATE_DATE
-    assert type(subject.message_create_date.value) == datetime
+    assert type(subject.message_create_date.value) is datetime
 
 
 def test_sample_uuid_gives_expected_value(subject):

@@ -123,10 +123,10 @@ def get_run_doc(collection, run_id):
 
 def validate_plate_specs(plate_specs, max_plates_per_run):
     if (
-        type(plate_specs) != list
+        type(plate_specs) is not list
         or len(plate_specs) == 0
-        or not all([type(ps) == list and len(ps) == 2 for ps in plate_specs])
-        or not all([type(s) == int for ps in plate_specs for s in ps])
+        or not all([type(ps) is list and len(ps) == 2 for ps in plate_specs])
+        or not all([type(s) is int for ps in plate_specs for s in ps])
     ):
         raise CherrypickerDataError(TEST_DATA_ERROR_INVALID_PLATE_SPECS)
 

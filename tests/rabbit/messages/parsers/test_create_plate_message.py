@@ -63,7 +63,7 @@ def test_message_uuid_gives_expected_value(subject):
 
 def test_message_create_date_gives_expected_value(subject):
     assert subject.message_create_date.name == FIELD_MESSAGE_CREATE_DATE
-    assert type(subject.message_create_date.value) == datetime
+    assert type(subject.message_create_date.value) is datetime
 
 
 def test_plate_lab_id_gives_expected_value(subject):
@@ -79,7 +79,7 @@ def test_plate_barcode_gives_expected_value(subject):
 def test_samples_gives_list_of_appropriate_objects(subject):
     assert subject.samples.name == FIELD_SAMPLES
     assert len(subject.samples.value) == 3
-    assert all([type(s) == CreatePlateSample for s in subject.samples.value])
+    assert all([type(s) is CreatePlateSample for s in subject.samples.value])
 
 
 def test_sample_cog_uk_id_gives_expected_value(subject):
