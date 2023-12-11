@@ -1580,12 +1580,12 @@
         },
         "flake8-bugbear": {
             "hashes": [
-                "sha256:0ebdc7d8ec1ca8bd49347694562381f099f4de2f8ec6bda7a7dca65555d9e0d4",
-                "sha256:d99d005114020fbef47ed5e4aebafd22f167f9a0fbd0d8bf3c9e90612cb25c34"
+                "sha256:32b2903e22331ae04885dae25756a32a8c666c85142e933f43512a70f342052a",
+                "sha256:83324bad4d90fee4bf64dd69c61aff94debf8073fbd807c8b6a36eec7a2f0719"
             ],
             "index": "pypi",
             "markers": "python_full_version >= '3.8.1'",
-            "version": "==23.7.10"
+            "version": "==23.12.2"
         },
         "freezegun": {
             "hashes": [
