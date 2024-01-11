@@ -17,7 +17,7 @@ types-python-dateutil = "*"
 responses = "*"
 
 [packages]
-colorlog = "~=6.7"
+colorlog = "~=6.8"
 flask = "~=2.3"
 flask-apscheduler = "~=1.12"
 gunicorn = "~=21.2"
