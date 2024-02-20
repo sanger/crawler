@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, cast
 from uuid import uuid4
 
+from mysql.connector.types import MySQLConvertibleType, RowType
 from mysql.connector.connection_cext import MySQLConnectionAbstract
 from pymongo.collection import Collection
 from pymongo.database import Database
@@ -366,7 +367,7 @@ def update_mlwh_sample_uuids(mysql_conn: MySQLConnectionAbstract, sample_docs: L
     existing_samples = mysql_generator_from_connection(mysql_conn, query)
     log_mlwh_sample_fields("Before update", existing_samples)
 
-    row_data = [cast(Dict[str, str], row) for row in update_rows]
+    row_data = [cast(Dict[str, MySQLConvertibleType], row) for row in update_rows]
     run_mysql_executemany_query(mysql_conn, SQL_MLWH_UPDATE_SAMPLE_UUID_PLATE_UUID, row_data)
 
     # Log the new fields on the MLWH samples
