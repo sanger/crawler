@@ -5,7 +5,8 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from http import HTTPStatus
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Sequence
+from mysql.connector.types import MySQLConvertibleType
 
 import pysftp
 import requests
@@ -268,7 +269,7 @@ def map_mongo_sample_to_mysql(doc: SampleDoc, copy_date: bool = False) -> Dict[s
     return value
 
 
-def set_is_current_on_mysql_samples(samples: Iterable[Dict[str, str]]) -> List[Dict[str, str]]:
+def set_is_current_on_mysql_samples(samples: Iterable[Dict[str, str]]) -> Sequence[Dict[str, MySQLConvertibleType]]:
     """Creates a copy of the samples passed in, adding is_current values to each sample.
     is_current will be True for all samples unless there is a repeated RNA ID, in which case
     only the last one is set to True.

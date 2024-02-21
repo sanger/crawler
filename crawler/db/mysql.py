@@ -1,10 +1,11 @@
 import logging
 from datetime import datetime
 from itertools import islice
-from typing import Any, Dict, Generator, Iterable, List, cast
+from typing import Any, Dict, Generator, Iterable, List, cast, Sequence
 
 import mysql.connector as mysql
 import sqlalchemy
+from mysql.connector.types import MySQLConvertibleType
 from mysql.connector.connection_cext import MySQLConnectionAbstract
 from mysql.connector.cursor_cext import MySQLCursorAbstract
 from sqlalchemy.engine.base import Engine
@@ -65,7 +66,7 @@ def create_mysql_connection(config: Config, readonly: bool = True) -> MySQLConne
 
 
 def run_mysql_executemany_query(
-    mysql_conn: MySQLConnectionAbstract, sql_query: str, values: List[Dict[str, str]]
+    mysql_conn: MySQLConnectionAbstract, sql_query: str, values: Sequence[Dict[str, MySQLConvertibleType]]
 ) -> None:
     """Writes the sample testing information into the MLWH.
 
@@ -223,7 +224,9 @@ def partition(iterable: Iterable, partition_size: int) -> Generator[List[Any], N
         yield part
 
 
-def reset_is_current_flags(cursor: MySQLCursorAbstract, rna_ids: List[str], chunk_size: int = 1000) -> None:
+def reset_is_current_flags(
+    cursor: MySQLCursorAbstract, rna_ids: List[MySQLConvertibleType], chunk_size: int = 1000
+) -> None:
     """Receives a cursor with an active connection and a list of rna_ids and
     runs an update resetting any is_current flags to false for all the specified
     rna ids in groups of chunk_size.
