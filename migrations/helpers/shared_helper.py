@@ -6,9 +6,10 @@ import traceback
 from contextlib import closing
 from csv import DictReader
 from datetime import datetime
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, cast
 
 from mysql.connector.connection_cext import MySQLConnectionAbstract
+from mysql.connector.types import RowItemType
 from pymongo.collection import Collection
 
 from crawler.constants import (
@@ -117,11 +118,13 @@ def valid_filepath(s_filepath: str) -> bool:
     return False
 
 
-def mysql_generator_from_connection(connection: MySQLConnectionAbstract, query: str) -> Iterator[Dict[str, Any]]:
+def mysql_generator_from_connection(
+    connection: MySQLConnectionAbstract, query: str
+) -> Iterator[Dict[str, RowItemType]]:
     with closing(connection.cursor(dictionary=True, buffered=False)) as cursor:
         cursor.execute(query)
         for row in cursor.fetchall():
-            yield row
+            yield cast(Dict[str, RowItemType], row)
 
 
 def mysql_generator_from_config(config: Config, query: str) -> Iterator[Dict[str, Any]]:

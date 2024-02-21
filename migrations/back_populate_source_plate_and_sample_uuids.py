@@ -395,7 +395,7 @@ def mlwh_count_samples_from_mongo_ids(mysql_conn: MySQLConnectionAbstract, mongo
         if result is None:
             raise Exception("Query result was not valid")
 
-        return cast(int, result[0])
+        return cast(int, cast(RowType, result)[0])
     else:
         raise Exception("Cannot connect mysql")
 
