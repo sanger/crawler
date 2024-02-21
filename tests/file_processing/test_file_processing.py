@@ -1549,65 +1549,68 @@ def test_insert_samples_from_docs_into_mlwh(
     rows = cursor.fetchall()
     cursor.close()
 
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_MONGODB_ID] == "5f562d9931d9959b92544728"
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_ROOT_SAMPLE_ID] == "ABC00000004"
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_COG_UK_ID] == "TEST-123ABC"
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_RNA_ID] == "TC-rna-00000029_H11"
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_PLATE_BARCODE] == "TC-rna-00000029"
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_COORDINATE] == "H11"
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_RESULT] == "Negative"
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_DATE_TESTED] == date_tested_1
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_SOURCE] == "Test Centre"
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_LAB_ID] == "TC"
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_CH1_TARGET] is None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_CH1_RESULT] is None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_CH1_CQ] is None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_CH2_TARGET] is None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_CH2_RESULT] is None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_CH2_CQ] is None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_CH3_TARGET] is None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_CH3_RESULT] is None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_CH3_CQ] is None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_CH4_TARGET] is None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_CH4_RESULT] is None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_CH4_CQ] is None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_FILTERED_POSITIVE] is None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_FILTERED_POSITIVE_VERSION] is None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_FILTERED_POSITIVE_TIMESTAMP] is None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_CREATED_AT] is not None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_UPDATED_AT] is not None
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_MUST_SEQUENCE] == 0
-    assert cast(Dict[str, RowItemType], rows[0])[MLWH_PREFERENTIALLY_SEQUENCE] == 1
+    first_row = cast(Dict[str, RowItemType], rows[0])
+    second_row = cast(Dict[str, RowItemType], rows[1])
 
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_MONGODB_ID] == "5f562d9931d9959b92544729"
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_ROOT_SAMPLE_ID] == "ABC00000005"
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_COG_UK_ID] == "TEST-123ABD"
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_RNA_ID] == "TC-rna-00000029_H12"
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_PLATE_BARCODE] == "TC-rna-00000029"
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_COORDINATE] == "H12"
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_RESULT] == RESULT_VALUE_POSITIVE
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_DATE_TESTED] == date_tested_2
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_SOURCE] == "Test Centre"
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_LAB_ID] == "TC"
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_CH1_TARGET] == "ORF1ab"
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_CH1_RESULT] == RESULT_VALUE_POSITIVE
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_CH1_CQ] == Decimal("21.28726211")
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_CH2_TARGET] == "N gene"
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_CH2_RESULT] == RESULT_VALUE_POSITIVE
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_CH2_CQ] == Decimal("18.12736661")
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_CH3_TARGET] == "S gene"
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_CH3_RESULT] == RESULT_VALUE_POSITIVE
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_CH3_CQ] == Decimal("22.63616273")
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_CH4_TARGET] == "MS2"
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_CH4_RESULT] == RESULT_VALUE_POSITIVE
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_CH4_CQ] == Decimal("26.25125612")
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_FILTERED_POSITIVE] == 1
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_FILTERED_POSITIVE_VERSION] == "v2.3"
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_FILTERED_POSITIVE_TIMESTAMP] == filtered_positive_timestamp
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_CREATED_AT] is not None
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_UPDATED_AT] is not None
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_MUST_SEQUENCE] == 1
-    assert cast(Dict[str, RowItemType], rows[1])[MLWH_PREFERENTIALLY_SEQUENCE] == 0
+    assert first_row[MLWH_MONGODB_ID] == "5f562d9931d9959b92544728"
+    assert first_row[MLWH_ROOT_SAMPLE_ID] == "ABC00000004"
+    assert first_row[MLWH_COG_UK_ID] == "TEST-123ABC"
+    assert first_row[MLWH_RNA_ID] == "TC-rna-00000029_H11"
+    assert first_row[MLWH_PLATE_BARCODE] == "TC-rna-00000029"
+    assert first_row[MLWH_COORDINATE] == "H11"
+    assert first_row[MLWH_RESULT] == "Negative"
+    assert first_row[MLWH_DATE_TESTED] == date_tested_1
+    assert first_row[MLWH_SOURCE] == "Test Centre"
+    assert first_row[MLWH_LAB_ID] == "TC"
+    assert first_row[MLWH_CH1_TARGET] is None
+    assert first_row[MLWH_CH1_RESULT] is None
+    assert first_row[MLWH_CH1_CQ] is None
+    assert first_row[MLWH_CH2_TARGET] is None
+    assert first_row[MLWH_CH2_RESULT] is None
+    assert first_row[MLWH_CH2_CQ] is None
+    assert first_row[MLWH_CH3_TARGET] is None
+    assert first_row[MLWH_CH3_RESULT] is None
+    assert first_row[MLWH_CH3_CQ] is None
+    assert first_row[MLWH_CH4_TARGET] is None
+    assert first_row[MLWH_CH4_RESULT] is None
+    assert first_row[MLWH_CH4_CQ] is None
+    assert first_row[MLWH_FILTERED_POSITIVE] is None
+    assert first_row[MLWH_FILTERED_POSITIVE_VERSION] is None
+    assert first_row[MLWH_FILTERED_POSITIVE_TIMESTAMP] is None
+    assert first_row[MLWH_CREATED_AT] is not None
+    assert first_row[MLWH_UPDATED_AT] is not None
+    assert first_row[MLWH_MUST_SEQUENCE] == 0
+    assert first_row[MLWH_PREFERENTIALLY_SEQUENCE] == 1
+
+    assert second_row[MLWH_MONGODB_ID] == "5f562d9931d9959b92544729"
+    assert second_row[MLWH_ROOT_SAMPLE_ID] == "ABC00000005"
+    assert second_row[MLWH_COG_UK_ID] == "TEST-123ABD"
+    assert second_row[MLWH_RNA_ID] == "TC-rna-00000029_H12"
+    assert second_row[MLWH_PLATE_BARCODE] == "TC-rna-00000029"
+    assert second_row[MLWH_COORDINATE] == "H12"
+    assert second_row[MLWH_RESULT] == RESULT_VALUE_POSITIVE
+    assert second_row[MLWH_DATE_TESTED] == date_tested_2
+    assert second_row[MLWH_SOURCE] == "Test Centre"
+    assert second_row[MLWH_LAB_ID] == "TC"
+    assert second_row[MLWH_CH1_TARGET] == "ORF1ab"
+    assert second_row[MLWH_CH1_RESULT] == RESULT_VALUE_POSITIVE
+    assert second_row[MLWH_CH1_CQ] == Decimal("21.28726211")
+    assert second_row[MLWH_CH2_TARGET] == "N gene"
+    assert second_row[MLWH_CH2_RESULT] == RESULT_VALUE_POSITIVE
+    assert second_row[MLWH_CH2_CQ] == Decimal("18.12736661")
+    assert second_row[MLWH_CH3_TARGET] == "S gene"
+    assert second_row[MLWH_CH3_RESULT] == RESULT_VALUE_POSITIVE
+    assert second_row[MLWH_CH3_CQ] == Decimal("22.63616273")
+    assert second_row[MLWH_CH4_TARGET] == "MS2"
+    assert second_row[MLWH_CH4_RESULT] == RESULT_VALUE_POSITIVE
+    assert second_row[MLWH_CH4_CQ] == Decimal("26.25125612")
+    assert second_row[MLWH_FILTERED_POSITIVE] == 1
+    assert second_row[MLWH_FILTERED_POSITIVE_VERSION] == "v2.3"
+    assert second_row[MLWH_FILTERED_POSITIVE_TIMESTAMP] == filtered_positive_timestamp
+    assert second_row[MLWH_CREATED_AT] is not None
+    assert second_row[MLWH_UPDATED_AT] is not None
+    assert second_row[MLWH_MUST_SEQUENCE] == 1
+    assert second_row[MLWH_PREFERENTIALLY_SEQUENCE] == 0
 
 
 def test_insert_samples_from_docs_into_mlwh_date_tested_missing(config, mlwh_connection):
