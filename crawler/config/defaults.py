@@ -100,7 +100,6 @@ RABBITMQ_PUBLISH_RETRIES = 36  # 3 minutes of retries
 # RedPanda details
 ###
 REDPANDA_BASE_URI = f"http://{os.environ.get('LOCALHOST', '127.0.0.1')}:8081"
-REDPANDA_API_KEY = ""
 
 ###
 # SFTP details
