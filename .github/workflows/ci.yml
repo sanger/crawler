@@ -130,4 +130,6 @@ jobs:
         run: |
           SFTP_SERVER=localhost SFTP_PORT=3010 python -m pytest -vx
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
