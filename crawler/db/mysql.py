@@ -245,7 +245,7 @@ def reset_is_current_flags(
         cursor.execute(sql_statement, [datetime.now()] + rna_ids_group)
         total_rows_affected += cursor.rowcount
 
-    logger.info(f"Reset is_current to false for { total_rows_affected } rows.")
+    logger.info(f"Reset is_current to false for {total_rows_affected} rows.")
 
 
 def insert_or_update_samples_in_mlwh(
