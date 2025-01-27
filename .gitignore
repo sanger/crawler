@@ -136,3 +136,6 @@ dmypy.json
 
 # RabbitMQ admin tool
 rabbitmqadmin
+
+# PyCharm indexes
+.idea

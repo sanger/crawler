@@ -44,7 +44,7 @@ def test_create_barcodes(config, count):
     ) as generate_barcodes:
         actual = create_barcodes(config, count)
 
-    assert generate_barcodes.called_with(count)
+    generate_barcodes.assert_called_with(count)
     assert actual == expected
 
 
