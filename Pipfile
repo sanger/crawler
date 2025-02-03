@@ -36,7 +36,7 @@ sqlalchemy = "~=2.0"
 lab-share-lib = { git = 'https://github.com/sanger/lab-share-lib.git', ref = 'v0.2.0', editable = false }
 
 [requires]
-python_version = "3.8"
+python_version = "3.13"
 
 [pipenv]
 allow_prereleases = true
