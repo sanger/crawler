@@ -16,15 +16,25 @@ env:
   SETTINGS_MODULE: crawler.config.test
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      python_version: ${{ steps.read_python_version.outputs.python_version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read Python version
+        id: read_python_version
+        run: echo "::set-output name=python_version::$(cat .python-version)"
   black:
     runs-on: ubuntu-latest
+    needs: setup
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
-      - uses: actions/cache@v1
+          python-version: ${{ needs.setup.outputs.python_version }}
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/Pipfile') }}
@@ -42,13 +52,14 @@ jobs:
           python -m black --check .
   flake8:
     runs-on: ubuntu-latest
+    needs: setup
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
-      - uses: actions/cache@v1
+          python-version: ${{ needs.setup.outputs.python_version }}
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/Pipfile') }}
@@ -66,13 +77,14 @@ jobs:
           flake8
   mypy:
     runs-on: ubuntu-latest
+    needs: setup
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
-      - uses: actions/cache@v1
+          python-version: ${{ needs.setup.outputs.python_version }}
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/Pipfile') }}
@@ -89,6 +101,7 @@ jobs:
           python -m mypy .
   test:
     runs-on: ubuntu-latest
+    needs: setup
     services:
       mysql:
         image: mysql:8.0
@@ -98,12 +111,12 @@ jobs:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
           MYSQL_DATABASE: unified_warehouse_test
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
-      - uses: actions/cache@v1
+          python-version: ${{ needs.setup.outputs.python_version }}
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/Pipfile') }}
@@ -130,4 +143,6 @@ jobs:
         run: |
           SFTP_SERVER=localhost SFTP_PORT=3010 python -m pytest -vx
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

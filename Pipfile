@@ -17,26 +17,26 @@ types-python-dateutil = "*"
 responses = "*"
 
 [packages]
-colorlog = "~=6.8"
+colorlog = "~=6.9"
 flask = "~=3.0"
 flask-apscheduler = "~=1.13"
-gunicorn = "~=21.2"
-more-itertools = "~=10.2"
-mysql-connector-python = "~=8.3"
+gunicorn = "~=23.0"
+more-itertools = "~=10.5"
+mysql-connector-python = "~=9.0"
 pandas = "~=2.0"
 pika = "~=1.3"
-pymongo = "~=4.6"
+pymongo = "~=4.11"
 pymysql = "~=1.1"
-pyodbc = "~=5.1"
+pyodbc = "~=5.2"
 pysftp = "~=0.2"
 python-dotenv = "~=1.0"
-requests = "~=2.31"
+requests = "~=2.32"
 slackclient = "~=2.9"
 sqlalchemy = "~=2.0"
-lab-share-lib = { git = 'https://github.com/sanger/lab-share-lib.git', ref = 'v0.1.6', editable = false }
+lab-share-lib = { git = 'https://github.com/sanger/lab-share-lib.git', ref = 'v0.2.0', editable = false }
 
 [requires]
-python_version = "3.8"
+python_version = "3.13"
 
 [pipenv]
 allow_prereleases = true

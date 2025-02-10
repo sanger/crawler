@@ -21,7 +21,7 @@ jobs:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
           MYSQL_DATABASE: unified_warehouse_test
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - uses: nelonoel/branch-name@v1.0.1
 
@@ -102,6 +102,5 @@ jobs:
           account-type: org
           org-name: sanger
           keep-at-least: 5
-          skip-tags: latest
+          skip-tags: latest, *[!develop] # This will DELETE any images where the tag contains ANY characters in "develop", excluding '!'
           token: ${{ secrets.REMOVE_OLD_IMAGES }}
-
