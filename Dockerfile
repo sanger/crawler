@@ -16,19 +16,17 @@ RUN apt-get update && \
     git \
     unixodbc-dev
 
-# TODO - This doesnt appear to be working anymore
-#
+# TODO - This doesnt appear to be working locally anymore
 # Install the Microsoft ODBC driver for SQL Server
-# Download the package to configure the Microsoft repo
-# https://learn.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-ver16&tabs=alpine18-install%2Cdebian17-install%2Cdebian8-install%2Credhat7-13-install%2Crhel7-offline#17
-# RUN curl -sSL -O https://packages.microsoft.com/config/debian/$(grep VERSION_ID /etc/os-release | cut -d '"' -f 2 | cut -d '.' -f 1)/packages-microsoft-prod.deb
-# # Install the package
-# RUN dpkg -i packages-microsoft-prod.deb
-# # Delete the file
-# RUN rm packages-microsoft-prod.deb
+#   https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-ver15#debian17
+#   Debian 10
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
+    curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list
 
-# RUN apt-get update
-# RUN ACCEPT_EULA=Y apt-get install -y msodbcsql17
+RUN apt-get update && \
+    ACCEPT_EULA=Y apt-get install -y \
+    msodbcsql17 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install the package manager - pipenv
 RUN pip install --upgrade pip && \
