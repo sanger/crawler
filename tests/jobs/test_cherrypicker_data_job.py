@@ -1,7 +1,7 @@
 import json
 from collections import namedtuple
 from contextlib import ExitStack
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 
 import pytest
@@ -244,7 +244,7 @@ def test_process_run_calls_create_plate_messages(mongo_collection, freezer):
     with patch("crawler.jobs.cherrypicker_test_data.create_plate_messages") as create_plate_messages:
         process_run(config, collection, pending_id)
 
-    create_plate_messages.assert_called_with(plate_specs, datetime.utcnow(), CREATED_BARCODES)
+    create_plate_messages.assert_called_with(plate_specs, datetime.now(tz=timezone.utc), CREATED_BARCODES)
 
 
 def test_process_run_run_asks_for_correct_number_of_barcodes(mongo_collection):

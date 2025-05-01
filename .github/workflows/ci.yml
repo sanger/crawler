@@ -137,7 +137,7 @@ jobs:
       - name: Start MongoDB
         uses: supercharge/mongodb-github-action@1.7.0
         with:
-          mongodb-version: 4.2
+          mongodb-version: 8.0
           mongodb-replica-set: heron_rs
       - name: Test with pytest
         run: |

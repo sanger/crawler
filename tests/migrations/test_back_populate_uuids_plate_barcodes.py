@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import call, patch
 
 import pytest
@@ -101,7 +101,7 @@ def test_run_updates_uuid_in_mongo_correctly(config, samples_collection_accessor
     assert sample[subject.FIELD_UUID_UPDATED] is True
 
     # Note that MongoDB rounds the milliseconds, hence this check being a less-than operation
-    assert datetime.utcnow() - sample[FIELD_UPDATED_AT] < timedelta(seconds=1)
+    assert datetime.now() - sample[FIELD_UPDATED_AT] < timedelta(seconds=1)
 
     logger.info.assert_has_calls(
         [call("Count of successful Mongo updates = 1"), call("Count of failed Mongo updates = 0")]

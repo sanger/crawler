@@ -52,11 +52,11 @@ The following tools are required for development:
         brew install pipenv
 
 - Optionally, to test SFTP, [this](https://hub.docker.com/r/atmoz/sftp/) Docker image is helpful.
-- mongodb (currently 4.2 is running in production)
+- mongodb (currently 8.0 is running in production)
 
         brew tap mongodb/brew
-        brew install mongodb-community@4.2
-        brew services start mongodb-community@4.2
+        brew install mongodb-community@8.0
+        brew services start mongodb-community@8.0
 
 - To support the parsing of messages from RabbitMQ instead of via SFTP, both
   RabbitMQ and Redpanda must be available.  Running these from Docker is highly

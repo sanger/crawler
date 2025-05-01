@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import reduce
 from typing import List, Optional, Tuple, cast
 
@@ -66,7 +66,7 @@ def process(run_id: str, config: Optional[Config] = None) -> List[List[str]]:
 
 
 def process_run(config: Config, collection: Collection, run_id: str) -> List[List[str]]:
-    dt = datetime.utcnow()
+    dt = datetime.now(tz=timezone.utc)
     test_data_processor = CPTDProcessor(config)
     run_doc = get_run_doc(collection, run_id)
 
