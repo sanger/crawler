@@ -45,7 +45,7 @@ jobs:
           docker run -p "3010:22" -v ${PWD}/test:/home/foo -d atmoz/sftp foo:pass:1001
 
       - name: Start MongoDB
-        uses: supercharge/mongodb-github-action@1.7.0
+        uses: supercharge/mongodb-github-action@1.12.0
         with:
           mongodb-version: 8.0
           mongodb-replica-set: heron_rs
