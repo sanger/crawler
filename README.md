@@ -18,7 +18,8 @@ saves valid data to MongoDB.
 - [Getting Started](#getting-started)
   * [Configuring Environment](#configuring-environment)
   * [Setup Steps](#setup-steps)
-- [Running](#running)
+  * [Running](#running)
+  * [Docker setup](#docker-setup)
 - [Migrations](#migrations)
   * [Updating the MLWH `lighthouse_sample` Table](#updating-the-mlwh-lighthouse_sample-table)
   * [Migrating Legacy Data to DART](#migrating-legacy-data-to-dart)
@@ -34,7 +35,7 @@ saves valid data to MongoDB.
   * [Running Tests](#running-tests)
 - [Formatting, Type Checking and Linting](#formatting-type-checking-and-linting)
 - [Miscellaneous](#miscellaneous)
-  * [Docker](#docker)
+  * [pyodbc](#pyodbc)
   * [Troubleshooting](#troubleshooting)
   * [Microsoft ODBC Driver for SQL Server](#microsoft-odbc-driver-for-sql-server)
   * [Mongo Naming Conventions](#mongo-naming-conventions)
@@ -101,7 +102,7 @@ Install the require dependencies:
 
     pipenv install --dev
 
-## Running
+### Running
 
 Once all the required packages are installed, enter the virtual environment with (this will also load the `.env` file):
 
@@ -142,6 +143,44 @@ To run an ingest immediately, whether Flask is running or not, the `runner.py` f
     --add-to-dart         on processing samples, also add them to DART
     --centre_prefix {ALDP,MILK,QEUH,CAMC,RAND,HSLL,PLYM,BRBR}
                           process only this centre's plate map files
+
+### Docker setup
+
+The docker setup allows you to run the application, and its dependencies, using Docker instead of 
+natively. This greatly simplifies the setup process and allows you to run the application in a consistent environment.
+
+To run the dependencies used by Crawler and also Lighthouse, there is a separate
+configuration for Docker Compose:
+
+    ./dependencies/up.sh
+
+**Note:** *These dependencies are shared with Lighthouse so if you start these
+dependencies here, there's no need to also attempt to do so in the Lighthouse
+repository. They are the same resources in both and the second one to be started
+will show exceptions about ports already being allocated.*
+
+You may also need to run the following command to ensure that the rabbitmq container is setup correctly:
+
+    python ./setup_dev_rabbit.py
+
+**important** Ensure you only have one instance of each docker container running. If you have both a local/brew service running and a docker container running for the same application, you will get
+setup issues and unexpected errors as both try to use the same ports.
+
+When you want to shut the dependencies back down, you can do so with:
+
+    ./dependencies/down.sh
+
+To build and run the container for Crawler, run from the root of the repository:
+
+    docker-compose up
+
+To run the tests:
+
+You will need to find the id of the container with image name crawler_runner
+
+    docker exec -ti <container_id> python -m pytest -vs
+
+There is now a volume for the runner so there is hot reloading i.e. changes in the code and tests will be updated when you rerun tests.
 
 ## Migrations
 
@@ -316,39 +355,13 @@ A little convenience script can be used to run the formatting, type checking and
 
 ## Miscellaneous
 
-### Docker
+### Troubleshooting
+
+### pyodbc
 
 If you do not have root access pyodbc will not work if you use brew. Using the
 docker compose you can set up the full stack and it will also set the correct
 environment variables.
-
-To run the dependencies used by Crawler and also Lighthouse, there is a separate
-configuration for Docker Compose:
-
-    ./dependencies/up.sh
-
-**Note:** *These dependencies are shared with Lighthouse so if you start these
-dependencies here, there's no need to also attempt to do so in the Lighthouse
-repository. They are the same resources in both and the second one to be started
-will show exceptions about ports already being allocated.*
-
-When you want to shut the dependencies back down, you can do so with:
-
-    ./dependencies/down.sh
-
-To build and run the container for Crawler, run from the root of the repository:
-
-    docker-compose up
-
-To run the tests:
-
-You will need to find the id of the container with image name crawler_runner
-
-    docker exec -ti <container_id> python -m pytest -vs
-
-There is now a volume for the runner so there is hot reloading i.e. changes in the code and tests will be updated when you rerun tests.
-
-### Troubleshooting
 
 ### Microsoft ODBC Driver for SQL Server
 
