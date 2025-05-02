@@ -23,6 +23,7 @@ services:
       - external
     volumes:
       - mongo-volume:/data/db
+      - ./scripts/mongo-init-replica-set.sh:/scripts/rs-init.sh
     entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "heron_rs" ]
 
   # A MS SQL Server service as close to production as currently possible
