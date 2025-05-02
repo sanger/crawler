@@ -176,7 +176,11 @@ To build and run the container for Crawler, run from the root of the repository:
 
 To run the tests:
 
-You will need to find the id of the container with image name crawler_runner
+You will need to find the id of the container with image name crawler_crawler. You can do this with:
+
+    docker ps
+
+Then run the following command, replacing <container_id> with the id of the container you found in the previous step:
 
     docker exec -ti <container_id> python -m pytest -vs
 
