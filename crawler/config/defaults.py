@@ -74,7 +74,7 @@ DART_DB_HOST = os.environ.get("LOCALHOST", "127.0.0.1")
 DART_DB_PORT = 1433
 DART_DB_RW_USER = "sa"
 DART_DB_RW_PASSWORD = "MyS3cr3tPassw0rd"
-DART_DB_DRIVER = "{ODBC Driver 17 for SQL Server}"
+DART_DB_DRIVER = "{ODBC Driver 18 for SQL Server}"
 
 ###
 # RabbitMQ details

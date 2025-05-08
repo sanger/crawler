@@ -3,7 +3,7 @@ import logging.config
 import os
 from contextlib import closing
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, cast
 from uuid import uuid4
 
@@ -254,7 +254,7 @@ def update_uuids_mongo_and_mlwh(config: Config, source_plate_barcodes: List[str]
                     # Update the record
                     updated_doc = deepcopy(original_doc)
 
-                    updated_doc[FIELD_UPDATED_AT] = datetime.utcnow()
+                    updated_doc[FIELD_UPDATED_AT] = datetime.now(tz=timezone.utc)
                     updated_doc[FIELD_LH_SOURCE_PLATE_UUID] = current_source_plate_uuid
                     # Generate an lh_sample_uuid if the sample doesn't have one
                     if FIELD_LH_SAMPLE_UUID not in updated_doc or (updated_doc[FIELD_LH_SAMPLE_UUID] is None):

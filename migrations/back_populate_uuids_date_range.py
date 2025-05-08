@@ -1,6 +1,6 @@
 import logging
 import logging.config
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Tuple
 
 from bson.objectid import ObjectId
@@ -114,7 +114,7 @@ def update_mongo(config: Config, updated_at: datetime) -> None:
                     "$set": {
                         FIELD_LH_SAMPLE_UUID: mlwh_sample_uuid,
                         UUID_UPDATED: True,
-                        FIELD_UPDATED_AT: datetime.utcnow(),
+                        FIELD_UPDATED_AT: datetime.now(tz=timezone.utc),
                     }
                 },
             )

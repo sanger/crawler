@@ -1,7 +1,7 @@
 import logging
 import uuid
 from contextlib import closing
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from pymongo.collection import Collection
@@ -261,7 +261,7 @@ def new_mongo_source_plate(plate_barcode: str, lab_id: str) -> SourcePlateDoc:
     Returns:
         SourcePlate -- The new mongo source plate doc.
     """
-    timestamp = datetime.utcnow()
+    timestamp = datetime.now(tz=timezone.utc)
     return {
         FIELD_LH_SOURCE_PLATE_UUID: str(uuid.uuid4()),
         FIELD_BARCODE: plate_barcode,

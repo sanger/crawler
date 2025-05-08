@@ -1,7 +1,7 @@
 import os
 import uuid
 from csv import DictReader
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from io import StringIO
 from typing import List, cast, Dict
@@ -535,7 +535,7 @@ def test_extract_plate_barcode_and_coordinate(config):
 
 def test_parse_and_format_file_rows(config, freezer):
     """Tests for parsing and formatting the csv file rows"""
-    now = datetime.now()
+    now = datetime.now(tz=timezone.utc)
     test_uuid = uuid.uuid4()
     centre_file = centre_file_with_mocked_filtered_positive_identifier(config, "some file")
     with patch("crawler.file_processing.uuid.uuid4", return_value=test_uuid):
@@ -831,7 +831,7 @@ def test_filtered_row_with_ct_channel_columns(config):
 
 
 def test_parse_and_format_file_rows_to_add_file_details(config, freezer):
-    now = datetime.now()
+    now = datetime.now(tz=timezone.utc)
     test_uuid = uuid.uuid4()
     fake_file_name = "fake_200507_1340.csv"
     centre_file = centre_file_with_mocked_filtered_positive_identifier(config, fake_file_name)
@@ -892,7 +892,7 @@ def test_parse_and_format_file_rows_to_add_file_details(config, freezer):
 
 
 def test_parse_and_format_file_rows_detects_duplicates(config, freezer):
-    now = datetime.now()
+    now = datetime.now(tz=timezone.utc)
     test_uuid = uuid.uuid4()
     fake_file_name = "fake_200507_1340.csv"
     centre_file = centre_file_with_mocked_filtered_positive_identifier(config, fake_file_name)
