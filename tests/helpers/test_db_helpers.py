@@ -70,7 +70,7 @@ def test_create_mongo_import_record(freezer, mongo_database):
     error_collection.add_error("TYPE 5", "error2")
 
     for centre in config.CENTRES:
-        now = datetime.utcnow()
+        now = datetime.now()
         result = create_mongo_import_record(
             import_collection, centre, len(docs), "test", error_collection.get_messages_for_import()
         )

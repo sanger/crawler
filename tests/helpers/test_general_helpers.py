@@ -471,7 +471,7 @@ def test_map_mongo_doc_to_dart_well_props(config):
 
 def test_create_source_plate_doc(freezer):
     """Tests for updating docs with source plate UUIDs."""
-    now = datetime.now()
+    now = datetime.now(tz=timezone.utc)
     test_uuid = uuid.uuid4()
     plate_barcode = "abc123"
     lab_id = "AP"

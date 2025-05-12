@@ -1,5 +1,5 @@
 import copy
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import ANY, MagicMock, patch
 
 import pytest
@@ -404,7 +404,7 @@ def test_record_import_creates_a_valid_import_record(freezer, subject, imports_c
     assert (
         imports_collection_accessor.count_documents(
             {
-                "date": datetime.utcnow(),  # Time has been frozen for this test.
+                "date": datetime.now(tz=timezone.utc),  # Time has been frozen for this test.
                 "centre_name": "Alderley",
                 "csv_file_used": "PLATE-001",
                 "number_of_records": 3,

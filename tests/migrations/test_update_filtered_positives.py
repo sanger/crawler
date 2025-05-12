@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
@@ -364,8 +364,8 @@ def test_update_filtered_positives_outputs_success(
     type(mock_pos_id).version = PropertyMock(return_value=version)
     with patch("migrations.update_filtered_positives.current_filtered_positive_identifier", return_value=mock_pos_id):
         with patch("migrations.update_filtered_positives.datetime") as mock_datetime:
-            timestamp = datetime.utcnow()
-            mock_datetime.utcnow.return_value = timestamp
+            timestamp = datetime.now(tz=timezone.utc)
+            mock_datetime.now.return_value = timestamp
 
             # call the migration
             update_filtered_positives.run("crawler.config.integration")
@@ -399,8 +399,8 @@ def test_update_filtered_positives_omitting_dart_outputs_success(
     type(mock_pos_id).version = PropertyMock(return_value=version)
     with patch("migrations.update_filtered_positives.current_filtered_positive_identifier", return_value=mock_pos_id):
         with patch("migrations.update_filtered_positives.datetime") as mock_datetime:
-            timestamp = datetime.utcnow()
-            mock_datetime.utcnow.return_value = timestamp
+            timestamp = datetime.now(tz=timezone.utc)
+            mock_datetime.now.return_value = timestamp
 
             # call the migration
             update_filtered_positives.run("crawler.config.integration", True)

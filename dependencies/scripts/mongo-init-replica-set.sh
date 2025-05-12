@@ -1,6 +1,6 @@
 #!/bin/bash
 
-mongo <<EOF
+mongosh <<EOF
 var config = {
     _id: "heron_rs",
     members: [{ _id: 0, host: "mongo:27017"}]

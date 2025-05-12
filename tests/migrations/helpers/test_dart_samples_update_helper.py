@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -125,7 +125,7 @@ def test_add_sample_uuid_field():
 
 
 def test_new_mongo_source_plate(freezer):
-    now = datetime.now()
+    now = datetime.now(tz=timezone.utc)
     plate_barcode = "PLATE_BARCODE_123"
     lab_id = "LAB_ID_123"
     source_plate = new_mongo_source_plate(plate_barcode, lab_id)

@@ -133,7 +133,7 @@ class UpdateSampleExporter:
 
         self._updated_sample = copy.deepcopy(mongo_sample)
 
-        self._updated_sample[FIELD_UPDATED_AT] = datetime.utcnow()
+        self._updated_sample[FIELD_UPDATED_AT] = datetime.now(tz=timezone.utc)
         for field in self._message.updated_fields.value:
             self._updated_sample[FIELD_NAME_MAP[field.name]] = field.value
 
