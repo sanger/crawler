@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, List, Mapping, Optional
 
 import pymongo
@@ -100,7 +100,7 @@ def create_mongo_import_record(
     logger.debug(f"Creating the import record for {centre[CENTRE_KEY_NAME]}")
 
     import_doc = {
-        "date": datetime.utcnow(),  # https://pymongo.readthedocs.io/en/stable/examples/datetimes.html
+        "date": datetime.now(tz=timezone.utc),  # https://pymongo.readthedocs.io/en/stable/examples/datetimes.html
         "centre_name": centre[CENTRE_KEY_NAME],
         "csv_file_used": file_name,
         "number_of_records": docs_inserted,

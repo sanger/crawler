@@ -1,6 +1,6 @@
 import logging
 import logging.config
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from pymongo.collection import Collection
@@ -114,7 +114,7 @@ def update_mongo_uuids(config: Config, source_plate_barcodes: List[str]) -> None
 
                     sample_doc[FIELD_LH_SAMPLE_UUID] = mlwh_sample[MLWH_LH_SAMPLE_UUID]
                     sample_doc[FIELD_UUID_UPDATED] = True
-                    sample_doc[FIELD_UPDATED_AT] = datetime.utcnow()
+                    sample_doc[FIELD_UPDATED_AT] = datetime.now(tz=timezone.utc)
 
                     success = update_mongo_sample(samples_collection, sample_doc)
                     if success:

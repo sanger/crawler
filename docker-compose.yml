@@ -1,4 +1,3 @@
-version: "3.3"
 services:
   # Setup the runner
   # we need to set the localhost and root password as they can be different

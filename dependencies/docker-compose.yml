@@ -1,4 +1,3 @@
-version: "3.3"
 services:
   # A MySQL service as close to production as currently possible
   # To run it as a standalone container:
@@ -14,9 +13,9 @@ services:
 
   # A MongoDB service as close to production as currently possible
   # To run it as a standalone container:
-  #   docker run --name mongo -d -p 27017:27017 --entrypoint="/usr/bin/mongod --bind_ip_all --replSet heron_rs" mongo:4.2
-  mongo-4.2:
-    image: mongo:4.2
+  #   docker run --name mongo -d -p 27017:27017 --entrypoint="/usr/bin/mongod --bind_ip_all --replSet heron_rs" mongo:8.0
+  mongo-8.0:
+    image: mongo:8.0
     container_name: mongo
     ports:
       - "27017:27017"
@@ -56,9 +55,9 @@ services:
   #   docker network create redpanda-network
   #   docker volume create redpanda-volume
   #   docker run --name=schema_registry --net=redpanda-network -v "redpanda-volume:/var/lib/redpanda/data" -p 8081:8081 \
-  #     docker.vectorized.io/vectorized/redpanda start --overprovisioned --smp 1 --memory 250M
+  #     redpandadata/redpanda start --overprovisioned --smp 1 --memory 250M
   schema_registry:
-    image: docker.vectorized.io/vectorized/redpanda
+    image: redpandadata/redpanda
     networks:
       - redpanda-network
     ports:

@@ -1052,8 +1052,8 @@ MLWH_SAMPLE_COMPLETE = {
     MLWH_ROOT_SAMPLE_ID: "BAA94123456",
     MLWH_COG_UK_ID: "TEST-1234ABCD",
     MLWH_SOURCE: "Bob's Biotech",
-    MLWH_CREATED_AT: datetime.utcnow(),
-    MLWH_UPDATED_AT: datetime.utcnow(),
+    MLWH_CREATED_AT: datetime.now(tz=timezone.utc),
+    MLWH_UPDATED_AT: datetime.now(tz=timezone.utc),
 }
 
 

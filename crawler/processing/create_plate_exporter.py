@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, NamedTuple
 
 from pymongo.client_session import ClientSession
@@ -252,8 +252,8 @@ class CreatePlateExporter:
             FIELD_PREFERENTIALLY_SEQUENCE: sample.preferentially_sequence.value,
             FIELD_LH_SAMPLE_UUID: sample.sample_uuid.value,
             FIELD_LH_SOURCE_PLATE_UUID: self._plate_uuid,
-            FIELD_CREATED_AT: datetime.utcnow(),
-            FIELD_UPDATED_AT: datetime.utcnow(),
+            FIELD_CREATED_AT: datetime.now(tz=timezone.utc),
+            FIELD_UPDATED_AT: datetime.now(tz=timezone.utc),
         }
 
     def _record_samples_in_dart(self):
