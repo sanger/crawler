@@ -1,13 +1,27 @@
 version: 2
 updates:
-- package-ecosystem: pip
-  directory: "/"
-  schedule:
-    interval: daily
-    time: "07:00"
-    timezone: Europe/London
-  open-pull-requests-limit: 10
-  labels:
-    - "dependencies"
-    - "Technical Debt"
-    - "python"
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "07:00"
+      timezone: Europe/London
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "Technical Debt"
+      - "python"
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "07:00"
+      timezone: Europe/London
+    labels:
+      - "Security Updates"
+      - "Technical Debt"
+      - "python"
+    allow:
+      - dependency-type: "direct"
+    # Only security updates
+    security-updates-only: true
